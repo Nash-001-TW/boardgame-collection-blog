@@ -32,25 +32,30 @@ const { game } = Astro.props as { game: Game };
 
         <div class="game-info">
 
-            <h1>{game.name}</h1>
+            <h1>{game.bgg.name}</h1>
 
             <p>
                 <strong>發行年份：</strong>
-                {game.year}
+                {game.bgg.year}
             </p>
 
             <p>
                 <strong>玩家人數：</strong>
-                {game.players}
+                {game.bgg.minPlayers}–{game.bgg.maxPlayers} 人
             </p>
 
             <p>
                 <strong>遊戲時間：</strong>
-                {game.playTime}
+                {game.bgg.minPlayTime}–{game.bgg.maxPlayTime} 分鐘
             </p>
 
             <p class="rating">
-                我的評分：★ {game.myRating}
+                我的評分：★ {game.collection.myRating ?? "尚未評分"}
+            </p>
+
+            <p>
+                <strong>遊玩次數：</strong>
+                {game.collection.playCount ?? 0} 次
             </p>
 
             {

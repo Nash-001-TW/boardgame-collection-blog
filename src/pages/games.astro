@@ -24,24 +24,24 @@ import { games } from "../data/games";
 
                     <h2>
                         <a href={`/games/${game.slug}`}>
-                            {game.name}
+                            {game.bgg.name}
                         </a>
                     </h2>
 
                     <p>
-                        發行年份：{game.year}
+                        發行年份：{game.bgg.year}
                     </p>
 
                     <p>
-                        玩家人數：{game.players}
+                        玩家人數：{game.bgg.minPlayers}–{game.bgg.maxPlayers} 人
                     </p>
 
                     <p>
-                        遊戲時間：{game.playTime}
+                        遊戲時間：{game.bgg.minPlayTime}–{game.bgg.maxPlayTime} 分鐘
                     </p>
 
                     <p class="rating">
-                        我的評分：★ {game.myRating}
+                        我的評分：★ {game.collection.myRating ?? "尚未評分"}
                     </p>
 
                 </div>
