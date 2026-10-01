@@ -1,0 +1,138 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { games } from "../../data/games";
+import type { Game } from "../../data/games";
+
+// 動態路由
+export function getStaticPaths() {
+    return games.map((game) => ({
+        params: {
+            slug: game.slug
+        },
+        props: {
+            game
+        }
+    }));
+}
+
+const { game } = Astro.props as { game: Game };
+---
+
+<Layout title={`${game.name} | Nash's Board Game Blog`}>
+
+    <a class="back-link" href="/games">
+        ← 回桌遊庫
+    </a>
+
+    <div class="game-detail">
+
+        <div class="game-cover">
+            遊戲圖片
+        </div>
+
+        <div class="game-info">
+
+            <h1>{game.name}</h1>
+
+            <p>
+                <strong>發行年份：</strong>
+                {game.year}
+            </p>
+
+            <p>
+                <strong>玩家人數：</strong>
+                {game.players}
+            </p>
+
+            <p>
+                <strong>遊戲時間：</strong>
+                {game.playTime}
+            </p>
+
+            <p class="rating">
+                我的評分：★ {game.myRating}
+            </p>
+
+            {
+                game.bggId > 0 && (
+                    <p>
+                        BGG ID：{game.bggId}
+                    </p>
+                )
+            }
+
+        </div>
+
+    </div>
+
+
+    <section class="review">
+
+        <h2>我的遊戲心得</h2>
+
+        <p>
+            這裡未來會放我的遊玩心得、開箱文章與相關內容。
+        </p>
+
+    </section>
+
+</Layout>
+
+
+<style>
+
+    .back-link {
+        display: inline-block;
+        margin-bottom: 25px;
+        color: #555;
+        text-decoration: none;
+    }
+
+    .back-link:hover {
+        text-decoration: underline;
+    }
+
+    .game-detail {
+        display: grid;
+        grid-template-columns: 350px 1fr;
+        gap: 40px;
+
+        background-color: white;
+        padding: 25px;
+        border-radius: 10px;
+    }
+
+    .game-cover {
+        height: 350px;
+        background-color: #ddd;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        border-radius: 8px;
+    }
+
+    .game-info h1 {
+        margin-top: 0;
+        font-size: 36px;
+    }
+
+    .game-info p {
+        font-size: 17px;
+        margin: 15px 0;
+    }
+
+    .rating {
+        font-size: 20px !important;
+        font-weight: bold;
+    }
+
+    .review {
+        margin-top: 40px;
+        background-color: white;
+        padding: 25px;
+        border-radius: 10px;
+    }
+
+</style>

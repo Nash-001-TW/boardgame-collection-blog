@@ -1,17 +1,166 @@
 ---
-
+import Layout from "../layouts/Layout.astro";
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+<Layout title="首頁 | Soma's Board Game Collection Blog">
+
+    <section class="hero">
+
+        <h1>我的桌遊世界</h1>
+
+        <p>
+            記錄桌遊收藏、遊玩心得、開箱與分享。
+        </p>
+
+    </section>
+
+
+    <section class="content-section">
+
+        <h2>🎲 最近玩的桌遊</h2>
+
+        <div class="game-list">
+
+            <div class="game-card">
+
+                <div class="game-image">
+                    遊戲圖片
+                </div>
+
+                <h3>Santorini</h3>
+
+                <p>我的評分：★ 8.0</p>
+
+            </div>
+
+
+            <div class="game-card">
+
+                <div class="game-image">
+                    遊戲圖片
+                </div>
+
+                <h3>TEND</h3>
+
+                <p>我的評分：★ 8.5</p>
+
+            </div>
+
+
+            <div class="game-card">
+
+                <div class="game-image">
+                    遊戲圖片
+                </div>
+
+                <h3>ONWARD</h3>
+
+                <p>我的評分：★ 9.0</p>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <section class="content-section">
+
+        <h2>✍️ 最新文章</h2>
+
+        <div class="article-list">
+
+            <article>
+
+                <h3>桑托里尼典藏版開箱心得</h3>
+
+                <p>
+                    第一次遊玩後的一些心得與感想。
+                </p>
+
+            </article>
+
+
+            <article>
+
+                <h3>TEND 超級豪華版值得買嗎？</h3>
+
+                <p>
+                    從內容物與遊戲性來看看豪華版的差異。
+                </p>
+
+            </article>
+
+
+            <article>
+
+                <h3>ONWARD 初玩心得</h3>
+
+                <p>
+                    第一次接觸 ONWARD 的遊戲體驗。
+                </p>
+
+            </article>
+
+        </div>
+
+    </section>
+
+</Layout>
+
+
+<style>
+
+    .hero {
+        background-color: white;
+        padding: 50px;
+        margin-bottom: 40px;
+        border-radius: 10px;
+        text-align: center;
+    }
+
+    .hero h1 {
+        font-size: 36px;
+        margin-top: 0;
+    }
+
+    .hero p {
+        font-size: 18px;
+        color: #666;
+    }
+
+    .content-section {
+        margin-bottom: 50px;
+    }
+
+    .game-list {
+        display: flex;
+        gap: 20px;
+    }
+
+    .game-card {
+        background-color: white;
+        padding: 15px;
+        border-radius: 10px;
+        width: 33.333%;
+    }
+
+    .game-image {
+        height: 180px;
+        background-color: #ddd;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        border-radius: 6px;
+    }
+
+    .article-list article {
+        background-color: white;
+        padding: 20px;
+        margin-bottom: 15px;
+        border-radius: 10px;
+    }
+
+</style>

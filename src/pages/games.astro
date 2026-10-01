@@ -1,0 +1,108 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { games } from "../data/games";
+---
+
+<Layout title="桌遊庫 | Soma's Board Game Collection Blog">
+
+    <h1>🎲 桌遊庫</h1>
+
+    <p class="intro">
+        這裡整理我玩過、收藏以及介紹過的桌遊。
+    </p>
+
+    <div class="game-grid">
+
+        {
+            games.map((game) => (
+
+                <div class="game-card">
+
+                    <div class="game-image">
+                        遊戲圖片
+                    </div>
+
+                    <h2>
+                        <a href={`/games/${game.slug}`}>
+                            {game.name}
+                        </a>
+                    </h2>
+
+                    <p>
+                        發行年份：{game.year}
+                    </p>
+
+                    <p>
+                        玩家人數：{game.players}
+                    </p>
+
+                    <p>
+                        遊戲時間：{game.playTime}
+                    </p>
+
+                    <p class="rating">
+                        我的評分：★ {game.myRating}
+                    </p>
+
+                </div>
+
+            ))
+        }
+
+    </div>
+
+</Layout>
+
+
+<style>
+
+    .intro {
+        color: #666;
+        margin-bottom: 30px;
+    }
+
+    .game-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 25px;
+    }
+
+    .game-card {
+        background-color: white;
+        padding: 18px;
+        border-radius: 10px;
+    }
+
+    .game-image {
+        height: 200px;
+        background-color: #ddd;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        border-radius: 6px;
+    }
+
+    .game-card h2 {
+        margin-bottom: 10px;
+    }
+
+    .game-card p {
+        margin: 7px 0;
+    }
+
+    .rating {
+        font-weight: bold;
+    }
+
+    .game-card h2 a {
+    color: #333;
+    text-decoration: none;
+    }
+
+    .game-card h2 a:hover {
+    text-decoration: underline;
+    }
+
+</style>
