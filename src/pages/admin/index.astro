@@ -1,0 +1,268 @@
+
+---
+import { env } from 'cloudflare:workers';
+
+export const prerender = false;
+
+interface AdminSummary {
+  collection_count: number;
+  owned_count: number;
+  wishlist_count: number;
+  bgg_count: number;
+  component_count: number;
+  sleeve_size_count: number;
+  sleeve_requirement_count: number;
+}
+
+let summary: AdminSummary | null = null;
+let errorMessage = '';
+
+try {
+  const db = env.DB;
+
+  if (!db) {
+    errorMessage = 'Cloudflare D1 Binding DB 無法使用';
+  } else {
+
+    const result = await db.prepare(`
+    WITH imported AS (
+        SELECT
+        id,
+        wishlist,
+        CASE
+            WHEN json_valid(notes) = 1 THEN
+            CASE
+                WHEN json_type(notes, '$.owned') IS NOT NULL
+                THEN CAST(json_extract(notes, '$.owned') AS INTEGER)
+                WHEN acquisition_status = 'owned' THEN 1
+                ELSE 0
+            END
+            WHEN acquisition_status = 'owned' THEN 1
+            ELSE 0
+        END AS owned
+        FROM v2_collection_items
+        WHERE record_scope = 'production'
+    )
+    SELECT
+        (SELECT COUNT(*)
+        FROM imported) AS collection_count,
+
+        (SELECT COUNT(*)
+        FROM imported
+        WHERE owned = 1) AS owned_count,
+
+        (SELECT COUNT(*)
+        FROM imported
+        WHERE wishlist = 1) AS wishlist_count,
+
+        (SELECT COUNT(*)
+        FROM v2_games g
+        JOIN v2_legacy_id_map m
+        ON m.target_table = 'v2_games'
+        AND m.target_id = g.id
+        AND m.legacy_table = 'bgg_games'
+        ) AS bgg_count,
+
+        (SELECT COUNT(*)
+        FROM v2_component_definitions d
+        JOIN imported c
+        ON c.id = d.collection_item_id
+        ) AS component_count,
+
+        (SELECT COUNT(*)
+        FROM v2_sleeve_sizes) AS sleeve_size_count,
+
+        (SELECT COUNT(*)
+        FROM v2_sleeve_requirements r
+        JOIN imported c
+        ON c.id = r.collection_item_id
+        ) AS sleeve_requirement_count
+    `).first<AdminSummary>();
+
+
+    if (result) {
+      summary = result;
+    } else {
+      errorMessage = '無法取得收藏統計資料';
+    }
+  }
+} catch (error) {
+  console.error('Admin dashboard error:', error);
+  errorMessage = '讀取 D1 資料庫時發生錯誤';
+}
+
+const statistics = summary
+  ? [
+      { label: '收藏項目', value: summary.collection_count, icon: '🎲' },
+      { label: '已收藏', value: summary.owned_count, icon: '📦' },
+      { label: '願望清單', value: summary.wishlist_count, icon: '❤️' },
+      { label: 'BGG 遊戲', value: summary.bgg_count, icon: '🌐' },
+      { label: '收藏組件', value: summary.component_count, icon: '🧩' },
+      { label: '卡套尺寸', value: summary.sleeve_size_count, icon: '📏' },
+      { label: '卡套需求紀錄', value: summary.sleeve_requirement_count, icon: '🃏' }
+    ]
+  : [];
+---
+
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>管理後台 | Soma's Board Game Collection</title>
+
+    <style>
+      :root {
+        font-family: system-ui, "Microsoft JhengHei", sans-serif;
+        color-scheme: dark;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        background: #101827;
+        color: #e5e7eb;
+      }
+
+      header {
+        padding: 24px 32px;
+        background: #172338;
+        border-bottom: 1px solid #334155;
+      }
+
+      header h1 {
+        margin: 0 0 8px;
+        font-size: 26px;
+      }
+
+      header p {
+        margin: 0;
+        color: #94a3b8;
+      }
+
+      main {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 32px 20px;
+      }
+
+      h2 { margin: 0 0 20px; }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 36px;
+      }
+
+      .stat-card, .menu-card {
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 12px;
+        padding: 22px;
+      }
+
+      .stat-icon { font-size: 28px; }
+
+      .stat-value {
+        margin: 14px 0 6px;
+        font-size: 34px;
+        font-weight: bold;
+        color: #60a5fa;
+      }
+
+      .stat-label { color: #cbd5e1; }
+
+      .menu {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 16px;
+      }
+
+      .menu-card h3 { margin-top: 0; }
+
+      .menu-card p {
+        color: #94a3b8;
+        line-height: 1.6;
+      }
+
+      .status {
+        display: inline-block;
+        margin-top: 8px;
+        color: #fbbf24;
+        font-size: 14px;
+      }
+
+      .error {
+        padding: 18px;
+        background: #450a0a;
+        border: 1px solid #dc2626;
+        border-radius: 8px;
+        margin-bottom: 24px;
+      }
+
+      .back {
+        display: inline-block;
+        margin-top: 32px;
+        color: #93c5fd;
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <h1>🎲 桌遊收藏管理後台</h1>
+      <p>Soma's Board Game Collection — Administration</p>
+    </header>
+
+    <main>
+      <h2>收藏資料總覽</h2>
+
+      {errorMessage && (
+        <div class="error" role="alert">{errorMessage}</div>
+      )}
+
+      <section class="stats">
+        {statistics.map((item) => (
+          <article class="stat-card">
+            <div class="stat-icon">{item.icon}</div>
+            <div class="stat-value">{item.value.toLocaleString()}</div>
+            <div class="stat-label">{item.label}</div>
+          </article>
+        ))}
+      </section>
+
+      <h2>管理功能</h2>
+
+      <section class="menu">
+        <article class="menu-card">
+          <h3>📚 收藏管理</h3>
+          <p>搜尋、篩選及編輯個人桌遊收藏資料。</p>
+          <span class="status">待開發</span>
+        </article>
+
+        <article class="menu-card">
+          <h3>🧩 組件管理</h3>
+          <p>管理擴充、配件、組件數量及 BGG 對應關係。</p>
+          <span class="status">待開發</span>
+        </article>
+
+        <article class="menu-card">
+          <h3>🃏 卡套管理</h3>
+          <p>管理卡套尺寸、需求與庫存紀錄。</p>
+          <span class="status">待開發</span>
+        </article>
+
+        <article class="menu-card">
+          <h3>🔄 BGG 資料同步</h3>
+          <p>更新遊戲基本資訊、分類及統計資料。</p>
+          <span class="status">待開發</span>
+        </article>
+      </section>
+
+      <a class="back" href="/">← 返回網站首頁</a>
+    </main>
+  </body>
+</html>

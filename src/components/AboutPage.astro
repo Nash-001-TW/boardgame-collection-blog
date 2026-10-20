@@ -1,0 +1,57 @@
+---
+import type { Language } from "../i18n/ui";
+
+interface Props {
+    lang: Language;
+}
+
+const { lang } = Astro.props;
+
+const labels = lang === "zh-TW"
+    ? {
+        title: "👤 關於這個網站",
+        welcome: "歡迎來到 Nash's Board Game Blog。",
+        description: "這裡主要分享我的桌遊收藏、遊玩心得、開箱以及桌遊相關資訊。"
+    }
+    : {
+        title: "👤 About This Website",
+        welcome: "Welcome to Nash's Board Game Blog.",
+        description: "This website is where I share my board game collection, gameplay experiences, unboxings, and other board game information."
+    };
+---
+
+<section class="about-page">
+
+    <h1>{labels.title}</h1>
+
+    <p>{labels.welcome}</p>
+
+    <p>{labels.description}</p>
+
+</section>
+
+<style>
+    .about-page {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 40px 24px;
+    }
+
+    .about-page h1 {
+        font-size: 32px;
+        margin: 0 0 24px;
+    }
+
+    .about-page p {
+        font-size: 16px;
+        line-height: 1.8;
+        color: #555;
+        margin-bottom: 16px;
+    }
+
+    @media (max-width: 600px) {
+        .about-page {
+            padding: 24px 16px;
+        }
+    }
+</style>

@@ -1,0 +1,476 @@
+
+---
+import type { Language } from "../i18n/ui";
+
+interface Props {
+    lang?: Language;
+}
+
+const { lang = "zh-TW" } = Astro.props;
+
+const labels = lang === "zh-TW"
+    ? {
+        search: "搜尋遊戲名稱或 BGG ID",
+        all: "全部",
+        owned: "已收藏",
+        wishlist: "願望清單",
+        preorder: "預購",
+        wantToPlay: "想玩",
+        wantToBuy: "想買",
+        nameAsc: "名稱 A → Z",
+        nameDesc: "名稱 Z → A",
+        yearDesc: "年份：新到舊",
+        yearAsc: "年份：舊到新",
+        ratingDesc: "我的評分：高到低",
+        ratingAsc: "我的評分：低到高",
+        result: "符合條件",
+        games: "款遊戲",
+        previous: "上一頁",
+        next: "下一頁",
+        page: "頁",
+        empty: "沒有符合條件的遊戲"
+    }
+    : {
+        search: "Search game name or BGG ID",
+        all: "All",
+        owned: "Owned",
+        wishlist: "Wishlist",
+        preorder: "Preordered",
+        wantToPlay: "Want to Play",
+        wantToBuy: "Want to Buy",
+        nameAsc: "Name A → Z",
+        nameDesc: "Name Z → A",
+        yearDesc: "Year: Newest",
+        yearAsc: "Year: Oldest",
+        ratingDesc: "My Rating: High to Low",
+        ratingAsc: "My Rating: Low to High",
+        result: "Matching",
+        games: "games",
+        previous: "Previous",
+        next: "Next",
+        page: "Page",
+        empty: "No matching games"
+    };
+---
+
+<div id="collection-controls" class="collection-controls" data-labels={JSON.stringify(labels)}>
+    <div class="search-row">
+        <input
+            id="collection-search"
+            type="search"
+            placeholder={labels.search}
+            aria-label={labels.search}
+        />
+
+        <select id="collection-sort" aria-label="Sort">
+            <option value="name-asc">{labels.nameAsc}</option>
+            <option value="name-desc">{labels.nameDesc}</option>
+            <option value="year-desc">{labels.yearDesc}</option>
+            <option value="year-asc">{labels.yearAsc}</option>
+            <option value="rating-desc">{labels.ratingDesc}</option>
+            <option value="rating-asc">{labels.ratingAsc}</option>
+        </select>
+    </div>
+
+    <div class="filter-bar" role="group" aria-label="Collection filters">
+        <button type="button" class="filter-button active" data-filter="all" aria-pressed="true">{labels.all}</button>
+        <button type="button" class="filter-button" data-filter="owned" aria-pressed="false">{labels.owned}</button>
+        <button type="button" class="filter-button" data-filter="wishlist" aria-pressed="false">{labels.wishlist}</button>
+        <button type="button" class="filter-button" data-filter="preorder" aria-pressed="false">{labels.preorder}</button>
+        <button type="button" class="filter-button" data-filter="wantToPlay" aria-pressed="false">{labels.wantToPlay}</button>
+        <button type="button" class="filter-button" data-filter="wantToBuy" aria-pressed="false">{labels.wantToBuy}</button>
+    </div>
+
+    <p id="collection-result-count" aria-live="polite"></p>
+</div>
+
+<script>
+    function initializeCollectionFilter() {
+        const controls = document.getElementById("collection-controls") as HTMLElement | null;
+        const grid = document.getElementById("collection-game-grid") as HTMLElement | null;
+        const pagination = document.getElementById("collection-pagination") as HTMLElement | null;
+
+        if (!controls || !grid || !pagination) return;
+
+        // 避免 Astro 頁面切換時重複綁定事件
+        if (controls.dataset.initialized === "true") return;
+
+        const search = controls.querySelector<HTMLInputElement>("#collection-search");
+        const sort = controls.querySelector("#collection-sort") as HTMLSelectElement | null;
+        const resultCount = controls.querySelector<HTMLElement>("#collection-result-count");
+        const buttons = Array.from(
+            controls.querySelectorAll<HTMLButtonElement>(".filter-button")
+        );
+
+        if (!search || !sort || !resultCount) return;
+        // Capture narrowed references for use inside event callbacks and nested functions.
+        const searchInput: HTMLInputElement = search;
+        const sortSelect: HTMLSelectElement = sort;
+        const resultLabel: HTMLElement = resultCount;
+        const gameGrid: HTMLElement = grid;
+        const paginationElement: HTMLElement = pagination;
+
+        const labels: {
+            result: string;
+            games: string;
+            previous: string;
+            next: string;
+            page: string;
+            empty: string;
+        } = JSON.parse(controls.dataset.labels || "{}");
+
+        controls.dataset.initialized = "true";
+
+        const cards = Array.from(
+            grid.querySelectorAll<HTMLElement>(".game-card")
+        );
+
+        // 建立一個固定的卡片容器
+        // 之後只將目前頁面需要顯示的卡片放入容器
+        const cardFragment = document.createDocumentFragment();
+
+        // 將所有卡片先移出畫面，保留在記憶體中
+        cards.forEach(card => {
+            cardFragment.appendChild(card);
+        });
+
+        const PAGE_SIZE = 24;
+
+        let activeFilter = "all";
+        let currentPage = 1;
+
+        const collator = new Intl.Collator(
+            document.documentElement.lang || undefined,
+            { numeric: true, sensitivity: "base" }
+        );
+
+        function matchesFilter(card: HTMLElement): boolean {
+            switch (activeFilter) {
+                case "owned":
+                    return card.dataset.owned === "true";
+
+                case "wishlist":
+                    return card.dataset.wishlist === "true";
+
+                case "preorder":
+                    return card.dataset.preorder === "true";
+
+                case "wantToPlay":
+                    return card.dataset.wantToPlay === "true";
+
+                case "wantToBuy":
+                    return card.dataset.wantToBuy === "true";
+
+                default:
+                    return true;
+            }
+        }
+
+        function getNumericValue(card: HTMLElement, key: string): number | null {
+            const raw = card.dataset[key];
+
+            if (raw === undefined || raw.trim() === "") {
+                return null;
+            }
+
+            const value = Number(raw);
+            return Number.isFinite(value) ? value : null;
+        }
+
+        function compareOptionalNumbers(a: HTMLElement, b: HTMLElement, key: string, descending: boolean): number {
+            const valueA = getNumericValue(a, key);
+            const valueB = getNumericValue(b, key);
+
+            // 未設定的年份或評分一律排最後
+            if (valueA === null && valueB === null) return 0;
+            if (valueA === null) return 1;
+            if (valueB === null) return -1;
+
+            return descending
+                ? valueB - valueA
+                : valueA - valueB;
+        }
+
+        function sortCards(items: HTMLElement[]): HTMLElement[] {
+            const mode = sortSelect.value;
+
+            items.sort((a, b) => {
+                let result = 0;
+
+                switch (mode) {
+                    case "name-desc":
+                        result = collator.compare(
+                            b.dataset.name || "",
+                            a.dataset.name || ""
+                        );
+                        break;
+
+                    case "year-desc":
+                        result = compareOptionalNumbers(a, b, "year", true);
+                        break;
+
+                    case "year-asc":
+                        result = compareOptionalNumbers(a, b, "year", false);
+                        break;
+
+                    case "rating-desc":
+                        result = compareOptionalNumbers(a, b, "rating", true);
+                        break;
+
+                    case "rating-asc":
+                        result = compareOptionalNumbers(a, b, "rating", false);
+                        break;
+
+                    default:
+                        result = collator.compare(
+                            a.dataset.name || "",
+                            b.dataset.name || ""
+                        );
+                        break;
+                }
+
+                return result || collator.compare(
+                    a.dataset.name || "",
+                    b.dataset.name || ""
+                );
+            });
+
+            return items;
+        }
+
+        function createPageButton(text: string, page: number, disabled: boolean, active = false): HTMLButtonElement {
+            const button = document.createElement("button");
+
+            button.type = "button";
+            button.textContent = text;
+            button.disabled = disabled;
+            button.classList.toggle("active", active);
+
+            if (active) {
+                button.setAttribute("aria-current", "page");
+            }
+
+            button.addEventListener("click", () => {
+                currentPage = page;
+                update(false);
+            });
+
+            return button;
+        }
+
+        function update(resetPage = true) {
+            if (resetPage) currentPage = 1;
+
+            const keyword = searchInput.value.trim().toLocaleLowerCase();
+
+            const matched = sortCards(
+                cards.filter(card => {
+                    const searchableText = [
+                        card.dataset.name,
+                        card.dataset.originalName,
+                        card.dataset.bggId
+                    ].join(" ").toLocaleLowerCase();
+
+                    return (
+                        matchesFilter(card) &&
+                        searchableText.includes(keyword)
+                    );
+                })
+            );
+
+            const totalPages = Math.max(
+                1,
+                Math.ceil(matched.length / PAGE_SIZE)
+            );
+
+            currentPage = Math.min(
+                Math.max(1, currentPage),
+                totalPages
+            );
+
+            const start = (currentPage - 1) * PAGE_SIZE;
+            const visible = matched.slice(start, start + PAGE_SIZE);
+
+            // ============================================================
+            // 高效能分頁渲染
+            // 只把當前頁面的 24 張卡片放進畫面
+            // ============================================================
+
+            // 先將目前顯示的卡片移回暫存區
+            Array.from(gameGrid.children).forEach(card => {
+                cardFragment.appendChild(card);
+            });
+
+            // 建立本頁要顯示的卡片
+            const pageFragment = document.createDocumentFragment();
+
+            visible.forEach(card => {
+
+                card.hidden = false;
+                card.classList.remove("hidden");
+
+                pageFragment.appendChild(card);
+
+            });
+
+            // 一次更新畫面
+            gameGrid.appendChild(pageFragment);
+
+            resultLabel.textContent =
+                `${labels.result} ${matched.length} ${labels.games}`;
+
+            paginationElement.replaceChildren();
+
+            if (matched.length === 0) {
+                const message = document.createElement("p");
+                message.textContent = labels.empty;
+                paginationElement.appendChild(message);
+                return;
+            }
+
+            if (totalPages <= 1) return;
+
+            paginationElement.appendChild(
+                createPageButton(
+                    labels.previous,
+                    currentPage - 1,
+                    currentPage === 1
+                )
+            );
+
+            // 最多顯示目前頁前後各兩頁
+            const first = Math.max(1, currentPage - 2);
+            const last = Math.min(totalPages, currentPage + 2);
+
+            for (let page = first; page <= last; page++) {
+                paginationElement.appendChild(
+                    createPageButton(
+                        String(page),
+                        page,
+                        false,
+                        page === currentPage
+                    )
+                );
+            }
+
+            paginationElement.appendChild(
+                createPageButton(
+                    labels.next,
+                    currentPage + 1,
+                    currentPage === totalPages
+                )
+            );
+
+            const info = document.createElement("span");
+            info.textContent =
+                `${labels.page} ${currentPage} / ${totalPages}`;
+
+            paginationElement.appendChild(info);
+        }
+
+        buttons.forEach(button => {
+            button.addEventListener("click", () => {
+                activeFilter = button.dataset.filter || "all";
+
+                buttons.forEach(btn => {
+                    const active = btn === button;
+                    btn.classList.toggle("active", active);
+                    btn.setAttribute("aria-pressed", String(active));
+                });
+
+                update();
+            });
+        });
+
+        // ============================================================
+        // 搜尋延遲處理
+        // 避免每輸入一個字元就立即重新整理數百張卡片
+        // ============================================================
+
+        let searchTimer: ReturnType<typeof setTimeout> | undefined;
+
+        searchInput.addEventListener("input", () => {
+
+            clearTimeout(searchTimer);
+
+            searchTimer = setTimeout(() => {
+                update();
+            }, 250);
+
+        });
+
+        sortSelect.addEventListener("change", () => {
+            clearTimeout(searchTimer);
+            update();
+        });
+
+        update();
+    }
+
+    initializeCollectionFilter();
+
+    document.addEventListener(
+        "astro:page-load",
+        initializeCollectionFilter
+    );
+</script>
+
+<style>
+    .collection-controls {
+        margin: 24px 0 30px;
+    }
+
+    .search-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .search-row input {
+        flex: 1;
+        min-width: 220px;
+        padding: 12px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        font-size: 15px;
+    }
+
+    .search-row select {
+        min-width: 180px;
+        padding: 12px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        background: white;
+    }
+
+    .filter-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin: 20px 0;
+    }
+
+    .filter-button {
+        padding: 8px 16px;
+        border: 1px solid #ccc;
+        border-radius: 20px;
+        background: white;
+        cursor: pointer;
+        font-size: 14px;
+    }
+
+    .filter-button:hover {
+        background: #f5f5f5;
+    }
+
+    .filter-button.active {
+        background: #222;
+        color: white;
+        border-color: #222;
+    }
+
+    #collection-result-count {
+        color: #666;
+        font-size: 14px;
+    }
+</style>

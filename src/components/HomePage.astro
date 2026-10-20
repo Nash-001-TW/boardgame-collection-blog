@@ -1,0 +1,235 @@
+
+---
+import type { Language } from "../i18n/ui";
+
+interface Props {
+    lang: Language;
+}
+
+const { lang } = Astro.props;
+
+const labels = lang === "zh-TW"
+    ? {
+        heroTitle: "我的桌遊世界",
+        heroDescription: "記錄桌遊收藏、遊玩心得、開箱與分享。",
+        recentGames: "🎲 最近玩的桌遊",
+        latestArticles: "✍️ 最新文章",
+        gameImage: "遊戲圖片",
+        myRating: "我的評分"
+    }
+    : {
+        heroTitle: "My Board Game World",
+        heroDescription: "Sharing my board game collection, play experiences, unboxings, and reviews.",
+        recentGames: "🎲 Recently Played Games",
+        latestArticles: "✍️ Latest Articles",
+        gameImage: "Game Image",
+        myRating: "My Rating"
+    };
+
+// 首頁展示資料：暫時保留原本的手動設定
+const featuredGames = [
+    {
+        name: "Santorini",
+        slug: "santorini",
+        rating: 8.0
+    },
+    {
+        name: "TEND",
+        slug: "tend",
+        rating: 8.5
+    },
+    {
+        name: "ONWARD",
+        slug: "onward",
+        rating: 9.0
+    }
+];
+
+const articles = lang === "zh-TW"
+    ? [
+        {
+            title: "桑托里尼典藏版開箱心得",
+            description: "第一次遊玩後的一些心得與感想。"
+        },
+        {
+            title: "TEND 超級豪華版值得買嗎？",
+            description: "從內容物與遊戲性來看看豪華版的差異。"
+        },
+        {
+            title: "ONWARD 初玩心得",
+            description: "第一次接觸 ONWARD 的遊戲體驗。"
+        }
+    ]
+    : [
+        {
+            title: "Santorini Collector's Edition Review",
+            description: "My first impressions after playing Santorini."
+        },
+        {
+            title: "Is TEND Deluxe Edition Worth It?",
+            description: "A look at the components and gameplay differences."
+        },
+        {
+            title: "ONWARD First Impressions",
+            description: "My initial experience with ONWARD."
+        }
+    ];
+
+function getGameUrl(slug: string): string {
+    return lang === "en"
+        ? `/en/games/${slug}`
+        : `/games/${slug}`;
+}
+---
+
+<section class="hero">
+
+    <h1>{labels.heroTitle}</h1>
+
+    <p>
+        {labels.heroDescription}
+    </p>
+
+</section>
+
+<section class="content-section">
+
+    <h2>{labels.recentGames}</h2>
+
+    <div class="game-list">
+
+        {
+            featuredGames.map(game => (
+
+                <div class="game-card">
+
+                    <a
+                        class="game-image"
+                        href={getGameUrl(game.slug)}
+                    >
+                        {labels.gameImage}
+                    </a>
+
+                    <h3>
+                        <a href={getGameUrl(game.slug)}>
+                            {game.name}
+                        </a>
+                    </h3>
+
+                    <p>
+                        {labels.myRating}：★ {game.rating.toFixed(1)}
+                    </p>
+
+                </div>
+
+            ))
+        }
+
+    </div>
+
+</section>
+
+<section class="content-section">
+
+    <h2>{labels.latestArticles}</h2>
+
+    <div class="article-list">
+
+        {
+            articles.map(article => (
+
+                <article>
+
+                    <h3>{article.title}</h3>
+
+                    <p>
+                        {article.description}
+                    </p>
+
+                </article>
+
+            ))
+        }
+
+    </div>
+
+</section>
+
+<style>
+    .hero {
+        background-color: white;
+        padding: 50px;
+        margin-bottom: 40px;
+        border-radius: 10px;
+        text-align: center;
+    }
+
+    .hero h1 {
+        font-size: 36px;
+        margin-top: 0;
+    }
+
+    .hero p {
+        font-size: 18px;
+        color: #666;
+    }
+
+    .content-section {
+        margin-bottom: 50px;
+    }
+
+    .game-list {
+        display: flex;
+        gap: 20px;
+    }
+
+    .game-card {
+        background-color: white;
+        padding: 15px;
+        border-radius: 10px;
+        width: 33.333%;
+        min-width: 0;
+    }
+
+    .game-image {
+        height: 180px;
+        background-color: #ddd;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        color: #555;
+        text-decoration: none;
+    }
+
+    .game-card h3 a {
+        color: #333;
+        text-decoration: none;
+    }
+
+    .game-card h3 a:hover {
+        text-decoration: underline;
+    }
+
+    .article-list article {
+        background-color: white;
+        padding: 20px;
+        margin-bottom: 15px;
+        border-radius: 10px;
+    }
+
+    @media (max-width: 700px) {
+        .hero {
+            padding: 30px 20px;
+        }
+
+        .game-list {
+            flex-direction: column;
+        }
+
+        .game-card {
+            width: 100%;
+            box-sizing: border-box;
+        }
+    }
+</style>

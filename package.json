@@ -9,12 +9,24 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "update-bgg": "tsx scripts/update-bgg-cache.ts",
+    "prebuild": "npx wrangler types && node scripts/ensure-bgg-collection-cache.mjs"
   },
   "dependencies": {
-    "astro": "^7.3.4"
+    "@astrojs/cloudflare": "^14.3.4",
+    "astro": "^7.3.4",
+    "dotenv": "^18.0.6",
+    "fast-xml-parser": "^5.11.2",
+    "jose": "^6.2.12"
   },
   "allowScripts": {
     "esbuild": true
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@types/node": "^26.6.4",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.3"
   }
 }

@@ -22,3 +22,52 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# Cloudflare Workers local environment variables
+.dev.vars
+.dev.vars.*
+
+
+# Cloudflare Wrangler local state
+.wrangler/
+.wrangler-dry-run/
+
+# Local database and backups
+backups/
+backup_before_migration_fix.sql
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+
+# Temporary files and diagnostics
+AstroCheck_Err.txt
+*.bak
+*.tmp
+*.log
+
+# Local test data
+test_0011_sleeves.sql
+
+# Editor settings
+.vscode/*
+!.vscode/extensions.json
+
+# Additional local environment files
+.env.*
+!.env.example
+
+
+# Local BGG collection exports
+/data/bgg/collection-*.xml
+
+# Local Excel/BGG reconciliation and import data
+/imports/*.csv
+/imports/generated/*.sql
+
+# Local personal BGG collection cache
+/src/data/bgg-collection-cache.json
+
+# Cloudflare Wrangler generated types
+/worker-configuration.d.ts

@@ -1,0 +1,93 @@
+---
+import type { Language } from "../i18n/ui";
+interface Props { lang: Language; }
+const { lang } = Astro.props;
+const zh = lang === "zh-TW";
+const filters = [
+    ["all", "全部", "All"], ["base", "基本遊戲", "Base Games"],
+    ["expansion", "擴充", "Expansions"], ["owned", "已收藏", "Owned"],
+    ["unowned", "未收藏", "Not Owned"], ["wishlist", "願望清單", "Wishlist"],
+    ["preorder", "預購", "Preordered"], ["wantToPlay", "想玩", "Want to Play"],
+    ["wantToBuy", "想買", "Want to Buy"]
+];
+const sorts = [
+    ["name-asc", "名稱 A → Z", "Name A → Z"],
+    ["name-desc", "名稱 Z → A", "Name Z → A"],
+    ["year-desc", "年份：新到舊", "Year: Newest"],
+    ["year-asc", "年份：舊到新", "Year: Oldest"],
+    ["rating-desc", "我的評分：高到低", "My Rating: High to Low"],
+    ["rating-asc", "我的評分：低到高", "My Rating: Low to High"],
+    ["bgg-rating-desc", "BGG 評分：高到低", "BGG Rating: High to Low"],
+    ["weight-desc", "複雜度：高到低", "Complexity: High to Low"]
+];
+---
+<div class="browser-controls">
+    <div class="search-row">
+        <input type="search" data-game-search
+            placeholder={zh ? "搜尋遊戲名稱或 BGG ID" : "Search game name or BGG ID"}
+            aria-label={zh ? "搜尋遊戲" : "Search games"} />
+        <select data-game-sort aria-label={zh ? "排序方式" : "Sort games"}>
+            {sorts.map(s => <option value={s[0]}>{zh ? s[1] : s[2]}</option>)}
+        </select>
+        <button type="button" data-game-reset class="reset-button">{zh ? "重設條件" : "Reset Filters"}</button>
+    </div>
+    <div class="filter-bar" role="group" aria-label={zh ? "遊戲分類" : "Game categories"}>
+        {filters.map(f => (
+            <button type="button" data-game-filter={f[0]}
+                class:list={["filter-button", { active: f[0] === "all" }]}
+                aria-pressed={f[0] === "all" ? "true" : "false"}>
+                {zh ? f[1] : f[2]}
+            </button>
+        ))}
+    </div>
+    <div class="advanced-filters">
+        <label>{zh ? "玩家人數" : "Players"}
+            <select data-game-players>
+                <option value="">{zh ? "不限" : "Any"}</option>
+                {[1,2,3,4,5].map(n => <option value={n}>{n} {zh ? "人" : "players"}</option>)}
+                <option value="6plus">{zh ? "6 人以上" : "6+ players"}</option>
+            </select>
+        </label>
+        <label>{zh ? "遊戲時間" : "Playing Time"}
+            <select data-game-time>
+                <option value="">{zh ? "不限" : "Any"}</option>
+                {[30,60,90,120].map(n => <option value={n}>{zh ? `${n} 分鐘內` : `Up to ${n} min`}</option>)}
+                <option value="over120">{zh ? "超過 120 分鐘" : "Over 120 min"}</option>
+            </select>
+        </label>
+        <label>{zh ? "複雜度" : "Complexity"}
+            <select data-game-weight>
+                <option value="">{zh ? "不限" : "Any"}</option>
+                <option value="1-2">{zh ? "輕度 1–2" : "Light 1–2"}</option>
+                <option value="2-3">{zh ? "中度 2–3" : "Medium 2–3"}</option>
+                <option value="3-4">{zh ? "重度 3–4" : "Heavy 3–4"}</option>
+                <option value="4-5">{zh ? "極重度 4–5" : "Very Heavy 4–5"}</option>
+            </select>
+        </label>
+        <label>{zh ? "核心機制" : "Mechanics"}
+            <select data-game-mechanic>
+                <option value="">{zh ? "不限" : "Any"}</option>
+            </select>
+        </label>
+    </div>
+    <p class="result-count" data-game-result-count aria-live="polite"></p>
+</div>
+<style>
+    .browser-controls { margin: 24px 0 30px; }
+    .search-row, .filter-bar { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px; }
+    .search-row input { flex:1; min-width:220px; }
+    .search-row input, .search-row select, .advanced-filters select {
+        padding:10px 12px; border:1px solid #ccc; border-radius:8px; background:white; font-size:14px;
+    }
+    .reset-button, .filter-button { padding:9px 14px; border:1px solid #bbb; background:white; cursor:pointer; }
+    .reset-button { border-radius:8px; }
+    .reset-button:disabled { opacity:.45; cursor:not-allowed; }
+    .filter-button { border-radius:20px; }
+    .filter-button.active { background:#222; border-color:#222; color:white; }
+    .advanced-filters { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin:18px 0; }
+    .advanced-filters label { display:flex; flex-direction:column; gap:7px; font-size:14px; min-width:0; }
+    .advanced-filters select { width:100%; min-width:0; }
+    .result-count { color:#666; margin:16px 0; }
+    @media(max-width:850px) { .advanced-filters { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+    @media(max-width:480px) { .advanced-filters { grid-template-columns:1fr; } }
+</style>

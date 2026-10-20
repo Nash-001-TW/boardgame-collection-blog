@@ -1,0 +1,55 @@
+---
+import Layout from "../../../layouts/Layout.astro";
+import GameDetail from "../../../components/GameDetail.astro";
+
+import {
+    getGames
+} from "../../../lib/games";
+
+import type {
+    Game
+} from "../../../lib/games";
+
+
+export function getStaticPaths() {
+
+    const games =
+        getGames();
+
+    return games.map(
+        game => ({
+
+            params: {
+                slug: game.slug
+            },
+
+            props: {
+                game
+            }
+
+        })
+    );
+}
+
+
+interface Props {
+    game: Game;
+}
+
+
+const {
+    game
+} = Astro.props;
+---
+
+<Layout
+    title={`${game.bgg.name} | Soma's Board Game Collection`}
+    lang="en"
+>
+
+    <GameDetail
+        game={game}
+        lang="en"
+    />
+
+</Layout>

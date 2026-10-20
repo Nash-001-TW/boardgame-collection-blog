@@ -1,0 +1,52 @@
+---
+import type { Language } from "../i18n/ui";
+
+interface Props {
+    lang: Language;
+}
+
+const { lang } = Astro.props;
+
+const labels = lang === "zh-TW"
+    ? {
+        title: "✍️ 桌遊文章",
+        description: "這裡將整理桌遊心得、開箱與相關文章。"
+    }
+    : {
+        title: "✍️ Board Game Articles",
+        description: "A collection of board game reviews, unboxings, and related articles."
+    };
+---
+
+<section class="blog-page">
+
+    <h1>{labels.title}</h1>
+
+    <p>{labels.description}</p>
+
+</section>
+
+<style>
+    .blog-page {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 40px 24px;
+    }
+
+    .blog-page h1 {
+        font-size: 32px;
+        margin: 0 0 20px;
+    }
+
+    .blog-page p {
+        color: #666;
+        font-size: 16px;
+        line-height: 1.8;
+    }
+
+    @media (max-width: 600px) {
+        .blog-page {
+            padding: 24px 16px;
+        }
+    }
+</style>

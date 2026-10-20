@@ -1,0 +1,849 @@
+
+---
+import Layout from '../layouts/Layout.astro';
+
+export const prerender = false;
+---
+
+<Layout title="牌套管理 | Soma's Board Game Collection">
+  <main class="sleeves-page">
+    <header class="page-header">
+      <h1>牌套管理</h1>
+      <p>統計桌遊收藏所需的牌套尺寸與張數</p>
+    </header>
+
+    <nav class="tabs" aria-label="牌套管理功能">
+    <button type="button" class="tab active" id="tab-summary"
+            aria-controls="dashboard" aria-pressed="true">
+        全收藏統計
+    </button>
+
+    <button type="button" class="tab" id="tab-games"
+            aria-controls="game-panel" aria-pressed="false">
+        依遊戲查詢
+    </button>
+
+    <span class="tab disabled">庫存管理（開發中）</span>
+    </nav>
+
+    <div id="loading">正在讀取牌套統計資料...</div>
+    <div id="error" hidden></div>
+
+    <section id="dashboard" hidden>
+      <div class="stats">
+        <article class="stat">
+          <span>已收藏項目</span>
+          <strong id="owned-count">—</strong>
+        </article>
+        <article class="stat">
+          <span>已收藏牌套需求</span>
+          <strong id="owned-sheets">—</strong>
+        </article>
+        <article class="stat">
+          <span>全部匯入需求</span>
+          <strong id="all-sheets">—</strong>
+        </article>
+        <article class="stat">
+          <span>牌套尺寸種類</span>
+          <strong id="size-count">—</strong>
+        </article>
+      </div>
+
+      <div class="table-header">
+        <h2>各尺寸牌套需求</h2>
+        <p>依已收藏需求張數排序</p>
+      </div>
+      <div class="sleeve-controls">
+        <label>
+            搜尋尺寸
+            <input
+            id="size-search"
+            type="search"
+            placeholder="例如：63、63x88"
+            />
+        </label>
+
+        <label>
+            需求篩選
+            <select id="size-filter">
+            <option value="owned">已收藏有需求</option>
+            <option value="all">全部有需求</option>
+            <option value="every">所有尺寸</option>
+            </select>
+        </label>
+
+        <label>
+            排序方式
+            <select id="size-sort">
+            <option value="size">尺寸由小到大</option>
+            <option value="owned">已收藏需求由多到少</option>
+            <option value="total">全部需求由多到少</option>
+            </select>
+        </label>
+      </div>
+
+      <p id="size-result-count" aria-live="polite"></p>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>牌套尺寸</th>
+              <th>需求紀錄</th>
+              <th>已收藏需求</th>
+              <th>全部需求</th>
+            </tr>
+          </thead>
+          <tbody id="size-rows"></tbody>
+        </table>
+      </div>
+
+      <p class="notice">
+        目前為需求統計，尚未扣除牌套庫存。
+        庫存與缺少張數將於後續階段加入。
+      </p>
+    </section>
+    <section id="game-panel" hidden>
+    <div class="table-header">
+        <h2>依遊戲查詢牌套需求</h2>
+        <p>可輸入中文遊戲名稱或 BGG ID，查看牌套尺寸與張數。</p>
+    </div>
+
+    <div class="game-search">
+        <input
+        id="game-search-input"
+        type="search"
+        placeholder="例如：寒霜迷城、91872"
+        aria-label="搜尋遊戲名稱或 BGG ID"
+        />
+        <button type="button" id="game-search-button">搜尋</button>
+    </div>
+
+    <p id="game-search-status" role="status"></p>
+
+    <div id="game-results" class="game-results"></div>
+
+    <section id="game-detail" class="game-detail" hidden>
+        <h3 id="game-detail-name"></h3>
+        <p id="game-detail-info"></p>
+
+        <div class="table-scroll">
+        <table class="game-detail-table">
+            <thead>
+            <tr>
+                <th>牌套尺寸</th>
+                <th>需求紀錄</th>
+                <th>需求張數</th>
+            </tr>
+            </thead>
+            <tbody id="game-detail-rows"></tbody>
+        </table>
+        </div>
+
+        <p id="game-detail-total"></p>
+    </section>
+    </section>
+  </main>
+</Layout>
+
+<script>
+  interface SleeveSize {
+    size_id: number;
+    width_mm: number;
+    height_mm: number;
+    requirement_count: number;
+    total_sheets: number;
+    owned_sheets: number;
+  }
+
+  interface Summary {
+    size_count: number;
+    requirement_count: number;
+    total_sheets: number;
+    collection_count: number;
+    owned_collection_count: number;
+    owned_total_sheets: number;
+  }
+
+  interface ApiResponse<T> {
+    success: boolean;
+    error?: string;
+    data: T;
+  }
+
+  interface SleeveSummaryData {
+    summary: Summary;
+    sizes: SleeveSize[];
+  }
+
+  interface SleeveGamesData {
+    games: GameItem[];
+    limit?: number;
+  }
+
+  interface SleeveGameDetailData {
+    game: Pick<GameItem, 'display_name' | 'owned' | 'bgg_id'>;
+    sizes: GameSize[];
+    total_sheets: number;
+  }
+  const format = (value: number) =>
+    Number(value).toLocaleString('zh-TW');
+
+    let allSizes: SleeveSize[] = [];
+
+    function renderSizeRows() {
+    const tbody = (document.querySelector('#size-rows') as HTMLTableSectionElement | null);
+    if (!tbody) return;
+
+    const search = (
+        (document.querySelector('#size-search') as HTMLInputElement | null)?.value ?? ''
+    ).trim().toLowerCase();
+
+    const filter =
+        (document.querySelector('#size-filter') as HTMLSelectElement | null)?.value ?? 'owned';
+
+    const sort =
+        (document.querySelector('#size-sort') as HTMLSelectElement | null)?.value ?? 'size';
+
+    const normalizeSearch = (value: string) =>
+        value.replace(/\s/g, '').replace(/[×＊*]/g, 'x');
+
+    const query = normalizeSearch(search);
+
+    const rows = allSizes.filter((size) => {
+        const label = `${size.width_mm}x${size.height_mm}`;
+
+        if (query && !normalizeSearch(label).includes(query)) return false;
+
+        if (filter === 'owned' && size.owned_sheets <= 0) return false;
+        if (filter === 'all' && size.total_sheets <= 0) return false;
+
+        return true;
+    });
+
+    rows.sort((a, b) => {
+        if (sort === 'owned') {
+        return b.owned_sheets - a.owned_sheets ||
+            a.width_mm - b.width_mm ||
+            a.height_mm - b.height_mm;
+        }
+
+        if (sort === 'total') {
+        return b.total_sheets - a.total_sheets ||
+            a.width_mm - b.width_mm ||
+            a.height_mm - b.height_mm;
+        }
+
+        return a.width_mm - b.width_mm ||
+        a.height_mm - b.height_mm;
+    });
+
+    tbody.replaceChildren();
+
+    for (const size of rows) {
+        const row = document.createElement('tr');
+
+        const values = [
+        `${size.width_mm} × ${size.height_mm} mm`,
+        format(size.requirement_count),
+        format(size.owned_sheets),
+        format(size.total_sheets)
+        ];
+
+        for (const value of values) {
+        const cell = document.createElement('td');
+        cell.textContent = value;
+        row.appendChild(cell);
+        }
+
+        tbody.appendChild(row);
+    }
+
+    const count = (document.querySelector('#size-result-count') as HTMLElement | null);
+    if (count) count.textContent = `目前顯示 ${rows.length} 種牌套尺寸`;
+    }
+
+  async function loadSleeves() {
+    const loading = (document.querySelector('#loading') as HTMLElement | null);
+    const error = (document.querySelector('#error') as HTMLElement | null);
+    const dashboard = (document.querySelector('#dashboard') as HTMLElement | null);
+
+    try {
+      const response = await fetch('/api/sleeves/summary');
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const result = await response.json() as ApiResponse<SleeveSummaryData>;
+
+      if (!result.success) {
+        throw new Error(result.error || '讀取失敗');
+      }
+
+      const summary = result.data.summary as Summary;
+      const sizes = result.data.sizes as SleeveSize[];
+      allSizes = sizes;
+
+      const setText = (selector: string, value: number) => {
+        const element = (document.querySelector(selector) as HTMLElement | null);
+        if (element) element.textContent = format(value);
+      };
+
+      setText('#owned-count', summary.owned_collection_count);
+      setText('#owned-sheets', summary.owned_total_sheets);
+      setText('#all-sheets', summary.total_sheets);
+      setText('#size-count', summary.size_count);
+
+      renderSizeRows();
+
+      if (dashboard) {
+        dashboard.hidden =
+            document.querySelector('#tab-summary')?.classList.contains('active') !== true;
+        }
+    } catch (err) {
+      if (error) {
+        error.textContent =
+          `無法載入牌套資料：${err instanceof Error ? err.message : '未知錯誤'}`;
+        error.hidden = false;
+      }
+    } finally {
+      if (loading) loading.hidden = true;
+    }
+  }
+
+    document.querySelector('#size-search')
+    ?.addEventListener('input', renderSizeRows);
+
+    document.querySelector('#size-filter')
+    ?.addEventListener('change', renderSizeRows);
+
+    document.querySelector('#size-sort')
+    ?.addEventListener('change', renderSizeRows);
+
+
+interface GameItem {
+  id: number;
+  display_name: string;
+  bgg_id: number | null;
+  owned: number;
+  match_status: string;
+  requirement_count: number;
+  total_sheets: number;
+  size_count: number;
+  bgg_name: string | null;
+  is_expansion: number | null;
+}
+
+interface GameSize {
+  size_id: number;
+  width_mm: number;
+  height_mm: number;
+  requirement_count: number;
+  total_sheets: number;
+}
+
+let gameSearchVersion = 0;
+let gameDetailVersion = 0;
+
+function switchSleeveTab(tab: 'summary' | 'games') {
+  const summary = (document.querySelector('#dashboard') as HTMLElement | null);
+  const games = (document.querySelector('#game-panel') as HTMLElement | null);
+  const summaryTab = (document.querySelector('#tab-summary') as HTMLButtonElement | null);
+  const gamesTab = (document.querySelector('#tab-games') as HTMLButtonElement | null);
+
+  if (summary) summary.hidden = tab !== 'summary';
+  if (games) games.hidden = tab !== 'games';
+
+  summaryTab?.classList.toggle('active', tab === 'summary');
+  gamesTab?.classList.toggle('active', tab === 'games');
+
+  summaryTab?.setAttribute('aria-pressed', String(tab === 'summary'));
+  gamesTab?.setAttribute('aria-pressed', String(tab === 'games'));
+  if (tab === 'games') {
+  const results = document.querySelector('#game-results');
+
+  if (results && results.children.length === 0) {
+    searchSleeveGames();
+  }
+  }
+}
+
+async function searchSleeveGames() {
+  const input = (document.querySelector('#game-search-input') as HTMLInputElement | null);
+  const results = (document.querySelector('#game-results') as HTMLElement | null);
+  const status = (document.querySelector('#game-search-status') as HTMLElement | null);
+  const detail = (document.querySelector('#game-detail') as HTMLElement | null);
+
+  if (!input || !results || !status) return;
+
+  const version = ++gameSearchVersion;
+  ++gameDetailVersion;
+
+  const query = input.value.trim();
+
+  results.replaceChildren();
+  if (detail) detail.hidden = true;
+  status.textContent = '正在搜尋遊戲...';
+
+  try {
+    const response = await fetch(
+      `/api/sleeves/games?q=${encodeURIComponent(query)}`
+    );
+
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const result = await response.json() as ApiResponse<SleeveGamesData>;
+    if (!result.success) throw new Error(result.error || '搜尋失敗');
+
+    if (version !== gameSearchVersion) return;
+
+    const games = result.data.games as GameItem[];
+    const limit = Number(result.data.limit ?? 50);
+
+    status.textContent = games.length === 0
+      ? '找不到符合條件的收藏項目。'
+      : `顯示 ${games.length} 筆結果${games.length >= limit ? '（最多顯示前 50 筆，請縮小搜尋範圍）' : ''}`;
+
+    for (const game of games) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'game-result';
+
+      const name = document.createElement('strong');
+      name.textContent = game.display_name;
+
+      const info = document.createElement('span');
+      info.textContent =
+        `${game.owned === 1 ? '已收藏' : '未收藏'} · ` +
+        `${game.size_count} 種尺寸 · ` +
+        `${format(game.total_sheets)} 張 · ` +
+        `BGG ${game.bgg_id ?? '未配對'}`;
+
+      button.appendChild(name);
+
+      if (game.bgg_name && game.bgg_name !== game.display_name) {
+        const englishName = document.createElement('span');
+        englishName.textContent = game.bgg_name;
+        englishName.className = 'game-bgg-name';
+        button.appendChild(englishName);
+      }
+
+      const type = document.createElement('span');
+      type.textContent =
+        game.bgg_name === null
+          ? '類型未確認'
+          : game.is_expansion === 1
+            ? '擴充'
+            : '本體／非擴充';
+
+      button.appendChild(type);
+      button.appendChild(info);
+      button.addEventListener('click', () => loadSleeveGameDetail(game.id));
+      results.appendChild(button);
+    }
+  } catch (error) {
+    if (version !== gameSearchVersion) return;
+    status.textContent =
+      `搜尋失敗：${error instanceof Error ? error.message : '未知錯誤'}`;
+  }
+}
+
+async function loadSleeveGameDetail(id: number) {
+  const detail = (document.querySelector('#game-detail') as HTMLElement | null);
+  const name = (document.querySelector('#game-detail-name') as HTMLElement | null);
+  const info = (document.querySelector('#game-detail-info') as HTMLElement | null);
+  const tbody = (document.querySelector('#game-detail-rows') as HTMLTableSectionElement | null);
+  const total = (document.querySelector('#game-detail-total') as HTMLElement | null);
+
+  if (!detail || !name || !info || !tbody || !total) return;
+
+  const version = ++gameDetailVersion;
+
+  detail.hidden = false;
+  name.textContent = '正在讀取遊戲資料...';
+  info.textContent = '';
+  total.textContent = '';
+  tbody.replaceChildren();
+
+  try {
+    const response = await fetch(`/api/sleeves/game/${id}`);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const result = await response.json() as ApiResponse<SleeveGameDetailData>;
+    if (!result.success) throw new Error(result.error || '讀取失敗');
+
+    if (version !== gameDetailVersion) return;
+
+    const game = result.data.game;
+    const sizes = result.data.sizes as GameSize[];
+
+    name.textContent = game.display_name;
+    info.textContent =
+      `${game.owned === 1 ? '已收藏' : '未收藏'} · ` +
+      `BGG ID：${game.bgg_id ?? '未配對'}`;
+
+    for (const size of sizes) {
+      const row = document.createElement('tr');
+
+      const values = [
+        `${size.width_mm} × ${size.height_mm} mm`,
+        format(size.requirement_count),
+        format(size.total_sheets)
+      ];
+
+      for (const value of values) {
+        const cell = document.createElement('td');
+        cell.textContent = value;
+        row.appendChild(cell);
+      }
+
+      tbody.appendChild(row);
+    }
+
+    total.textContent =
+      `合計需求：${format(result.data.total_sheets)} 張` +
+      (sizes.length === 0 ? '（目前沒有牌套需求紀錄）' : '');
+
+  } catch (error) {
+    if (version !== gameDetailVersion) return;
+    name.textContent = '讀取失敗';
+    info.textContent =
+      error instanceof Error ? error.message : '未知錯誤';
+  }
+}
+
+document.querySelector('#tab-summary')
+  ?.addEventListener('click', () => switchSleeveTab('summary'));
+
+document.querySelector('#tab-games')
+  ?.addEventListener('click', () => switchSleeveTab('games'));
+
+document.querySelector('#game-search-button')
+  ?.addEventListener('click', searchSleeveGames);
+
+let gameSearchTimer: ReturnType<typeof setTimeout> | undefined;
+
+document.querySelector('#game-search-input')
+  ?.addEventListener('input', () => {
+    if (gameSearchTimer !== undefined) {
+      clearTimeout(gameSearchTimer);
+    }
+
+    gameSearchTimer = setTimeout(() => {
+      searchSleeveGames();
+    }, 300);
+  });
+
+document.querySelector('#game-search-input')
+  ?.addEventListener('keydown', (event) => {
+    if (event instanceof KeyboardEvent && event.key === 'Enter') searchSleeveGames();
+  });
+
+  loadSleeves();
+</script>
+
+<style>
+  .sleeves-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 36px 24px 70px;
+    color: #463c32;
+  }
+
+  .page-header h1 {
+    font-size: 2rem;
+    margin-bottom: 8px;
+  }
+
+  .page-header p,
+  .table-header p,
+  .notice {
+    color: #807367;
+  }
+
+  .tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 28px 0;
+    border-bottom: 1px solid #e5d9c9;
+    padding-bottom: 14px;
+  }
+
+  .tab {
+    padding: 10px 16px;
+    border-radius: 8px;
+    background: #eee6db;
+  }
+
+  .tab.active {
+    background: #66503d;
+    color: white;
+    font-weight: 700;
+  }
+
+  .tab.disabled {
+    opacity: .55;
+  }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .stat {
+    padding: 20px;
+    background: #f8f3eb;
+    border: 1px solid #e8dccb;
+    border-radius: 12px;
+  }
+
+  .stat span {
+    display: block;
+    font-size: .9rem;
+    color: #807367;
+    margin-bottom: 12px;
+  }
+
+  .stat strong {
+    font-size: 1.65rem;
+  }
+
+  .table-header {
+    margin-bottom: 16px;
+  }
+
+  .table-header h2 {
+    margin-bottom: 5px;
+  }
+
+  /* 表格外框 */
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #e8dccb;
+  border-radius: 12px;
+}
+
+/* 表格本體 */
+.table-scroll table {
+  width: 100%;
+  min-width: 680px;
+  table-layout: fixed;
+  border-collapse: collapse;
+  background: #fffdf9;
+}
+
+/* 標題與動態產生的資料欄位 */
+.table-scroll :global(th),
+.table-scroll :global(td) {
+  box-sizing: border-box;
+  padding: 14px 18px;
+  border-bottom: 1px solid #eee5d9;
+  text-align: center;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 第一欄：牌套尺寸 */
+.table-scroll :global(th:nth-child(1)),
+.table-scroll :global(td:nth-child(1)) {
+  width: 28%;
+  text-align: left;
+}
+
+/* 第二欄：需求紀錄 */
+.table-scroll :global(th:nth-child(2)),
+.table-scroll :global(td:nth-child(2)) {
+  width: 18%;
+}
+
+/* 第三欄：已收藏需求 */
+.table-scroll :global(th:nth-child(3)),
+.table-scroll :global(td:nth-child(3)) {
+  width: 27%;
+}
+
+/* 第四欄：全部需求 */
+.table-scroll :global(th:nth-child(4)),
+.table-scroll :global(td:nth-child(4)) {
+  width: 27%;
+}
+
+/* 標題樣式 */
+.table-scroll :global(th) {
+  background: #f4ede3;
+  font-weight: 700;
+}
+
+/* 最後一列不顯示底線 */
+.table-scroll :global(tbody tr:last-child td) {
+  border-bottom: none;
+}
+
+/* 滑鼠移入列時變色 */
+.table-scroll :global(tbody tr:hover) {
+  background: #faf6ef;
+}
+
+  #error {
+    color: #a12727;
+    padding: 18px;
+    background: #fff0ed;
+    border-radius: 8px;
+  }
+
+  [hidden] {
+    display: none !important;
+  }
+
+  @media (max-width: 800px) {
+    .stats {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 480px) {
+    .stats {
+      grid-template-columns: 1fr;
+    }
+
+    .sleeves-page {
+      padding: 24px 14px;
+    }
+  }
+    .sleeve-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin: 20px 0 12px;
+    }
+
+    .sleeve-controls label {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+    min-width: 180px;
+    font-weight: 600;
+    }
+
+    .sleeve-controls input,
+    .sleeve-controls select {
+    width: 100%;
+    padding: 11px 12px;
+    border: 1px solid #d8c7b2;
+    border-radius: 8px;
+    background: #fffdf9;
+    color: #463c32;
+    font: inherit;
+    }
+
+    .sleeve-controls input:focus,
+    .sleeve-controls select:focus {
+    outline: 2px solid #a88763;
+    outline-offset: 1px;
+    }
+
+    #size-result-count {
+    margin: 0 0 14px;
+    color: #807367;
+    font-size: .9rem;
+    }
+
+    .tabs button {
+    border: none;
+    font: inherit;
+    cursor: pointer;
+    }
+
+    .tabs button:focus-visible {
+    outline: 2px solid #a88763;
+    outline-offset: 2px;
+    }
+
+    .game-search {
+    display: flex;
+    gap: 12px;
+    margin: 20px 0;
+    }
+
+    .game-search input {
+    flex: 1;
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid #d8c7b2;
+    border-radius: 8px;
+    font: inherit;
+    }
+
+    .game-search button {
+    padding: 12px 24px;
+    border: 0;
+    border-radius: 8px;
+    background: #66503d;
+    color: white;
+    cursor: pointer;
+    }
+
+    .game-results {
+    display: grid;
+    gap: 10px;
+    margin-top: 16px;
+    }
+
+    .game-results :global(.game-result) {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    width: 100%;
+    padding: 16px;
+    border: 1px solid #e8dccb;
+    border-radius: 10px;
+    background: #fffdf9;
+    color: #463c32;
+    text-align: left;
+    font: inherit;
+    cursor: pointer;
+    }
+
+    .game-results :global(.game-result:hover) {
+    background: #f4ede3;
+    }
+
+    .game-results :global(.game-result span) {
+    font-size: .9rem;
+    color: #807367;
+    }
+
+    .game-detail {
+    margin-top: 28px;
+    padding: 20px;
+    border: 1px solid #e8dccb;
+    border-radius: 12px;
+    background: #f8f3eb;
+    }
+
+    .game-detail-table :global(th),
+    .game-detail-table :global(td) {
+    text-align: center;
+    }
+
+    .game-detail-table :global(th:first-child),
+    .game-detail-table :global(td:first-child) {
+    text-align: left;
+    }
+
+    #game-detail-total {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-top: 18px;
+    }
+
+    @media (max-width: 480px) {
+    .game-search {
+        flex-direction: column;
+    }
+    }
+
+</style>

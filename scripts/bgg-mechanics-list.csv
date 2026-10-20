@@ -1,0 +1,148 @@
+﻿Mechanic ID,English Name,Traditional Chinese,Game Count
+"2073","Acting","",1
+"2840","Action / Event","",12
+"2838","Action Drafting","",7
+"2001","Action Points","",117
+"2689","Action Queue","",16
+"2839","Action Retrieval","",19
+"2916","Alliances","",1
+"2080","Area Majority / Influence","",55
+"2046","Area Movement","",64
+"2021","Area-Impulse","",1
+"2012","Auction / Bidding","",8
+"2927","Auction: Multiple Lot","",1
+"2903","Automatic Resource Growth","",1
+"2014","Betting and Bluffing","",6
+"2957","Bias","",1
+"2018","Campaign / Battle Card Driven","",35
+"2857","Card Play Conflict Resolution","",37
+"2887","Catch the Leader","",2
+"2956","Chaining","",19
+"2057","Chit-Pull System","",2
+"2984","Closed Drafting","",10
+"2841","Command Cards","",1
+"2013","Commodity Speculation","",3
+"2893","Communication Limits","",15
+"2883","Connections","",1
+"2912","Contracts","",26
+"2023","Cooperative Game","",297
+"2854","Critical Hits and Failures","",4
+"3004","Deck Construction","",24
+"2664","Deck, Bag, and Pool Building","",111
+"3002","Deduction","",21
+"2901","Delayed Purchase","",6
+"2072","Dice Rolling","",259
+"2856","Die Icon Resolution","",14
+"2950","Different Dice Movement","",1
+"2043","Enclosure","",1
+"2875","End Game Bonuses","",53
+"2850","Events","",30
+"3139","Expiring Actions","",1
+"2885","Finale Ending","",5
+"2843","Follow","",8
+"2864","Force Commitment","",7
+"2978","Grid Coverage","",6
+"2676","Grid Movement","",81
+"2040","Hand Management","",327
+"2026","Hexagon Grid","",34
+"2967","Hidden Movement","",9
+"2891","Hidden Roles","",16
+"2987","Hidden Victory Points","",5
+"3000","Hot Potato","",2
+"2906","I Cut, You Choose","",1
+"2902","Income","",35
+"2914","Increase Value of Unchosen Resources","",13
+"2837","Interrupts","",11
+"2910","Investment","",2
+"2871","Kill Steal","",5
+"2886","King of the Hill","",1
+"2980","Ladder Climbing","",1
+"3001","Layering","",10
+"2824","Legacy Game","",5
+"2975","Line of Sight","",17
+"2904","Loans","",7
+"2836","Lose a Turn","",1
+"2959","Map Addition","",21
+"2961","Map Deformation","",3
+"2960","Map Reduction","",2
+"2900","Market","",20
+"3007","Matching","",2
+"2981","Melding and Splaying","",7
+"2047","Memory","",12
+"2011","Modular Board","",155
+"2962","Move Through Deck","",10
+"2947","Movement Points","",12
+"2963","Movement Template","",2
+"3099","Multi-Use Cards","",37
+"2965","Multiple Maps","",21
+"2851","Narrative Choice / Paragraph","",32
+"2915","Negotiation","",5
+"2081","Network and Route Building","",19
+"2846","Once-Per-Game Abilities","",16
+"2041","Open Drafting","",108
+"2911","Ownership","",7
+"2055","Paper-and-Pencil","",2
+"2048","Pattern Building","",14
+"2060","Pattern Recognition","",2
+"2007","Pick-up and Deliver","",18
+"2685","Player Elimination","",33
+"2865","Player Judge","",3
+"2078","Point to Point Movement","",31
+"3006","Predictive Bid","",1
+"2953","Programmed Movement","",4
+"2661","Push Your Luck","",23
+"2876","Race","",26
+"2909","Random Production","",4
+"2870","Re-rolling and Locking","",5
+"2831","Real-Time","",2
+"2954","Relative Movement","",4
+"3103","Resource Queue","",3
+"2948","Resource to Move","",9
+"2003","Rock-Paper-Scissors","",1
+"2028","Role Playing","",109
+"2892","Roles with Asymmetric Information","",4
+"2035","Roll / Spin and Move","",5
+"2813","Rondel","",3
+"2822","Scenario / Mission / Campaign Game","",98
+"2016","Secret Unit Deployment","",3
+"2926","Selection Order Bid","",1
+"2820","Semi-Cooperative Game","",13
+"2004","Set Collection","",74
+"2070","Simulation","",6
+"2020","Simultaneous Action Selection","",42
+"2821","Single Loser Game","",1
+"3005","Slide / Push","",1
+"2819","Solo / Solitaire Game","",230
+"2940","Square Grid","",21
+"2988","Stacking and Balancing","",1
+"2853","Stat Check Resolution","",10
+"2005","Stock Holding","",3
+"2027","Storytelling","",57
+"2884","Sudden Death Ending","",14
+"3100","Tags","",22
+"2686","Take That","",68
+"2019","Team-Based Game","",76
+"2849","Tech Trees / Tech Tracks","",29
+"2944","Three Dimensional Movement","",7
+"2002","Tile Placement","",59
+"2939","Track Movement","",12
+"2008","Trading","",8
+"2814","Traitor Game","",20
+"2009","Trick-taking","",5
+"2888","Tug of War","",3
+"2829","Turn Order: Claim Action","",7
+"2830","Turn Order: Pass Order","",1
+"2828","Turn Order: Progressive","",21
+"2985","Turn Order: Random","",2
+"2833","Turn Order: Role Order","",1
+"2826","Turn Order: Stat-Based","",5
+"2663","Turn Order: Time Track","",2
+"2079","Variable Phase Order","",10
+"2015","Variable Player Powers","",358
+"2897","Variable Set-up","",78
+"2874","Victory Points as a Resource","",4
+"2017","Voting","",12
+"2082","Worker Placement","",49
+"2935","Worker Placement with Dice Workers","",7
+"2933","Worker Placement, Different Worker Types","",17
+"2974","Zone of Control","",2

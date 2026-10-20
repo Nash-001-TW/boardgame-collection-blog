@@ -1,9 +1,21 @@
+﻿
 {
-    "$schema": "./node_modules/wrangler/config-schema.json",
-    "name": "boardgame-collection-blog",
-    "compatibility_date": "2026-10-01",
-
-    "assets": {
-        "directory": "./dist"
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "boardgame-collection-blog",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "assets": {
+    "directory": "./dist/client",
+    "binding": "ASSETS"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "boardgame-collection-db",
+      "database_id": "59e9a17a-ff0f-494e-aab9-dd903a14e395",
+      "migrations_dir": "./migrations"
     }
+  ]
 }

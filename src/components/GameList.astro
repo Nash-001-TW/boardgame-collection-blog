@@ -1,0 +1,285 @@
+
+---
+import type { Game } from "../lib/games";
+import type { Language } from "../i18n/ui";
+
+import { translateGameName } from "../i18n/utils";
+
+import GameSummary from "./GameSummary.astro";
+import GameBrowserControls from "./GameBrowserControls.astro";
+
+interface Props {
+    games: Game[];
+    lang: Language;
+}
+
+const { games, lang } = Astro.props;
+
+const labels = lang === "zh-TW"
+    ? {
+        year: "發行年份",
+        players: "玩家人數",
+        playTime: "遊戲時間",
+        rating: "我的評分",
+        unrated: "尚未評分",
+        minutes: "分鐘",
+        noImage: "暫無圖片",
+        pagination: "遊戲分頁"
+    }
+    : {
+        year: "Year",
+        players: "Players",
+        playTime: "Playing Time",
+        rating: "My Rating",
+        unrated: "Not Rated",
+        minutes: "min",
+        noImage: "No Image",
+        pagination: "Game pages"
+    };
+
+function getGameUrl(slug: string): string {
+    return lang === "en"
+        ? `/en/games/${slug}`
+        : `/games/${slug}`;
+}
+---
+
+<section
+    class="game-browser"
+    data-game-browser
+    data-locale={lang}
+>
+    <!-- 共用收藏統計 -->
+    <GameSummary lang={lang} />
+
+    <!-- 共用搜尋、排序、篩選及重設條件 -->
+    <GameBrowserControls lang={lang} />
+
+    <!-- 遊戲卡片 -->
+    <div class="game-grid" data-game-grid>
+        {
+            games.map(game => {
+
+                const displayName = translateGameName(
+                    game.bggId,
+                    game.bgg.name,
+                    lang
+                );
+
+                const gameUrl = getGameUrl(game.slug);
+
+                const image =
+                    game.bgg.thumbnail ||
+                    game.bgg.image;
+
+                return (
+                    <article
+                        class="game-card"
+                        data-game-card
+                        data-name={displayName}
+                        data-original-name={game.bgg.name}
+                        data-bgg-id={game.bggId}
+                        data-year={game.bgg.year ?? ""}
+                        data-rating={game.collection.myRating ?? ""}
+                        data-bgg-rating={game.bgg.averageRating ?? ""}
+                        data-weight={game.bgg.averageWeight ?? ""}
+                        data-min-players={game.bgg.minPlayers}
+                        data-max-players={game.bgg.maxPlayers}
+                        data-max-time={game.bgg.maxPlayTime}
+                        data-mechanics={game.bgg.mechanics.map(m => m.id).join(",")}
+                        data-mechanic-names={game.bgg.mechanics.map(m => m.name.replaceAll("|", " ")).join("|")}
+                        data-expansion={String(game.bgg.isExpansion)}
+                        data-owned={String(game.collection.owned)}
+                        data-wishlist={String(game.collection.wishlist ?? false)}
+                        data-preorder={String(
+                            game.collection.willingness === "Preordered"
+                        )}
+                        data-want-to-play={String(
+                            game.collection.willingness === "Want To Play"
+                        )}
+                        data-want-to-buy={String(
+                            game.collection.willingness === "Want To Buy"
+                        )}
+                    >
+                        <a
+                            href={gameUrl}
+                            class="game-image"
+                        >
+                            {
+                                image ? (
+                                    <img
+                                        src={image}
+                                        alt={displayName}
+                                        loading="lazy"
+                                    />
+                                ) : (
+                                    <span>{labels.noImage}</span>
+                                )
+                            }
+                        </a>
+
+                        <h2>
+                            <a href={gameUrl}>
+                                {displayName}
+                            </a>
+                        </h2>
+
+                        <p>
+                            {labels.year}：
+                            {game.bgg.year}
+                        </p>
+
+                        <p>
+                            {labels.players}：
+                            {game.bgg.minPlayers}–{game.bgg.maxPlayers}
+                        </p>
+
+                        <p>
+                            {labels.playTime}：
+                            {game.bgg.minPlayTime}–{game.bgg.maxPlayTime}
+                            {" "}{labels.minutes}
+                        </p>
+
+                        <p class="rating">
+                            {labels.rating}：★ {
+                                game.collection.myRating ??
+                                labels.unrated
+                            }
+                        </p>
+                    </article>
+                );
+            })
+        }
+    </div>
+
+    <!-- 分頁 -->
+    <nav
+        data-game-pagination
+        aria-label={labels.pagination}
+    ></nav>
+</section>
+
+<style>
+    .game-browser {
+        width: 100%;
+    }
+
+    .game-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 25px;
+    }
+
+    .game-card {
+        background-color: white;
+        padding: 18px;
+        border-radius: 10px;
+        min-width: 0;
+    }
+
+    .game-image {
+        height: 200px;
+        background-color: #f3f4f6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        overflow: hidden;
+        text-decoration: none;
+        color: #666;
+    }
+
+    .game-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+
+    .game-card h2 {
+        margin: 14px 0 10px;
+        font-size: 1.2rem;
+    }
+
+    .game-card h2 a {
+        color: #333;
+        text-decoration: none;
+    }
+
+    .game-card h2 a:hover {
+        text-decoration: underline;
+    }
+
+    .game-card p {
+        margin: 7px 0;
+    }
+
+    .rating {
+        font-weight: bold;
+    }
+
+    [data-game-pagination] {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 32px;
+    }
+
+    [data-game-pagination] :global(button) {
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        background: white;
+        cursor: pointer;
+    }
+
+    [data-game-pagination] :global(button.active) {
+        background: #222;
+        color: white;
+    }
+
+    [data-game-pagination] :global(button:disabled) {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+
+    @media (max-width: 900px) {
+        .game-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 600px) {
+        .game-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<script>
+    import {
+        initializeGameListController
+    } from "../lib/game-list-controller";
+
+    function initializeGameBrowsers() {
+        document
+            .querySelectorAll<HTMLElement>(
+                "[data-game-browser]"
+            )
+            .forEach(root => {
+                initializeGameListController({
+                    root,
+                    pageSize: 24,
+                    debounceMs: 250
+                });
+            });
+    }
+
+    initializeGameBrowsers();
+
+    document.addEventListener(
+        "astro:page-load",
+        initializeGameBrowsers
+    );
+</script>

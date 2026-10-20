@@ -1,0 +1,33 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import GameList from "../../components/GameList.astro";
+
+import { getGames } from "../../lib/games";
+
+const games = getGames();
+---
+
+<Layout
+    title="Games | Soma's Board Game Collection Blog"
+    lang="en"
+>
+    <h1>🎲 Board Game Library</h1>
+
+    <p class="intro">
+        Explore board games I've played, collected,
+        and featured on this website.
+    </p>
+
+    <GameList
+        games={games}
+        lang="en"
+    />
+
+</Layout>
+
+<style>
+    .intro {
+        color: #666;
+        margin-bottom: 30px;
+    }
+</style>

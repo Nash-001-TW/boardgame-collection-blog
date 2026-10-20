@@ -1,0 +1,29 @@
+{
+  "295770": {
+    "source": "BGG Card Sleeves",
+    "sourceUrl": "https://boardgamegeek.com/boardgame/295770/frosthaven/sleeves",
+    "cardSets": [
+      {
+        "name": "Default Card Set",
+        "version": "",
+        "cardTypes": [
+          {
+            "width": 44,
+            "height": 68,
+            "count": 1525
+          },
+          {
+            "width": 63,
+            "height": 88,
+            "count": 942
+          },
+          {
+            "width": 102,
+            "height": 102,
+            "count": 80
+          }
+        ]
+      }
+    ]
+  }
+}

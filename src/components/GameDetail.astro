@@ -1,0 +1,1182 @@
+---
+import type { Game } from "../lib/games";
+import { getGameSleeves } from "../lib/game-sleeves";
+import type { Language } from "../i18n/ui";
+import {
+    useTranslations,
+    translateBggCategory,
+    translateBggMechanic,
+    translateBggComplexity,
+    translateGameName,
+    translateGameDescription
+} from "../i18n/utils";
+
+interface Props {
+    game: Game;
+    lang: Language;
+}
+
+const {
+    game,
+    lang
+} = Astro.props;
+
+const bgg = game.bgg;
+const collection = game.collection;
+const sleeveInfo = getGameSleeves(game.bggId);
+const sleeveSet = sleeveInfo?.cardSets?.[0];
+const sleeveCards = sleeveSet?.cardTypes ?? [];
+const totalSleeveCards = sleeveCards.reduce((sum, item) => sum + item.count, 0);
+
+const t =
+    useTranslations(lang);
+
+const gamesUrl =
+    lang === "en"
+        ? "/en/games"
+        : "/games";
+
+const displayName =
+    translateGameName(
+        bgg.bggId,
+        bgg.name,
+        lang
+    );
+
+const displayDescription =
+    translateGameDescription(
+        bgg.bggId,
+        bgg.description,
+        lang
+    );
+---
+
+<main class="game-detail">
+
+    <!-- =========================================
+            返回遊戲列表
+    ========================================== -->
+
+    <div class="back-row">
+        <a href={gamesUrl}>
+            ← {t("game.backToGames")}
+        </a>
+    </div>
+
+
+    <!-- =========================================
+            遊戲主要資訊
+    ========================================== -->
+
+    <section class="hero">
+
+        <div class="cover">
+
+            {
+                bgg.image
+                    ? (
+                        <img
+                            src={bgg.image}
+                            alt={bgg.name}
+                        />
+                    )
+                    : (
+                        <div class="no-image">
+                            No Image
+                        </div>
+                    )
+            }
+
+        </div>
+
+
+        <div class="summary">
+
+            <div class="title-row">
+
+                <div>
+                    <h1>{displayName}</h1>
+
+                    <p class="year">
+                        {bgg.year}
+                    </p>
+                </div>
+
+            </div>
+
+
+            <!-- 核心資訊 -->
+
+            <div class="quick-info">
+
+                <div class="info-item">
+                    <span class="label">
+                        {t("game.players")}
+                    </span>
+
+                    <strong>
+                        {bgg.minPlayers}–{bgg.maxPlayers} 人
+                    </strong>
+                </div>
+
+
+                <div class="info-item">
+                    <span class="label">
+                        {t("game.bestPlayers")}
+                    </span>
+
+                    <strong>
+                        {
+                            bgg.bestPlayerCounts.length > 0
+                                ? `${bgg.bestPlayerCounts.join("、")} 人`
+                                : "—"
+                        }
+                    </strong>
+                </div>
+
+
+                <div class="info-item">
+                    <span class="label">
+                        {t("game.playTime")}
+                    </span>
+
+                    <strong>
+                        {bgg.minPlayTime}–{bgg.maxPlayTime} 分鐘
+                    </strong>
+                </div>
+
+
+                <div class="info-item">
+                    <span class="label">
+                        {t("game.age")}
+                    </span>
+
+                    <strong>
+                        {
+                            bgg.minAge
+                                ? `${bgg.minAge}+`
+                                : "—"
+                        }
+                    </strong>
+                </div>
+
+            </div>
+
+
+            <!-- 複雜度 -->
+
+            <div class="complexity">
+
+                <span class="label">
+                    {t("game.complexity")}
+                </span>
+
+                <strong>
+                    {
+                        bgg.averageWeight !== undefined
+                            ? `${bgg.averageWeight.toFixed(2)} / 5`
+                            : "—"
+                    }
+                </strong>
+
+                <span class="complexity-text">
+                    {
+                        translateBggComplexity(
+                            bgg.complexity,
+                            lang
+                        )
+                    }
+                </span>
+
+            </div>
+
+
+            <!-- 收藏狀態 -->
+
+            <div class="collection-status">
+
+                {
+                    collection.owned && (
+                        <span class="status owned">
+                            {t("collection.owned")}
+                        </span>
+                    )
+                }
+
+                {
+                    collection.wishlist && (
+                        <span class="status wishlist">
+                             {t("collection.wishlist")}
+                        </span>
+                    )
+                }
+
+                {
+                    collection.willingness === "Preordered" && (
+                        <span class="status preorder">
+                            {t("collection.preordered")}
+                        </span>
+                    )
+                }
+
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- =========================================
+        BGG 評分與排名
+    ========================================== -->
+
+    <section class="detail-section">
+
+        <h2>{t("bgg.ratings")}</h2>
+
+        <div class="rating-grid">
+
+            <div class="rating-card">
+
+                <span class="label">
+                    {t("bgg.averageRating")}
+                </span>
+
+                <strong class="rating-value">
+                    {
+                        bgg.averageRating !== undefined
+                            ? bgg.averageRating.toFixed(2)
+                            : "—"
+                    }
+                </strong>
+
+                <span class="rating-unit">
+                    / 10
+                </span>
+
+            </div>
+
+
+            <div class="rating-card">
+
+                <span class="label">
+                    {t("bgg.bggRating")}
+                </span>
+
+                <strong class="rating-value">
+                    {
+                        bgg.bggRating !== undefined
+                            ? bgg.bggRating.toFixed(2)
+                            : "—"
+                    }
+                </strong>
+
+                <span class="rating-unit">
+                    / 10
+                </span>
+
+            </div>
+
+
+            <div class="rating-card">
+
+                <span class="label">
+                    {t("bgg.usersRated")}
+                </span>
+
+                <strong class="rating-value">
+                    {
+                        bgg.usersRated !== undefined
+                            ? bgg.usersRated.toLocaleString()
+                            : "—"
+                    }
+                </strong>
+
+            </div>
+
+
+            <div class="rating-card">
+
+                <span class="label">
+                    {t("bgg.overallRank")}
+                </span>
+
+                <strong class="rating-value">
+                    {
+                        bgg.overallRank !== undefined
+                            ? `#${bgg.overallRank}`
+                            : "—"
+                    }
+                </strong>
+
+            </div>
+
+        </div>
+
+
+        {
+            bgg.categoryRanks.length > 0 && (
+
+                <div class="category-ranks">
+
+                    <h3>
+                        {t("bgg.categoryRank")}
+                    </h3>
+
+                    <div class="rank-list">
+
+                        {
+                            bgg.categoryRanks.map(rank => (
+
+                                <div class="rank-item">
+
+                                    <span class="rank-name">
+                                        {rank.friendlyName}
+                                    </span>
+
+                                    <strong>
+                                        {
+                                            rank.rank !== undefined
+                                                ? `#${rank.rank}`
+                                                : "—"
+                                        }
+                                    </strong>
+
+                                </div>
+
+                            ))
+                        }
+
+                    </div>
+
+                </div>
+
+            )
+        }
+
+    </section>
+
+    <!-- 遊戲資訊 / 牌套需求分頁（預設遊戲資訊） -->
+    <section class="detail-section game-tabs" data-game-tabs>
+        <div class="tab-buttons" role="tablist" aria-label={lang === "en" ? "Game details" : "遊戲詳細資料"}>
+            <button type="button" class="tab-button active" role="tab" id="game-info-tab" aria-controls="game-info-panel" aria-selected="true" tabindex="0" data-tab="info">
+                {lang === "en" ? "Game Information" : "遊戲資訊"}
+            </button>
+            <button type="button" class="tab-button" role="tab" id="game-sleeves-tab" aria-controls="game-sleeves-panel" aria-selected="false" tabindex="-1" data-tab="sleeves">
+                {lang === "en" ? "Card Sleeves" : "牌套需求"}
+            </button>
+        </div>
+        <div class="tab-panel" id="game-info-panel" role="tabpanel" aria-labelledby="game-info-tab" data-panel="info">
+<!-- Game Description -->
+{
+    displayDescription && (
+
+        <section class="description-section">
+
+            <h2 class="section-title">
+                {t("game.description")}
+            </h2>
+
+            <div
+                class="game-description"
+                set:html={displayDescription}
+            />
+
+        </section>
+
+    )
+}
+
+
+    <!-- =========================================
+        遊戲資料
+    ========================================== -->
+
+    <section class="detail-section">
+
+        <h2>{t("info.title")}</h2>
+
+        <div class="metadata">
+
+            <!-- Designer -->
+            {
+                bgg.designers.length > 0 && (
+
+                    <div class="metadata-row">
+
+                        <div class="metadata-title">
+                            {t("info.designer")}
+                        </div>
+
+                        <div class="tag-list">
+
+                            {
+                                bgg.designers.map(item => (
+
+                                    <span class="tag">
+                                        {item.name}
+                                    </span>
+
+                                ))
+                            }
+
+                        </div>
+
+                    </div>
+
+                )
+            }
+
+
+            <!-- Artist -->
+            {
+                bgg.artists.length > 0 && (
+
+                    <div class="metadata-row">
+
+                        <div class="metadata-title">
+                            {t("info.artist")}
+                        </div>
+
+                        <div class="tag-list">
+
+                            {
+                                bgg.artists.map(item => (
+
+                                    <span class="tag">
+                                        {item.name}
+                                    </span>
+
+                                ))
+                            }
+
+                        </div>
+
+                    </div>
+
+                )
+            }
+
+
+            <!-- Publisher -->
+            {
+                bgg.publishers.length > 0 && (
+
+                    <div class="metadata-row">
+
+                        <div class="metadata-title">
+                            {t("info.publisher")}
+                        </div>
+
+                        <div class="tag-list">
+
+                            {
+                                bgg.publishers.map(item => (
+
+                                    <span class="tag">
+                                        {item.name}
+                                    </span>
+
+                                ))
+                            }
+
+                        </div>
+
+                    </div>
+
+                )
+            }
+
+
+            <!-- Category -->
+            {
+                bgg.categories.length > 0 && (
+
+                    <div class="metadata-row">
+
+                        <div class="metadata-title">
+                            {t("info.category")}
+                        </div>
+
+                        <div class="tag-list">
+
+                            {
+                                bgg.categories.map(item => (
+                                    <span class="tag">
+                                        {translateBggCategory(item, lang)}
+                                    </span>
+                                ))
+                            }
+
+                        </div>
+
+                    </div>
+
+                )
+            }
+
+
+            <!-- Mechanic -->
+            {
+                bgg.mechanics.length > 0 && (
+
+                    <div class="metadata-row">
+
+                        <div class="metadata-title">
+                            {t("info.mechanic")}
+                        </div>
+
+                        <div class="tag-list">
+
+                            {
+                                bgg.mechanics.map(item => (
+                                    <span class="tag">
+                                        {translateBggMechanic(item, lang)}
+                                    </span>
+                                ))
+                            }
+
+                        </div>
+
+                    </div>
+
+                )
+            }
+
+        </div>
+
+    </section>
+
+
+        </div>
+        <div class="tab-panel" id="game-sleeves-panel" role="tabpanel" aria-labelledby="game-sleeves-tab" data-panel="sleeves" hidden>
+            <h2>{lang === "en" ? "Card Sleeve Requirements" : "牌套需求"}</h2>
+            {sleeveSet && sleeveCards.length > 0 ? (
+                <>
+                    <p class="sleeve-set-name">{sleeveSet.name}{sleeveSet.version ? ` · ${sleeveSet.version}` : ""}</p>
+                    <div class="sleeve-summary">
+                        <div><span>{lang === "en" ? "Total Cards" : "卡牌總數"}</span><strong>{totalSleeveCards.toLocaleString("en-US")}</strong></div>
+                        <div><span>{lang === "en" ? "Sizes" : "尺寸種類"}</span><strong>{sleeveCards.length}</strong></div>
+                        <div><span>{lang === "en" ? "Packs Needed" : "所需包數"}</span><strong data-sleeve-total-packs>—</strong></div>
+                    </div>
+                    <div class="sleeve-controls">
+                        <label for="sleeve-pack-size">{lang === "en" ? "Cards per pack" : "每包張數"}</label>
+                        <select id="sleeve-pack-size" data-sleeve-pack-size>
+                            <option value="50">50</option>
+                            <option value="100" selected>100</option>
+                            <option value="200">200</option>
+                        </select>
+                    </div>
+                    <div class="sleeve-table-wrap">
+                        <table class="sleeve-table">
+                            <thead><tr>
+                                <th>{lang === "en" ? "Card Size" : "卡牌尺寸"}</th>
+                                <th>{lang === "en" ? "Cards" : "張數"}</th>
+                                <th>{lang === "en" ? "Packs" : "包數"}</th>
+                            </tr></thead>
+                            <tbody>
+                                {sleeveCards.map(card => (
+                                    <tr data-sleeve-count={card.count}>
+                                        <td>{card.width} × {card.height} mm</td>
+                                        <td>{card.count.toLocaleString("en-US")}</td>
+                                        <td data-sleeve-packs>—</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="sleeve-notice">{lang === "en" ? "Pack quantities are estimates. Verify your edition and sleeve sizes before purchase." : "包數為估算值；購買前請確認遊戲版本、卡牌尺寸及實際牌套包裝張數。"}</p>
+                    {sleeveInfo?.sourceUrl && <a href={sleeveInfo.sourceUrl} target="_blank" rel="noopener noreferrer">{lang === "en" ? "View sleeve source ↗" : "查看牌套資料來源 ↗"}</a>}
+                </>
+            ) : (
+                <p class="sleeve-empty">{lang === "en" ? "No sleeve data available yet." : "目前尚無這款遊戲的牌套資料。"}</p>
+            )}
+        </div>
+    </section>
+
+    <!-- =========================================
+         個人收藏詳細資訊
+    ========================================== -->
+    <section class="detail-section personal-section">
+        <h2>{lang === "en" ? "My Collection" : "我的收藏資訊"}</h2>
+
+        <div class="personal-grid">
+            <div class="personal-item">
+                <span class="label">{lang === "en" ? "My Rating" : "我的評分"}</span>
+                <strong>{collection.myRating ?? "—"}</strong>
+            </div>
+            <div class="personal-item">
+                <span class="label">{lang === "en" ? "Plays" : "遊玩次數"}</span>
+                <strong>{collection.playCount ?? 0}</strong>
+            </div>
+            <div class="personal-item">
+                <span class="label">{lang === "en" ? "Purchase Price" : "購入價格"}</span>
+                <strong>{collection.purchasePrice != null ? `NT$ ${collection.purchasePrice.toLocaleString("en-US")}` : "—"}</strong>
+            </div>
+            <div class="personal-item">
+                <span class="label">{lang === "en" ? "Purchase Source" : "購入來源"}</span>
+                <strong>{collection.purchaseSource || "—"}</strong>
+            </div>
+            <div class="personal-item">
+                <span class="label">{lang === "en" ? "Language Edition" : "遊戲語言版本"}</span>
+                <strong>{lang === "en" ? (collection.languageVersion || "—") : (({ "English": "英文", "Japanese": "日文", "Traditional Chinese": "繁體中文", "Simplified Chinese": "簡體中文" } as Record<string, string>)[collection.languageVersion ?? ""] ?? collection.languageVersion ?? "—")}</strong>
+            </div>
+            <div class="personal-item">
+                <span class="label">{lang === "en" ? "Card Sleeves" : "牌套"}</span>
+                <strong>{collection.cardSleeves ? (lang === "en" ? "Sleeved" : "已上牌套") : "—"}</strong>
+            </div>
+            <div class="personal-item">
+                <span class="label">{lang === "en" ? "Condition" : "收藏品狀態"}</span>
+                <strong>{collection.collectionStatus || "—"}</strong>
+            </div>
+            <div class="personal-item">
+                <span class="label">{lang === "en" ? "Willingness" : "收藏意願"}</span>
+                <strong>{collection.willingness || "—"}</strong>
+            </div>
+        </div>
+
+        {collection.extraStorage && (
+            <div class="personal-note">
+                <h3>{lang === "en" ? "Extra Storage" : "額外收納"}</h3>
+                <p>{collection.extraStorage}</p>
+            </div>
+        )}
+        {collection.additionalAccessories && (
+            <div class="personal-note">
+                <h3>{lang === "en" ? "Accessories" : "額外配件"}</h3>
+                <p>{collection.additionalAccessories}</p>
+            </div>
+        )}
+        {collection.review && (
+            <div class="personal-note">
+                <h3>{lang === "en" ? "My Review" : "我的心得"}</h3>
+                <p class="review-text">{collection.review}</p>
+            </div>
+        )}
+        <p class="bgg-external">
+            <a href={`https://boardgamegeek.com/boardgame/${game.bggId}`} target="_blank" rel="noopener noreferrer">
+                {lang === "en" ? "View on BoardGameGeek ↗" : "前往 BoardGameGeek 查看原始資料 ↗"}
+            </a>
+        </p>
+    </section>
+
+</main>
+
+
+<script>
+    function initializeGameDetailTabs() {
+        document.querySelectorAll<HTMLElement>("[data-game-tabs]").forEach(root => {
+            if (root.dataset.initialized === "true") return;
+            root.dataset.initialized = "true";
+            const tabs = Array.from(root.querySelectorAll<HTMLButtonElement>("[role=tab][data-tab]"));
+            const panels = Array.from(root.querySelectorAll<HTMLElement>("[role=tabpanel][data-panel]"));
+            const activate = (target: HTMLButtonElement) => {
+                const name = target.dataset.tab;
+                tabs.forEach(tab => {
+                    const active = tab === target;
+                    tab.classList.toggle("active", active);
+                    tab.setAttribute("aria-selected", String(active));
+                    tab.tabIndex = active ? 0 : -1;
+                });
+                panels.forEach(panel => { panel.hidden = panel.dataset.panel !== name; });
+            };
+            tabs.forEach((tab, index) => {
+                tab.addEventListener("click", () => activate(tab));
+                tab.addEventListener("keydown", event => {
+                    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+                    event.preventDefault();
+                    const next = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : (index + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+                    activate(tabs[next]);
+                    tabs[next].focus();
+                });
+            });
+            const packSelect = (root.querySelector("[data-sleeve-pack-size]") as HTMLSelectElement | null);
+            const totalElement = root.querySelector<HTMLElement>("[data-sleeve-total-packs]");
+            if (packSelect && totalElement) {
+                const calculate = () => {
+                    const packSize = Number(packSelect.value);
+                    let total = 0;
+                    root.querySelectorAll<HTMLElement>("[data-sleeve-count]").forEach(row => {
+                        const count = Number(row.dataset.sleeveCount);
+                        const packs = Math.ceil(count / packSize);
+                        const cell = row.querySelector<HTMLElement>("[data-sleeve-packs]");
+                        if (cell) cell.textContent = String(packs);
+                        total += packs;
+                    });
+                    totalElement.textContent = String(total);
+                };
+                packSelect.addEventListener("change", calculate);
+                calculate();
+            }
+        });
+    }
+    initializeGameDetailTabs();
+    document.addEventListener("astro:page-load", initializeGameDetailTabs);
+</script>
+
+<style>
+
+    .game-detail {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 32px 24px 80px;
+    }
+
+
+    /* -----------------------------------------
+       返回
+    ------------------------------------------ */
+
+    .back-row {
+        margin-bottom: 24px;
+    }
+
+    .back-row a {
+        color: #666;
+        text-decoration: none;
+    }
+
+    .back-row a:hover {
+        text-decoration: underline;
+    }
+
+
+    /* -----------------------------------------
+       Hero
+    ------------------------------------------ */
+
+    .hero {
+        display: grid;
+        grid-template-columns: minmax(260px, 360px) 1fr;
+        gap: 48px;
+        align-items: start;
+    }
+
+
+    /* -----------------------------------------
+       Cover
+    ------------------------------------------ */
+
+    .cover img {
+        display: block;
+
+        width: 100%;
+        max-height: 520px;
+
+        object-fit: contain;
+
+        border-radius: 12px;
+    }
+
+    .no-image {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        width: 100%;
+        aspect-ratio: 3 / 4;
+
+        background: #eee;
+        border-radius: 12px;
+
+        color: #777;
+    }
+
+
+    /* -----------------------------------------
+       Summary
+    ------------------------------------------ */
+
+    .summary h1 {
+        margin: 0;
+
+        font-size: clamp(
+            2rem,
+            5vw,
+            3.5rem
+        );
+
+        line-height: 1.1;
+    }
+
+    .year {
+        margin-top: 8px;
+
+        color: #777;
+
+        font-size: 1.1rem;
+    }
+
+
+    /* -----------------------------------------
+       Quick Info
+    ------------------------------------------ */
+
+    .quick-info {
+        display: grid;
+
+        grid-template-columns:
+            repeat(2, minmax(140px, 1fr));
+
+        gap: 16px;
+
+        margin-top: 32px;
+    }
+
+    .info-item {
+        padding: 16px;
+
+        border: 1px solid #ddd;
+        border-radius: 10px;
+    }
+
+    .label {
+        display: block;
+
+        margin-bottom: 6px;
+
+        color: #777;
+
+        font-size: 0.85rem;
+    }
+
+    .info-item strong {
+        font-size: 1.05rem;
+    }
+
+
+    /* -----------------------------------------
+       Complexity
+    ------------------------------------------ */
+
+    .complexity {
+        margin-top: 24px;
+
+        padding: 16px;
+
+        border: 1px solid #ddd;
+        border-radius: 10px;
+    }
+
+    .complexity strong {
+        margin-right: 12px;
+    }
+
+    .complexity-text {
+        color: #666;
+    }
+
+
+    /* -----------------------------------------
+       Collection Status
+    ------------------------------------------ */
+
+    .collection-status {
+        display: flex;
+        flex-wrap: wrap;
+
+        gap: 8px;
+
+        margin-top: 24px;
+    }
+
+    .status {
+        display: inline-block;
+
+        padding: 6px 12px;
+
+        border-radius: 999px;
+
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .owned {
+        background: #e8f5e9;
+        color: #256029;
+    }
+
+    .wishlist {
+        background: #fff3e0;
+        color: #8a4b08;
+    }
+
+    .preorder {
+        background: #e8eaf6;
+        color: #303f9f;
+    }
+
+
+    /* -----------------------------------------
+       Detail
+    ------------------------------------------ */
+
+    .detail-section {
+        margin-top: 64px;
+
+        padding-top: 32px;
+
+        border-top: 1px solid #ddd;
+    }
+
+    .detail-section h2 {
+        margin-top: 0;
+    }
+
+
+    /* -----------------------------------------
+    BGG Rating
+    ------------------------------------------ */
+
+    .rating-grid {
+        display: grid;
+
+        grid-template-columns:
+            repeat(4, minmax(140px, 1fr));
+
+        gap: 16px;
+
+        margin-top: 24px;
+    }
+
+    .rating-card {
+        padding: 20px;
+
+        border: 1px solid #ddd;
+        border-radius: 10px;
+    }
+
+    .rating-value {
+        font-size: 1.8rem;
+        line-height: 1;
+    }
+
+    .rating-unit {
+        margin-left: 4px;
+
+        color: #777;
+        font-size: 0.9rem;
+    }
+
+
+    /* -----------------------------------------
+    Category Rank
+    ------------------------------------------ */
+
+    .category-ranks {
+        margin-top: 32px;
+    }
+
+    .category-ranks h3 {
+        margin-bottom: 16px;
+    }
+
+    .rank-list {
+        display: flex;
+        flex-wrap: wrap;
+
+        gap: 12px;
+    }
+
+    .rank-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        gap: 24px;
+
+        min-width: 220px;
+
+        padding: 14px 16px;
+
+        border: 1px solid #ddd;
+        border-radius: 10px;
+    }
+
+    .rank-name {
+        color: #555;
+    }
+
+    .rank-item strong {
+        font-size: 1.1rem;
+    }
+
+    /* -----------------------------------------
+    Metadata
+    ------------------------------------------ */
+
+    .metadata {
+        margin-top: 24px;
+    }
+
+    .metadata-row {
+        display: grid;
+
+        grid-template-columns:
+            130px 1fr;
+
+        gap: 20px;
+
+        padding: 18px 0;
+
+        border-bottom: 1px solid #eee;
+    }
+
+    .metadata-row:last-child {
+        border-bottom: none;
+    }
+
+    .metadata-title {
+        color: #666;
+
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+
+    .tag-list {
+        display: flex;
+        flex-wrap: wrap;
+
+        gap: 8px;
+    }
+
+    .tag {
+        display: inline-block;
+
+        padding: 6px 10px;
+
+        background: #f3f3f3;
+
+        border-radius: 6px;
+
+        font-size: 0.9rem;
+    }
+
+    .description-section {
+        margin-top: 32px;
+        padding: 24px;
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+    }
+
+    .game-description {
+        font-size: 1rem;
+        line-height: 1.8;
+        color: #374151;
+    }
+
+    .game-description :global(p) {
+        margin: 0 0 16px;
+    }
+
+    .game-description :global(p:last-child) {
+        margin-bottom: 0;
+    }
+
+    /* -----------------------------------------
+       Mobile
+    ------------------------------------------ */
+
+    @media (max-width: 760px) {
+
+        .game-detail {
+            padding:
+                20px
+                16px
+                60px;
+        }
+
+        .hero {
+            grid-template-columns: 1fr;
+
+            gap: 28px;
+        }
+
+        .cover {
+            max-width: 360px;
+
+            margin: 0 auto;
+        }
+
+        .quick-info {
+            grid-template-columns:
+                repeat(2, 1fr);
+        }
+
+        .rating-grid {
+            grid-template-columns:
+                repeat(2, 1fr);
+        }
+
+        .metadata-row {
+            grid-template-columns: 1fr;
+
+            gap: 10px;
+        }
+
+    }
+
+
+    @media (max-width: 420px) {
+
+        .quick-info {
+            grid-template-columns: 1fr;
+        }
+        .rating-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .rank-item {
+            width: 100%;
+        }
+
+    }
+
+
+    /* Personal collection */
+    .personal-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 20px;
+    }
+    .personal-item {
+        padding: 16px;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+    .personal-item strong { display: block; }
+    .personal-note { margin-top: 20px; padding: 18px; border: 1px solid #eee; border-radius: 10px; }
+    .personal-note h3 { margin: 0 0 8px; font-size: 1rem; }
+    .personal-note p { margin: 0; }
+    .review-text { white-space: pre-wrap; line-height: 1.7; }
+    .bgg-external { margin-top: 24px; }
+    .bgg-external a { color: #2563eb; }
+    @media (max-width: 900px) { .personal-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 420px) { .personal-grid { grid-template-columns: 1fr; } }
+
+
+    /* Game info / sleeves tabs */
+    .tab-buttons { display: flex; gap: 8px; border-bottom: 1px solid #ddd; margin-bottom: 24px; }
+    .tab-button { padding: 14px 20px; border: 0; border-bottom: 3px solid transparent; background: transparent; color: #666; font: inherit; font-weight: 600; cursor: pointer; }
+    .tab-button.active { color: #1d4ed8; border-bottom-color: #1d4ed8; }
+    .tab-button:focus-visible { outline: 2px solid #2563eb; outline-offset: -2px; }
+    .tab-panel[hidden] { display: none !important; }
+    .tab-panel > .detail-section { margin-top: 0; padding-top: 0; border-top: 0; }
+    .tab-panel > .description-section { margin-top: 0; }
+    .sleeve-set-name { color: #666; }
+    .sleeve-summary { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; margin: 20px 0; }
+    .sleeve-summary > div { padding: 18px; border: 1px solid #ddd; border-radius: 10px; }
+    .sleeve-summary span { display: block; color: #666; font-size: .85rem; margin-bottom: 6px; }
+    .sleeve-summary strong { font-size: 1.5rem; }
+    .sleeve-controls { display: flex; align-items: center; gap: 12px; margin: 20px 0; }
+    .sleeve-controls select { padding: 8px 12px; border: 1px solid #bbb; border-radius: 8px; }
+    .sleeve-table-wrap { overflow-x: auto; }
+    .sleeve-table { width: 100%; border-collapse: collapse; }
+    .sleeve-table th, .sleeve-table td { padding: 14px 12px; border-bottom: 1px solid #e5e7eb; text-align: right; }
+    .sleeve-table th:first-child, .sleeve-table td:first-child { text-align: left; }
+    .sleeve-notice, .sleeve-empty { color: #666; font-size: .9rem; line-height: 1.6; }
+    @media (max-width: 520px) { .sleeve-summary { grid-template-columns: 1fr; } .tab-button { flex: 1; padding: 12px 8px; } }
+</style>

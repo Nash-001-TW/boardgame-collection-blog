@@ -1,0 +1,358 @@
+---
+import CollectionCard from "./CollectionCard.astro";
+import GameSummary from "./GameSummary.astro";
+import GameBrowserControls from "./GameBrowserControls.astro";
+
+import { getGames } from "../lib/games";
+import type { Language } from "../i18n/ui";
+import { translateBggMechanic, translateBggCategory } from "../i18n/utils";
+
+interface Props {
+    lang: Language;
+}
+
+const { lang } = Astro.props;
+const games = getGames();
+
+const collectionGames = games.filter(game =>
+    game.collection.owned ||
+    game.collection.wishlist ||
+    game.collection.willingness === "Preordered" ||
+    game.collection.willingness === "Want To Play" ||
+    game.collection.willingness === "Want To Buy"
+);
+
+const zh = lang === "zh-TW";
+// 每款遊戲的同一個標籤只計算一次，避免重複資料影響排名。
+function buildTagCloud(kind: "mechanics" | "categories") {
+    const counts = new Map<string, { item: (typeof collectionGames)[number]["bgg"]["mechanics"][number]; count: number }>();
+
+    for (const game of collectionGames) {
+        const uniqueItems = new Map<string, (typeof game.bgg.mechanics)[number]>();
+        for (const item of (game.bgg?.[kind] ?? [])) {
+            if (item.name?.trim()) uniqueItems.set(item.name.trim(), item);
+        }
+
+        for (const [name, item] of uniqueItems) {
+            const previous = counts.get(name);
+            counts.set(name, {
+                item,
+                count: (previous?.count ?? 0) + 1
+            });
+        }
+    }
+
+    return [...counts.values()].sort(
+        (a, b) => b.count - a.count || a.item.name.localeCompare(b.item.name)
+    );
+}
+
+const mechanicTags = buildTagCloud("mechanics");
+const categoryTags = buildTagCloud("categories");
+---
+
+<section
+    class="collection-page"
+    data-game-browser
+    data-locale={lang}
+    aria-label={zh ? "我的桌遊收藏" : "My board game collection"}
+>
+    <header class="page-header">
+        <div>
+            <p class="eyebrow">✦ Soma's Adventure Library</p>
+            <h1>{zh ? "我的桌遊收藏" : "My Board Game Collection"}</h1>
+            <p class="page-subtitle">
+                {zh ? `探索我的 ${collectionGames.length} 款收藏與心願桌遊` : `Explore ${collectionGames.length} collected and wishlisted games`}
+            </p>
+        </div>
+        <span class="page-mark" aria-hidden="true">🐾</span>
+    </header>
+
+    <div class="collection-layout">
+        <aside class="sidebar sidebar-left" aria-label={zh ? "收藏工具" : "Collection tools"}>
+            <section class="side-panel">
+                <h2>{zh ? "收藏總覽" : "Collection overview"}</h2>
+                <GameSummary lang={lang} />
+            </section>
+
+            <section class="side-panel filters-panel">
+                <h2>{zh ? "搜尋與篩選" : "Search & filters"}</h2>
+                <GameBrowserControls lang={lang} />
+            </section>
+        </aside>
+
+        <div class="collection-content">
+            <div class="content-heading">
+                <div>
+                    <h2>{zh ? "冒險遊戲書庫" : "Adventure game library"}</h2>
+                    <p>{zh ? "選擇一款桌遊，展開下一場冒險。" : "Choose a game and begin your next adventure."}</p>
+                </div>
+                <span class="content-symbol" aria-hidden="true">🎲</span>
+            </div>
+
+            <div class="game-grid" data-game-grid>
+                {collectionGames.map(game => (
+                    <CollectionCard game={game} lang={lang} />
+                ))}
+            </div>
+
+            <nav
+                class="pagination"
+                data-game-pagination
+                aria-label={zh ? "收藏分頁" : "Collection pagination"}
+            ></nav>
+        </div>
+
+        <aside class="sidebar sidebar-right" aria-label={zh ? "桌遊標籤統計" : "Board game tag statistics"}>
+            <section class="side-panel tag-panel" data-tag-panel>
+                <h2>⚙️ {zh ? "遊戲機制" : "Mechanics"}</h2>
+                <p class="tag-caption">{zh ? `共 ${mechanicTags.length} 種機制，依遊戲數量排序` : `${mechanicTags.length} mechanics, sorted by game count`}</p>
+                <label class="tag-search-label" for="mechanic-tag-search">{zh ? "搜尋遊戲機制" : "Search mechanics"}</label>
+                <input id="mechanic-tag-search" class="tag-search" data-tag-search type="search"
+                    placeholder={zh ? "搜尋機制名稱…" : "Search mechanics…"} autocomplete="off" />
+                <div class="tag-results" data-tag-results aria-live="polite"></div>
+                <div class="tag-list" aria-label={zh ? "遊戲機制清單" : "Mechanics list"}>
+                    {mechanicTags.map(tag => (
+                        <button class="tag-chip mechanic-tag" data-tag-chip
+                            data-search={`${tag.item.name} ${translateBggMechanic(tag.item, "zh-TW")} ${translateBggMechanic(tag.item, "en")}`.toLocaleLowerCase()}
+                            data-tag-kind="mechanic" data-tag-id={tag.item.id} type="button" aria-pressed="false" title={zh ? "點擊篩選此機制" : "Filter by this mechanic"}>
+                            <span class="tag-name">{translateBggMechanic(tag.item, lang)}</span>
+                            <span class="tag-count" title={zh ? "遊戲數量" : "Game count"}>{tag.count}</span>
+                        </button>
+                    ))}
+                </div>
+                <p class="tag-empty" data-tag-empty hidden>{zh ? "找不到符合的機制" : "No matching mechanics"}</p>
+            </section>
+
+            <section class="side-panel tag-panel" data-tag-panel>
+                <h2>🧩 {zh ? "遊戲類型" : "Categories"}</h2>
+                <p class="tag-caption">{zh ? `共 ${categoryTags.length} 種類型，依遊戲數量排序` : `${categoryTags.length} categories, sorted by game count`}</p>
+                <label class="tag-search-label" for="category-tag-search">{zh ? "搜尋遊戲類型" : "Search categories"}</label>
+                <input id="category-tag-search" class="tag-search" data-tag-search type="search"
+                    placeholder={zh ? "搜尋類型名稱…" : "Search categories…"} autocomplete="off" />
+                <div class="tag-results" data-tag-results aria-live="polite"></div>
+                <div class="tag-list" aria-label={zh ? "遊戲類型清單" : "Categories list"}>
+                    {categoryTags.map(tag => (
+                        <button class="tag-chip category-tag" data-tag-chip
+                            data-search={`${tag.item.name} ${translateBggCategory(tag.item, "zh-TW")} ${translateBggCategory(tag.item, "en")}`.toLocaleLowerCase()}
+                            data-tag-kind="category" data-tag-id={tag.item.id} type="button" aria-pressed="false" title={zh ? "點擊篩選此類型" : "Filter by this category"}>
+                            <span class="tag-name">{translateBggCategory(tag.item, lang)}</span>
+                            <span class="tag-count" title={zh ? "遊戲數量" : "Game count"}>{tag.count}</span>
+                        </button>
+                    ))}
+                </div>
+                <p class="tag-empty" data-tag-empty hidden>{zh ? "找不到符合的類型" : "No matching categories"}</p>
+            </section>
+        </aside>
+    </div>
+</section>
+
+<script>
+    import { initializeGameListController } from "../lib/game-list-controller";
+
+    function initializeCollectionBrowser() {
+        document
+            .querySelectorAll<HTMLElement>(".collection-page[data-game-browser]")
+            .forEach(root => {
+                initializeGameListController({
+                    root,
+                    pageSize: 24,
+                    debounceMs: 250
+                });
+            });
+    }
+
+    function initializeTagSearch() {
+        document.querySelectorAll<HTMLElement>(".collection-page [data-tag-panel]").forEach(panel => {
+            if (panel.dataset.tagSearchReady === "true") return;
+            panel.dataset.tagSearchReady = "true";
+            const input = panel.querySelector<HTMLInputElement>("[data-tag-search]");
+            const chips = Array.from(panel.querySelectorAll<HTMLElement>("[data-tag-chip]"));
+            const results = panel.querySelector<HTMLElement>("[data-tag-results]");
+            const empty = panel.querySelector<HTMLElement>("[data-tag-empty]");
+            if (!input || !results || !empty) return;
+            const zh = panel.closest<HTMLElement>("[data-locale]")?.dataset.locale !== "en";
+            const update = () => {
+                const query = input.value.trim().toLocaleLowerCase();
+                let shown = 0;
+                chips.forEach(chip => {
+                    const matches = (chip.dataset.search || "").includes(query);
+                    chip.hidden = !matches;
+                    if (matches) shown++;
+                });
+                results.textContent = zh ? `顯示 ${shown} / ${chips.length} 個標籤` : `Showing ${shown} of ${chips.length} tags`;
+                empty.hidden = shown !== 0;
+            };
+            input.addEventListener("input", update);
+            update();
+        });
+    }
+
+    initializeCollectionBrowser();
+    initializeTagSearch();
+    document.addEventListener("astro:page-load", () => {
+        initializeCollectionBrowser();
+        initializeTagSearch();
+    });
+</script>
+
+<style>
+    .collection-page {
+        width: 100%;
+        max-width: 1680px;
+        margin: 0 auto;
+        padding: 28px 20px 64px;
+        color: #4c382d;
+    }
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 24px;
+        padding: 22px 28px;
+        border: 1px solid #e7d2b5;
+        border-radius: 20px;
+        background: linear-gradient(110deg, #fffaf1, #fcebd1);
+        box-shadow: 0 5px 20px rgba(99, 64, 32, .06);
+    }
+
+    .eyebrow { margin: 0 0 8px; color: #98714b; font-size: .8rem; letter-spacing: .06em; }
+    .page-header h1 { margin: 0 0 8px; font-size: clamp(1.55rem, 3vw, 2.2rem); }
+    .page-subtitle { margin: 0; color: #846a55; }
+    .page-mark { font-size: clamp(2rem, 5vw, 3.5rem); }
+
+    .collection-layout {
+        display: grid;
+        grid-template-columns: minmax(230px, 260px) minmax(0, 1fr) minmax(205px, 230px);
+        gap: 18px;
+        align-items: start;
+    }
+
+    .sidebar { display: grid; gap: 18px; min-width: 0; }
+    .side-panel, .collection-content {
+        min-width: 0;
+        padding: 18px;
+        border: 1px solid #e7d7bf;
+        border-radius: 18px;
+        background: rgba(255, 252, 245, .97);
+        box-shadow: 0 4px 16px rgba(88, 62, 35, .06);
+    }
+    .side-panel h2 { margin: 0 0 16px; font-size: 1.02rem; }
+    .filters-panel { overflow-wrap: anywhere; }
+
+    /* V3.5：左側統計，名稱與數字並排 */
+    .sidebar-left :global(.stat-list) {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .sidebar-left :global(.stat-list > div) {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 6px 0;
+    }
+    .sidebar-left :global(.stat-list dt),
+    .sidebar-left :global(.stat-list dd) {
+        margin: 0;
+        white-space: nowrap;
+    }
+    .sidebar-left :global(.stat-list dd) {
+        font-size: 1rem;
+        font-weight: 800;
+        color: #286b9b;
+    }
+
+    /* V3.5：進階篩選四個欄位各自採橫向標籤 + 下拉框 */
+    .filters-panel :global(.advanced-filters) {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 10px;
+        margin: 14px 0;
+    }
+    .filters-panel :global(.advanced-filters > label) {
+        display: grid;
+        grid-template-columns: minmax(72px, auto) minmax(0, 1fr);
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        font-size: .82rem;
+    }
+    .filters-panel :global(.advanced-filters select) {
+        width: 100%;
+        min-width: 0;
+        padding: 8px 6px;
+        font-size: .82rem;
+    }
+    @media (max-width: 420px) {
+        .filters-panel :global(.advanced-filters > label) {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 5px;
+        }
+    }
+
+
+    .content-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+    .content-heading h2 { margin: 0 0 6px; font-size: 1.35rem; }
+    .content-heading p { margin: 0; color: #846a55; font-size: .88rem; }
+    .content-symbol { font-size: 1.8rem; }
+
+    .game-grid { display: block; column-count: 3; column-gap: 18px; }
+    .game-grid :global([data-game-card]) { break-inside: avoid; margin-bottom: 18px; }
+
+    .tag-caption { margin: -7px 0 12px; color: #927b66; font-size: .76rem; line-height: 1.5; }
+    .tag-search-label { display: block; margin-bottom: 6px; font-size: .78rem; font-weight: 700; color: #69513d; }
+    .tag-search { width: 100%; min-width: 0; padding: 9px 11px; border: 1px solid #dbc5a9; border-radius: 10px; background: #fff; color: #4c382d; font: inherit; font-size: .88rem; }
+    .tag-search:focus-visible { outline: 2px solid #3476aa; outline-offset: 2px; }
+    .tag-results { margin: 8px 0 10px; color: #927b66; font-size: .75rem; }
+    .tag-list { display: flex; flex-wrap: wrap; align-content: flex-start; align-items: flex-start; gap: 7px; max-height: 290px; overflow-y: auto; padding: 2px 4px 4px 0; scrollbar-width: thin; }
+    .tag-chip { display: inline-flex; align-items: center; max-width: 100%; min-height: 30px; border: 1px solid #c8dcf0; border-radius: 9px; background: #eaf4ff; color: #245d91; font-size: .78rem; font-weight: 600; line-height: 1.35; overflow: hidden; }
+    .tag-chip { cursor: pointer; font-family: inherit; text-align: left; padding: 0; }
+    .tag-chip:hover { filter: brightness(.96); }
+    .tag-chip:focus-visible { outline: 2px solid #3476aa; outline-offset: 2px; }
+    .tag-chip[aria-pressed="true"] { background: #286b9b; border-color: #286b9b; color: #fff; box-shadow: 0 0 0 2px rgba(40,107,155,.16); }
+    .tag-chip[aria-pressed="true"] .tag-count { background: rgba(255,255,255,.16); border-color: rgba(255,255,255,.25); color: #fff; }
+    .category-tag[aria-pressed="true"] { background: #995c20; border-color: #995c20; color: #fff; }
+    .tag-chip[hidden] { display: none !important; }
+    .tag-name { padding: 5px 7px 5px 9px; overflow-wrap: anywhere; }
+    .tag-count { align-self: stretch; display: inline-flex; align-items: center; padding: 4px 7px; border-left: 1px solid #c8dcf0; background: #d7e9fa; font-variant-numeric: tabular-nums; font-weight: 800; }
+    .category-tag { background: #fff0db; border-color: #f0d5a9; color: #92571e; }
+    .category-tag .tag-count { background: #fbe1b9; border-color: #f0d5a9; }
+    .tag-empty { color: #927b66; font-size: .8rem; }
+    .tag-empty[hidden] { display: none !important; }
+    .stat-list { margin: 0; display: grid; gap: 12px; }
+    .stat-list > div { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding-bottom: 10px; border-bottom: 1px dashed #e8d7bd; }
+    .stat-list dt { color: #6e5845; }
+    .stat-list dd { margin: 0; color: #286b9b; font-size: 1.2rem; font-weight: 800; }
+    .stat-note { margin: 12px 0 0; font-size: .76rem; color: #927b66; line-height: 1.6; }
+    .adventure-note { background: #fdf1db; }
+    .adventure-note p { margin: 0; line-height: 1.75; color: #79614d; }
+    .note-emoji { margin-bottom: 12px; font-size: 1.7rem; }
+
+    .pagination { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; margin-top: 28px; }
+    .pagination :global(button) { padding: 8px 12px; border: 1px solid #dfc9aa; border-radius: 9px; background: #fff9ef; color: #604936; cursor: pointer; }
+    .pagination :global(button.active) { background: #3476aa; color: white; border-color: #3476aa; }
+    .pagination :global(button:disabled) { opacity: .4; cursor: not-allowed; }
+
+    @media (max-width: 1450px) {
+        .game-grid { column-count: 2; }
+    }
+
+    @media (max-width: 1150px) {
+        .collection-layout { grid-template-columns: minmax(215px, 255px) minmax(0, 1fr); }
+        .sidebar-right { grid-column: 1 / -1; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 760px) {
+        .collection-page { padding: 18px 12px 44px; }
+        .page-header { padding: 18px; }
+        .collection-layout { grid-template-columns: minmax(0, 1fr); }
+        .sidebar-right { grid-column: auto; grid-template-columns: minmax(0, 1fr); }
+        .game-grid { column-count: 1; }
+        .side-panel, .collection-content { padding: 14px; }
+    }
+</style>

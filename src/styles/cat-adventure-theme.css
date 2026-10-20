@@ -1,0 +1,81 @@
+/* Soma's Board Game Collection — Four Cat Adventure Theme V1.0
+   Add once in src/layouts/Layout.astro:
+   import "../styles/cat-adventure-theme.css";
+   Theme tokens are intentionally additive; existing component styles remain intact.
+*/
+:root {
+  --cat-bg: #fff9f0;
+  --cat-surface: #fffdf9;
+  --cat-surface-warm: #fff1de;
+  --cat-ink: #302820;
+  --cat-muted: #75685c;
+  --cat-border: #e6d5bf;
+  --cat-brown: #76513a;
+  --cat-blue: #3469a7;
+  --cat-blue-light: #e1effc;
+  --cat-orange: #e78b40;
+  --cat-orange-light: #fff0dd;
+  --cat-red: #bd554a;
+  --cat-shadow: 0 6px 22px rgba(83, 58, 36, .09);
+  --cat-radius: 16px;
+  --cat-radius-sm: 10px;
+}
+
+html { color-scheme: light; }
+body {
+  background: var(--cat-bg);
+  color: var(--cat-ink);
+  font-family: "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+}
+a { color: var(--cat-blue); }
+a:hover { color: #214e83; }
+:focus-visible { outline: 3px solid var(--cat-orange); outline-offset: 3px; }
+::selection { background: #ffe0b8; color: var(--cat-ink); }
+
+/* Opt-in components: use these classes while migrating existing pages. */
+.cat-card {
+  background: var(--cat-surface);
+  border: 1px solid var(--cat-border);
+  border-radius: var(--cat-radius);
+  box-shadow: var(--cat-shadow);
+}
+.cat-button {
+  display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+  min-height: 42px; padding: .6rem 1.1rem;
+  border: 1px solid var(--cat-blue); border-radius: 12px;
+  background: var(--cat-blue); color: white; font: inherit;
+  font-weight: 700; text-decoration: none; cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.cat-button:hover { color: white; transform: translateY(-1px); box-shadow: var(--cat-shadow); }
+.cat-button--outline { color: var(--cat-blue); background: var(--cat-surface); }
+.cat-button--outline:hover { color: var(--cat-blue); }
+.cat-tag {
+  display: inline-flex; align-items: center; padding: .3rem .7rem;
+  border-radius: 999px; background: var(--cat-blue-light);
+  color: #254f82; font-size: .875rem; font-weight: 600;
+}
+.cat-tag--warm { background: var(--cat-orange-light); color: #86501e; }
+.cat-section-title { color: var(--cat-brown); font-weight: 800; letter-spacing: .02em; }
+.cat-input {
+  width: 100%; min-height: 42px; padding: .6rem .8rem;
+  background: white; border: 1px solid var(--cat-border);
+  border-radius: var(--cat-radius-sm); color: var(--cat-ink); font: inherit;
+}
+.cat-page { max-width: 1200px; margin-inline: auto; padding: 28px 20px 72px; }
+.cat-adventure-banner {
+  background: linear-gradient(110deg, #fbe4c7 0%, #e1effc 55%, #ffe6c7 100%);
+  border-block: 1px solid var(--cat-border);
+  padding: clamp(24px, 5vw, 60px) 24px;
+}
+.cat-adventure-banner__inner { max-width: 1200px; margin: auto; }
+.cat-adventure-banner h1 { color: #533927; margin: 0 0 .5rem; }
+.cat-adventure-banner p { color: #67594d; margin: 0; }
+@media (max-width: 640px) {
+  .cat-page { padding: 18px 14px 48px; }
+  .cat-card { border-radius: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cat-button { transition: none; }
+  .cat-button:hover { transform: none; }
+}

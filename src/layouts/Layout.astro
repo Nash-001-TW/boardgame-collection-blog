@@ -1,63 +1,125 @@
 ---
 import Header from "../components/Header.astro";
+import type { Language } from "../i18n/ui";
+import "../styles/cat-adventure-theme.css";
 
-const {
-    title = "Nash's Board Game Blog"
-} = Astro.props;
+interface Props {
+    title: string;
+    lang?: Language;
+}
+
+const { title, lang = "zh-TW" } = Astro.props;
+const isZh = lang === "zh-TW";
 ---
-
-<html lang="zh-TW">
-
+<!doctype html>
+<html lang={lang}>
     <head>
         <meta charset="UTF-8" />
-
-        <meta
-            name="viewport"
-            content="width=device-width"
-        />
-
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="theme-color" content="#fbf5e9" />
         <title>{title}</title>
     </head>
-
     <body>
+        <div class="site-shell">
+            <Header lang={lang} />
+            <div class="adventure-banner">
+                <img
+                    src="/images/cat-adventure-banner.png"
+                    alt="Soma's Board Game Collection 四貓冒險者"
+                />
+            </div>
+            <!-- 全站主題橫幅：獨立四貓插圖完成後再置入，避免裁切整張 UI 設計稿 -->
+            <section class="adventure-banner" aria-label={isZh ? "四貓冒險主題" : "Four cat adventurers"}>
+                <div class="banner-inner">
+                    <span class="banner-emblem" aria-hidden="true">🐾</span>
+                    <div class="banner-copy">
+                        <p class="banner-eyebrow">SOMA'S BOARD GAME COLLECTION</p>
+                        <p class="banner-title">{isZh ? "桌遊收藏・冒險不斷" : "Collect Games, Begin Adventures"}</p>
+                        <p class="banner-subtitle">{isZh ? "各位貓咪冒險者，一起探索每一款桌遊。" : "Four cat adventurers, endless tabletop discoveries."}</p>
+                    </div>
+                    <span class="banner-decoration" aria-hidden="true">⚔️ 🎲 ✨</span>
+                </div>
+            </section>
 
-        <Header />
+            <!-- 使用 div 而不是 main，避免詳細頁元件內的 main 重複巢狀 -->
+            <div class="site-content" id="content">
+                <slot />
+            </div>
 
-        <main>
-            <slot />
-        </main>
-
-        <footer>
-            <p>© 2026 Soma's Board Game Collection Blog</p>
-        </footer>
-
+            <footer class="site-footer">
+                <p>© 2026 Soma's Board Game Collection Blog</p>
+                <p class="footer-subtitle">{isZh ? "一起收藏更多好遊戲！" : "Collect more great games together!"} 🐾</p>
+            </footer>
+        </div>
     </body>
-
 </html>
 
 <style is:global>
-
-    * {
-        box-sizing: border-box;
-    }
-
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
     body {
         margin: 0;
-        font-family: Arial, "Microsoft JhengHei", sans-serif;
-        background-color: #f5f5f5;
-        color: #333;
+        min-width: 320px;
+        font-family: "Microsoft JhengHei", "Noto Sans TC", Arial, sans-serif;
+        background: #fbf5e9;
+        color: #392b27;
     }
-
-    main {
-        max-width: 1100px;
-        margin: auto;
-        padding: 30px 20px;
+    .site-shell { min-height: 100vh; display: flex; flex-direction: column; }
+    .adventure-banner {
+        background: linear-gradient(110deg, #e9d4ae 0%, #f9ebd3 46%, #d8e7f5 100%);
+        border-bottom: 3px solid #c6a781;
+        overflow: hidden;
     }
-
-    footer {
+    .banner-inner {
+        width: min(100%, 1600px);
+        min-height: 172px;
+        margin: 0 auto;
+        padding: 28px clamp(20px, 4vw, 64px);
+        display: flex;
+        align-items: center;
+        gap: 24px;
+    }
+    .banner-emblem { font-size: clamp(48px, 6vw, 86px); line-height: 1; }
+    .banner-copy { flex: 1; }
+    .banner-eyebrow { margin: 0 0 8px; color: #785f47; font-size: 12px; font-weight: 700; letter-spacing: .12em; }
+    .banner-title { margin: 0 0 8px; font-size: clamp(24px, 3.2vw, 42px); font-weight: 900; line-height: 1.2; }
+    .banner-subtitle { margin: 0; color: #6f5949; font-size: 15px; }
+    .banner-decoration { font-size: clamp(20px, 3vw, 38px); white-space: nowrap; }
+    .site-content { width: 100%; flex: 1; min-width: 0; }
+    .site-footer {
+        padding: 28px 16px;
         text-align: center;
-        padding: 30px;
-        color: #777;
+        color: #796657;
+        background: #f2e5d2;
+        border-top: 1px solid #dfcbb0;
+    }
+    .site-footer p { margin: 4px 0; }
+    .footer-subtitle { font-size: 13px; }
+    @media (max-width: 640px) {
+        .banner-inner { min-height: 132px; gap: 12px; padding: 20px 16px; }
+        .banner-emblem { font-size: 42px; }
+        .banner-decoration { display: none; }
+        .banner-subtitle { font-size: 12px; }
+    }
+    /* 四貓冒險主題橫幅 */
+    .adventure-banner {
+        width: 100%;
+        overflow: hidden;
+        background: #f8eddc;
     }
 
+    .adventure-banner img {
+        display: block;
+        width: 100%;
+        height: auto;
+        object-fit: contain;
+    }
+
+    /* 手機版 */
+    @media (max-width: 768px) {
+        .adventure-banner img {
+            width: 100%;
+            height: auto;
+        }
+    }
 </style>

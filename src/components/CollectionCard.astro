@@ -1,0 +1,678 @@
+---
+import type { Game } from "../lib/games";
+import type { Language } from "../i18n/ui";
+import { translateGameName } from "../i18n/utils";
+
+// ============================================================
+// Component Props
+// ============================================================
+
+interface Props {
+    game: Game;
+    lang?: Language;
+}
+
+const {
+    game,
+    lang = "zh-TW"
+} = Astro.props;
+
+// ============================================================
+// 遊戲名稱與詳細頁網址
+// ============================================================
+
+const displayName = translateGameName(
+    game.bggId,
+    game.bgg.name,
+    lang
+);
+
+const gameUrl = lang === "en"
+    ? `/en/games/${game.slug}`
+    : `/games/${game.slug}`;
+
+// ============================================================
+// 中英文顯示文字
+// ============================================================
+
+const labels = lang === "zh-TW"
+    ? {
+        noImage: "等待 BGG 圖片",
+        players: "人",
+        minutes: "分",
+        owned: "已收藏",
+        wishlist: "願望清單",
+        preorder: "預購",
+        sleeves: "已上牌套",
+        rating: "我的評分",
+        playCount: "遊玩次數",
+        times: "次",
+        price: "購入價格",
+        source: "購入來源",
+        storage: "收納",
+        accessories: "額外配件",
+        unset: "未設定"
+    }
+    : {
+        noImage: "BGG image unavailable",
+        players: "players",
+        minutes: "min",
+        owned: "Owned",
+        wishlist: "Wishlist",
+        preorder: "Preordered",
+        sleeves: "Sleeved",
+        rating: "My Rating",
+        playCount: "Plays",
+        times: "times",
+        price: "Purchase Price",
+        source: "Purchase Source",
+        storage: "Storage",
+        accessories: "Accessories",
+        unset: "Not Set"
+    };
+
+// ============================================================
+// 收藏品狀態翻譯
+// ============================================================
+
+function getStatusText(status?: string): string {
+
+    const translations: Record<string, [string, string]> = {
+        "Brand New": ["全新", "Brand New"],
+        "Checked/Verified": ["已驗收", "Checked/Verified"],
+        "Missing Parts": ["缺件", "Missing Parts"],
+        "Moisture-Damaged": ["受潮", "Moisture-Damaged"],
+        "Previously Owned": ["二手購入", "Previously Owned"],
+        "Already Gifted/Sold": ["已贈與或售出", "Already Gifted/Sold"]
+    };
+
+    if (!status) {
+        return labels.unset;
+    }
+
+    const value = translations[status];
+
+    if (!value) {
+        return status;
+    }
+
+    return lang === "en"
+        ? value[1]
+        : value[0];
+}
+
+// ============================================================
+// 遊戲語言版本翻譯
+// ============================================================
+
+function getLanguageText(language?: string): string {
+
+    const translations: Record<string, string> = {
+        "English": "英文",
+        "Japanese": "日文",
+        "Traditional Chinese": "繁體中文",
+        "Simplified Chinese": "簡體中文"
+    };
+
+    if (!language) {
+        return labels.unset;
+    }
+
+    return lang === "en"
+        ? language
+        : translations[language] ?? language;
+}
+---
+
+<article
+    class="game-card"
+    data-game-card
+    data-name={displayName}
+    data-original-name={game.bgg.name}
+    data-bgg-id={game.bggId}
+    data-year={game.bgg.year ?? ""}
+    data-rating={game.collection.myRating ?? ""}
+    data-bgg-rating={game.bgg.averageRating ?? ""}
+    data-weight={game.bgg.averageWeight ?? ""}
+    data-owned={String(game.collection.owned)}
+    data-wishlist={String(game.collection.wishlist ?? false)}
+    data-preorder={String(game.collection.willingness === "Preordered")}
+    data-want-to-play={String(game.collection.willingness === "Want To Play")}
+    data-want-to-buy={String(game.collection.willingness === "Want To Buy")}
+    data-expansion={String(game.bgg.isExpansion)}
+    data-min-players={game.bgg.minPlayers}
+    data-max-players={game.bgg.maxPlayers}
+    data-max-time={game.bgg.maxPlayTime}
+    data-mechanics={game.bgg.mechanics.map(m => m.id).join(",")}
+    data-mechanic-names={game.bgg.mechanics.map(m => m.name.replaceAll("|", " ")).join("|")}
+    data-categories={game.bgg.categories.map(c => c.id).join(",")}
+    data-category-names={game.bgg.categories.map(c => c.name.replaceAll("|", " ")).join("|")}
+>
+
+    <!-- ======================================================
+         遊戲封面
+         ====================================================== -->
+
+    <a
+        class="cover-link"
+        href={gameUrl}
+    >
+
+        {
+            game.bgg.image ? (
+
+                <img
+                    class="game-cover"
+                    src={game.bgg.image}
+                    alt={displayName}
+                    loading="lazy"
+                    decoding="async"
+                />
+
+            ) : (
+
+                <div class="cover-placeholder">
+
+                    <span class="placeholder-icon">
+                        🎲
+                    </span>
+
+                    <small>
+                        {labels.noImage}
+                    </small>
+
+                </div>
+
+            )
+        }
+
+    </a>
+
+    <!-- ======================================================
+         遊戲資訊
+         ====================================================== -->
+
+    <div class="game-info">
+
+        <div class="title-row">
+
+            <div>
+
+                <h2>
+                    <a href={gameUrl}>
+                        {displayName}
+                    </a>
+                </h2>
+
+                <p class="year">
+                    {game.bgg.year}
+                </p>
+
+            </div>
+
+            {
+                game.collection.myRating !== undefined && (
+
+                    <div class="rating">
+
+                        <span>⭐</span>
+
+                        <strong>
+                            {game.collection.myRating}
+                        </strong>
+
+                    </div>
+
+                )
+            }
+
+        </div>
+
+        <!-- ==================================================
+             基本資料
+             ================================================== -->
+
+        <div class="game-meta">
+
+            <span>
+                👥
+                {game.bgg.minPlayers}–{game.bgg.maxPlayers}
+                {" "}{labels.players}
+            </span>
+
+            <span>
+                🕐
+                {game.bgg.minPlayTime}–{game.bgg.maxPlayTime}
+                {" "}{labels.minutes}
+            </span>
+
+        </div>
+
+        <!-- ==================================================
+             語言版本
+             ================================================== -->
+
+        {
+            game.collection.languageVersion && (
+
+                <p class="language">
+
+                    🌐
+                    {getLanguageText(
+                        game.collection.languageVersion
+                    )}
+
+                </p>
+
+            )
+        }
+
+        <!-- ==================================================
+             收藏標籤
+             ================================================== -->
+
+        <div class="badges">
+
+            {
+                game.collection.owned && (
+
+                    <span class="badge owned">
+                        ✓ {labels.owned}
+                    </span>
+
+                )
+            }
+
+            {
+                game.collection.wishlist && (
+
+                    <span class="badge wishlist">
+                        ♡ {labels.wishlist}
+                    </span>
+
+                )
+            }
+
+            {
+                game.collection.willingness === "Preordered" && (
+
+                    <span class="badge preorder">
+                        ⏳ {labels.preorder}
+                    </span>
+
+                )
+            }
+
+            {
+                game.collection.collectionStatus && (
+
+                    <span class="badge condition">
+
+                        {getStatusText(
+                            game.collection.collectionStatus
+                        )}
+
+                    </span>
+
+                )
+            }
+
+            {
+                game.collection.cardSleeves && (
+
+                    <span class="badge sleeves">
+                        ✓ {labels.sleeves}
+                    </span>
+
+                )
+            }
+
+        </div>
+
+        <!-- ==================================================
+             我的收藏資訊
+             ================================================== -->
+
+        <div class="collection-details">
+
+            <!-- 我的評分 -->
+
+            <div class="detail-item">
+
+                <small>
+                    {labels.rating}
+                </small>
+
+                <strong>
+                    {
+                        game.collection.myRating !== undefined
+                            ? `⭐ ${game.collection.myRating}`
+                            : "—"
+                    }
+                </strong>
+
+            </div>
+
+            <!-- 遊玩次數 -->
+
+            <div class="detail-item">
+
+                <small>
+                    {labels.playCount}
+                </small>
+
+                <strong>
+                    {game.collection.playCount ?? 0}
+                    {" "}{labels.times}
+                </strong>
+
+            </div>
+
+            <!-- 購入價格 -->
+
+            <div class="detail-item">
+
+                <small>
+                    {labels.price}
+                </small>
+
+                <strong>
+                    {
+                        game.collection.purchasePrice !== undefined
+                            ? `NT$${game.collection.purchasePrice.toLocaleString("en-US")}`
+                            : "—"
+                    }
+                </strong>
+
+            </div>
+
+            <!-- 購入來源 -->
+
+            <div class="detail-item">
+
+                <small>
+                    {labels.source}
+                </small>
+
+                <strong>
+                    {game.collection.purchaseSource ?? "—"}
+                </strong>
+
+            </div>
+
+        </div>
+
+        <!-- ==================================================
+             額外收藏資訊
+             ================================================== -->
+
+        {
+            (
+                game.collection.extraStorage ||
+                game.collection.additionalAccessories
+            ) && (
+
+                <div class="extra-info">
+
+                    {
+                        game.collection.extraStorage && (
+
+                            <p>
+                                <strong>
+                                    {labels.storage}：
+                                </strong>
+
+                                {game.collection.extraStorage}
+                            </p>
+
+                        )
+                    }
+
+                    {
+                        game.collection.additionalAccessories && (
+
+                            <p>
+                                <strong>
+                                    {labels.accessories}：
+                                </strong>
+
+                                {game.collection.additionalAccessories}
+                            </p>
+
+                        )
+                    }
+
+                </div>
+
+            )
+        }
+
+    </div>
+
+</article>
+
+<style>
+
+    /* ========================================================
+       Card
+       ======================================================== */
+
+    .game-card {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 12px;
+        overflow: hidden;
+
+        display: inline-block;
+        width: 100%;
+        vertical-align: top;
+        break-inside: avoid;
+        -webkit-column-break-inside: avoid;
+        margin: 0 0 18px;
+        background: #fffdf8;
+        border-color: #e9d9c2;
+        box-shadow: 0 3px 12px rgba(89, 65, 42, 0.07);
+        transition:
+            transform 0.2s ease,
+            box-shadow 0.2s ease;
+    }
+
+    .game-card:hover {
+        transform: translateY(-3px);
+
+        box-shadow:
+            0 6px 18px rgba(0, 0, 0, 0.10);
+    }
+
+    /*
+     * CollectionFilter 會加入 / 移除 hidden class
+     */
+    .game-card.hidden {
+        display: none;
+    }
+
+    /* ========================================================
+       Cover
+       ======================================================== */
+
+    .cover-link {
+        display: block;
+        text-decoration: none;
+    }
+
+    .game-cover,
+    .cover-placeholder {
+        width: 100%;
+        height: auto;
+    }
+
+    .game-cover {
+        display: block;
+        object-fit: contain;
+        max-height: 420px;
+        background: #f8f1e6;
+    }
+
+    .cover-placeholder {
+        min-height: 210px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        background: #f2f2f2;
+        color: #777;
+    }
+
+    .placeholder-icon {
+        font-size: 48px;
+    }
+
+    /* ========================================================
+       Game Information
+       ======================================================== */
+
+    .game-info {
+        padding: 16px;
+    }
+
+    .title-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .title-row h2 {
+        margin: 0;
+        font-size: 18px;
+        line-height: 1.4;
+    }
+
+    .title-row h2 a {
+        color: #4e3828;
+        text-decoration: none;
+    }
+
+    .title-row h2 a:hover {
+        text-decoration: underline;
+    }
+
+    .year {
+        margin: 5px 0 0;
+        color: #777;
+        font-size: 14px;
+    }
+
+    .rating {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        white-space: nowrap;
+    }
+
+    /* ========================================================
+       Game Meta
+       ======================================================== */
+
+    .game-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin-top: 14px;
+        font-size: 14px;
+    }
+
+    .language {
+        margin: 12px 0 0;
+        color: #666;
+        font-size: 14px;
+    }
+
+    /* ========================================================
+       Badges
+       ======================================================== */
+
+    .badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin: 14px 0;
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 5px 9px;
+        border-radius: 20px;
+        background: #f5ebdd;
+        font-size: 12px;
+    }
+
+    .badge.owned {
+        background: #e8f8ec;
+    }
+
+    .badge.wishlist {
+        background: #fff1f5;
+    }
+
+    .badge.preorder {
+        background: #fff6df;
+    }
+
+    .badge.condition {
+        background: #eef2ff;
+    }
+
+    .badge.sleeves {
+        background: #eef8ff;
+    }
+
+    /* ========================================================
+       Collection Details
+       ======================================================== */
+
+    .collection-details {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        border-top: 1px solid #eadfce;
+        padding-top: 14px;
+    }
+
+    .detail-item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .detail-item small {
+        color: #777;
+    }
+
+    .detail-item strong {
+        font-size: 14px;
+    }
+
+    /* ========================================================
+       Extra Information
+       ======================================================== */
+
+    .extra-info {
+        margin-top: 16px;
+        padding-top: 12px;
+        border-top: 1px solid #eadfce;
+        font-size: 13px;
+        color: #555;
+    }
+
+    .extra-info p {
+        margin: 5px 0;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .game-card { transition: none; }
+        .game-card:hover { transform: none; }
+    }
+
+</style>

@@ -1,56 +1,126 @@
-<header>
-    <div class="header-container">
+---
+import { useTranslations } from "../i18n/utils";
+import type { Language } from "../i18n/ui";
 
-        <a class="site-title" href="/">
-            🎲 Soma's Board Game Collection Blog
+interface Props { lang?: Language; }
+const { lang = "zh-TW" } = Astro.props;
+const t = useTranslations(lang);
+const pathname = Astro.url.pathname;
+
+function getChineseUrl(path: string): string {
+    if (path === "/en") return "/";
+    if (path.startsWith("/en/")) return path.substring(3);
+    return path;
+}
+function getEnglishUrl(path: string): string {
+    if (path === "/") return "/en";
+    if (path === "/en") return path;
+    if (path.startsWith("/en/")) return path;
+    return `/en${path}`;
+}
+function getLocalizedUrl(path: string): string {
+    return lang === "zh-TW" ? path : (path === "/" ? "/en" : `/en${path}`);
+}
+const chineseUrl = getChineseUrl(pathname);
+const englishUrl = getEnglishUrl(pathname);
+const navItems = [
+    { key: "nav.home", path: "/", icon: "⌂" },
+    { key: "nav.games", path: "/games", icon: "⚄" },
+    { key: "nav.collection", path: "/collection", icon: "♥" },
+    { key: "nav.blog", path: "/blog", icon: "✎" },
+    { key: "nav.about", path: "/about", icon: "✦" }
+] as const;
+const currentPath = getChineseUrl(pathname).replace(/\/$/, "") || "/";
+function isActive(path: string): boolean {
+    if (path === "/") return currentPath === "/";
+    return currentPath === path || currentPath.startsWith(`${path}/`);
+}
+---
+
+<header class="cat-site-header">
+    <div class="cat-header-inner">
+        <a class="cat-brand" href={getLocalizedUrl("/")} aria-label="Soma's Board Game Collection Blog">
+            <span class="cat-brand-icon" aria-hidden="true">🐾</span>
+            <span class="cat-brand-text">
+                <strong>Soma's</strong>
+                <small>Board Game Collection</small>
+            </span>
         </a>
 
-        <nav>
-            <a href="/">首頁</a>
-            <a href="/games">桌遊庫</a>
-            <a href="/collection">我的收藏</a>
-            <a href="/blog">文章</a>
-            <a href="/about">關於我</a>
+        <details class="cat-mobile-menu">
+            <summary aria-label={lang === "en" ? "Open navigation" : "展開導覽選單"}>
+                <span aria-hidden="true">☰</span>
+                <span>{lang === "en" ? "Menu" : "選單"}</span>
+            </summary>
+            <nav class="cat-mobile-nav" aria-label={lang === "en" ? "Mobile navigation" : "手機導覽"}>
+                {navItems.map(item => (
+                    <a href={getLocalizedUrl(item.path)} aria-current={isActive(item.path) ? "page" : undefined}>
+                        <span aria-hidden="true">{item.icon}</span>{t(item.key)}
+                    </a>
+                ))}
+                <div class="cat-mobile-languages">
+                    <a href={chineseUrl} aria-current={lang === "zh-TW" ? "page" : undefined}>中文</a>
+                    <span aria-hidden="true">/</span>
+                    <a href={englishUrl} aria-current={lang === "en" ? "page" : undefined}>English</a>
+                </div>
+            </nav>
+        </details>
+
+        <nav class="cat-desktop-nav" aria-label={lang === "en" ? "Main navigation" : "主要導覽"}>
+            {navItems.map(item => (
+                <a class="cat-nav-link" href={getLocalizedUrl(item.path)} aria-current={isActive(item.path) ? "page" : undefined}>
+                    <span class="cat-nav-icon" aria-hidden="true">{item.icon}</span>
+                    <span>{t(item.key)}</span>
+                </a>
+            ))}
         </nav>
 
+        <div class="cat-language-switcher" aria-label={lang === "en" ? "Language" : "語言切換"}>
+            <a href={chineseUrl} class:list={["cat-language-link", { active: lang === "zh-TW" }]} lang="zh-TW" aria-current={lang === "zh-TW" ? "page" : undefined}>中文</a>
+            <span aria-hidden="true">/</span>
+            <a href={englishUrl} class:list={["cat-language-link", { active: lang === "en" }]} lang="en" aria-current={lang === "en" ? "page" : undefined}>EN</a>
+        </div>
     </div>
 </header>
 
 <style>
-
-    header {
-        background-color: #222;
-        color: white;
-        padding: 20px 0;
+    .cat-site-header { position: relative; z-index: 50; background: #fffaf1; border-bottom: 2px solid #e7d5bb; box-shadow: 0 2px 10px rgba(91,58,35,.07); color: #49352a; }
+    .cat-header-inner { width: min(100%, 1600px); min-height: 76px; margin: 0 auto; padding: 10px clamp(16px, 3vw, 42px); display: flex; align-items: center; gap: clamp(16px, 2vw, 36px); }
+    .cat-brand { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 10px; color: #49352a; text-decoration: none; }
+    .cat-brand-icon { width: 50px; height: 50px; display: grid; place-items: center; border: 2px solid #dfb88b; border-radius: 15px; background: #fff0d7; font-size: 27px; }
+    .cat-brand-text { display: flex; flex-direction: column; line-height: 1.12; }
+    .cat-brand-text strong { font-size: 1.25rem; font-weight: 800; }
+    .cat-brand-text small { font-size: .8rem; font-weight: 700; }
+    .cat-desktop-nav { display: flex; align-items: center; justify-content: center; gap: 4px; margin-left: auto; }
+    .cat-nav-link { display: inline-flex; align-items: center; gap: 7px; padding: 11px 12px; border-radius: 12px; text-decoration: none; color: #594638; font-weight: 700; white-space: nowrap; transition: background .15s, color .15s; }
+    .cat-nav-icon { font-size: 1.2rem; color: #8b6148; }
+    .cat-nav-link:hover { background: #f4e7d5; color: #254e82; }
+    .cat-nav-link[aria-current="page"] { background: #dceafa; color: #224d82; }
+    .cat-nav-link[aria-current="page"] .cat-nav-icon { color: #224d82; }
+    .cat-language-switcher { display: flex; align-items: center; gap: 7px; white-space: nowrap; padding-left: 16px; border-left: 1px solid #decbb4; }
+    .cat-language-link { color: #776354; text-decoration: none; font-size: .88rem; }
+    .cat-language-link.active { color: #235a96; font-weight: 800; }
+    .cat-language-link:hover { text-decoration: underline; }
+    .cat-mobile-menu { display: none; }
+    @media (max-width: 1050px) {
+        .cat-header-inner { gap: 12px; }
+        .cat-brand-text small { font-size: .72rem; }
+        .cat-nav-link { padding: 10px 8px; gap: 4px; font-size: .88rem; }
     }
-
-    .header-container {
-        max-width: 1100px;
-        margin: auto;
-        padding: 0 20px;
+    @media (max-width: 850px) {
+        .cat-header-inner { min-height: 68px; }
+        .cat-brand-icon { width: 43px; height: 43px; font-size: 23px; }
+        .cat-desktop-nav, .cat-language-switcher { display: none; }
+        .cat-mobile-menu { display: block; margin-left: auto; position: relative; }
+        .cat-mobile-menu summary { display: flex; align-items: center; gap: 8px; cursor: pointer; list-style: none; border: 1px solid #d9bc99; background: #fff6e9; border-radius: 10px; padding: 9px 12px; font-weight: 700; }
+        .cat-mobile-menu summary::-webkit-details-marker { display: none; }
+        .cat-mobile-menu summary:focus-visible, a:focus-visible { outline: 3px solid #4981c1; outline-offset: 2px; }
+        .cat-mobile-nav { position: absolute; right: 0; top: calc(100% + 12px); width: min(300px, calc(100vw - 32px)); display: flex; flex-direction: column; padding: 10px; border: 1px solid #e0c9ab; border-radius: 14px; background: #fffaf1; box-shadow: 0 12px 30px rgba(58,40,25,.18); }
+        .cat-mobile-nav > a { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 9px; text-decoration: none; color: #49352a; font-weight: 700; }
+        .cat-mobile-nav > a:hover, .cat-mobile-nav > a[aria-current="page"] { background: #dceafa; color: #224d82; }
+        .cat-mobile-languages { display: flex; justify-content: center; gap: 15px; border-top: 1px solid #eadac5; padding: 15px 5px 5px; margin-top: 6px; }
+        .cat-mobile-languages a { color: #776354; text-decoration: none; }
+        .cat-mobile-languages a[aria-current="page"] { color: #224d82; font-weight: 800; }
     }
-
-    .site-title {
-        display: block;
-        color: white;
-        font-size: 26px;
-        font-weight: bold;
-        text-decoration: none;
-        margin-bottom: 15px;
-    }
-
-    nav {
-        display: flex;
-        gap: 25px;
-    }
-
-    nav a {
-        color: white;
-        text-decoration: none;
-    }
-
-    nav a:hover {
-        color: #ffd54f;
-    }
-
+    @media (max-width: 390px) { .cat-brand-text strong { font-size: 1.05rem; } .cat-brand-text small { font-size: .68rem; } }
 </style>

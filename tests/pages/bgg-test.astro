@@ -1,0 +1,100 @@
+---
+import Layout from "../../src/layouts/Layout.astro";
+
+import {
+    getGames
+} from "../../src/lib/games";
+
+
+const games =
+    getGames();
+---
+
+
+<Layout title="BGG Cache Test">
+
+    <main>
+
+        <h1>
+            BGG JSON Cache 測試
+        </h1>
+
+
+        {
+            games.map(game => (
+
+                <article>
+
+                    {
+                        game.bgg.image && (
+
+                            <img
+                                src={game.bgg.image}
+                                alt={game.bgg.name}
+                                width="200"
+                            />
+
+                        )
+                    }
+
+
+                    <h2>
+                        {game.bgg.name}
+                    </h2>
+
+
+                    <p>
+                        BGG ID：
+                        {game.bggId}
+                    </p>
+
+
+                    <p>
+                        年份：
+                        {game.bgg.year}
+                    </p>
+
+
+                    <p>
+                        BGG Rating：
+                        {
+                            game.bgg.averageRating
+                                ?.toFixed(2)
+                        }
+                    </p>
+
+
+                    <p>
+                        BGG Rank：
+                        {
+                            game.bgg.overallRank
+                            ?? "未排名"
+                        }
+                    </p>
+
+
+                    <p>
+                        我的評分：
+                        {
+                            game.collection.myRating
+                            ?? "未評分"
+                        }
+                    </p>
+
+
+                    <p>
+                        購入價格：
+                        {
+                            game.collection.purchasePrice
+                            ?? "未記錄"
+                        }
+                    </p>
+
+                </article>
+
+            ))
+        }
+
+    </main>
+
+</Layout>
