@@ -71,3 +71,10 @@ test_0011_sleeves.sql
 
 # Cloudflare Wrangler generated types
 /worker-configuration.d.ts
+
+# SQLite journal files
+*.sqlite-shm
+*.sqlite-wal
+
+# D1 local test databases
+/d1-*-test*/

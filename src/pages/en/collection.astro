@@ -1,11 +1,27 @@
+
 ---
+import { env } from "cloudflare:workers";
+
 import Layout from "../../layouts/Layout.astro";
 import CollectionPage from "../../components/CollectionPage.astro";
+
+import { CollectionV2Repository } from "../../lib/collection-v2-repository";
+import { adaptCollectionV2Rows } from "../../lib/collection-v2-adapter";
+
+export const prerender = false;
+
+const repository = new CollectionV2Repository(env.DB);
+const rows = await repository.getProductionItems();
+
+const collectionGames = adaptCollectionV2Rows(rows, "en");
 ---
 
 <Layout
     title="My Collection | Soma's Board Game Collection Blog"
     lang="en"
 >
-    <CollectionPage lang="en" />
+    <CollectionPage
+        lang="en"
+        collectionGames={collectionGames}
+    />
 </Layout>

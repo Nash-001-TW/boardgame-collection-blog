@@ -1,32 +1,60 @@
 ---
 import { getGames } from "../lib/games";
+import type { CollectionV2Game } from "../lib/collection-v2-adapter";
 import type { Language } from "../i18n/ui";
 
 interface Props {
     lang: Language;
+    collectionGames?: CollectionV2Game[];
 }
 
-const { lang } = Astro.props;
-const games = getGames();
+const { lang, collectionGames } = Astro.props;
+
 const zh = lang === "zh-TW";
 
-const statistics = [
-    {
-        label: zh ? "已收藏" : "Owned",
-        count: games.filter(g => g.collection.owned).length
-    },
-    {
-        label: zh ? "願望清單" : "Wishlist",
-        count: games.filter(g => g.collection.wishlist).length
-    },
-    {
-        label: zh ? "預購" : "Preordered",
-        count: games.filter(
-            g => g.collection.willingness === "Preordered"
-        ).length
-    }
-];
+// 有傳入 D1 V2 資料時，使用新版統計。
+// 否則維持原本 getGames() 的統計方式。
+const statistics = collectionGames !== undefined
+    ? [
+        {
+            label: zh ? "收藏總筆數" : "Total Items",
+            count: collectionGames.length
+        },
+        {
+            label: zh ? "已收藏" : "Owned",
+            count: collectionGames.filter(g => g.owned).length
+        },
+        {
+            label: zh ? "願望清單" : "Wishlist",
+            count: collectionGames.filter(g => g.wishlist).length
+        },
+        {
+            label: zh ? "預購" : "Preordered",
+            count: collectionGames.filter(g => g.preordered).length
+        }
+    ]
+    : (() => {
+        const games = getGames();
+
+        return [
+            {
+                label: zh ? "已收藏" : "Owned",
+                count: games.filter(g => g.collection.owned).length
+            },
+            {
+                label: zh ? "願望清單" : "Wishlist",
+                count: games.filter(g => g.collection.wishlist).length
+            },
+            {
+                label: zh ? "預購" : "Preordered",
+                count: games.filter(
+                    g => g.collection.willingness === "Preordered"
+                ).length
+            }
+        ];
+    })();
 ---
+
 
 <div class="game-summary">
     {statistics.map(item => (
@@ -53,7 +81,6 @@ const statistics = [
         justify-content: space-between;
         align-items: center;
         gap: 12px;
-
         padding: 10px 12px;
         background: #fffdf8;
         border: 1px solid #e7d7bf;

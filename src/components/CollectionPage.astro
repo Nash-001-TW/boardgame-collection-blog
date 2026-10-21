@@ -3,38 +3,46 @@ import CollectionCard from "./CollectionCard.astro";
 import GameSummary from "./GameSummary.astro";
 import GameBrowserControls from "./GameBrowserControls.astro";
 
-import { getGames } from "../lib/games";
+import type { CollectionV2Game } from "../lib/collection-v2-adapter";
 import type { Language } from "../i18n/ui";
 import { translateBggMechanic, translateBggCategory } from "../i18n/utils";
 
 interface Props {
     lang: Language;
+    collectionGames: CollectionV2Game[];
 }
 
-const { lang } = Astro.props;
-const games = getGames();
-
-const collectionGames = games.filter(game =>
-    game.collection.owned ||
-    game.collection.wishlist ||
-    game.collection.willingness === "Preordered" ||
-    game.collection.willingness === "Want To Play" ||
-    game.collection.willingness === "Want To Buy"
-);
+const { lang, collectionGames } = Astro.props;
 
 const zh = lang === "zh-TW";
 // 每款遊戲的同一個標籤只計算一次，避免重複資料影響排名。
+
+type BggTag = NonNullable<CollectionV2Game["bgg"]>["mechanics"][number];
+
 function buildTagCloud(kind: "mechanics" | "categories") {
-    const counts = new Map<string, { item: (typeof collectionGames)[number]["bgg"]["mechanics"][number]; count: number }>();
+    const counts = new Map<string, {
+        item: BggTag;
+        count: number;
+    }>();
 
     for (const game of collectionGames) {
-        const uniqueItems = new Map<string, (typeof game.bgg.mechanics)[number]>();
-        for (const item of (game.bgg?.[kind] ?? [])) {
-            if (item.name?.trim()) uniqueItems.set(item.name.trim(), item);
+        // 沒有 BGG 資料的收藏仍保留在畫面，
+        // 但不參與 BGG 機制與類型統計。
+        if (!game.bgg) continue;
+
+        const uniqueItems = new Map<string, BggTag>();
+
+        for (const item of game.bgg[kind] ?? []) {
+            const name = item.name?.trim();
+
+            if (name) {
+                uniqueItems.set(name, item);
+            }
         }
 
         for (const [name, item] of uniqueItems) {
             const previous = counts.get(name);
+
             counts.set(name, {
                 item,
                 count: (previous?.count ?? 0) + 1
@@ -43,9 +51,12 @@ function buildTagCloud(kind: "mechanics" | "categories") {
     }
 
     return [...counts.values()].sort(
-        (a, b) => b.count - a.count || a.item.name.localeCompare(b.item.name)
+        (a, b) =>
+            b.count - a.count ||
+            a.item.name.localeCompare(b.item.name)
     );
 }
+
 
 const mechanicTags = buildTagCloud("mechanics");
 const categoryTags = buildTagCloud("categories");
@@ -72,7 +83,10 @@ const categoryTags = buildTagCloud("categories");
         <aside class="sidebar sidebar-left" aria-label={zh ? "收藏工具" : "Collection tools"}>
             <section class="side-panel">
                 <h2>{zh ? "收藏總覽" : "Collection overview"}</h2>
-                <GameSummary lang={lang} />
+                <GameSummary
+                    lang={lang}
+                    collectionGames={collectionGames}
+                />
             </section>
 
             <section class="side-panel filters-panel">

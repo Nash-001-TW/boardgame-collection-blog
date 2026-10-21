@@ -1,0 +1,103 @@
+
+---
+import { env } from "cloudflare:workers";
+
+import { CollectionV2Repository } from "../../lib/collection-v2-repository";
+
+import {
+    adaptCollectionV2Rows,
+    diagnoseCollectionV2
+} from "../../lib/collection-v2-adapter";
+
+export const prerender = false;
+
+interface TestResult {
+    databaseCount: number;
+    loadedCount: number;
+    owned: number;
+    preordered: number;
+    wishlist: number;
+    withoutBggId: number;
+    withoutBggCache: number;
+    duplicateCollectionIds: number;
+    firstFive: {
+        collectionId: number;
+        displayName: string;
+        itemType: string;
+        bggId: number | null;
+    }[];
+}
+
+let result: TestResult | null = null;
+let errorMessage = "";
+
+// 此頁面僅允許本機開發模式執行。
+// 正式環境一律回傳 404。
+if (!import.meta.env.DEV) {
+    return new Response("Not Found", { status: 404 });
+}
+
+try {
+    if (!env.DB) {
+        throw new Error("D1 Binding DB 不存在");
+    }
+
+    const repository = new CollectionV2Repository(env.DB);
+
+    const [rows, databaseCount] = await Promise.all([
+        repository.getProductionItems(),
+        repository.countProductionItems()
+    ]);
+
+    const games = adaptCollectionV2Rows(rows);
+    const diagnostics = diagnoseCollectionV2(games);
+
+    result = {
+        databaseCount,
+        loadedCount: diagnostics.total,
+        owned: diagnostics.owned,
+        preordered: diagnostics.preordered,
+        wishlist: diagnostics.wishlist,
+        withoutBggId: diagnostics.withoutBggId,
+        withoutBggCache: diagnostics.withoutBggCache,
+        duplicateCollectionIds: diagnostics.duplicateCollectionIds,
+        firstFive: games.slice(0, 5).map(game => ({
+            collectionId: game.collectionId,
+            displayName: game.displayName,
+            itemType: game.itemType,
+            bggId: game.bggId
+        }))
+    };
+} catch (error) {
+    console.error("D1 V2 integration test failed:", error);
+
+    errorMessage = error instanceof Error
+        ? error.message
+        : "未知錯誤";
+}
+---
+
+<html lang="zh-Hant">
+    <head>
+        <meta charset="UTF-8" />
+        <title>D1 V2 Collection Test</title>
+    </head>
+
+    <body>
+        <h1>D1 V2 收藏整合測試</h1>
+
+        {
+            errorMessage ? (
+                <pre>ERROR: {errorMessage}</pre>
+            ) : result ? (
+                <>
+                    <h2>資料驗證結果</h2>
+
+                    <pre>{JSON.stringify(result, null, 2)}</pre>
+                </>
+            ) : (
+                <p>沒有取得測試結果</p>
+            )
+        }
+    </body>
+</html>

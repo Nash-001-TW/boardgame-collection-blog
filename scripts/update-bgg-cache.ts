@@ -472,8 +472,33 @@ async function main(): Promise<void> {
     const originalCount =
         Object.keys(cache).length;
 
-    // 收集本地 + BGG 收藏 ID
-    const allIds = collectAllBggIds();
+    /// 收集 BGG ID，支援命令列指定
+    const idsArg = process.argv.slice(2).find(arg => arg.startsWith("--ids="));
+
+    let allIds: number[];
+
+    if (idsArg !== undefined) {
+        const rawIds = idsArg.substring("--ids=".length).split(",");
+
+        const parsedIds = rawIds.map(value => {
+            const trimmed = value.trim();
+            const id = Number(trimmed);
+
+            if (!/^\d+$/.test(trimmed) || !isValidBggId(id)) {
+                throw new Error(`無效的 BGG ID：${trimmed}`);
+            }
+
+            return id;
+        });
+
+        allIds = [...new Set(parsedIds)].sort((a, b) => a - b);
+
+        console.log("更新模式：指定 BGG ID");
+    } else {
+        allIds = collectAllBggIds();
+
+        console.log("更新模式：原有收藏清單");
+    }
 
     // 僅處理沒有詳細資料的遊戲
     const missingIds = allIds.filter(

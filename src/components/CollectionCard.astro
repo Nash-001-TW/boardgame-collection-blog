@@ -1,454 +1,117 @@
 ---
-import type { Game } from "../lib/games";
+import type { CollectionV2Game } from "../lib/collection-v2-adapter";
 import type { Language } from "../i18n/ui";
-import { translateGameName } from "../i18n/utils";
-
-// ============================================================
-// Component Props
-// ============================================================
+import { getCollectionV2GameUrl } from "../lib/collection-v2-links";
 
 interface Props {
-    game: Game;
+    game: CollectionV2Game;
     lang?: Language;
 }
 
-const {
-    game,
-    lang = "zh-TW"
-} = Astro.props;
+const { game, lang = "zh-TW" } = Astro.props;
+const zh = lang === "zh-TW";
+const bgg = game.bgg;
+const displayName = game.displayName;
+const originalName = bgg?.name ?? game.primaryName ?? "";
+const gameUrl = getCollectionV2GameUrl(game.bggId, lang);
+const mechanics = bgg?.mechanics ?? [];
+const categories = bgg?.categories ?? [];
 
-// ============================================================
-// 遊戲名稱與詳細頁網址
-// ============================================================
-
-const displayName = translateGameName(
-    game.bggId,
-    game.bgg.name,
-    lang
-);
-
-const gameUrl = lang === "en"
-    ? `/en/games/${game.slug}`
-    : `/games/${game.slug}`;
-
-// ============================================================
-// 中英文顯示文字
-// ============================================================
-
-const labels = lang === "zh-TW"
-    ? {
-        noImage: "等待 BGG 圖片",
-        players: "人",
-        minutes: "分",
-        owned: "已收藏",
-        wishlist: "願望清單",
-        preorder: "預購",
-        sleeves: "已上牌套",
-        rating: "我的評分",
-        playCount: "遊玩次數",
-        times: "次",
-        price: "購入價格",
-        source: "購入來源",
-        storage: "收納",
-        accessories: "額外配件",
-        unset: "未設定"
-    }
-    : {
-        noImage: "BGG image unavailable",
-        players: "players",
-        minutes: "min",
-        owned: "Owned",
-        wishlist: "Wishlist",
-        preorder: "Preordered",
-        sleeves: "Sleeved",
-        rating: "My Rating",
-        playCount: "Plays",
-        times: "times",
-        price: "Purchase Price",
-        source: "Purchase Source",
-        storage: "Storage",
-        accessories: "Accessories",
-        unset: "Not Set"
-    };
-
-// ============================================================
-// 收藏品狀態翻譯
-// ============================================================
-
-function getStatusText(status?: string): string {
-
-    const translations: Record<string, [string, string]> = {
-        "Brand New": ["全新", "Brand New"],
-        "Checked/Verified": ["已驗收", "Checked/Verified"],
-        "Missing Parts": ["缺件", "Missing Parts"],
-        "Moisture-Damaged": ["受潮", "Moisture-Damaged"],
-        "Previously Owned": ["二手購入", "Previously Owned"],
-        "Already Gifted/Sold": ["已贈與或售出", "Already Gifted/Sold"]
-    };
-
-    if (!status) {
-        return labels.unset;
-    }
-
-    const value = translations[status];
-
-    if (!value) {
-        return status;
-    }
-
-    return lang === "en"
-        ? value[1]
-        : value[0];
-}
-
-// ============================================================
-// 遊戲語言版本翻譯
-// ============================================================
-
-function getLanguageText(language?: string): string {
-
-    const translations: Record<string, string> = {
-        "English": "英文",
-        "Japanese": "日文",
-        "Traditional Chinese": "繁體中文",
-        "Simplified Chinese": "簡體中文"
-    };
-
-    if (!language) {
-        return labels.unset;
-    }
-
-    return lang === "en"
-        ? language
-        : translations[language] ?? language;
-}
+const typeNames: Record<string, [string, string]> = {
+    base: ["主遊戲", "Base Game"],
+    bundle: ["組合包", "Bundle"],
+    expansion: ["擴充", "Expansion"],
+    promo: ["宣傳品", "Promo"]
+};
+const typeName = typeNames[game.itemType]?.[zh ? 0 : 1] ?? game.itemType;
+const labels = zh ? {
+    noImage: "暫無遊戲圖片", players: "人", minutes: "分",
+    owned: "已收藏", wishlist: "願望清單", preorder: "預購",
+    rating: "我的評分", playCount: "遊玩次數",
+    price: "購入價格", source: "購入來源"
+} : {
+    noImage: "No image available", players: "players", minutes: "min",
+    owned: "Owned", wishlist: "Wishlist", preorder: "Preordered",
+    rating: "My Rating", playCount: "Plays",
+    price: "Purchase Price", source: "Purchase Source"
+};
 ---
 
 <article
     class="game-card"
     data-game-card
+    data-collection-id={game.collectionId}
+    data-item-type={game.itemType}
     data-name={displayName}
-    data-original-name={game.bgg.name}
-    data-bgg-id={game.bggId}
-    data-year={game.bgg.year ?? ""}
-    data-rating={game.collection.myRating ?? ""}
-    data-bgg-rating={game.bgg.averageRating ?? ""}
-    data-weight={game.bgg.averageWeight ?? ""}
-    data-owned={String(game.collection.owned)}
-    data-wishlist={String(game.collection.wishlist ?? false)}
-    data-preorder={String(game.collection.willingness === "Preordered")}
-    data-want-to-play={String(game.collection.willingness === "Want To Play")}
-    data-want-to-buy={String(game.collection.willingness === "Want To Buy")}
-    data-expansion={String(game.bgg.isExpansion)}
-    data-min-players={game.bgg.minPlayers}
-    data-max-players={game.bgg.maxPlayers}
-    data-max-time={game.bgg.maxPlayTime}
-    data-mechanics={game.bgg.mechanics.map(m => m.id).join(",")}
-    data-mechanic-names={game.bgg.mechanics.map(m => m.name.replaceAll("|", " ")).join("|")}
-    data-categories={game.bgg.categories.map(c => c.id).join(",")}
-    data-category-names={game.bgg.categories.map(c => c.name.replaceAll("|", " ")).join("|")}
+    data-original-name={originalName}
+    data-bgg-id={game.bggId ?? ""}
+    data-year={bgg?.year ?? ""}
+    data-rating=""
+    data-bgg-rating={bgg?.averageRating ?? ""}
+    data-weight={bgg?.averageWeight ?? ""}
+    data-owned={String(game.owned)}
+    data-wishlist={String(game.wishlist)}
+    data-preorder={String(game.preordered)}
+    data-want-to-play="false"
+    data-want-to-buy="false"
+    data-expansion={String(game.itemType === "expansion")}
+    data-min-players={bgg?.minPlayers ?? ""}
+    data-max-players={bgg?.maxPlayers ?? ""}
+    data-max-time={bgg?.maxPlayTime ?? ""}
+    data-mechanics={mechanics.map(m => m.id).join(",")}
+    data-mechanic-names={mechanics.map(m => m.name.replaceAll("|", " ")).join("|")}
+    data-categories={categories.map(c => c.id).join(",")}
+    data-category-names={categories.map(c => c.name.replaceAll("|", " ")).join("|")}
 >
-
-    <!-- ======================================================
-         遊戲封面
-         ====================================================== -->
-
-    <a
-        class="cover-link"
-        href={gameUrl}
-    >
-
-        {
-            game.bgg.image ? (
-
-                <img
-                    class="game-cover"
-                    src={game.bgg.image}
-                    alt={displayName}
-                    loading="lazy"
-                    decoding="async"
-                />
-
+    {gameUrl ? (
+        <a class="cover-link" href={gameUrl}>
+            {bgg?.image ? (
+                <img class="game-cover" src={bgg.image} alt={displayName} loading="lazy" decoding="async" />
             ) : (
-
-                <div class="cover-placeholder">
-
-                    <span class="placeholder-icon">
-                        🎲
-                    </span>
-
-                    <small>
-                        {labels.noImage}
-                    </small>
-
-                </div>
-
-            )
-        }
-
-    </a>
-
-    <!-- ======================================================
-         遊戲資訊
-         ====================================================== -->
+                <div class="cover-placeholder"><span class="placeholder-icon">🎲</span><small>{labels.noImage}</small></div>
+            )}
+        </a>
+    ) : (
+        <div class="cover-link">
+            {bgg?.image ? (
+                <img class="game-cover" src={bgg.image} alt={displayName} loading="lazy" decoding="async" />
+            ) : (
+                <div class="cover-placeholder"><span class="placeholder-icon">🎲</span><small>{labels.noImage}</small></div>
+            )}
+        </div>
+    )}
 
     <div class="game-info">
-
         <div class="title-row">
-
             <div>
-
-                <h2>
-                    <a href={gameUrl}>
-                        {displayName}
-                    </a>
-                </h2>
-
-                <p class="year">
-                    {game.bgg.year}
-                </p>
-
+                <h2>{gameUrl ? <a href={gameUrl}>{displayName}</a> : <span>{displayName}</span>}</h2>
+                {bgg?.year != null && <p class="year">{bgg.year}</p>}
             </div>
-
-            {
-                game.collection.myRating !== undefined && (
-
-                    <div class="rating">
-
-                        <span>⭐</span>
-
-                        <strong>
-                            {game.collection.myRating}
-                        </strong>
-
-                    </div>
-
-                )
-            }
-
         </div>
-
-        <!-- ==================================================
-             基本資料
-             ================================================== -->
 
         <div class="game-meta">
-
-            <span>
-                👥
-                {game.bgg.minPlayers}–{game.bgg.maxPlayers}
-                {" "}{labels.players}
-            </span>
-
-            <span>
-                🕐
-                {game.bgg.minPlayTime}–{game.bgg.maxPlayTime}
-                {" "}{labels.minutes}
-            </span>
-
+            {bgg?.minPlayers != null && bgg?.maxPlayers != null && (
+                <span>👥 {bgg.minPlayers}–{bgg.maxPlayers} {labels.players}</span>
+            )}
+            {bgg?.minPlayTime != null && bgg?.maxPlayTime != null && (
+                <span>🕐 {bgg.minPlayTime}–{bgg.maxPlayTime} {labels.minutes}</span>
+            )}
         </div>
-
-        <!-- ==================================================
-             語言版本
-             ================================================== -->
-
-        {
-            game.collection.languageVersion && (
-
-                <p class="language">
-
-                    🌐
-                    {getLanguageText(
-                        game.collection.languageVersion
-                    )}
-
-                </p>
-
-            )
-        }
-
-        <!-- ==================================================
-             收藏標籤
-             ================================================== -->
 
         <div class="badges">
-
-            {
-                game.collection.owned && (
-
-                    <span class="badge owned">
-                        ✓ {labels.owned}
-                    </span>
-
-                )
-            }
-
-            {
-                game.collection.wishlist && (
-
-                    <span class="badge wishlist">
-                        ♡ {labels.wishlist}
-                    </span>
-
-                )
-            }
-
-            {
-                game.collection.willingness === "Preordered" && (
-
-                    <span class="badge preorder">
-                        ⏳ {labels.preorder}
-                    </span>
-
-                )
-            }
-
-            {
-                game.collection.collectionStatus && (
-
-                    <span class="badge condition">
-
-                        {getStatusText(
-                            game.collection.collectionStatus
-                        )}
-
-                    </span>
-
-                )
-            }
-
-            {
-                game.collection.cardSleeves && (
-
-                    <span class="badge sleeves">
-                        ✓ {labels.sleeves}
-                    </span>
-
-                )
-            }
-
+            <span class="badge type">{typeName}</span>
+            {game.owned && <span class="badge owned">✓ {labels.owned}</span>}
+            {game.wishlist && <span class="badge wishlist">♡ {labels.wishlist}</span>}
+            {game.preordered && <span class="badge preorder">⏳ {labels.preorder}</span>}
         </div>
-
-        <!-- ==================================================
-             我的收藏資訊
-             ================================================== -->
 
         <div class="collection-details">
-
-            <!-- 我的評分 -->
-
-            <div class="detail-item">
-
-                <small>
-                    {labels.rating}
-                </small>
-
-                <strong>
-                    {
-                        game.collection.myRating !== undefined
-                            ? `⭐ ${game.collection.myRating}`
-                            : "—"
-                    }
-                </strong>
-
-            </div>
-
-            <!-- 遊玩次數 -->
-
-            <div class="detail-item">
-
-                <small>
-                    {labels.playCount}
-                </small>
-
-                <strong>
-                    {game.collection.playCount ?? 0}
-                    {" "}{labels.times}
-                </strong>
-
-            </div>
-
-            <!-- 購入價格 -->
-
-            <div class="detail-item">
-
-                <small>
-                    {labels.price}
-                </small>
-
-                <strong>
-                    {
-                        game.collection.purchasePrice !== undefined
-                            ? `NT$${game.collection.purchasePrice.toLocaleString("en-US")}`
-                            : "—"
-                    }
-                </strong>
-
-            </div>
-
-            <!-- 購入來源 -->
-
-            <div class="detail-item">
-
-                <small>
-                    {labels.source}
-                </small>
-
-                <strong>
-                    {game.collection.purchaseSource ?? "—"}
-                </strong>
-
-            </div>
-
+            <div class="detail-item"><small>{labels.rating}</small><strong>—</strong></div>
+            <div class="detail-item"><small>{labels.playCount}</small><strong>—</strong></div>
+            <div class="detail-item"><small>{labels.price}</small><strong>—</strong></div>
+            <div class="detail-item"><small>{labels.source}</small><strong>—</strong></div>
         </div>
-
-        <!-- ==================================================
-             額外收藏資訊
-             ================================================== -->
-
-        {
-            (
-                game.collection.extraStorage ||
-                game.collection.additionalAccessories
-            ) && (
-
-                <div class="extra-info">
-
-                    {
-                        game.collection.extraStorage && (
-
-                            <p>
-                                <strong>
-                                    {labels.storage}：
-                                </strong>
-
-                                {game.collection.extraStorage}
-                            </p>
-
-                        )
-                    }
-
-                    {
-                        game.collection.additionalAccessories && (
-
-                            <p>
-                                <strong>
-                                    {labels.accessories}：
-                                </strong>
-
-                                {game.collection.additionalAccessories}
-                            </p>
-
-                        )
-                    }
-
-                </div>
-
-            )
-        }
-
     </div>
-
 </article>
 
 <style>
@@ -549,7 +212,8 @@ function getLanguageText(language?: string): string {
         line-height: 1.4;
     }
 
-    .title-row h2 a {
+    .title-row h2 a,
+    .title-row h2 span {
         color: #4e3828;
         text-decoration: none;
     }
@@ -607,6 +271,8 @@ function getLanguageText(language?: string): string {
         background: #f5ebdd;
         font-size: 12px;
     }
+
+    .badge.type { background: #eaf4ff; color: #245d91; }
 
     .badge.owned {
         background: #e8f8ec;

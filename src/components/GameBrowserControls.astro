@@ -4,10 +4,16 @@ interface Props { lang: Language; }
 const { lang } = Astro.props;
 const zh = lang === "zh-TW";
 const filters = [
-    ["all", "全部", "All"], ["base", "基本遊戲", "Base Games"],
-    ["expansion", "擴充", "Expansions"], ["owned", "已收藏", "Owned"],
-    ["unowned", "未收藏", "Not Owned"], ["wishlist", "願望清單", "Wishlist"],
-    ["preorder", "預購", "Preordered"], ["wantToPlay", "想玩", "Want to Play"],
+    ["all", "全部", "All"],
+    ["base", "基本遊戲", "Base Games"],
+    ["expansion", "擴充", "Expansions"],
+    ["bundle", "組合包", "Bundles"],
+    ["promo", "宣傳品", "Promos"],
+    ["owned", "已收藏", "Owned"],
+    ["unowned", "未持有", "Unowned"],
+    ["wishlist", "願望清單", "Wishlist"],
+    ["preorder", "預購", "Preordered"],
+    ["wantToPlay", "想玩", "Want to Play"],
     ["wantToBuy", "想買", "Want to Buy"]
 ];
 const sorts = [

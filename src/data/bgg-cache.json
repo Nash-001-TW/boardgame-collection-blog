@@ -4028,6 +4028,370 @@
             }
         ]
     },
+    "25071": {
+        "bggId": 25071,
+        "gameType": "boardgame",
+        "name": "Munchkin Cthulhu",
+        "description": "Munchkins have hacked their way through dungeons, kung fu temples, starships, haunted houses, and super-foes. Now they face their greatest challenge &ndash; Cthulhu! Will they survive? Will they retain their sanity? Will they...level up?\n\nMunchkin Cthulhu is a standalone game in the Munchkin universe, this time lampooning Lovecraft's Mythos and the horror gaming that surrounds it. This base game features four new Classes, including the Cultist, and a lot of classic monsters from outside reality &ndash; and they all have Stuff you can take from their twitching bodies. You can play Munchkin Cthulhu by itself, or combine it with any number of other Munchkin titles for mind-bending silliness.\n\nPart of the Munchkin series.\n\nMunchkin is a satirical card game based on the clich&eacute;s and oddities of Dungeons and Dragons and other role-playing games. Each player starts at level 1 and the winner is the first player to reach level 10. Players can acquire familiar D&D style character classes during the game which determine to some extent the cards they can play.\n\nThere are two types of cards - treasure and encounters. Each turn the current players 'kicks down the door' - drawing an encounter card from the deck. Usually this will involve battling a monster. Monsters have their own levels and players must try and overcome it using the levels, weapons and powers they have acquired during the game or run away. Other players can chose to help the player or hinder by adding extra monsters to the encounter. Defeating a monster will usually result in drawing treasure cards and acquiring levels. Being defeated by a monster results in \"bad stuff\" which usually involves losing levels and treasure.",
+        "year": 2007,
+        "image": "https://cf.geekdo-images.com/xFlGGfyoP4Pb-nYKxJTi7A__original/img/Wpa4WcLLng6qxx5zysK7ieQVGNk=/0x0/filters:format(jpeg)/pic162995.jpg",
+        "thumbnail": "https://cf.geekdo-images.com/xFlGGfyoP4Pb-nYKxJTi7A__small/img/ZaNWqdXzlw46-hrwsxTrBfWfGt8=/fit-in/200x150/filters:strip_icc()/pic162995.jpg",
+        "minPlayers": 3,
+        "maxPlayers": 6,
+        "bestPlayerCounts": [
+            4
+        ],
+        "minPlayTime": 90,
+        "maxPlayTime": 90,
+        "averageWeight": 1.7243,
+        "complexity": "Medium Light",
+        "minAge": 10,
+        "designers": [
+            {
+                "id": 12552,
+                "name": "J. H. G. Hendriks"
+            },
+            {
+                "id": 22,
+                "name": "Steve Jackson (I)"
+            }
+        ],
+        "artists": [
+            {
+                "id": 77627,
+                "name": "Katie Cook"
+            },
+            {
+                "id": 6815,
+                "name": "John Kovalic"
+            },
+            {
+                "id": 12078,
+                "name": "François Launet"
+            },
+            {
+                "id": 93259,
+                "name": "Gabby Ruenes"
+            }
+        ],
+        "publishers": [
+            {
+                "id": 3475,
+                "name": "Arclight Games"
+            },
+            {
+                "id": 12031,
+                "name": "Black Monk"
+            },
+            {
+                "id": 6194,
+                "name": "Delta Vision Publishing"
+            },
+            {
+                "id": 2973,
+                "name": "Edge Entertainment"
+            },
+            {
+                "id": 15605,
+                "name": "Galápagos Jogos"
+            },
+            {
+                "id": 18852,
+                "name": "Hobby World"
+            },
+            {
+                "id": 32395,
+                "name": "NeoTroy Games"
+            },
+            {
+                "id": 39,
+                "name": "Pegasus Spiele"
+            },
+            {
+                "id": 3242,
+                "name": "Raven Distribution"
+            },
+            {
+                "id": 8313,
+                "name": "Smart Ltd"
+            },
+            {
+                "id": 19,
+                "name": "Steve Jackson Games"
+            },
+            {
+                "id": 3446,
+                "name": "Ubik"
+            }
+        ],
+        "categories": [
+            {
+                "id": 1002,
+                "name": "Card Game"
+            },
+            {
+                "id": 1046,
+                "name": "Fighting"
+            },
+            {
+                "id": 1024,
+                "name": "Horror"
+            },
+            {
+                "id": 1079,
+                "name": "Humor"
+            }
+        ],
+        "mechanics": [
+            {
+                "id": 2072,
+                "name": "Dice Rolling"
+            },
+            {
+                "id": 2008,
+                "name": "Trading"
+            },
+            {
+                "id": 2015,
+                "name": "Variable Player Powers"
+            }
+        ],
+        "families": [
+            {
+                "id": 24,
+                "name": "Game: Munchkin"
+            },
+            {
+                "id": 5141,
+                "name": "Theme: Cthulhu Mythos"
+            }
+        ],
+        "expansions": [
+            {
+                "id": 106498,
+                "name": "+10 Bag o&#039; Munchkin d6"
+            },
+            {
+                "id": 54435,
+                "name": "+6 Bag O&#039; Munchkin Babes"
+            },
+            {
+                "id": 98956,
+                "name": "+6 Bag o&#039; Munchkin Level Counters"
+            },
+            {
+                "id": 38891,
+                "name": "+6 Bag o&#039; Munchkins"
+            },
+            {
+                "id": 136857,
+                "name": "+8 Bag O&#039; Munchkin Babes & Pawns"
+            },
+            {
+                "id": 449337,
+                "name": "Colossal Munchkin Level Die"
+            },
+            {
+                "id": 44805,
+                "name": "Epic Munchkin"
+            },
+            {
+                "id": 88665,
+                "name": "Exclusive Warehouse 23 Munchkin Booster"
+            },
+            {
+                "id": 100422,
+                "name": "Munchkin 10th Anniversary Shot Glass"
+            },
+            {
+                "id": 11058,
+                "name": "Munchkin Blender"
+            },
+            {
+                "id": 155159,
+                "name": "Munchkin Board of Health"
+            },
+            {
+                "id": 78674,
+                "name": "Munchkin Boxes of Holding"
+            },
+            {
+                "id": 126425,
+                "name": "Munchkin Bracelet of Slapping"
+            },
+            {
+                "id": 42519,
+                "name": "Munchkin Chibithulhu Plush"
+            },
+            {
+                "id": 39392,
+                "name": "Munchkin Coins"
+            },
+            {
+                "id": 389464,
+                "name": "Munchkin Cows"
+            },
+            {
+                "id": 29568,
+                "name": "Munchkin Cthulhu 2: Call of Cowthulhu"
+            },
+            {
+                "id": 31847,
+                "name": "Munchkin Cthulhu 3: The Unspeakable Vault"
+            },
+            {
+                "id": 71865,
+                "name": "Munchkin Cthulhu 4: Crazed Caverns"
+            },
+            {
+                "id": 33825,
+                "name": "Munchkin Cthulhu Cursed Demo"
+            },
+            {
+                "id": 42362,
+                "name": "Munchkin Cthulhu: Dice of Doom"
+            },
+            {
+                "id": 295106,
+                "name": "Munchkin Cthulhu: Sanity Check"
+            },
+            {
+                "id": 14580,
+                "name": "Munchkin Dice"
+            },
+            {
+                "id": 134690,
+                "name": "Munchkin Gazebo Shot Glass"
+            },
+            {
+                "id": 130194,
+                "name": "Munchkin Get More Loot! Promotional Postcard"
+            },
+            {
+                "id": 147475,
+                "name": "Munchkin Gets Promoted"
+            },
+            {
+                "id": 187049,
+                "name": "Munchkin Hidden Treasures"
+            },
+            {
+                "id": 54434,
+                "name": "Munchkin Kill-O-Meter"
+            },
+            {
+                "id": 226171,
+                "name": "Munchkin Metal Pin"
+            },
+            {
+                "id": 39393,
+                "name": "Munchkin Official Shirts"
+            },
+            {
+                "id": 134725,
+                "name": "Munchkin Patch"
+            },
+            {
+                "id": 130826,
+                "name": "Munchkin Pins"
+            },
+            {
+                "id": 134691,
+                "name": "Munchkin Plutonium Dragon Shot Glass"
+            },
+            {
+                "id": 41034,
+                "name": "Munchkin Promo Cards"
+            },
+            {
+                "id": 24733,
+                "name": "Munchkin Promotional Bookmarks"
+            },
+            {
+                "id": 84870,
+                "name": "Munchkin Sammlerkoffer"
+            },
+            {
+                "id": 62387,
+                "name": "Munchkin Sherpa"
+            },
+            {
+                "id": 153943,
+                "name": "Munchkin Sparkly Good Fairy Shot Glass"
+            },
+            {
+                "id": 146658,
+                "name": "Munchkin Tavern Pint Glass"
+            },
+            {
+                "id": 146657,
+                "name": "Munchkin Tavern Reusable Tote"
+            },
+            {
+                "id": 146659,
+                "name": "Munchkin Tavern Shot Glass"
+            },
+            {
+                "id": 69436,
+                "name": "Munchkin Thumb Drive"
+            },
+            {
+                "id": 389462,
+                "name": "Munchkin Witches"
+            },
+            {
+                "id": 389463,
+                "name": "Munchkin Witches: Promo Pack"
+            },
+            {
+                "id": 176441,
+                "name": "Munchkin Zipper Pull"
+            },
+            {
+                "id": 86356,
+                "name": "Munchkin: Go Up a Level"
+            },
+            {
+                "id": 282861,
+                "name": "Munchkin: Mat of Mayhem"
+            },
+            {
+                "id": 330394,
+                "name": "Munchkin: Misch oder stirb!"
+            },
+            {
+                "id": 134692,
+                "name": "Zombie Shot Glass"
+            }
+        ],
+        "implementations": [
+            {
+                "id": 1927,
+                "name": "Munchkin",
+                "inbound": true
+            }
+        ],
+        "compilations": [
+            {
+                "id": 182561,
+                "name": "Munchkin Koethulhu"
+            }
+        ],
+        "isExpansion": false,
+        "averageRating": 6.20048,
+        "usersRated": 5733,
+        "bggRating": 5.88089,
+        "overallRank": 4097,
+        "categoryRanks": [
+            {
+                "id": 5496,
+                "name": "thematic",
+                "friendlyName": "Thematic Rank",
+                "rank": 1016,
+                "bayesAverage": 5.86619
+            }
+        ]
+    },
     "25621": {
         "bggId": 25621,
         "gameType": "boardgameexpansion",
@@ -122925,6 +123289,250 @@
         "usersRated": 192,
         "bggRating": 5.69291,
         "categoryRanks": []
+    },
+    "448182": {
+        "bggId": 448182,
+        "gameType": "boardgameexpansion",
+        "name": "Castle Combo: Out of the Oubliette!",
+        "description": "The prison gates have just slammed shut... 12 outlaws are now serving their questionable sentences in the kingdom&rsquo;s dungeons! Will you free them in time for the fiesta?\"\n\nOut of the Oubliette! adds 12 new cards and a new rule: padlocks allow players to delay some card effects until a later turn, creating even greater combos!\n\n&mdash;description from the publisher",
+        "year": 2025,
+        "image": "https://cf.geekdo-images.com/q8z1jLt70WjTwtVEXvPbvQ__original/img/FdkfLIGZxNjeu7lfa8Evj3LWXEU=/0x0/filters:format(png)/pic9086369.png",
+        "thumbnail": "https://cf.geekdo-images.com/q8z1jLt70WjTwtVEXvPbvQ__small/img/pS4iaDTSZwm_sQdYHFRMOVSPOvs=/fit-in/200x150/filters:strip_icc()/pic9086369.png",
+        "minPlayers": 2,
+        "maxPlayers": 5,
+        "bestPlayerCounts": [
+            2
+        ],
+        "minPlayTime": 10,
+        "maxPlayTime": 25,
+        "averageWeight": 1.8,
+        "complexity": "Medium Light",
+        "minAge": 10,
+        "designers": [
+            {
+                "id": 119408,
+                "name": "Grégory Grard"
+            },
+            {
+                "id": 64917,
+                "name": "Mathieu Roussel"
+            }
+        ],
+        "artists": [
+            {
+                "id": 74019,
+                "name": "Stéphane Escapa"
+            }
+        ],
+        "publishers": [
+            {
+                "id": 28651,
+                "name": "Catch Up Games"
+            },
+            {
+                "id": 39390,
+                "name": "Engames"
+            },
+            {
+                "id": 38574,
+                "name": "Evrikus"
+            },
+            {
+                "id": 36981,
+                "name": "Feelindigo"
+            },
+            {
+                "id": 30155,
+                "name": "GateOnGames"
+            },
+            {
+                "id": 50993,
+                "name": "Hachette Boardgames UK"
+            },
+            {
+                "id": 37,
+                "name": "KOSMOS"
+            },
+            {
+                "id": 33626,
+                "name": "Lucky Duck Games"
+            },
+            {
+                "id": 30677,
+                "name": "Maldito Games"
+            },
+            {
+                "id": 7992,
+                "name": "MINDOK"
+            },
+            {
+                "id": 51614,
+                "name": "MIPL"
+            },
+            {
+                "id": 21847,
+                "name": "Pandasaurus Games"
+            },
+            {
+                "id": 36563,
+                "name": "Reflexshop"
+            },
+            {
+                "id": 33998,
+                "name": "Siam Board Games"
+            },
+            {
+                "id": 4932,
+                "name": "White Goblin Games"
+            }
+        ],
+        "categories": [
+            {
+                "id": 1042,
+                "name": "Expansion for Base-game"
+            },
+            {
+                "id": 1002,
+                "name": "Card Game"
+            },
+            {
+                "id": 1035,
+                "name": "Medieval"
+            }
+        ],
+        "mechanics": [
+            {
+                "id": 2875,
+                "name": "End Game Bonuses"
+            },
+            {
+                "id": 3099,
+                "name": "Multi-Use Cards"
+            },
+            {
+                "id": 2041,
+                "name": "Open Drafting"
+            },
+            {
+                "id": 2004,
+                "name": "Set Collection"
+            },
+            {
+                "id": 3100,
+                "name": "Tags"
+            },
+            {
+                "id": 2002,
+                "name": "Tile Placement"
+            }
+        ],
+        "families": [
+            {
+                "id": 70360,
+                "name": "Digital Implementations: Board Game Arena"
+            },
+            {
+                "id": 80918,
+                "name": "Digital Implementations: Game Park"
+            }
+        ],
+        "expansions": [
+            {
+                "id": 416851,
+                "name": "Castle Combo",
+                "inbound": true
+            }
+        ],
+        "implementations": [],
+        "compilations": [],
+        "isExpansion": true,
+        "averageRating": 7.98849,
+        "usersRated": 917,
+        "bggRating": 6.16168,
+        "categoryRanks": []
+    },
+    "448621": {
+        "bggId": 448621,
+        "gameType": "boardgameaccessory",
+        "name": "Unmatched: The Witcher – Geralt In Bathtub Figure",
+        "description": "Upgrade Geralt from token to miniature.",
+        "year": 2025,
+        "image": "https://cf.geekdo-images.com/jfibPf_LkZrw85Wx5ptvkw__original/img/sd4OX9AdkhJKXyYAcDuiMjCvE7A=/0x0/filters:format(jpeg)/pic8951342.jpg",
+        "thumbnail": "https://cf.geekdo-images.com/jfibPf_LkZrw85Wx5ptvkw__small/img/ZLQNElVtT7FzkkZ0tcg_eCbx12M=/fit-in/200x150/filters:strip_icc()/pic8951342.jpg",
+        "minPlayers": 0,
+        "maxPlayers": 0,
+        "bestPlayerCounts": [],
+        "minPlayTime": 0,
+        "maxPlayTime": 0,
+        "averageWeight": 0,
+        "complexity": "Light",
+        "designers": [
+            {
+                "id": 75911,
+                "name": "Noah Cohen"
+            },
+            {
+                "id": 442,
+                "name": "Rob Daviau"
+            },
+            {
+                "id": 4083,
+                "name": "Justin D. Jacobson"
+            },
+            {
+                "id": 80920,
+                "name": "Brian Neff"
+            }
+        ],
+        "artists": [
+            {
+                "id": 115693,
+                "name": "Eliza Bolli"
+            },
+            {
+                "id": 110790,
+                "name": "Garrett Kaida"
+            },
+            {
+                "id": 121554,
+                "name": "Nastya Lehn"
+            },
+            {
+                "id": 82749,
+                "name": "Logan Lubera"
+            },
+            {
+                "id": 128095,
+                "name": "Bailie Rosenlund"
+            }
+        ],
+        "publishers": [
+            {
+                "id": 8923,
+                "name": "IELLO"
+            },
+            {
+                "id": 34846,
+                "name": "Restoration Games"
+            }
+        ],
+        "categories": [],
+        "mechanics": [],
+        "families": [],
+        "expansions": [],
+        "implementations": [],
+        "compilations": [],
+        "isExpansion": false,
+        "averageRating": 7,
+        "usersRated": 1,
+        "bggRating": 0,
+        "categoryRanks": [
+            {
+                "id": 62,
+                "name": "boardgameaccessory",
+                "friendlyName": "Accessory Rank"
+            }
+        ]
     },
     "450040": {
         "bggId": 450040,
