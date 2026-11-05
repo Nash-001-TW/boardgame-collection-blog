@@ -1,8 +1,21 @@
+import { createCatalogStore } from "./catalog-store";
+import { selectCatalogEntries } from './catalog-selection';
+import type { BrowserEntry } from "./catalog-store";
+
+import { readBrowserUrl, writeBrowserUrl, getEffectiveBrowserFilter } from "./game-browser-url";
+import type { BrowserUrlState } from "./game-browser-url";
+import { browserCapabilities } from "./game-browser-capabilities";
+import { matchesPlayingTime, matchesCatalogSearch, validCatalogStatistic } from "./catalog-browsing";
+import { createCatalogPresentation } from "./catalog-presentation";
+import { formatAdvancedFilterCount } from "../i18n/catalog-browser";
+import { validGameComplexity } from "./game-complexity";
 
 export type GameListFilter =
     | "all"
     | "base"
     | "expansion"
+    | "accessory"
+    | "unknown"
     | "bundle"
     | "promo"
     | "owned"
@@ -75,6 +88,7 @@ export function initializeGameListController(
         "[data-game-weight]"
     ) as HTMLSelectElement | null;
 
+    const accessoryFilter = root.querySelector("[data-game-accessory]") as unknown as HTMLSelectElement | null;
     const mechanicFilter = root.querySelector(
         "[data-game-mechanic]"
     ) as HTMLSelectElement | null;
@@ -96,6 +110,13 @@ export function initializeGameListController(
     }
 
     root.dataset.initialized = "true";
+    const progressive = root.dataset.loadingMode === "progressive";
+    const presentation = progressive ? createCatalogPresentation(root, grid) : null;
+    const loadButton = root.querySelector<HTMLButtonElement>("[data-load-more]");
+    const loadStatus = root.querySelector<HTMLElement>("[data-load-status]");
+    const sentinel = root.querySelector<HTMLElement>("[data-load-sentinel]");
+    const backTop = root.querySelector<HTMLButtonElement>("[data-back-to-top]");
+    let matchingCount = 0, loading = false, generation = 0, autoLoadBlocked = false;
 
     const pageSize = Math.max(
         1,
@@ -107,15 +128,14 @@ export function initializeGameListController(
         options.debounceMs ?? 250
     );
 
-    const cards = Array.from(
+    const store = progressive ? createCatalogStore(root, grid) : null;
+    const cards: BrowserEntry[] = store?.entries ?? Array.from(
         grid.querySelectorAll("[data-game-card]")
     ) as HTMLElement[];
 
     const cardStorage = document.createDocumentFragment();
 
-    cards.forEach(card => {
-        cardStorage.appendChild(card);
-    });
+    if (!store) cards.forEach(card => { cardStorage.appendChild(card as HTMLElement); });
 
     const locale =
         root.dataset.locale === "en" ? "en" : "zh-TW";
@@ -144,13 +164,18 @@ export function initializeGameListController(
         };
 
     const defaultSort = sort.value;
+    const capabilities = browserCapabilities[root.dataset.browserModule === "collection" ? "collection" : "games"];
+    const extraTypeElement = root.querySelector("[data-game-type-advanced]");
+    const extraType = extraTypeElement instanceof HTMLSelectElement ? extraTypeElement : null;
+    const viewButtons = Array.from(root.querySelectorAll<HTMLButtonElement>("[data-game-view]"));
+    const scopeNotice = root.querySelector<HTMLElement>("[data-game-effective-type]");
 
     // ============================================================
     // 建立核心機制下拉選單
     // ============================================================
 
     if (mechanicFilter) {
-        const mechanics = new Map<number, string>();
+        const mechanics = new Map<string, string>(Object.entries(store?.mechanics ?? {}));
 
         for (const card of cards) {
             const ids = (
@@ -169,7 +194,7 @@ export function initializeGameListController(
                     n > 0 &&
                     names[index]
                 ) {
-                    mechanics.set(n, names[index]);
+                    mechanics.set(String(n), names[index]);
                 }
             });
         }
@@ -198,18 +223,106 @@ export function initializeGameListController(
     let selectedMechanic = "";
     let selectedCategory = "";
 
-    let activeFilter: GameListFilter = "all";
+    let activeFilter = capabilities.defaultFilter as GameListFilter;
+    let filterExplicit = false;
+    let viewMode: "grid" | "list" = "grid";
     let currentPage = 1;
 
     let searchTimer:
         ReturnType<typeof setTimeout> | undefined;
+
+    search.maxLength = 200;
+    const values = (select: HTMLSelectElement | null) =>
+        Array.from(select?.options ?? []).map(option => option.value);
+    const choices = {
+        parameters: capabilities.parameters,
+        defaultSort,
+        defaultFilter: capabilities.defaultFilter,
+        views: capabilities.views,
+        filters: [...filterButtons.map(button => button.dataset.gameFilter ?? "all"), ...values(extraType)]
+            .filter(value => capabilities.filters.includes(value)),
+        sorts: values(sort).filter(value => capabilities.sorts.includes(value)), players: values(playerFilter), times: values(timeFilter),
+        accessories: values(accessoryFilter), weights: values(weightFilter), mechanics: values(mechanicFilter),
+        mechanicTags: tagChips.filter(chip => chip.dataset.tagKind === "mechanic")
+            .map(chip => chip.dataset.tagId ?? ""),
+        categories: tagChips.filter(chip => chip.dataset.tagKind === "category")
+            .map(chip => chip.dataset.tagId ?? "")
+    };
+    const urlNotice = document.createElement("p");
+    urlNotice.setAttribute("role", "status");
+    urlNotice.hidden = true;
+    resultCount.parentNode?.insertBefore(urlNotice, resultCount.nextSibling);
+    let urlAvailable = true;
+
+    function currentState(): BrowserUrlState {
+        return {
+            q: search!.value.trim().slice(0, 200), filter: activeFilter,
+            filterExplicit, view: viewMode,
+            sort: sort!.value, players: playerFilter?.value ?? "",
+            time: timeFilter?.value ?? "", weight: weightFilter?.value ?? "",
+            mechanic: mechanicFilter?.value ?? "", tagMechanic: selectedMechanic,
+            accessory: accessoryFilter?.value ?? "", category: selectedCategory, page: currentPage
+        };
+    }
+
+    function saveUrl(mode: "push" | "replace") {
+        if (!urlAvailable) return;
+        try {
+            const next = writeBrowserUrl(new URL(window.location.href), currentState(), defaultSort, choices.parameters, choices.defaultFilter);
+            if (next.href !== window.location.href) {
+                // Preserve state owned by Astro or other navigation code.
+                window.history[mode === "push" ? "pushState" : "replaceState"](
+                    window.history.state, "", next.href
+                );
+                document.dispatchEvent(new Event("catalog:urlchange"));
+            }
+        } catch {
+            urlAvailable = false;
+            urlNotice.textContent = locale === "en"
+                ? "Your browser could not save these filters in the URL. Browsing still works."
+                : "瀏覽器無法將條件保存至網址；搜尋與篩選仍可使用。";
+            urlNotice.hidden = false;
+        }
+    }
+
+    function restoreUrl() {
+        generation++;
+        loading = false;
+        autoLoadBlocked = false;
+        grid!.removeAttribute("aria-busy");
+        if (searchTimer !== undefined) clearTimeout(searchTimer);
+        searchTimer = undefined;
+        const state = readBrowserUrl(new URL(window.location.href), choices);
+        search!.value = state.q;
+        sort!.value = state.sort;
+        activeFilter = state.filter as GameListFilter;
+        filterExplicit = state.filterExplicit;
+        viewMode = state.view;
+        if (playerFilter) playerFilter.value = state.players;
+        if (timeFilter) timeFilter.value = state.time;
+        if (weightFilter) weightFilter.value = state.weight;
+        if (mechanicFilter) mechanicFilter.value = state.mechanic;
+        if (accessoryFilter) accessoryFilter.value = state.accessory??"";
+        if (accessoryFilter?.value) { activeFilter="accessory"; filterExplicit=true; }
+        selectedMechanic = state.tagMechanic;
+        selectedCategory = state.category;
+        currentPage = state.page;
+        filterButtons.forEach(button => {
+            const active = button.dataset.gameFilter === activeFilter;
+            button.classList.toggle("active", active);
+            button.setAttribute("aria-pressed", String(active));
+        });
+        syncTagChips();
+        update(false, "replace");
+        restoreScroll();
+    }
 
     // ============================================================
     // 資料讀取工具
     // ============================================================
 
     function numberOrNull(
-        card: HTMLElement,
+        card: BrowserEntry,
         key: string
     ): number | null {
         const raw = card.dataset[key];
@@ -223,6 +336,11 @@ export function initializeGameListController(
 
         const value = Number(raw);
 
+        // Catalog filter/sort share the detail validity rule; personal collection behavior stays unchanged.
+        if (key === "weight" && root.dataset.browserModule === "games") return validGameComplexity(value);
+        if (root.dataset.browserModule === "games" && (key === "year" || key === "bggRating"))
+            return validCatalogStatistic(value, key === "year" ? "year" : "rating");
+
         return Number.isFinite(value)
             ? value
             : null;
@@ -233,7 +351,7 @@ export function initializeGameListController(
     // ============================================================
 
     function matchesAdvanced(
-        card: HTMLElement
+        card: BrowserEntry
     ): boolean {
         // 玩家人數
         const players = playerFilter?.value ?? "";
@@ -279,11 +397,7 @@ export function initializeGameListController(
                 return false;
             }
 
-            if (
-                time === "over120"
-                    ? maxTime <= 120
-                    : maxTime > Number(time)
-            ) {
+            if (!matchesPlayingTime(maxTime, time)) {
                 return false;
             }
         }
@@ -321,6 +435,8 @@ export function initializeGameListController(
             }
         }
 
+        if (accessoryFilter?.value && !(card.dataset.accessoryCategories??"").split(",").includes(accessoryFilter.value)) return false;
+
         // 核心機制
         const mechanic = mechanicFilter?.value ?? "";
 
@@ -341,7 +457,7 @@ export function initializeGameListController(
     // ============================================================
 
     function matchesTags(
-        card: HTMLElement
+        card: BrowserEntry
     ): boolean {
         if (
             selectedMechanic &&
@@ -383,13 +499,13 @@ export function initializeGameListController(
     // ============================================================
 
     function matchesFilter(
-        card: HTMLElement
+        card: BrowserEntry
     ): boolean {
         // D1 V2 使用 data-item-type
         // 舊版遊戲卡片使用 data-expansion
         const itemType = card.dataset.itemType;
 
-        switch (activeFilter) {
+        switch (getEffectiveBrowserFilter(currentState(), capabilities.searchAllTypesByDefault)) {
             case "base":
                 return itemType !== undefined
                     ? itemType === "base"
@@ -402,6 +518,12 @@ export function initializeGameListController(
 
             case "bundle":
                 return itemType === "bundle";
+
+            case "accessory":
+                return itemType === "accessory";
+
+            case "unknown":
+                return itemType === "unknown";
 
             case "promo":
                 return itemType === "promo";
@@ -434,8 +556,8 @@ export function initializeGameListController(
     // ============================================================
 
     function compareNumbers(
-        a: HTMLElement,
-        b: HTMLElement,
+        a: BrowserEntry,
+        b: BrowserEntry,
         key: string,
         descending: boolean
     ): number {
@@ -452,8 +574,8 @@ export function initializeGameListController(
     }
 
     function compareCards(
-        a: HTMLElement,
-        b: HTMLElement
+        a: BrowserEntry,
+        b: BrowserEntry
     ): number {
         const mode = sort!.value as GameListSort;
 
@@ -523,8 +645,8 @@ export function initializeGameListController(
 
         // BGG ID 作為第三排序條件
         result = collator.compare(
-            a.dataset.bggId ?? "",
-            b.dataset.bggId ?? ""
+            a.dataset.catalogKey ?? a.dataset.bggId ?? "",
+            b.dataset.catalogKey ?? b.dataset.bggId ?? ""
         );
 
         if (result !== 0) return result;
@@ -576,17 +698,40 @@ export function initializeGameListController(
     // ============================================================
 
     function update(
-        resetPage = true
+        resetPage = true,
+        historyMode: "push" | "replace" = "push"
     ): void {
         if (resetPage) {
             currentPage = 1;
+            generation++;
+            loading = false;
+            autoLoadBlocked = false;
+            grid!.removeAttribute("aria-busy");
         }
 
         const keyword = search!.value
             .trim()
             .toLocaleLowerCase();
 
-        const matched = cards
+        const effectiveFilter = getEffectiveBrowserFilter(currentState(), capabilities.searchAllTypesByDefault);
+        filterButtons.forEach(button => {
+            const active = button.dataset.gameFilter === effectiveFilter;
+            button.classList.toggle("active", active);
+            button.setAttribute("aria-pressed", String(active));
+        });
+        if (extraType) extraType.value = effectiveFilter === "unknown" ? "unknown" : "";
+        root.dataset.view = viewMode;
+        viewButtons.forEach(button => button.setAttribute("aria-pressed", String(button.dataset.gameView === viewMode)));
+        if (scopeNotice) {
+            const names: Record<string, string> = locale === "en"
+                ? { all: "All types", base: "Base games", expansion: "Expansions", accessory: "Accessories", unknown: "Unknown type" }
+                : { all: "全部類型", base: "基本遊戲", expansion: "擴充", accessory: "配件", unknown: "未知類型" };
+            const automatic = capabilities.searchAllTypesByDefault && !filterExplicit && keyword;
+            scopeNotice.textContent = (locale === "en" ? "Type: " : "生效類型：") + (names[effectiveFilter] ?? effectiveFilter) +
+                (automatic ? (locale === "en" ? " (automatic search scope; clearing returns to base games)" : "（搜尋自動涵蓋；清除後回到基本遊戲）") : "");
+        }
+
+        const matched = store && root.dataset.browserModule==='games' ? selectCatalogEntries(cards,currentState(),locale) : cards
             .filter(card => {
                 if (
                     !matchesFilter(card) ||
@@ -596,9 +741,12 @@ export function initializeGameListController(
                     return false;
                 }
 
+                if (root.dataset.browserModule === "games") return matchesCatalogSearch(card.dataset, keyword);
                 const haystack = [
                     card.dataset.name ?? "",
                     card.dataset.originalName ?? "",
+                    card.dataset.resolvedName ?? "",
+                    card.dataset.notBggId ?? "",
                     card.dataset.bggId ?? "",
                     card.dataset.collectionId ?? ""
                 ]
@@ -608,6 +756,7 @@ export function initializeGameListController(
                 return haystack.includes(keyword);
             })
             .sort(compareCards);
+        matchingCount = matched.length;
 
         const totalPages = Math.max(
             1,
@@ -619,51 +768,92 @@ export function initializeGameListController(
             Math.min(currentPage, totalPages)
         );
 
-        const start = (
+        // Store the clamped page, including empty-result pages, not untrusted input.
+        saveUrl(historyMode);
+
+        const start = progressive ? 0 : (
             currentPage - 1
         ) * pageSize;
 
-        const visible = matched.slice(
-            start,
-            start + pageSize
-        );
+        const visibleEntries = matched.slice(start, progressive ? currentPage * pageSize : start + pageSize);
+        const visible = store ? store.prepare(visibleEntries) : visibleEntries as HTMLElement[];
+        try {
+            presentation?.hydrate(visible);
+        } catch (error) {
+            // A failed new batch must not retain unmounted cards through ResizeObserver.
+            if (store) {
+                visible.filter(card => card.parentElement !== grid).forEach(card => presentation?.release(card));
+                store.commit(Array.from(grid!.children) as HTMLElement[]);
+            }
+            throw error;
+        }
 
         // 先將目前顯示的卡片移回暫存區
         Array.from(grid!.children).forEach(card => {
-            cardStorage.appendChild(card);
+            if (store) {
+                if (!visible.includes(card as HTMLElement)) {
+                    presentation?.release(card as HTMLElement);
+                    card.remove();
+                }
+            }
+            else cardStorage.appendChild(card);
         });
 
         // 只把當前頁面的卡片放回 DOM
         const fragment = document.createDocumentFragment();
 
+        let cursor = grid!.firstElementChild;
         visible.forEach(card => {
             card.hidden = false;
             card.classList.remove("hidden");
-            fragment.appendChild(card);
+            if (store) {
+                // Retain existing image elements and focus while appending the next batch.
+                if (card === cursor) cursor = cursor.nextElementSibling;
+                else grid!.insertBefore(card, cursor);
+            } else fragment.appendChild(card);
         });
 
         grid!.appendChild(fragment);
+        store?.commit(visible);
+        presentation?.layout();
 
         // 更新符合條件的數量
         resultCount!.textContent =
             `${labels.matching} ${matched.length} ${labels.games}`;
+        const summary = root.querySelector<HTMLElement>("[data-game-advanced-summary]");
+        const clearAdvanced = root.querySelector<HTMLButtonElement>("[data-game-clear-advanced]");
+        const selected = [playerFilter, timeFilter, weightFilter, mechanicFilter, accessoryFilter]
+            .filter(select => select?.value).map(select => select!.selectedOptions[0]?.textContent ?? "");
+        if (summary) {
+            summary.textContent = formatAdvancedFilterCount(selected.length, locale);
+            summary.hidden = selected.length === 0;
+        }
+        if (clearAdvanced) clearAdvanced.hidden = selected.length === 0;
 
         // 更新重設按鈕狀態
         if (resetButton) {
             resetButton.disabled =
                 search!.value.trim() === "" &&
-                activeFilter === "all" &&
+                activeFilter === capabilities.defaultFilter && !filterExplicit &&
                 sort!.value === defaultSort &&
                 !playerFilter?.value &&
                 !timeFilter?.value &&
                 !weightFilter?.value &&
-                !mechanicFilter?.value &&
+                !mechanicFilter?.value && !accessoryFilter?.value &&
                 !selectedMechanic &&
                 !selectedCategory;
         }
 
         // 重建分頁按鈕
         pagination!.replaceChildren();
+
+        if (progressive) {
+            if (loadButton) loadButton.disabled = loading || visible.length >= matched.length;
+            if (loadStatus) loadStatus.textContent = matched.length === 0 ? labels.empty :
+                (locale === "en" ? `Showing ${visible.length} / ${matched.length}` : `已顯示 ${visible.length} / ${matched.length}`) +
+                (visible.length >= matched.length ? (locale === "en" ? " · All loaded" : " · 已全部載入") : "");
+            return;
+        }
 
         if (matched.length === 0) {
             const message = document.createElement("p");
@@ -732,6 +922,7 @@ export function initializeGameListController(
     resetButton?.addEventListener("click", () => {
         if (searchTimer !== undefined) {
             clearTimeout(searchTimer);
+            searchTimer = undefined;
         }
 
         searchTimer = undefined;
@@ -743,8 +934,10 @@ export function initializeGameListController(
         if (timeFilter) timeFilter.value = "";
         if (weightFilter) weightFilter.value = "";
         if (mechanicFilter) mechanicFilter.value = "";
+        if (accessoryFilter) accessoryFilter.value = "";
 
-        activeFilter = "all";
+        activeFilter = capabilities.defaultFilter as GameListFilter;
+        filterExplicit = false;
         selectedMechanic = "";
         selectedCategory = "";
 
@@ -769,6 +962,19 @@ export function initializeGameListController(
 
         update();
         search!.focus();
+    });
+
+    root.querySelector("[data-game-clear-advanced]")?.addEventListener("click", event => {
+        // The action lives inside the native summary; clearing must not toggle disclosure.
+        event.stopPropagation();
+        [playerFilter, timeFilter, weightFilter, mechanicFilter, accessoryFilter].forEach(select => { if (select) select.value = ""; });
+        if (searchTimer !== undefined) clearTimeout(searchTimer);
+        searchTimer = undefined;
+        update();
+        const button = event.currentTarget as HTMLButtonElement;
+        if (button.hidden && document.activeElement === button) {
+            root.querySelector<HTMLElement>("[data-game-advanced] summary")?.focus();
+        }
     });
 
     // ============================================================
@@ -801,6 +1007,7 @@ export function initializeGameListController(
 
             if (searchTimer !== undefined) {
                 clearTimeout(searchTimer);
+                searchTimer = undefined;
             }
 
             update();
@@ -816,6 +1023,8 @@ export function initializeGameListController(
             activeFilter = (
                 button.dataset.gameFilter ?? "all"
             ) as GameListFilter;
+            filterExplicit = true;
+            if (accessoryFilter && activeFilter!=="accessory") accessoryFilter.value="";
 
             filterButtons.forEach(item => {
                 const active = item === button;
@@ -833,11 +1042,31 @@ export function initializeGameListController(
 
             if (searchTimer !== undefined) {
                 clearTimeout(searchTimer);
+                searchTimer = undefined;
             }
 
             update();
         });
     });
+
+    extraType?.addEventListener("change", () => {
+        activeFilter = (extraType.value || capabilities.defaultFilter) as GameListFilter;
+        filterExplicit = Boolean(extraType.value);
+        if (searchTimer !== undefined) clearTimeout(searchTimer);
+        searchTimer = undefined;
+        update();
+    });
+    viewButtons.forEach(button => button.addEventListener("click", () => {
+        const view = button.dataset.gameView;
+        if (view !== "grid" && view !== "list" || !capabilities.views.includes(view)) return;
+        if (searchTimer !== undefined) {
+            clearTimeout(searchTimer);
+            searchTimer = undefined;
+            update(true, "replace");
+        }
+        viewMode = view;
+        update(false);
+    }));
 
     // ============================================================
     // 搜尋事件
@@ -846,10 +1075,11 @@ export function initializeGameListController(
     search.addEventListener("input", () => {
         if (searchTimer !== undefined) {
             clearTimeout(searchTimer);
+            searchTimer = undefined;
         }
 
         searchTimer = setTimeout(
-            () => update(),
+            () => { searchTimer = undefined; update(true, "replace"); },
             debounceMs
         );
     });
@@ -861,6 +1091,7 @@ export function initializeGameListController(
     sort.addEventListener("change", () => {
         if (searchTimer !== undefined) {
             clearTimeout(searchTimer);
+            searchTimer = undefined;
         }
 
         update();
@@ -874,13 +1105,15 @@ export function initializeGameListController(
         playerFilter,
         timeFilter,
         weightFilter,
-        mechanicFilter
+        mechanicFilter, accessoryFilter
     ].forEach(select => {
         select?.addEventListener("change", () => {
             if (searchTimer !== undefined) {
                 clearTimeout(searchTimer);
+                searchTimer = undefined;
             }
 
+            if (select===accessoryFilter && accessoryFilter?.value) { activeFilter="accessory"; filterExplicit=true; }
             update();
         });
     });
@@ -889,5 +1122,95 @@ export function initializeGameListController(
     // 初次顯示
     // ============================================================
 
-    update();
+    let restorePosition: { key: string; y: number; id?: string; offset?: number } | null = null;
+    let restoringUntil = 0;
+    function restoreScroll() {
+        if (!progressive) return;
+        const stored = window.history.state?.catalogScroll;
+        if (!stored || stored.key !== location.pathname + location.search || !Number.isFinite(stored.y)) return;
+        restorePosition = stored;
+        restoringUntil = performance.now() + 3000;
+        presentation?.layout();
+    }
+    function applyScroll() {
+        if (!restorePosition || performance.now() > restoringUntil) return;
+        const anchor = Array.from(grid!.children as HTMLCollectionOf<HTMLElement>).find(c=>(c.dataset.catalogKey??c.dataset.bggId)===restorePosition!.id);
+        if (anchor && Number.isFinite(restorePosition.offset)) {
+            window.scrollBy({ top: anchor.getBoundingClientRect().top - restorePosition.offset!, behavior: "instant" });
+        } else window.scrollTo({ top: restorePosition.y, behavior: "instant" });
+    }
+    function rememberScroll() {
+        if (!progressive) return;
+        const anchor = Array.from(grid!.children as HTMLCollectionOf<HTMLElement>)
+            .filter(card => card.getBoundingClientRect().bottom > 0)
+            .sort((a, b) => Math.abs(a.getBoundingClientRect().top) - Math.abs(b.getBoundingClientRect().top))[0];
+        try {
+            window.history.replaceState({ ...window.history.state, catalogScroll: {
+                key: location.pathname + location.search, y: window.scrollY,
+                id: anchor?.dataset.catalogKey??anchor?.dataset.bggId, offset: anchor?.getBoundingClientRect().top
+            } }, "", location.href);
+        } catch { /* Best-effort scroll evidence; URL filters remain usable. */ }
+    }
+    async function loadMore(manual = false) {
+        if (!progressive || loading || currentPage * pageSize >= matchingCount || (!manual && autoLoadBlocked)) return;
+        const token = generation, previous = currentPage;
+        loading = true;
+        if (loadButton) loadButton.disabled = true;
+        if (loadStatus) loadStatus.textContent = locale === "en" ? "Loading…" : "載入中…";
+        grid!.setAttribute("aria-busy", "true");
+        await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+        if (token !== generation) return;
+        try {
+            currentPage++;
+            loading = false;
+            update(false, "replace");
+        } catch {
+            currentPage = previous;
+            saveUrl("replace");
+            loading = false;
+            autoLoadBlocked = true;
+            if (loadButton) loadButton.disabled = false;
+            if (loadStatus) loadStatus.textContent = locale === "en" ? "Could not load more. Use Load more to retry." : "載入失敗，請使用載入更多重試。";
+        } finally { grid!.removeAttribute("aria-busy"); }
+    }
+    presentation?.onLayout(applyScroll);
+    restoreUrl();
+    if (root.dataset.liveCatalog) window.addEventListener("pageshow", event=>{if(event.persisted)location.reload();});
+    const navigation = new AbortController();
+    loadButton?.addEventListener("click", () => { autoLoadBlocked = false; void loadMore(true); });
+    const observer = progressive && sentinel && typeof IntersectionObserver !== "undefined" ?
+        new IntersectionObserver(entries => { if (entries.some(entry => entry.isIntersecting)) void loadMore(); }, { rootMargin: "400px" }) : null;
+    if (sentinel) observer?.observe(sentinel);
+    if (progressive) {
+        window.addEventListener("scroll", () => { if (backTop) backTop.hidden = window.scrollY < 600; }, { passive: true, signal: navigation.signal });
+        backTop?.addEventListener("click", () => window.scrollTo({ top: 0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" }));
+        for (const event of ["wheel", "touchstart", "pointerdown", "keydown"]) window.addEventListener(event, () => { restorePosition = null; }, { passive: true, signal: navigation.signal });
+        root.addEventListener("click", event => {
+            if ((event.target as Element).closest(".game-link[href]")) {
+                if (searchTimer !== undefined) { clearTimeout(searchTimer); searchTimer = undefined; update(true, "replace"); }
+                rememberScroll();
+            }
+        }, { capture: true, signal: navigation.signal });
+    }
+    window.addEventListener("popstate", () => {
+        if (root.isConnected) restoreUrl();
+    }, { signal: navigation.signal });
+    window.addEventListener("pagehide", () => {
+        if (searchTimer !== undefined) {
+            clearTimeout(searchTimer);
+            searchTimer = undefined;
+            update(true, "replace");
+        }
+        rememberScroll();
+    }, { signal: navigation.signal });
+    document.addEventListener("astro:before-swap", () => {
+        if (searchTimer !== undefined) {
+            clearTimeout(searchTimer);
+            searchTimer = undefined;
+            update(true, "replace");
+        }
+        navigation.abort();
+        observer?.disconnect();
+        presentation?.destroy();
+    }, { once: true, signal: navigation.signal });
 }

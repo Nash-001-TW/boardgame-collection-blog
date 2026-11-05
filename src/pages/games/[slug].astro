@@ -1,20 +1,21 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import GameDetail from "../../components/GameDetail.astro";
+import { translateGameName } from "../../i18n/utils";
 
 import {
-    getGames
+    getGameDetails
 } from "../../lib/games";
 
 import type {
-    Game
+    GameDetailModel
 } from "../../lib/games";
 
 
 export function getStaticPaths() {
 
     const games =
-        getGames();
+        getGameDetails();
 
     return games.map(
         game => ({
@@ -33,7 +34,7 @@ export function getStaticPaths() {
 
 
 interface Props {
-    game: Game;
+    game: GameDetailModel;
 }
 
 
@@ -43,7 +44,9 @@ const {
 ---
 
 <Layout
-    title={`${game.bgg.name} | Soma's Board Game Collection`}
+    catalogPage
+    detailPage
+    title={`${translateGameName(game.bggId, game.bgg.name, "zh-TW")} | Soma's Board Game Collection`}
     lang="zh-TW"
 >
 

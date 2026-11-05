@@ -11,7 +11,7 @@ import type { Language } from "../i18n/ui";
 const gameSlugMap = new Map<number, string>();
 
 for (const game of getGames()) {
-    if (!gameSlugMap.has(game.bggId)) {
+    if (game.bgg && !gameSlugMap.has(game.bggId)) {
         gameSlugMap.set(game.bggId, game.slug);
     }
 }

@@ -54,21 +54,21 @@ function isActive(path: string): boolean {
             </summary>
             <nav class="cat-mobile-nav" aria-label={lang === "en" ? "Mobile navigation" : "手機導覽"}>
                 {navItems.map(item => (
-                    <a href={getLocalizedUrl(item.path)} aria-current={isActive(item.path) ? "page" : undefined}>
+                    <a href={getLocalizedUrl(item.path)} data-astro-prefetch={item.path === "/games" && !isActive("/games") ? "load" : undefined} aria-current={isActive(item.path) ? "page" : undefined}>
                         <span aria-hidden="true">{item.icon}</span>{t(item.key)}
                     </a>
                 ))}
                 <div class="cat-mobile-languages">
-                    <a href={chineseUrl} aria-current={lang === "zh-TW" ? "page" : undefined}>中文</a>
+                    <a href={chineseUrl} data-language-switch aria-current={lang === "zh-TW" ? "page" : undefined}>中文</a>
                     <span aria-hidden="true">/</span>
-                    <a href={englishUrl} aria-current={lang === "en" ? "page" : undefined}>English</a>
+                    <a href={englishUrl} data-language-switch aria-current={lang === "en" ? "page" : undefined}>English</a>
                 </div>
             </nav>
         </details>
 
         <nav class="cat-desktop-nav" aria-label={lang === "en" ? "Main navigation" : "主要導覽"}>
             {navItems.map(item => (
-                <a class="cat-nav-link" href={getLocalizedUrl(item.path)} aria-current={isActive(item.path) ? "page" : undefined}>
+                <a class="cat-nav-link" href={getLocalizedUrl(item.path)} data-astro-prefetch={item.path === "/games" && !isActive("/games") ? "load" : undefined} aria-current={isActive(item.path) ? "page" : undefined}>
                     <span class="cat-nav-icon" aria-hidden="true">{item.icon}</span>
                     <span>{t(item.key)}</span>
                 </a>
@@ -76,12 +76,30 @@ function isActive(path: string): boolean {
         </nav>
 
         <div class="cat-language-switcher" aria-label={lang === "en" ? "Language" : "語言切換"}>
-            <a href={chineseUrl} class:list={["cat-language-link", { active: lang === "zh-TW" }]} lang="zh-TW" aria-current={lang === "zh-TW" ? "page" : undefined}>中文</a>
+            <a href={chineseUrl} data-language-switch class:list={["cat-language-link", { active: lang === "zh-TW" }]} lang="zh-TW" aria-current={lang === "zh-TW" ? "page" : undefined}>中文</a>
             <span aria-hidden="true">/</span>
-            <a href={englishUrl} class:list={["cat-language-link", { active: lang === "en" }]} lang="en" aria-current={lang === "en" ? "page" : undefined}>EN</a>
+            <a href={englishUrl} data-language-switch class:list={["cat-language-link", { active: lang === "en" }]} lang="en" aria-current={lang === "en" ? "page" : undefined}>EN</a>
         </div>
     </div>
 </header>
+<script>
+    function syncLanguageLinks() {
+        if (!/^\/(en\/)?games\/?$/.test(location.pathname)) return;
+        document.querySelectorAll<HTMLAnchorElement>("[data-language-switch]").forEach(link => {
+            const target = new URL(link.href);
+            target.search = location.search;
+            target.hash = location.hash;
+            link.href = target.href;
+        });
+    }
+    syncLanguageLinks();
+    document.addEventListener("catalog:urlchange", syncLanguageLinks);
+    document.addEventListener("astro:page-load", syncLanguageLinks);
+    window.addEventListener("popstate", syncLanguageLinks);
+    document.addEventListener("click", event => {
+        if ((event.target as Element).closest("[data-language-switch]")) syncLanguageLinks();
+    }, true);
+</script>
 
 <style>
     .cat-site-header { position: relative; z-index: 50; background: #fffaf1; border-bottom: 2px solid #e7d5bb; box-shadow: 0 2px 10px rgba(91,58,35,.07); color: #49352a; }

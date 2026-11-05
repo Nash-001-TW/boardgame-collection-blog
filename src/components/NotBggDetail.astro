@@ -1,0 +1,51 @@
+---
+import type { PublicNotBggDetail } from '../lib/notbgg-public';
+import { safeImage } from '../lib/notbgg-public';
+import { publicAccessoryLabels } from '../i18n/accessory-categories';
+import { catalogTypeLabels } from '../lib/game-content';
+import { catalogRange } from '../lib/catalog-browsing';
+interface Props { detail:PublicNotBggDetail; lang:'en'|'zh-TW' }
+const {detail,lang}=Astro.props, g=detail.game, zh=lang==='zh-TW';
+const cover=safeImage(g.images.primary), back=`${zh?'':'/en'}/games`;
+const terms=[['設計師','Designers',g.designers],['美術','Artists',g.artists],['出版商／製造商','Publishers / manufacturers',g.publishers],['分類','Categories',g.categories],['機制','Mechanics',g.mechanics],['系列','Families',g.families]] as const;
+---
+<article class="notbgg-detail" data-detail-v2 data-live-notbgg>
+    <a href={back} data-detail-back>{zh?'← 返回目錄':'← Back to catalog'}</a>
+    <p><a href={`/admin/collection/new?game=${encodeURIComponent(g.key)}&lang=${lang}`}>{zh?'管理員加入收藏':'Add to collection (admin)'}</a></p>
+    <header><h1>{g.name}</h1><p>{g.key} · {catalogTypeLabels[g.type][zh?0:1]}</p></header>
+    <div class="overview">
+        <div class="cover">
+            {cover ? <button type="button" data-cover-open data-cover-error-label={zh?'圖片無法載入':'Image unavailable'} aria-label={zh?'放大封面':'Enlarge cover'}><img src={cover} alt={g.name} width="600" height="800" loading="eager" fetchpriority="high" decoding="async"/></button> : <div class="no-cover">{zh?'暫無封面':'No cover available'}</div>}
+        </div>
+        <dl>
+            <dt>{zh?'其他名稱':'Alternate names'}</dt><dd>{g.alternateNames.join(' / ')||'—'}</dd>
+            <dt>{zh?'出版年份':'Year published'}</dt><dd>{g.yearPublished??'—'}</dd>
+            <dt>{zh?'建議年齡':'Minimum age'}</dt><dd>{g.minAge??'—'}</dd>
+            {g.play&&<><dt>{zh?'玩家人數':'Players'}</dt><dd>{catalogRange(g.play.minPlayers??undefined,g.play.maxPlayers??undefined)}</dd><dt>{zh?'遊戲時間（分鐘）':'Playing time (min)'}</dt><dd>{catalogRange(g.play.minPlaytime??undefined,g.play.maxPlaytime??undefined)}</dd></>}
+            {g.playerAdvice&&<><dt>{zh?'編輯推薦玩家數':'Editor recommended players'}</dt><dd>{g.playerAdvice.counts.join(', ')}</dd></>}
+            {terms.map(([zhLabel,enLabel,values])=><><dt>{zh?zhLabel:enLabel}</dt><dd>{values.map(t=>t.name).join(' / ')||'—'}</dd></>)}
+            {g.accessory&&<><dt>{zh?'配件分類':'Accessory categories'}</dt><dd>{g.accessory.categories.map(c=>publicAccessoryLabels[c][zh?0:1]).join(' / ')}</dd></>}
+        </dl>
+    </div>
+    <section><h2>{zh?'遊戲描述':'Description'}</h2><p class="plain-text">{g.description||'—'}</p></section>
+    {g.accessory&&<><section><h2>{zh?'內容物':'Contents'}</h2><p class="plain-text">{g.accessory.contents||'—'}</p></section>
+        <section><h2>{zh?'適用遊戲（站內手動關聯）':'Compatible games (manual site relations)'}</h2>
+            {detail.related.length ? <ul class="related">{detail.related.map(target=><li><a href={target.href}>{target.thumbnail&&<img src={target.thumbnail} alt="" width="64" height="80" loading="lazy" decoding="async" data-related-cover/>}<span>{target.name}<small> · {target.relationType==='compatible_with'?(zh?'相容配件':'Compatible with'):(zh?'專用配件':'Accessory for')}</small></span></a></li>)}</ul> : <p>—</p>}
+        </section></>}
+    <section><h2>{zh?'參考來源':'References'}</h2><ul>{g.referenceUrls.filter(url=>safeImage(url)).map(url=><li><a href={url} rel="noopener noreferrer" target="_blank">{url}</a></li>)}</ul></section>
+    {cover&&<dialog data-cover-dialog><button type="button" data-cover-close>{zh?'關閉':'Close'}</button><img data-dialog-cover data-src={cover} alt={g.name} decoding="async"/></dialog>}
+</article>
+<script>
+    import { initializeGameDetail } from '../lib/game-detail-controller';
+    document.querySelectorAll<HTMLElement>('[data-live-notbgg]').forEach(root=>{
+        initializeGameDetail(root);
+        root.querySelectorAll<HTMLImageElement>('[data-related-cover]').forEach(img=>{
+            const failed=()=>{const blank=document.createElement('span');blank.className='related-placeholder';blank.textContent='—';img.replaceWith(blank);};
+            img.addEventListener('error',failed,{once:true});if(img.complete&&img.naturalWidth===0)failed();
+        });
+    });
+    window.addEventListener('pageshow',event=>{if(event.persisted)location.reload();});
+</script>
+<style>
+    .notbgg-detail{max-width:1000px;margin:auto;color:#303b46;overflow-wrap:anywhere}header p,dt{color:#667580}h1{line-height:1.4}.overview{display:grid;grid-template-columns:minmax(180px,300px) minmax(0,1fr);gap:28px}.cover{aspect-ratio:3/4;background:#f0f3f5}.cover button{display:block;border:0;padding:0;cursor:zoom-in;width:100%;height:100%;background:transparent}.cover img{width:100%;height:100%;object-fit:contain}.no-cover{display:grid;place-items:center;aspect-ratio:3/4;background:#f0f3f5}dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px 18px;align-content:start}dd{margin:0}.plain-text{white-space:pre-wrap;line-height:1.8}section{margin-top:28px}dialog{max-width:95vw;max-height:95vh}dialog img{display:block;max-width:85vw;max-height:80vh;object-fit:contain}.related{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;list-style:none;padding:0}.related a{display:flex;align-items:center;gap:12px}.related img,.related-placeholder{width:64px;height:80px;object-fit:contain;background:#f0f3f5;flex-shrink:0}a:focus-visible,button:focus-visible{outline:3px solid #2870a8;outline-offset:3px}@media(max-width:600px){.overview{grid-template-columns:minmax(0,1fr)}.cover{max-width:260px;width:100%;margin:auto}dl{gap:10px}h1{font-size:1.6rem}}
+</style>

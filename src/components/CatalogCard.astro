@@ -1,0 +1,34 @@
+---
+import type { CatalogRecord } from '../lib/catalog-payload';
+interface Props { record: CatalogRecord; lang: 'en'|'zh-TW'; index?:number; }
+const {record:r,lang,index=99}=Astro.props;
+const zh=lang==='zh-TW';
+const Tag=r.href?'a':'div';
+---
+<article class="game-card" data-game-card data-bgg-id={r.dataset.bggId} data-catalog-key={r.dataset.catalogKey}>
+    <Tag class="game-link" href={r.href||undefined}>
+        <div class="cover-shell" data-image-container data-image-present={r.image?'true':undefined}>
+            <span class="cover-placeholder" data-image-placeholder>{r.image?(zh?'封面載入中…':'Loading cover…'):(zh?'暫無封面':'No cover available')}</span>
+            {r.image&&<img src={r.image} alt={r.dataset.name} loading={index<4?'eager':'lazy'} fetchpriority={index<4?'high':'auto'} decoding="async"/>}
+        </div>
+        <div class="card-copy">
+            <h2>{r.dataset.name}</h2>
+            <span class="expansion-count" hidden={!r.expansions} title={zh?'方向可確認且去重的已知擴充；不代表完整數量':'Deduplicated expansions with confirmed direction; not a complete count'}>{zh?`擴充 ${r.expansions}`:`Expansions ${r.expansions}`}</span>
+            <span data-accessory-label hidden={!r.dataset.accessoryLabel}>{r.dataset.accessoryLabel}</span>
+            <div class="list-only">
+                <span data-catalog-id>{r.dataset.identityLabel??`BGG #${r.dataset.bggId??""}`}</span>
+                <span class="game-type">{r.typeLabel}</span>
+                <dl class="game-facts">
+                    <div><dt>{zh?'年份':'Year'}</dt><dd data-fact-year>{r.dataset.year||'—'}</dd></div>
+                    <div data-play-fact hidden={r.dataset.itemType==='accessory'}><dt>{zh?'玩家':'Players'}</dt><dd data-fact-players>{r.players}</dd></div>
+                    <div data-play-fact hidden={r.dataset.itemType==='accessory'}><dt>{zh?'分鐘':'Minutes'}</dt><dd data-fact-time>{r.time}</dd></div>
+                    <div data-bgg-fact hidden={r.dataset.source==='notbgg'||r.dataset.itemType==='accessory'}><dt>BGG</dt><dd data-fact-rating>{r.rating}</dd></div>
+                </dl>
+                <ul class="catalog-signals">{r.signals.map(s=><li data-signal-kind={s.kind} title={s.title}>{s.label}</li>)}</ul>
+            </div>
+        </div>
+    </Tag>
+</article>
+<style>
+    [data-catalog-id]{display:inline-block;margin-right:8px;font-size:.8rem;color:#667580;overflow-wrap:anywhere}
+</style>

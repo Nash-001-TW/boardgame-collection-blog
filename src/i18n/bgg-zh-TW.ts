@@ -79,7 +79,7 @@ export const bggCategoryZhTW:
 
     1020: {
         en: "Exploration",
-        zhTW: "探索"
+        zhTW: "探險"
     },
 
     1021: {
@@ -254,7 +254,7 @@ export const bggCategoryZhTW:
 
     1064: {
         en: "Movies / TV / Radio theme",
-        zhTW: "電影/電視/廣播主題"
+        zhTW: "影視主題"
     },
 
     1065: {
@@ -384,7 +384,7 @@ export const bggCategoryZhTW:
 
     1116: {
         en: "Comic Book / Strip",
-        zhTW: "漫畫"
+        zhTW: "漫畫題材"
     },
 
     1117: {
@@ -394,7 +394,7 @@ export const bggCategoryZhTW:
 
     1118: {
         en: "Mature / Adult",
-        zhTW: "成人"
+        zhTW: "成人主題"
     },
 
     1119: {
@@ -463,7 +463,7 @@ export const bggMechanicZhTW:
 
     2073: { en: "Acting", zhTW: "表演" },
     2840: { en: "Action / Event", zhTW: "行動／事件" },
-    2838: { en: "Action Drafting", zhTW: "行動選取" },
+    2838: { en: "Action Drafting", zhTW: "行動輪抽" },
     2001: { en: "Action Points", zhTW: "行動點數" },
     2689: { en: "Action Queue", zhTW: "行動佇列" },
     2839: { en: "Action Retrieval", zhTW: "行動回收" },
@@ -479,17 +479,17 @@ export const bggMechanicZhTW:
     2012: { en: "Auction / Bidding", zhTW: "拍賣／競標" },
     3098: { en: "Auction Compensation", zhTW: "競標補償" },
     2930: { en: "Auction: Dexterity", zhTW: "拍賣：技巧" },
-    2924: { en: "Auction: Dutch", zhTW: "拍賣：荷蘭式" },
+    2924: { en: "Auction: Dutch", zhTW: "荷蘭式降價拍賣" },
     2932: { en: "Auction: Dutch Priority", zhTW: "拍賣：荷蘭式優先權" },
-    2918: { en: "Auction: English", zhTW: "拍賣：英式" },
+    2918: { en: "Auction: English", zhTW: "英式喊價拍賣" },
     2931: { en: "Auction: Fixed Placement", zhTW: "拍賣：固定出價位置" },
     2927: { en: "Auction: Multiple Lot", zhTW: "拍賣：多標的" },
     2923: { en: "Auction: Once Around", zhTW: "拍賣：單輪競標" },
-    2920: { en: "Auction: Sealed Bid", zhTW: "拍賣：秘密出價" },
+    2920: { en: "Auction: Sealed Bid", zhTW: "密封投標（暗標）" },
     2919: { en: "Auction: Turn Order Until Pass", zhTW: "拍賣：依序出價直到放棄" },
 
     2903: { en: "Automatic Resource Growth", zhTW: "資源自動增長" },
-    2014: { en: "Betting and Bluffing", zhTW: "下注與唬騙" },
+    2014: { en: "Betting and Bluffing", zhTW: "下注與吹牛" },
     2957: { en: "Bias", zhTW: "偏向" },
     3097: { en: "Bids As Wagers", zhTW: "以出價作為賭注" },
     2999: { en: "Bingo", zhTW: "賓果" },
@@ -500,7 +500,7 @@ export const bggMechanicZhTW:
     2887: { en: "Catch the Leader", zhTW: "追趕領先者" },
     2956: { en: "Chaining", zhTW: "連鎖" },
     2057: { en: "Chit-Pull System", zhTW: "抽取標記系統" },
-    2984: { en: "Closed Drafting", zhTW: "封閉輪抽" },
+    2984: { en: "Closed Drafting", zhTW: "封閉選取" },
     2928: { en: "Closed Economy Auction", zhTW: "封閉經濟拍賣" },
     2841: { en: "Command Cards", zhTW: "指令卡" },
     2013: { en: "Commodity Speculation", zhTW: "商品投機" },
@@ -513,22 +513,22 @@ export const bggMechanicZhTW:
     2854: { en: "Critical Hits and Failures", zhTW: "致命成功與失敗" },
     2990: { en: "Cube Tower", zhTW: "方塊塔" },
 
-    3004: { en: "Deck Construction", zhTW: "牌庫構築" },
+    3004: { en: "Deck Construction", zhTW: "構築式卡牌" },
     2664: { en: "Deck, Bag, and Pool Building", zhTW: "牌庫／袋子／資源池構築" },
     3002: { en: "Deduction", zhTW: "推理" },
     2901: { en: "Delayed Purchase", zhTW: "延遲購買" },
     2072: { en: "Dice Rolling", zhTW: "擲骰" },
-    2856: { en: "Die Icon Resolution", zhTW: "骰面圖示結算" },
+    2856: { en: "Die Icon Resolution", zhTW: "骰面符號判定" },
     2950: { en: "Different Dice Movement", zhTW: "不同骰子移動" },
     3096: { en: "Drawing", zhTW: "繪畫" },
 
     2882: { en: "Elapsed Real Time Ending", zhTW: "即時時間結束" },
     2043: { en: "Enclosure", zhTW: "圍地" },
-    2875: { en: "End Game Bonuses", zhTW: "終局獎勵" },
+    2875: { en: "End Game Bonuses", zhTW: "終局計分獎勵" },
     2850: { en: "Events", zhTW: "事件" },
     3139: { en: "Expiring Actions", zhTW: "限時行動" },
 
-    3143: { en: "Facing", zhTW: "朝向" },
+    3143: { en: "Facing", zhTW: "單位朝向" },
     2885: { en: "Finale Ending", zhTW: "終章結束" },
     2860: { en: "Flicking", zhTW: "彈射" },
     2843: { en: "Follow", zhTW: "跟隨行動" },
@@ -557,7 +557,7 @@ export const bggMechanicZhTW:
     2871: { en: "Kill Steal", zhTW: "搶尾刀" },
     2886: { en: "King of the Hill", zhTW: "山丘之王" },
 
-    2980: { en: "Ladder Climbing", zhTW: "爬梯式出牌" },
+    2980: { en: "Ladder Climbing", zhTW: "爬階／壓牌機制" },
     3144: { en: "Lane Battler", zhTW: "路線對戰" },
     3001: { en: "Layering", zhTW: "堆疊分層" },
     2824: { en: "Legacy Game", zhTW: "傳承遊戲" },
@@ -576,10 +576,10 @@ export const bggMechanicZhTW:
     2981: { en: "Melding and Splaying", zhTW: "牌組融合與展開" },
     2047: { en: "Memory", zhTW: "記憶" },
     2863: { en: "Minimap Resolution", zhTW: "小地圖結算" },
-    2011: { en: "Modular Board", zhTW: "模組化版圖" },
+    2011: { en: "Modular Board", zhTW: "組合式版圖" },
     2962: { en: "Move Through Deck", zhTW: "牌庫推進" },
     2947: { en: "Movement Points", zhTW: "移動點數" },
-    2963: { en: "Movement Template", zhTW: "移動模板" },
+    2963: { en: "Movement Template", zhTW: "移動量尺／模板" },
     2958: { en: "Moving Multiple Units", zhTW: "多單位移動" },
     3099: { en: "Multi-Use Cards", zhTW: "多用途卡牌" },
     2965: { en: "Multiple Maps", zhTW: "多重地圖" },
@@ -590,7 +590,7 @@ export const bggMechanicZhTW:
     2081: { en: "Network and Route Building", zhTW: "網路與路線建設" },
 
     2846: { en: "Once-Per-Game Abilities", zhTW: "每局一次能力" },
-    2041: { en: "Open Drafting", zhTW: "公開輪抽" },
+    2041: { en: "Open Drafting", zhTW: "公開選取" },
     2844: { en: "Order Counters", zhTW: "命令標記" },
     3101: { en: "Ordering", zhTW: "排序" },
     2911: { en: "Ownership", zhTW: "所有權" },
@@ -604,12 +604,12 @@ export const bggMechanicZhTW:
     2007: { en: "Pick-up and Deliver", zhTW: "取貨與運送" },
     2964: { en: "Pieces as Map", zhTW: "棋子構成地圖" },
     2685: { en: "Player Elimination", zhTW: "玩家淘汰" },
-    2865: { en: "Player Judge", zhTW: "玩家裁判" },
+    2865: { en: "Player Judge", zhTW: "玩家擔任裁判" },
     2078: { en: "Point to Point Movement", zhTW: "點對點移動" },
     3006: { en: "Predictive Bid", zhTW: "預測競標" },
     2858: { en: "Prisoner's Dilemma", zhTW: "囚徒困境" },
     2953: { en: "Programmed Movement", zhTW: "程式化移動" },
-    2661: { en: "Push Your Luck", zhTW: "風險試探" },
+    2661: { en: "Push Your Luck", zhTW: "試手氣" },
 
     3102: { en: "Questions and Answers", zhTW: "問答" },
 
@@ -626,33 +626,33 @@ export const bggMechanicZhTW:
     2028: { en: "Role Playing", zhTW: "角色扮演" },
     2892: { en: "Roles with Asymmetric Information", zhTW: "非對稱資訊角色" },
     2035: { en: "Roll / Spin and Move", zhTW: "擲骰／轉盤移動" },
-    2813: { en: "Rondel", zhTW: "輪盤行動" },
+    2813: { en: "Rondel", zhTW: "遊戲行動輪" },
 
     2822: { en: "Scenario / Mission / Campaign Game", zhTW: "劇本／任務／戰役遊戲" },
     2823: { en: "Score-and-Reset Game", zhTW: "計分後重置" },
     2016: { en: "Secret Unit Deployment", zhTW: "秘密部署單位" },
     2926: { en: "Selection Order Bid", zhTW: "選擇順位競標" },
     2820: { en: "Semi-Cooperative Game", zhTW: "半合作遊戲" },
-    2004: { en: "Set Collection", zhTW: "套組收集" },
+    2004: { en: "Set Collection", zhTW: "成套收集" },
     2070: { en: "Simulation", zhTW: "模擬" },
     2020: { en: "Simultaneous Action Selection", zhTW: "同時行動選擇" },
     2038: { en: "Singing", zhTW: "唱歌" },
     2821: { en: "Single Loser Game", zhTW: "單一敗家遊戲" },
-    3138: { en: "Single Play", zhTW: "單次遊玩" },
+    3138: { en: "Single Play", zhTW: "一次性遊戲" },
     3005: { en: "Slide / Push", zhTW: "滑動／推動" },
     2819: { en: "Solo / Solitaire Game", zhTW: "單人遊戲" },
     2991: { en: "Speed Matching", zhTW: "快速配對" },
     3113: { en: "Spelling", zhTW: "拼字" },
     2940: { en: "Square Grid", zhTW: "方格網格" },
     2988: { en: "Stacking and Balancing", zhTW: "堆疊與平衡" },
-    2853: { en: "Stat Check Resolution", zhTW: "能力值檢定" },
+    2853: { en: "Stat Check Resolution", zhTW: "數值檢定" },
     2861: { en: "Static Capture", zhTW: "靜態吃子" },
     2005: { en: "Stock Holding", zhTW: "股票持有" },
     2027: { en: "Storytelling", zhTW: "說故事" },
-    2884: { en: "Sudden Death Ending", zhTW: "驟死結束" },
+    2884: { en: "Sudden Death Ending", zhTW: "猝死結束" },
 
     3100: { en: "Tags", zhTW: "標籤" },
-    2686: { en: "Take That", zhTW: "直接攻擊" },
+    2686: { en: "Take That", zhTW: "互相搞事" },
     2866: { en: "Targeted Clues", zhTW: "指定目標提示" },
     2019: { en: "Team-Based Game", zhTW: "團隊遊戲" },
     2849: { en: "Tech Trees / Tech Tracks", zhTW: "科技樹／科技軌" },
@@ -662,7 +662,7 @@ export const bggMechanicZhTW:
     2008: { en: "Trading", zhTW: "交易" },
     2814: { en: "Traitor Game", zhTW: "叛徒遊戲" },
     2009: { en: "Trick-taking", zhTW: "吃墩" },
-    2888: { en: "Tug of War", zhTW: "拉鋸" },
+    2888: { en: "Tug of War", zhTW: "拔河機制" },
 
     2827: { en: "Turn Order: Auction", zhTW: "回合順位：拍賣" },
     2829: { en: "Turn Order: Claim Action", zhTW: "回合順位：宣告行動" },
@@ -674,7 +674,7 @@ export const bggMechanicZhTW:
     2663: { en: "Turn Order: Time Track", zhTW: "回合順位：時間軌" },
 
     2079: { en: "Variable Phase Order", zhTW: "可變階段順序" },
-    2015: { en: "Variable Player Powers", zhTW: "玩家特殊能力" },
+    2015: { en: "Variable Player Powers", zhTW: "玩家不對稱能力" },
     2897: { en: "Variable Set-up", zhTW: "可變設置" },
     2874: { en: "Victory Points as a Resource", zhTW: "勝利點作為資源" },
     3142: { en: "Visual Restriction", zhTW: "視覺限制" },

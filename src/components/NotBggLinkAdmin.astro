@@ -1,0 +1,16 @@
+---
+interface Props {id:string;lang?:'zh-TW'|'en'}
+const {id,lang='zh-TW'}=Astro.props,en=lang==='en',t=(zh:string,english:string)=>en?english:zh;
+---
+<!doctype html><html lang={lang}><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta name="robots" content="noindex,nofollow"/><title>{t('NotBGG 身份對應','NotBGG identity mapping')}</title></head><body>
+<main data-link-admin data-id={id} data-lang={lang}><h1>{t('NotBGG 身份對應','NotBGG identity mapping')}</h1><nav><a href={`/admin/notbgg/${id.slice(7)}?lang=${lang}`}>{t('原始遊戲資料','Original game')}</a> · <a href="/admin">{t('管理首頁','Dashboard')}</a></nav>
+<p>{id} · {t('候選不代表確認；確認後仍保留原稿、收藏與副本。','A candidate is not confirmation. Original data, collection records and copies remain intact.')}</p>
+<p data-link-status role="status" aria-live="polite" tabindex="-1"></p><p data-link-state></p><button type="button" data-link-reload>{t('載入最新狀態與目前候選','Load latest state and current candidate')}</button>
+<form data-compare-form><label>{t('候選 BGG 正整數 ID','Candidate BGG positive integer ID')}<input name="bggId" type="number" min="1" step="1" required/></label><button>{t('查詢與比較','Look up and compare')}</button></form>
+<div data-link-comparison class="comparison"></div>
+<label>{t('本次操作原因（必填）','Reason for this operation (required)')}<textarea name="reason" maxlength="3000" required/></label>
+<div class="actions"><button type="button" data-command="propose">{t('建立候選','Propose candidate')}</button><button type="button" data-command="confirm">{t('人工確認同一身份','Confirm same identity')}</button><button type="button" data-command="notbgg">{t('切換為 NotBGG 主要來源','Use NotBGG primary')}</button><button type="button" data-command="bgg">{t('切換為 BGG 主要來源','Use BGG primary')}</button><button type="button" data-command="revoke">{t('解除／取消對應（保留歷史）','Revoke mapping / candidate (retain history)')}</button></div>
+<h2>{t('對應操作歷史','Mapping history')}</h2><ol data-link-history></ol><button type="button" data-history-more>{t('載入更多歷史','Load more history')}</button></main>
+<script>import {initializeNotBggLinkAdmin} from '../lib/notbgg-link-controller';document.querySelectorAll<HTMLElement>('[data-link-admin]').forEach(initializeNotBggLinkAdmin);</script>
+</body></html>
+<style>body{font:16px/1.6 system-ui;background:#f6f4ef;color:#303b46;margin:0}main{max-width:1000px;margin:auto;padding:24px}label{display:block;margin:16px 0}input,textarea{display:block;box-sizing:border-box;width:100%;padding:10px;border:1px solid #bec9d2;border-radius:6px;font:inherit}textarea{min-height:80px}button{font:inherit;border:1px solid #bec9d2;border-radius:6px;padding:10px 14px;background:#fff;cursor:pointer;margin:6px 8px 6px 0}button:disabled{opacity:.5}.comparison{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}.comparison section{min-width:0;background:#fff;padding:16px;border-radius:8px;overflow-wrap:anywhere}.comparison img{max-width:100%;width:180px;height:240px;object-fit:contain}pre{white-space:pre-wrap;overflow-wrap:anywhere}button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid #2870a8;outline-offset:2px}[hidden]{display:none!important}@media(max-width:600px){main{padding:16px}.comparison{grid-template-columns:minmax(0,1fr)}h1{font-size:1.5rem}}</style>

@@ -1,0 +1,23 @@
+---
+import { env } from "cloudflare:workers";
+import Layout from '../../../../layouts/Layout.astro';
+import NotBggDetail from '../../../../components/NotBggDetail.astro';
+import { resolveNotBggPage } from '../../../../lib/notbgg-public';
+import { isNotBggId } from '../../../../lib/game-identity';
+import { getGames } from '../../../../lib/games';
+export const prerender=false;
+const id=`NotBGG:${Astro.params.id??''}`;
+let detail=null, unavailable=false;
+let identity=null;
+try{if(isNotBggId(id)){
+ const result=await resolveNotBggPage(env.DB,id,getGames(),'en');
+ if(result.redirect)return new Response(null,{status:307,headers:{Location:result.redirect+Astro.url.search,'Cache-Control':'no-store'}});
+ detail=result.detail;identity=result.identity;
+}}catch{unavailable=true;}
+Astro.response.status=unavailable?503:detail?200:404;
+Astro.response.headers.set('Cache-Control','no-store');
+const message=unavailable?"Game data is temporarily unavailable":"Game not found";
+---
+<Layout canonical={new URL(`/en/games/notbgg/${Astro.params.id}`,Astro.url.origin).href} catalogPage detailPage lang="en" title={detail?.game.name??message}>
+    {detail?<>{identity&&<p data-identity-notice>{identity.notBggId} · BGG #{identity.bggId} · NotBGG primary </p>}<NotBggDetail detail={detail} lang="en"/></>:<><h1>{message}</h1><a href="/en/games">Back to catalog</a></>}
+</Layout>

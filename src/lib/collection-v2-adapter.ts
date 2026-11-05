@@ -1,7 +1,11 @@
+import {translateGameName} from "../i18n/utils";
+import { formatNotBggId } from "./game-identity";
+import { getCollectionV2GameUrl } from "./collection-v2-links";
+import { safeImage } from "./notbgg-public";
 
 import bggCache from "../data/bgg-cache.json" with { type: "json" };
 
-import type { BggGameData } from "./bgg";
+import type { BggGameData } from "./bgg-types";
 import type { CollectionV2Row } from "./collection-v2-repository";
 
 // ============================================================
@@ -9,7 +13,13 @@ import type { CollectionV2Row } from "./collection-v2-repository";
 // 不強制要求 BGG ID 或 BGG 詳細資料
 // ============================================================
 
-export interface CollectionV2Game {
+/** One personal collection record, not one unique game. Never deduplicate by bggId. */
+export interface CollectionRecord {
+    resolvedGameName?:string|null;
+    resolvedIdentityKey?:string|null;
+    notBggId?: string|null;
+    imageUrl?: string|null;
+    sourceStatus?: "active"|"archived"|"missing"|"unavailable";
     collectionId: number;
     gameId: number | null;
     bggId: number | null;
@@ -30,6 +40,9 @@ export interface CollectionV2Game {
     bgg: BggGameData | null;
     gameUrl: string | null;
 }
+
+// Compatibility for existing components; the record identity remains collectionId.
+export type CollectionV2Game = CollectionRecord;
 
 // ============================================================
 // BGG Cache
@@ -104,7 +117,7 @@ export function adaptCollectionV2Row(
             ? row.bgg_id
             : null;
 
-    const bgg = bggId !== null
+    let bgg = bggId !== null
         ? cache[String(bggId)] ?? null
         : null;
 
@@ -116,13 +129,23 @@ export function adaptCollectionV2Row(
         `Collection #${row.id}`;
 
     // 只有找到 BGG Cache，才建立目前網站的遊戲詳細頁連結。
-    const gameUrl = bgg && bggId !== null
-        ? lang === "en"
-            ? `/en/games/bgg-${bggId}`
-            : `/games/bgg-${bggId}`
-        : null;
+    const notBggId=row.notbgg_seq?formatNotBggId(row.notbgg_seq):null;
+    const sourceStatus=notBggId?(row.notbgg_archived_at?'archived':'active'):bgg?'active':'missing';
+    let gameUrl=notBggId?(sourceStatus==='active'?`${lang==='en'?'/en':''}/games/notbgg/${notBggId.slice(7)}`:null):getCollectionV2GameUrl(bggId,lang);
 
+    let resolvedGameName:string|null=null,resolvedIdentityKey:string|null=null;
+    let imageUrl=notBggId?(sourceStatus==='active'?safeImage(row.notbgg_image):null):safeImage(bgg?.thumbnail||bgg?.image);
+    const target=row.identity_bgg_id?cache[String(row.identity_bgg_id)]:null;
+    if(row.identity_seq&&target&&sourceStatus!=='archived'){
+        const identity=formatNotBggId(row.identity_seq);
+        resolvedIdentityKey=row.identity_primary==='bgg'?`BGG:${row.identity_bgg_id}`:identity;
+        resolvedGameName=row.identity_primary==='bgg'?translateGameName(row.identity_bgg_id!,target.name,lang):row.identity_name??identity;
+        gameUrl=row.identity_primary==='bgg'?getCollectionV2GameUrl(row.identity_bgg_id!,lang):`${lang==='en'?'/en':''}/games/notbgg/${identity.slice(7)}`;
+        imageUrl=row.identity_primary==='bgg'?safeImage(target.thumbnail||target.image):safeImage(row.identity_image);
+        bgg=row.identity_primary==='bgg'?target:null;
+    }
     return {
+        resolvedGameName,resolvedIdentityKey,notBggId,sourceStatus,imageUrl,
         collectionId: row.id,
         gameId: row.game_id,
         bggId,

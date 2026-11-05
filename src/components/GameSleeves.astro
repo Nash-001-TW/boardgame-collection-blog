@@ -1,0 +1,28 @@
+---
+import { getGameSleeves, getSleevePackCount } from '../lib/game-sleeves';
+interface Props { bggId:number;lang:'en'|'zh-TW'; }
+const {bggId,lang}=Astro.props,zh=lang==='zh-TW';
+const info=getGameSleeves(bggId),set=info?.cardSets[0];
+// Merge equal physical sizes before rounding; different sizes are never pooled.
+const grouped=new Map<string,{width:number;height:number;count:number}>();
+for(const c of set?.cardTypes??[]){const key=`${c.width}x${c.height}`;const old=grouped.get(key);grouped.set(key,{...c,count:(old?.count??0)+c.count});}
+const cards=[...grouped.values()],total=cards.reduce((n,c)=>n+c.count,0);
+---
+<section class="sleeves" data-detail-sleeves>
+<h2>{zh?'牌套需求':'Card sleeves'}</h2>
+{cards.length?<>
+<p class="muted">{set?.name}{set?.version?` · ${set.version}`:''}</p>
+<div class="sleeve-summary"><div><span>{zh?'卡牌總數':'Total cards'}</span><strong>{total.toLocaleString('en-US')}</strong></div><div><span>{zh?'尺寸種類':'Sizes'}</span><strong>{cards.length}</strong></div><div><span>{zh?'所需包數':'Packs needed'}</span><strong data-sleeve-total-packs>{cards.reduce((n,c)=>n+getSleevePackCount(c.count,100),0)}</strong></div></div>
+<label class="pack-control">{zh?'每包張數':'Cards per pack'} <select data-sleeve-pack-size>{[50,100,200].map(n=><option value={n} selected={n===100}>{n}</option>)}</select></label>
+<table><thead><tr><th>{zh?'卡牌尺寸':'Card size'}</th><th>{zh?'張數':'Cards'}</th><th>{zh?'包數':'Packs'}</th></tr></thead><tbody>{cards.map(c=><tr data-sleeve-count={c.count}><td>{c.width} × {c.height} mm</td><td>{c.count.toLocaleString('en-US')}</td><td data-sleeve-packs>{getSleevePackCount(c.count,100)}</td></tr>)}</tbody></table>
+<p class="muted">{zh?'包數為估算值；請確認版本、尺寸及實際包裝張數。':'Pack quantities are estimates. Verify edition, sizes and pack quantities.'}</p>
+{info?.sourceUrl&&<a href={info.sourceUrl} target="_blank" rel="noopener noreferrer">{info.source} ↗</a>}
+</>:<p class="muted">{zh?'目前尚無這款遊戲的牌套資料。':'No sleeve data available yet.'}</p>}
+</section>
+<style>
+.sleeves{min-width:0}h2{font-size:1.1rem;margin:0 0 14px}.muted{font-size:.82rem;color:#657180;line-height:1.6}.sleeve-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:14px 0}.sleeve-summary div{background:#f4f7fa;border-radius:9px;padding:12px 8px}.sleeve-summary span{display:block;font-size:.75rem;color:#657180}.sleeve-summary strong{display:block;font-size:1.25rem;margin-top:6px}.pack-control{display:flex;align-items:center;gap:12px;font-size:.85rem}select{padding:8px;border:1px solid #ccd5de;border-radius:8px;background:white}table{width:100%;border-collapse:collapse;font-size:.84rem;margin-top:14px}th,td{text-align:right;border-bottom:1px solid #e5e9ee;padding:11px 5px;font-variant-numeric:tabular-nums}th:first-child,td:first-child{text-align:left}a{color:#244e73}
+</style>
+<script>
+import {getSleevePackCount} from '../lib/game-sleeves';
+function initialize(){document.querySelectorAll<HTMLElement>('[data-detail-sleeves]').forEach(root=>{if(root.dataset.ready)return;root.dataset.ready='true';const element=root.querySelector('[data-sleeve-pack-size]');const select=element instanceof HTMLSelectElement?element:null;select?.addEventListener('change',()=>{let total=0;for(const row of root.querySelectorAll<HTMLElement>('[data-sleeve-count]')){const packs=getSleevePackCount(Number(row.dataset.sleeveCount),Number(select.value));row.querySelector('[data-sleeve-packs]')!.textContent=packs.toLocaleString('en-US');total+=packs;}root.querySelector('[data-sleeve-total-packs]')!.textContent=total.toLocaleString('en-US');});});}initialize();document.addEventListener('astro:page-load',initialize);
+</script>

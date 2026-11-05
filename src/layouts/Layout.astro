@@ -4,11 +4,14 @@ import type { Language } from "../i18n/ui";
 import "../styles/cat-adventure-theme.css";
 
 interface Props {
+    canonical?: string;
     title: string;
     lang?: Language;
+    catalogPage?: boolean;
+    detailPage?: boolean;
 }
 
-const { title, lang = "zh-TW" } = Astro.props;
+const { title, lang = "zh-TW", catalogPage = false, detailPage = false } = Astro.props;
 const isZh = lang === "zh-TW";
 ---
 <!doctype html>
@@ -18,10 +21,12 @@ const isZh = lang === "zh-TW";
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#fbf5e9" />
         <title>{title}</title>
+        {Astro.props.canonical&&<link rel="canonical" href={Astro.props.canonical}/>}
     </head>
-    <body>
+    <body class:list={{ "catalog-layout": catalogPage, "detail-layout": detailPage }}>
         <div class="site-shell">
             <Header lang={lang} />
+            {!catalogPage && <>
             <div class="adventure-banner">
                 <img
                     src="/images/cat-adventure-banner.png"
@@ -40,6 +45,7 @@ const isZh = lang === "zh-TW";
                     <span class="banner-decoration" aria-hidden="true">⚔️ 🎲 ✨</span>
                 </div>
             </section>
+            </>}
 
             <!-- 使用 div 而不是 main，避免詳細頁元件內的 main 重複巢狀 -->
             <div class="site-content" id="content">
@@ -65,6 +71,11 @@ const isZh = lang === "zh-TW";
         color: #392b27;
     }
     .site-shell { min-height: 100vh; display: flex; flex-direction: column; }
+    body.catalog-layout { background:#f7f9fb; color:#303b46; }
+    .catalog-layout .site-content { max-width:1440px; margin:0 auto; padding:28px clamp(16px,3vw,42px) 48px; }
+    body.detail-layout { background:#f6f4ef; }
+    .detail-layout .site-content { max-width:1360px; padding:24px clamp(16px,3vw,40px) 30px; }
+    .detail-layout .site-footer { padding:18px 16px; }
     .adventure-banner {
         background: linear-gradient(110deg, #e9d4ae 0%, #f9ebd3 46%, #d8e7f5 100%);
         border-bottom: 3px solid #c6a781;

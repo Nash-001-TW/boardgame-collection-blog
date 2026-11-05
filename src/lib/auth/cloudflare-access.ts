@@ -11,52 +11,28 @@ export interface AccessAdmin {
   subject: string;
 }
 
+const keySets = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
+export type AccessAuthorization = { admin: AccessAdmin } | { status: 401 | 403 };
+
+export async function authenticateAccessAdmin(token: string | null, config: AccessAuthConfig): Promise<AccessAuthorization> {
+  const domain = config.teamDomain.trim().toLowerCase();
+  if (!token) return { status: 401 };
+  if (!/^[a-z0-9-]+\.cloudflareaccess\.com$/.test(domain) || !config.audience.trim() || !config.adminEmail.trim()) return { status: 403 };
+  try {
+    let keys = keySets.get(domain);
+    if (!keys) { keys = createRemoteJWKSet(new URL(`https://${domain}/cdn-cgi/access/certs`)); keySets.set(domain, keys); }
+    const { payload } = await jwtVerify(token, keys, { issuer: `https://${domain}`, audience: config.audience.trim(),
+      algorithms: ['RS256'], requiredClaims: ['exp', 'iat', 'sub', 'email'], clockTolerance: 5 });
+    if (typeof payload.sub !== 'string' || !payload.sub || typeof payload.email !== 'string') return { status: 401 };
+    if (payload.email.toLowerCase() !== config.adminEmail.trim().toLowerCase()) return { status: 403 };
+    return { admin: { email: payload.email, subject: payload.sub } };
+  } catch { return { status: 401 }; } // Never log tokens, claims, JWKS responses or exceptions.
+}
+
 export async function verifyAccessAdmin(
   token: string | null,
   config: AccessAuthConfig
 ): Promise<AccessAdmin | null> {
-  const teamDomain = config.teamDomain.trim().toLowerCase();
-  const audience = config.audience.trim();
-  const adminEmail = config.adminEmail.trim().toLowerCase();
-
-  // 設定不完整時，一律拒絕存取。
-  if (!token || !teamDomain || !audience || !adminEmail) {
-    return null;
-  }
-
-  // 僅允許 Cloudflare Access Team Domain。
-  if (!/^[a-z0-9-]+\.cloudflareaccess\.com$/.test(teamDomain)) {
-    return null;
-  }
-
-  const issuer = `https://${teamDomain}`;
-  const jwksUrl = new URL(`${issuer}/cdn-cgi/access/certs`);
-
-  try {
-    const jwks = createRemoteJWKSet(jwksUrl);
-
-    const { payload } = await jwtVerify(token, jwks, {
-      issuer,
-      audience,
-      algorithms: ['RS256'],
-      clockTolerance: 5
-    });
-
-    if (
-      typeof payload.sub !== 'string' ||
-      !payload.sub ||
-      typeof payload.email !== 'string' ||
-      payload.email.toLowerCase() !== adminEmail
-    ) {
-      return null;
-    }
-
-    return {
-      email: payload.email,
-      subject: payload.sub
-    };
-  } catch {
-    // JWT 無效、過期或無法驗證時，一律拒絕。
-    return null;
-  }
+  const result = await authenticateAccessAdmin(token, config);
+  return 'admin' in result ? result.admin : null;
 }

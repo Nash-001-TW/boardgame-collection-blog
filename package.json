@@ -11,12 +11,14 @@
     "preview": "astro preview",
     "astro": "astro",
     "update-bgg": "tsx scripts/update-bgg-cache.ts",
+    "bgg:relations:import": "tsx scripts/bgg-relations-import.ts",
     "prebuild": "npx wrangler types && node scripts/ensure-bgg-collection-cache.mjs"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.3.4",
     "astro": "^7.3.4",
     "dotenv": "^18.0.6",
+    "entities": "4.5.0",
     "fast-xml-parser": "^5.11.2",
     "jose": "^6.2.12"
   },
@@ -26,6 +28,7 @@
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
     "@types/node": "^26.6.4",
+    "miniflare": "5.20261006.1-alpha",
     "tsx": "^4.23.15",
     "typescript": "^6.0.3"
   }

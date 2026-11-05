@@ -1,3 +1,4 @@
+import { decodeGameName } from "../lib/game-name";
 import {
     ui,
     defaultLanguage
@@ -132,11 +133,11 @@ export function translateGameName(
 
     // 英文頁面永遠使用 BGG 原始名稱
     if (lang === "en") {
-        return originalName;
+        return decodeGameName(originalName);
     }
 
     // 中文頁面優先使用我們自己的中文名稱
-    return (
+    return decodeGameName(
         gameZhTW[bggId]?.name ??
         originalName
     );

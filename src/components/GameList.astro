@@ -1,285 +1,77 @@
-
 ---
 import type { Game } from "../lib/games";
 import type { Language } from "../i18n/ui";
-
-import { translateGameName } from "../i18n/utils";
-
-import GameSummary from "./GameSummary.astro";
-import GameBrowserControls from "./GameBrowserControls.astro";
-
-interface Props {
-    games: Game[];
-    lang: Language;
-}
-
+import CatalogBrowserControls from "./CatalogBrowserControls.astro";
+import CatalogCard from "./CatalogCard.astro";
+import { buildCatalogPayload } from "../lib/catalog-payload";
+import { readCatalogUrl,selectCatalogEntries } from '../lib/catalog-selection';
+interface Props { games: Game[]; lang: Language; payload?: ReturnType<typeof buildCatalogPayload>; live?:boolean; }
 const { games, lang } = Astro.props;
-
-const labels = lang === "zh-TW"
-    ? {
-        year: "發行年份",
-        players: "玩家人數",
-        playTime: "遊戲時間",
-        rating: "我的評分",
-        unrated: "尚未評分",
-        minutes: "分鐘",
-        noImage: "暫無圖片",
-        pagination: "遊戲分頁"
-    }
-    : {
-        year: "Year",
-        players: "Players",
-        playTime: "Playing Time",
-        rating: "My Rating",
-        unrated: "Not Rated",
-        minutes: "min",
-        noImage: "No Image",
-        pagination: "Game pages"
-    };
-
-function getGameUrl(slug: string): string {
-    return lang === "en"
-        ? `/en/games/${slug}`
-        : `/games/${slug}`;
-}
+const zh = lang === "zh-TW";
+const payload = Astro.props.payload ?? buildCatalogPayload(games, lang);
+const initialState=readCatalogUrl(Astro.url,payload.mechanics);
+const matched = selectCatalogEntries(payload.records,initialState,lang);
+const initial = matched.slice(0,Math.min(initialState.page,Math.ceil(payload.records.length/24))*24);
+// JSON is inert data; escaping < prevents a source name from closing the script element.
+const serialized = JSON.stringify(payload).replaceAll("<", "\\u003c");
+const blank = { dataset:{name:""}, href:"",image:"",fallback:"",expansions:0,typeLabel:"",players:"",time:"",rating:"",signals:[] };
 ---
-
-<section
-    class="game-browser"
-    data-game-browser
-    data-locale={lang}
->
-    <!-- 共用收藏統計 -->
-    <GameSummary lang={lang} />
-
-    <!-- 共用搜尋、排序、篩選及重設條件 -->
-    <GameBrowserControls lang={lang} />
-
-    <!-- 遊戲卡片 -->
+<section class="game-browser" data-game-browser data-live-catalog={Astro.props.live ? "true" : undefined} data-browser-module="games" data-loading-mode="progressive" data-view={initialState.view} data-locale={lang}>
+    <CatalogBrowserControls lang={lang} initialCount={matched.length} />
+    <script type="application/json" data-catalog-payload set:html={serialized} />
+    <template data-catalog-card-template><CatalogCard record={blank} lang={lang} /></template>
     <div class="game-grid" data-game-grid>
-        {
-            games.map(game => {
-
-                const displayName = translateGameName(
-                    game.bggId,
-                    game.bgg.name,
-                    lang
-                );
-
-                const gameUrl = getGameUrl(game.slug);
-
-                const image =
-                    game.bgg.thumbnail ||
-                    game.bgg.image;
-
-                return (
-                    <article
-                        class="game-card"
-                        data-game-card
-                        data-name={displayName}
-                        data-original-name={game.bgg.name}
-                        data-bgg-id={game.bggId}
-                        data-year={game.bgg.year ?? ""}
-                        data-rating={game.collection.myRating ?? ""}
-                        data-bgg-rating={game.bgg.averageRating ?? ""}
-                        data-weight={game.bgg.averageWeight ?? ""}
-                        data-min-players={game.bgg.minPlayers}
-                        data-max-players={game.bgg.maxPlayers}
-                        data-max-time={game.bgg.maxPlayTime}
-                        data-mechanics={game.bgg.mechanics.map(m => m.id).join(",")}
-                        data-mechanic-names={game.bgg.mechanics.map(m => m.name.replaceAll("|", " ")).join("|")}
-                        data-expansion={String(game.bgg.isExpansion)}
-                        data-owned={String(game.collection.owned)}
-                        data-wishlist={String(game.collection.wishlist ?? false)}
-                        data-preorder={String(
-                            game.collection.willingness === "Preordered"
-                        )}
-                        data-want-to-play={String(
-                            game.collection.willingness === "Want To Play"
-                        )}
-                        data-want-to-buy={String(
-                            game.collection.willingness === "Want To Buy"
-                        )}
-                    >
-                        <a
-                            href={gameUrl}
-                            class="game-image"
-                        >
-                            {
-                                image ? (
-                                    <img
-                                        src={image}
-                                        alt={displayName}
-                                        loading="lazy"
-                                    />
-                                ) : (
-                                    <span>{labels.noImage}</span>
-                                )
-                            }
-                        </a>
-
-                        <h2>
-                            <a href={gameUrl}>
-                                {displayName}
-                            </a>
-                        </h2>
-
-                        <p>
-                            {labels.year}：
-                            {game.bgg.year}
-                        </p>
-
-                        <p>
-                            {labels.players}：
-                            {game.bgg.minPlayers}–{game.bgg.maxPlayers}
-                        </p>
-
-                        <p>
-                            {labels.playTime}：
-                            {game.bgg.minPlayTime}–{game.bgg.maxPlayTime}
-                            {" "}{labels.minutes}
-                        </p>
-
-                        <p class="rating">
-                            {labels.rating}：★ {
-                                game.collection.myRating ??
-                                labels.unrated
-                            }
-                        </p>
-                    </article>
-                );
-            })
-        }
+        {initial.map((record,index)=><CatalogCard record={record} lang={lang} index={index} />)}
     </div>
-
-    <!-- 分頁 -->
-    <nav
-        data-game-pagination
-        aria-label={labels.pagination}
-    ></nav>
+    <nav data-game-pagination hidden aria-label={zh ? "分批載入" : "Batch navigation"}></nav>
+    <div class="load-area">
+        <p data-load-status role="status" aria-live="polite"></p>
+        <button type="button" data-load-more>{zh ? "載入更多" : "Load more"}</button>
+        <div data-load-sentinel aria-hidden="true"></div>
+    </div>
+    <button type="button" class="back-to-top" data-back-to-top hidden aria-label={zh ? "回到頂部" : "Back to top"}>↑ <span>{zh ? "頂部" : "Top"}</span></button>
+    <noscript>
+        <p>{zh ? "啟用 JavaScript 可搜尋、篩選及分批載入；也可使用以下完整目錄連結。" : "Enable JavaScript for search, filters and batches, or browse all catalog links below."}</p>
+        <details><summary>{zh ? "完整遊戲目錄" : "Complete game catalog"}</summary><ul>{payload.records.map(r=><li>{r.href?<a href={r.href}>{r.dataset.name}</a>:r.dataset.name}</li>)}</ul></details>
+    </noscript>
 </section>
+<style is:global>
+    .game-browser[data-browser-module="games"] { width:100%; color:#303b46; }
+     .game-browser[data-browser-module="games"] .game-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); grid-auto-rows:auto; gap:12px; align-items:start; }
+     .game-browser[data-browser-module="games"] .game-card{ min-width:0; align-self:start; background:#fff; border:1px solid #e0e6eb; border-radius:12px; overflow:hidden; box-shadow:0 1px 4px #21394b05; }
+     .game-browser[data-browser-module="games"] .game-link{ display:block; color:inherit; text-decoration:none; }
+     .game-browser[data-browser-module="games"] a.game-link:hover{ background:#f7fafc; }  .game-browser[data-browser-module="games"] a.game-link:focus-visible{ outline:3px solid #2870a8; outline-offset:-3px; }
+     .game-browser[data-browser-module="games"] .cover-shell{ position:relative; width:100%; aspect-ratio:3/4; background:#f0f3f5; }
+     .game-browser[data-browser-module="games"] .cover-placeholder{ display:grid; place-items:center; aspect-ratio:3/4; width:100%; padding:16px; color:#64717b; font-size:.85rem; }
+     .game-browser[data-browser-module="games"] .cover-shell img{ display:block; width:100%; height:100%; position:absolute; inset:0; object-fit:contain; vertical-align:middle; }
+     .game-browser[data-browser-module="games"] .cover-shell[data-image-present="true"] .cover-placeholder{ display:none; }
+     .game-browser[data-browser-module="games"] .cover-shell[data-image-loaded="true"] img{ aspect-ratio:auto; }
+     .game-browser[data-browser-module="games"] .cover-shell[data-image-loaded="true"] .cover-placeholder{ display:none; }
+     .game-browser[data-browser-module="games"] .card-copy{ padding:8px 10px; }  .game-browser[data-browser-module="games"] h2{ font-size:.95rem; line-height:1.5; margin:0; overflow-wrap:anywhere; }
+     .game-browser[data-browser-module="games"] .expansion-count{ display:inline-block; margin-top:5px; padding:2px 6px; border:1px solid #cfdfeb; border-radius:6px; font-size:.72rem; color:#305879; background:#eef5fb; }
+     .game-browser[data-browser-module="games"] .list-only{ display:none; }  .game-browser[data-browser-module="games"] .game-facts{ display:flex; gap:10px 22px; flex-wrap:wrap; margin:10px 0; font-size:.85rem; }
+     .game-browser[data-browser-module="games"] .game-facts div{ display:flex; gap:6px; }  .game-browser[data-browser-module="games"] dt{ color:#667580; }  .game-browser[data-browser-module="games"] dd{ margin:0; font-weight:600; }  .game-browser[data-browser-module="games"] .game-type{ font-size:.8rem; color:#667580; }
+    .game-browser[data-browser-module="games"][data-view="list"] .game-grid { grid-template-columns:minmax(0,1fr); grid-auto-rows:auto; gap:12px; }
+    .game-browser[data-browser-module="games"][data-view="list"] .game-link { display:grid; grid-template-columns:96px minmax(0,1fr); }
+    .game-browser[data-browser-module="games"][data-view="list"] .cover-shell { align-self:start; }
+    .game-browser[data-browser-module="games"][data-view="list"] .card-copy { padding:14px 18px; }
+    .game-browser[data-browser-module="games"][data-view="list"] .list-only { display:block; }
+    
+     .game-browser[data-browser-module="games"] .load-area{ padding:30px 0; text-align:center; color:#64717b; }  .game-browser[data-browser-module="games"] .load-area button{ padding:11px 24px; border:1px solid #ccd7df; background:#fff; color:#234d71; border-radius:10px; cursor:pointer; }
+     .game-browser[data-browser-module="games"] .load-area button:disabled{ opacity:.5; cursor:default; }  .game-browser[data-browser-module="games"] [data-load-sentinel]{ height:1px; }
+     .game-browser[data-browser-module="games"] .back-to-top{ position:fixed; bottom:22px; right:22px; z-index:25; min-width:44px; min-height:44px; padding:10px 14px; color:#fff; background:#234d71; border:0; border-radius:12px; box-shadow:0 4px 15px #102c4b30; cursor:pointer; }
+     .game-browser[data-browser-module="games"] [hidden]{ display:none !important; }
+    @media(max-width:600px) {  .game-browser[data-browser-module="games"] .game-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }  .game-browser[data-browser-module="games"] .card-copy{ padding:8px; }  .game-browser[data-browser-module="games"] h2{ font-size:.85rem; }  .game-browser[data-browser-module="games"] .back-to-top{ right:12px; bottom:12px; } }
+    @media(max-width:380px) { .game-browser[data-browser-module="games"][data-view="list"] .game-link { grid-template-columns:70px minmax(0,1fr); } .game-browser[data-browser-module="games"][data-view="list"] .card-copy { padding:10px; }  .game-browser[data-browser-module="games"] .game-facts{ gap:6px 10px; font-size:.78rem; } }
+    @media(prefers-reduced-motion:reduce) {  .game-browser[data-browser-module="games"] *{ scroll-behavior:auto; } }
 
-<style>
-    .game-browser {
-        width: 100%;
-    }
-
-    .game-grid {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 25px;
-    }
-
-    .game-card {
-        background-color: white;
-        padding: 18px;
-        border-radius: 10px;
-        min-width: 0;
-    }
-
-    .game-image {
-        height: 200px;
-        background-color: #f3f4f6;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 6px;
-        overflow: hidden;
-        text-decoration: none;
-        color: #666;
-    }
-
-    .game-image img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-    }
-
-    .game-card h2 {
-        margin: 14px 0 10px;
-        font-size: 1.2rem;
-    }
-
-    .game-card h2 a {
-        color: #333;
-        text-decoration: none;
-    }
-
-    .game-card h2 a:hover {
-        text-decoration: underline;
-    }
-
-    .game-card p {
-        margin: 7px 0;
-    }
-
-    .rating {
-        font-weight: bold;
-    }
-
-    [data-game-pagination] {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-top: 32px;
-    }
-
-    [data-game-pagination] :global(button) {
-        padding: 8px 12px;
-        border: 1px solid #ddd;
-        border-radius: 6px;
-        background: white;
-        cursor: pointer;
-    }
-
-    [data-game-pagination] :global(button.active) {
-        background: #222;
-        color: white;
-    }
-
-    [data-game-pagination] :global(button:disabled) {
-        opacity: 0.4;
-        cursor: not-allowed;
-    }
-
-    @media (max-width: 900px) {
-        .game-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-    }
-
-    @media (max-width: 600px) {
-        .game-grid {
-            grid-template-columns: 1fr;
-        }
-    }
+.game-browser[data-browser-module="games"] .catalog-signals {list-style:none;display:flex;flex-wrap:wrap;gap:6px;padding:0;margin:10px 0;}
+.game-browser[data-browser-module="games"] .catalog-signals li {padding:5px 8px;border:1px solid #d8c7ac;border-radius:8px;background:#fff8eb;font-size:.8rem;overflow-wrap:anywhere;}
 </style>
-
 <script>
-    import {
-        initializeGameListController
-    } from "../lib/game-list-controller";
-
-    function initializeGameBrowsers() {
-        document
-            .querySelectorAll<HTMLElement>(
-                "[data-game-browser]"
-            )
-            .forEach(root => {
-                initializeGameListController({
-                    root,
-                    pageSize: 24,
-                    debounceMs: 250
-                });
-            });
+    import { initializeGameListController } from "../lib/game-list-controller";
+    function initialize() {
+        document.querySelectorAll<HTMLElement>('[data-browser-module="games"]').forEach(root => initializeGameListController({root,pageSize:24,debounceMs:250}));
     }
-
-    initializeGameBrowsers();
-
-    document.addEventListener(
-        "astro:page-load",
-        initializeGameBrowsers
-    );
+    initialize(); document.addEventListener("astro:page-load", initialize);
 </script>

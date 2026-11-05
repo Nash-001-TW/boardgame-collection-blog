@@ -1,0 +1,23 @@
+---
+import { env } from "cloudflare:workers";
+import Layout from '../../../layouts/Layout.astro';
+import NotBggDetail from '../../../components/NotBggDetail.astro';
+import { resolveNotBggPage } from '../../../lib/notbgg-public';
+import { isNotBggId } from '../../../lib/game-identity';
+import { getGames } from '../../../lib/games';
+export const prerender=false;
+const id=`NotBGG:${Astro.params.id??''}`;
+let detail=null, unavailable=false;
+let identity=null;
+try{if(isNotBggId(id)){
+ const result=await resolveNotBggPage(env.DB,id,getGames(),'zh-TW');
+ if(result.redirect)return new Response(null,{status:307,headers:{Location:result.redirect+Astro.url.search,'Cache-Control':'no-store'}});
+ detail=result.detail;identity=result.identity;
+}}catch{unavailable=true;}
+Astro.response.status=unavailable?503:detail?200:404;
+Astro.response.headers.set('Cache-Control','no-store');
+const message=unavailable?"遊戲資料暫時無法載入":"找不到遊戲";
+---
+<Layout canonical={new URL(`/games/notbgg/${Astro.params.id}`,Astro.url.origin).href} catalogPage detailPage lang="zh-TW" title={detail?.game.name??message}>
+    {detail?<>{identity&&<p data-identity-notice>{identity.notBggId} · BGG #{identity.bggId} · NotBGG 主要來源 </p>}<NotBggDetail detail={detail} lang="zh-TW"/></>:<><h1>{message}</h1><a href="/games">返回目錄</a></>}
+</Layout>

@@ -1,9 +1,19 @@
+import { CollectionV2Writer } from "./collection-v2-management";
 
 // ============================================================
 // D1 V2 原始收藏資料
 // ============================================================
 
 export interface CollectionV2Row {
+    identity_seq?:number|null;
+    identity_bgg_id?:number|null;
+    identity_primary?:'notbgg'|'bgg'|null;
+    identity_name?:string|null;
+    identity_image?:string|null;
+    notbgg_seq?: number|null;
+    notbgg_archived_at?: string|null;
+    notbgg_image?: string|null;
+    notbgg_linked?: number;
     id: number;
     game_id: number | null;
     display_name: string;
@@ -28,7 +38,8 @@ export interface CollectionV2Row {
 // ============================================================
 
 export class CollectionV2Repository {
-    constructor(private readonly db: D1Database) {}
+    readonly management:CollectionV2Writer;
+    constructor(private readonly db: D1Database) {this.management=new CollectionV2Writer(db);}
 
     /**
      * 讀取所有正式收藏紀錄。
@@ -41,6 +52,10 @@ export class CollectionV2Repository {
         const result = await this.db
             .prepare(`
                 SELECT
+                    n.seq AS notbgg_seq,n.archived_at AS notbgg_archived_at,COALESCE(n.thumbnail_url,n.image_url) AS notbgg_image,
+                    EXISTS(SELECT 1 FROM notbgg_bgg_links l WHERE l.seq=n.seq AND l.status='linked') AS notbgg_linked,
+                    resolved.seq AS identity_seq,il.candidate_bgg_id AS identity_bgg_id,il.primary_source AS identity_primary,
+                    resolved.name AS identity_name,COALESCE(resolved.thumbnail_url,resolved.image_url) AS identity_image,
                     ci.id,
                     ci.game_id,
                     ci.display_name,
@@ -62,8 +77,12 @@ export class CollectionV2Repository {
 
                 LEFT JOIN v2_games AS g
                     ON g.id = ci.game_id
+                LEFT JOIN notbgg_games n ON n.game_id=g.id
+                LEFT JOIN notbgg_bgg_links il ON il.status='linked' AND (il.seq=n.seq OR il.bgg_game_id=g.id)
+                LEFT JOIN notbgg_games resolved ON resolved.seq=il.seq AND resolved.archived_at IS NULL
+                LEFT JOIN v2_collection_management m ON m.collection_item_id=ci.id
 
-                WHERE ci.record_scope = ?
+                WHERE m.archived_at IS NULL AND ci.record_scope = ?
 
                 ORDER BY ci.id ASC
             `)
@@ -92,6 +111,10 @@ export class CollectionV2Repository {
         return this.db
             .prepare(`
                 SELECT
+                    n.seq AS notbgg_seq,n.archived_at AS notbgg_archived_at,COALESCE(n.thumbnail_url,n.image_url) AS notbgg_image,
+                    EXISTS(SELECT 1 FROM notbgg_bgg_links l WHERE l.seq=n.seq AND l.status='linked') AS notbgg_linked,
+                    resolved.seq AS identity_seq,il.candidate_bgg_id AS identity_bgg_id,il.primary_source AS identity_primary,
+                    resolved.name AS identity_name,COALESCE(resolved.thumbnail_url,resolved.image_url) AS identity_image,
                     ci.id,
                     ci.game_id,
                     ci.display_name,
@@ -113,8 +136,12 @@ export class CollectionV2Repository {
 
                 LEFT JOIN v2_games AS g
                     ON g.id = ci.game_id
+                LEFT JOIN notbgg_games n ON n.game_id=g.id
+                LEFT JOIN notbgg_bgg_links il ON il.status='linked' AND (il.seq=n.seq OR il.bgg_game_id=g.id)
+                LEFT JOIN notbgg_games resolved ON resolved.seq=il.seq AND resolved.archived_at IS NULL
+                LEFT JOIN v2_collection_management m ON m.collection_item_id=ci.id
 
-                WHERE ci.id = ?
+                WHERE m.archived_at IS NULL AND ci.id = ?
                   AND ci.record_scope = ?
 
                 LIMIT 1
@@ -131,7 +158,7 @@ export class CollectionV2Repository {
             .prepare(`
                 SELECT COUNT(*) AS total
                 FROM v2_collection_items
-                WHERE record_scope = ?
+                WHERE record_scope = ? AND NOT EXISTS (SELECT 1 FROM v2_collection_management m WHERE m.collection_item_id=v2_collection_items.id AND m.archived_at IS NOT NULL)
             `)
             .bind("production")
             .first<{ total: number }>();

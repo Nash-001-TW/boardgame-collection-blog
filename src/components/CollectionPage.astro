@@ -65,6 +65,7 @@ const categoryTags = buildTagCloud("categories");
 <section
     class="collection-page"
     data-game-browser
+    data-browser-module="collection"
     data-locale={lang}
     aria-label={zh ? "我的桌遊收藏" : "My board game collection"}
 >
@@ -91,7 +92,7 @@ const categoryTags = buildTagCloud("categories");
 
             <section class="side-panel filters-panel">
                 <h2>{zh ? "搜尋與篩選" : "Search & filters"}</h2>
-                <GameBrowserControls lang={lang} />
+                <GameBrowserControls lang={lang} module="collection" />
             </section>
         </aside>
 

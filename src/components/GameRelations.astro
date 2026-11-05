@@ -1,0 +1,43 @@
+---
+import { detailRelations } from '../lib/detail-relations';
+import { relationDisplayItems, relationFilterLabels } from '../lib/relation-display';
+import type { Game } from '../lib/game-catalog';
+interface Props {game:Game;catalog:Game[];lang:'en'|'zh-TW';}
+const {game,catalog,lang}=Astro.props,zh=lang==='zh-TW';
+const rows=relationDisplayItems(detailRelations(game,catalog,lang),lang);
+const labels=relationFilterLabels(lang);
+const kinds=Object.keys(labels) as (keyof typeof labels)[];
+const payload=JSON.stringify({rows,labels}).replaceAll('<','\\u003c');
+---
+<section class="relations" data-detail-relations>
+<h2>{zh?'遊戲關聯':'Game relations'} <small>{rows.length}</small></h2>
+{rows.length>0?<>
+<label class="relation-search">{zh?'搜尋關聯':'Search relations'}<input type="search" data-relation-search placeholder={zh?'遊戲名稱或 #BGG ID…':'Game name or #BGG ID…'}/></label>
+<div class="relation-filters" role="group" aria-label={zh?'關聯分類':'Relation type'}>{kinds.filter(k=>k==='all'||rows.some(r=>r.kinds.includes(k))).map(k=><button type="button" data-relation-filter={k} aria-pressed={k==='all'}>{labels[k]} <span>{k==='all'?rows.length:rows.filter(r=>r.kinds.includes(k)).length}</span></button>)}</div>
+<p data-relation-count role="status" tabindex="-1">{zh?`已顯示 ${Math.min(20,rows.length)} / ${rows.length}`:`Showing ${Math.min(20,rows.length)} / ${rows.length}`}</p>
+<ul class="relation-list" data-relation-list>{rows.slice(0,20).map(r=><li data-relation-id={r.id}>
+<a href={r.href} target={r.internal?undefined:'_blank'} rel={r.internal?undefined:'noopener noreferrer'}>
+{r.image?<img src={r.image} alt="" loading="lazy" decoding="async" width="42" height="55"/>:<span class="relation-placeholder" aria-hidden="true">◇</span>}
+<span><strong>{r.name}</strong><span class="relation-id">BGG #{r.id}</span><small>{r.roleLabels.join(' · ')}</small></span><span aria-label={r.internal?(zh?'本站詳細頁':'Local detail'):'BGG'}>{r.internal?'→':'↗'}</span></a>
+</li>)}</ul>
+<p data-relation-empty hidden>{zh?'沒有符合條件的關聯，請調整搜尋或分類。':'No matching relations. Try another search or relation type.'}</p>
+<button type="button" data-relation-more hidden={rows.length<=20}>{zh?'顯示更多':'Show more'}</button>
+<noscript><p>{zh?'啟用 JavaScript 可搜尋及顯示其餘關聯。':'Enable JavaScript to search and show more relations.'}</p></noscript>
+<script type="application/json" data-relations-payload set:html={payload}/>
+</>:<p>{zh?'目前本機資料沒有可顯示的關聯。':'No relations available in the local data.'}</p>}
+</section>
+<style is:global>
+[data-detail-relations]{min-width:0}[data-detail-relations] h2{font-size:1.1rem;margin:0 0 14px}[data-detail-relations] h2 small{display:inline;margin-left:6px;color:#718093;font-weight:400;font-size:.85rem}
+[data-detail-relations] .relation-search{display:grid;gap:7px;font-size:.82rem}[data-detail-relations] input{width:100%;min-width:0;box-sizing:border-box;padding:10px;border:1px solid #ced7df;border-radius:8px;font:inherit}
+[data-detail-relations] .relation-filters{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}[data-detail-relations] button{border:1px solid #ced7df;border-radius:8px;padding:9px 10px;background:white;color:#244e73;cursor:pointer;font:inherit;font-size:.8rem;min-height:44px}
+[data-detail-relations] button[aria-pressed=true]{background:#244e73;color:white}[data-detail-relations] [data-relation-count]{font-size:.8rem;color:#677586}
+[data-detail-relations] ul{list-style:none;padding:0;margin:0 0 12px;max-height:620px;overflow:auto;overscroll-behavior:contain}[data-detail-relations] li{padding:10px 0;border-bottom:1px solid #e6ebef}
+[data-detail-relations] li>a{display:grid;grid-template-columns:42px minmax(0,1fr) 20px;align-items:center;gap:10px;color:#263d53;text-decoration:none}[data-detail-relations] li img{width:42px;height:55px;object-fit:contain;background:#f4f6f8;border-radius:5px}[data-detail-relations] .relation-placeholder{display:grid;place-items:center;width:42px;height:55px;background:#f0f3f6;border-radius:5px;color:#7d8995}
+[data-detail-relations] strong{font-size:.86rem;line-height:1.4;overflow-wrap:anywhere}[data-detail-relations] small,[data-detail-relations] .relation-id{display:block;font-size:.72rem;color:#6c7785;line-height:1.5;overflow-wrap:anywhere}[data-detail-relations] [hidden]{display:none!important}
+[data-detail-relations] [data-relation-empty]{font-size:.85rem;color:#677586;padding:12px 0}
+[data-detail-relations] :is(a,button,input):focus-visible{outline:2px solid #244e73;outline-offset:3px}
+</style>
+<script>
+import {initializeDetailRelations} from '../lib/detail-relations-controller';
+function initialize(){document.querySelectorAll<HTMLElement>('[data-detail-relations]').forEach(initializeDetailRelations);}initialize();document.addEventListener('astro:page-load',initialize);
+</script>

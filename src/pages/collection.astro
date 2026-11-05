@@ -10,16 +10,17 @@ import { adaptCollectionV2Rows } from "../lib/collection-v2-adapter";
 
 export const prerender = false;
 
-const repository = new CollectionV2Repository(env.DB);
-const rows = await repository.getProductionItems();
-
-const collectionGames = adaptCollectionV2Rows(rows, "zh-TW");
+let collectionGames:ReturnType<typeof adaptCollectionV2Rows>=[],unavailable=false;
+try{if(!env.DB)throw new Error('Unavailable');const repository=new CollectionV2Repository(env.DB);collectionGames=adaptCollectionV2Rows(await repository.getProductionItems(),'zh-TW');}catch{unavailable=true;Astro.response.status=503;}
+Astro.response.headers.set('Cache-Control','no-store');
 ---
 
 <Layout
     title="我的收藏 | Soma's Board Game Collection Blog"
     lang="zh-TW"
 >
+    {unavailable&&<p role="status">收藏資料暫時無法載入</p>}
+    <p><a href="/admin/collection">管理收藏</a></p>
     <CollectionPage
         lang="zh-TW"
         collectionGames={collectionGames}

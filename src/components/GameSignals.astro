@@ -1,0 +1,24 @@
+---
+import { getGameSignals } from "../lib/game-content";
+import type { BggGameData } from "../lib/bgg-types";
+interface Props { game: BggGameData | null; lang: "zh-TW" | "en"; compact?: boolean; }
+const { game, lang, compact = false } = Astro.props;
+const signals = getGameSignals(game);
+const shownSignals = compact ? signals.slice(0, 2) : signals;
+const zh = lang === "zh-TW";
+---
+{signals.length > 0 && <div class="game-signals" aria-label={zh ? "Promo 與募資來源線索" : "Promo and crowdfunding evidence"}>
+    <ul>
+        {shownSignals.map(signal => <li data-signal-kind={signal.kind} title={`${signal.source === "family" ? "BGG Family" : (zh ? "名稱線索" : "Name hint")}: ${signal.value}`}>
+            {!compact && <small>{signal.source === "family" ? "BGG Family" : (zh ? "名稱線索" : "Name hint")}</small>}
+            <span>{compact && signal.kind === "crowdfunding-family" ? signal.value.replace(/^Crowdfunding:\s*/i, "") : signal.value}</span>
+        </li>)}
+    </ul>
+    {!compact && <p>{zh ? "這些是來源標籤或名稱線索，不代表限定品、免費獎勵或付費加購。" : "These are source labels or name hints, not confirmation of exclusivity, free rewards or paid add-ons."}</p>}
+</div>}
+<style>
+    ul { list-style:none; display:flex; flex-wrap:wrap; gap:6px; padding:0; margin:10px 0; }
+    li { display:flex; flex-wrap:wrap; gap:5px; padding:5px 8px; border:1px solid #d8c7ac; border-radius:8px; background:#fff8eb; font-size:.8rem; overflow-wrap:anywhere; }
+    small { color:#65533d; font-weight:700; }
+    p { font-size:.85rem; color:#65533d; line-height:1.6; }
+</style>

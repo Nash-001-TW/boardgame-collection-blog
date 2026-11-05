@@ -13,11 +13,13 @@ const zh = lang === "zh-TW";
 const bgg = game.bgg;
 const displayName = game.displayName;
 const originalName = bgg?.name ?? game.primaryName ?? "";
-const gameUrl = getCollectionV2GameUrl(game.bggId, lang);
+const gameUrl = game.sourceStatus ? (game.sourceStatus==='active'?game.gameUrl:null) : getCollectionV2GameUrl(game.bggId, lang);
+const image=game.imageUrl??bgg?.image;
 const mechanics = bgg?.mechanics ?? [];
 const categories = bgg?.categories ?? [];
 
 const typeNames: Record<string, [string, string]> = {
+    accessory: ["桌遊配件","Accessory"],
     base: ["主遊戲", "Base Game"],
     bundle: ["組合包", "Bundle"],
     expansion: ["擴充", "Expansion"],
@@ -43,17 +45,14 @@ const labels = zh ? {
     data-collection-id={game.collectionId}
     data-item-type={game.itemType}
     data-name={displayName}
-    data-original-name={originalName}
-    data-bgg-id={game.bggId ?? ""}
+    data-original-name={originalName} data-resolved-name={game.resolvedGameName}
+    data-bgg-id={game.bggId ?? ""} data-not-bgg-id={game.notBggId}
     data-year={bgg?.year ?? ""}
-    data-rating=""
     data-bgg-rating={bgg?.averageRating ?? ""}
     data-weight={bgg?.averageWeight ?? ""}
     data-owned={String(game.owned)}
     data-wishlist={String(game.wishlist)}
     data-preorder={String(game.preordered)}
-    data-want-to-play="false"
-    data-want-to-buy="false"
     data-expansion={String(game.itemType === "expansion")}
     data-min-players={bgg?.minPlayers ?? ""}
     data-max-players={bgg?.maxPlayers ?? ""}
@@ -65,16 +64,16 @@ const labels = zh ? {
 >
     {gameUrl ? (
         <a class="cover-link" href={gameUrl}>
-            {bgg?.image ? (
-                <img class="game-cover" src={bgg.image} alt={displayName} loading="lazy" decoding="async" />
+            {image ? (
+                <img class="game-cover" data-collection-cover data-error-label={zh?'圖片無法載入':'Image unavailable'} src={image} alt={displayName} loading="lazy" decoding="async" />
             ) : (
                 <div class="cover-placeholder"><span class="placeholder-icon">🎲</span><small>{labels.noImage}</small></div>
             )}
         </a>
     ) : (
         <div class="cover-link">
-            {bgg?.image ? (
-                <img class="game-cover" src={bgg.image} alt={displayName} loading="lazy" decoding="async" />
+            {image ? (
+                <img class="game-cover" data-collection-cover data-error-label={zh?'圖片無法載入':'Image unavailable'} src={image} alt={displayName} loading="lazy" decoding="async" />
             ) : (
                 <div class="cover-placeholder"><span class="placeholder-icon">🎲</span><small>{labels.noImage}</small></div>
             )}
@@ -84,6 +83,7 @@ const labels = zh ? {
     <div class="game-info">
         <div class="title-row">
             <div>
+                <p data-resolved-identity hidden={!game.resolvedGameName}>{game.resolvedGameName} · {game.resolvedIdentityKey}</p>
                 <h2>{gameUrl ? <a href={gameUrl}>{displayName}</a> : <span>{displayName}</span>}</h2>
                 {bgg?.year != null && <p class="year">{bgg.year}</p>}
             </div>
@@ -99,6 +99,8 @@ const labels = zh ? {
         </div>
 
         <div class="badges">
+            <span class="badge" data-collection-origin>{game.notBggId??(game.bggId?`BGG #${game.bggId}`:'—')}</span>
+            {game.sourceStatus&&game.sourceStatus!=='active'&&<span class="badge">{zh?'遊戲資料不可用':'Game data unavailable'}</span>}
             <span class="badge type">{typeName}</span>
             {game.owned && <span class="badge owned">✓ {labels.owned}</span>}
             {game.wishlist && <span class="badge wishlist">♡ {labels.wishlist}</span>}
@@ -114,6 +116,12 @@ const labels = zh ? {
     </div>
 </article>
 
+<script>
+    document.querySelectorAll<HTMLImageElement>('[data-collection-cover]').forEach(img=>{
+        const failed=()=>{const blank=document.createElement('div');blank.className='cover-placeholder';blank.textContent=img.dataset.errorLabel??'Image unavailable';img.replaceWith(blank);};
+        img.addEventListener('error',failed,{once:true});if(img.complete&&img.naturalWidth===0)failed();
+    });
+</script>
 <style>
 
     /* ========================================================

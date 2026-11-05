@@ -61,7 +61,8 @@ export const ui = {
         "info.artist": "藝術家",
         "info.publisher": "出版社",
         "info.category": "分類",
-        "info.mechanic": "機制"
+        "info.mechanic": "機制",
+        "info.family": "BGG 家族分類"
 
     },
 
@@ -108,7 +109,8 @@ export const ui = {
         "info.artist": "Artist",
         "info.publisher": "Publisher",
         "info.category": "Category",
-        "info.mechanic": "Mechanic"
+        "info.mechanic": "Mechanic",
+        "info.family": "BGG families"
 
     }
 

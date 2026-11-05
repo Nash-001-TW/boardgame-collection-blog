@@ -2,9 +2,10 @@
 import { env } from 'cloudflare:workers';
 import { defineMiddleware } from 'astro:middleware';
 import { verifyAccessAdmin } from './lib/auth/cloudflare-access';
+import { authorizeAdminRequest, isNotBggAdminPath, normalizedAdminPath } from './lib/auth/admin-request';
 
 export const onRequest = defineMiddleware(async (context, next) => {
-  const pathname = context.url.pathname;
+  const pathname = normalizedAdminPath(context.url.pathname);
 
   // 只保護管理後台與管理 API
   const isAdminRoute =
@@ -32,6 +33,22 @@ export const onRequest = defineMiddleware(async (context, next) => {
   }
 
   const bindings = env as unknown as Record<string, unknown>;
+
+  // NotBGG always requires a verified Access token, including localhost/dev.
+  // API handlers independently repeat authorization before reading any data.
+  if (isNotBggAdminPath(pathname) || pathname === '/api/admin/auth-check') {
+    const result = await authorizeAdminRequest(context.request, bindings);
+    if (!('admin' in result)) return new Response(result.status === 401 ? 'Unauthorized' : 'Forbidden', {
+      status: result.status, headers: { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' }
+    });
+    const response = await next();
+    response.headers.set('Cache-Control', 'no-store');
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+    response.headers.set('Referrer-Policy', 'same-origin');
+    response.headers.set('Content-Security-Policy', "frame-ancestors 'none'");
+    response.headers.set('X-Frame-Options', 'DENY');
+    return response;
+  }
 
   // ============================================
   // 本地開發專用

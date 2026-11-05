@@ -1,0 +1,90 @@
+---
+import { catalogFilters, catalogSorts, catalogTimes, catalogAdvancedLabels } from "../i18n/catalog-browser";
+import { publicAccessoryLabels } from "../i18n/accessory-categories";
+import { browserCapabilities } from "../lib/game-browser-capabilities";
+interface Props { lang: "zh-TW" | "en"; initialCount: number; }
+const { lang, initialCount } = Astro.props;
+const zh = lang === "zh-TW";
+const advanced = catalogAdvancedLabels[lang];
+---
+<div class="catalog-controls">
+    <div class="search-row">
+        <label class="search-field"><span class="sr-only">{zh ? "搜尋遊戲名稱或 BGG／NotBGG ID" : "Search name or BGG / NotBGG ID"}</span>
+            <span aria-hidden="true">⌕</span><input data-game-search type="search" placeholder={zh ? "搜尋遊戲名稱或 BGG／NotBGG ID…" : "Search name or BGG / NotBGG ID…"} />
+        </label>
+        <button type="button" data-game-reset>{zh ? "重設條件" : "Reset filters"}</button>
+    </div>
+    <div class="type-navigation" role="group" aria-label={zh ? "遊戲類型" : "Game types"}>
+        {catalogFilters.filter(item => browserCapabilities.games.filters.includes(item[0])).map(item =>
+            <button type="button" data-game-filter={item[0]} class:list={{ active: item[0] === "base" }} aria-pressed={item[0] === "base"}>{item[zh ? 1 : 2]}</button>)}
+    </div>
+    <div class="advanced-row">
+        <details data-game-advanced>
+            <summary>
+                <span class="advanced-heading"><span class="disclosure-icon" aria-hidden="true">▸</span>{advanced.title} <span class="condition-count" data-game-advanced-summary hidden></span></span>
+                <button type="button" class="clear-advanced" data-game-clear-advanced hidden>{advanced.clear}</button>
+            </summary>
+            <div class="advanced-fields">
+                <label>{zh ? "玩家人數" : "Players"}<select data-game-players>
+                    <option value="">{zh ? "不限" : "Any"}</option>
+                    {[1,2,3,4,5].map(n => <option value={n}>{n} {zh ? "人" : "players"}</option>)}
+                    <option value="6plus">{zh ? "6 人以上" : "6+ players"}</option>
+                </select></label>
+                <label>{zh ? "遊戲時間（分鐘）" : "Playing time (min)"}<select data-game-time>
+                    {catalogTimes.map(item => <option value={item[0]}>{item[zh ? 1 : 2]}</option>)}
+                    {[60,90,120].map(n => <option hidden value={n}>{zh ? `${n} 分鐘以內（舊條件）` : `Up to ${n} min (legacy)`}</option>)}
+                </select></label>
+                <label>{zh ? "複雜度" : "Complexity"}<select data-game-weight>
+                    <option value="">{zh ? "不限" : "Any"}</option>
+                    {["1-2","2-3","3-4","4-5"].map(value => <option value={value}>{value.replace("-", "–")}</option>)}
+                </select></label>
+                <label>{zh ? "核心機制" : "Mechanic"}<select data-game-mechanic><option value="">{zh ? "不限" : "Any"}</option></select></label>
+                <label>{zh ? "配件分類" : "Accessory category"}<select data-game-accessory>
+                    <option value="">{zh ? "不限" : "Any"}</option>
+                    {Object.entries(publicAccessoryLabels).map(([key,label])=><option value={key}>{label[zh?0:1]}</option>)}
+                </select></label>
+            </div>
+        </details>
+    </div>
+    <div class="results-toolbar">
+        <p data-game-result-count aria-live="polite">{zh ? `找到 ${initialCount} 款遊戲` : `Found ${initialCount} games`}</p>
+        <div class="result-actions">
+            <label><span class="sr-only">{zh ? "排序方式" : "Sort"}</span><select data-game-sort>
+                {catalogSorts.filter(item => browserCapabilities.games.sorts.includes(item[0])).map(item => <option value={item[0]}>{item[zh ? 1 : 2]}</option>)}
+            </select></label>
+            <div class="views" role="group" aria-label={zh ? "檢視方式" : "View mode"}>
+                <button type="button" data-game-view="grid" aria-pressed="true" aria-label={zh ? "封面瀑布流 Grid" : "Cover grid"} title="Grid">▦ <span>Grid</span></button>
+                <button type="button" data-game-view="list" aria-pressed="false" aria-label={zh ? "清單 List" : "List view"} title="List">☷ <span>List</span></button>
+            </div>
+        </div>
+    </div>
+</div>
+<style>
+    .catalog-controls { margin:16px 0; color:#303b46; }
+    .search-row,.type-navigation,.advanced-row,.results-toolbar,.result-actions,.views { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .search-field { display:flex; align-items:center; gap:10px; flex:1; min-width:180px; padding:0 14px; border:1px solid #ccd5dd; border-radius:12px; background:white; }
+    input { width:100%; min-width:0; border:0; padding:14px 0; font:inherit; background:transparent; }
+    input:focus { outline:0; } .search-field:focus-within { outline:2px solid #2870a8; outline-offset:2px; }
+    button,select { border:1px solid #cdd6df; border-radius:10px; padding:10px 13px; background:white; color:inherit; font:inherit; min-height:42px; }
+    button { cursor:pointer; } button:disabled { opacity:.45; cursor:default; }
+    button:focus-visible,select:focus-visible,summary:focus-visible { outline:2px solid #2870a8; outline-offset:3px; }
+    button[aria-pressed="true"] { background:#234d71; color:white; border-color:#234d71; }
+    .type-navigation { margin:16px 0; } .type-navigation button { min-width:72px; }
+    details { flex:1; border:1px solid #dce3e9; border-radius:12px; background:#fff; padding:12px 16px; min-width:0; }
+    summary { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; cursor:pointer; font-weight:650; list-style:none; }
+    summary::-webkit-details-marker { display:none; }
+    .advanced-heading { display:flex; align-items:center; flex-wrap:wrap; gap:8px; min-width:0; }
+    .condition-count { color:#586672; font-size:.8rem; font-weight:400; white-space:nowrap; }
+    .disclosure-icon { display:inline-block; } details[open] .disclosure-icon { transform:rotate(90deg); }
+    .clear-advanced { margin-left:auto; border-color:transparent; padding:6px 8px; min-height:34px; font-size:.82rem; background:transparent; color:#305879; }
+    .clear-advanced:hover { background:#edf3f8; }
+    .advanced-fields { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; padding-top:18px; }
+    .advanced-fields label { display:flex; flex-direction:column; gap:8px; min-width:0; font-size:.9rem; }
+    select { max-width:100%; width:100%; } .scope { font-size:.8rem; line-height:1.6; color:#586672; }
+    .results-toolbar { justify-content:space-between; border-top:1px solid #e2e7eb; padding-top:12px; margin-top:12px; }
+    .results-toolbar p { margin:0; font-weight:650; } .result-actions { margin-left:auto; } .views { gap:4px; flex-wrap:nowrap; }
+    .sr-only { position:absolute; width:1px; height:1px; padding:0; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+    [hidden] { display:none !important; }
+    @media(max-width:760px) { .advanced-fields { grid-template-columns:repeat(2,minmax(0,1fr)); } .results-toolbar { align-items:flex-start; } }
+    @media(max-width:420px) { .advanced-fields { grid-template-columns:1fr; } .result-actions { width:100%; margin:4px 0 0; justify-content:space-between; } .result-actions label { flex:1; min-width:0; } .views span { display:none; } .search-field { min-width:150px; } }
+</style>

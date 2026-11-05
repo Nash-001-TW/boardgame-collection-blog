@@ -1,0 +1,9 @@
+---
+import NotBggLinkAdmin from '../../../../components/NotBggLinkAdmin.astro';
+import {isNotBggId} from '../../../../lib/game-identity';
+export const prerender=false;
+const id=`NotBGG:${Astro.params.id??''}`;
+if(!isNotBggId(id))Astro.response.status=404;
+const lang=Astro.url.searchParams.get('lang')==='en'?'en':'zh-TW';
+---
+{isNotBggId(id)?<NotBggLinkAdmin id={id} lang={lang}/>:<h1>Not found</h1>}

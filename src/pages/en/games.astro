@@ -1,24 +1,30 @@
 ---
+import { env } from "cloudflare:workers";
 import Layout from "../../layouts/Layout.astro";
 import GameList from "../../components/GameList.astro";
 
 import { getGames } from "../../lib/games";
 
+export const prerender = false;
+import { loadPublicCatalog } from "../../lib/notbgg-public";
 const games = getGames();
+const {payload,notBggAvailable}=await loadPublicCatalog(games,env.DB,"en");
+Astro.response.headers.set('Cache-Control','no-store');
 ---
 
 <Layout
-    title="Games | Soma's Board Game Collection Blog"
+    catalogPage
+    title="Game Database | Soma's Board Game Collection Blog"
     lang="en"
 >
-    <h1>🎲 Board Game Library</h1>
+    <h1>Game Database</h1>
 
     <p class="intro">
-        Explore board games I've played, collected,
-        and featured on this website.
+        Browse all registered and imported games, whether collected or not.
     </p>
 
-    <GameList
+    {!notBggAvailable&&<p role="status">{"NotBGG is temporarily unavailable. Showing the BGG catalog only."}</p>}
+    <GameList payload={payload} live
         games={games}
         lang="en"
     />

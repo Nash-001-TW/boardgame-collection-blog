@@ -1,12 +1,17 @@
 ---
 import type { Language } from "../i18n/ui";
-interface Props { lang: Language; }
-const { lang } = Astro.props;
+import { browserCapabilities } from "../lib/game-browser-capabilities";
+import type { BrowserModule } from "../lib/game-browser-capabilities";
+interface Props { lang: Language; module: BrowserModule; typeCounts?: Partial<Record<string, number>>; }
+const { lang, module, typeCounts } = Astro.props;
+const capabilities = browserCapabilities[module];
 const zh = lang === "zh-TW";
 const filters = [
     ["all", "全部", "All"],
     ["base", "基本遊戲", "Base Games"],
     ["expansion", "擴充", "Expansions"],
+    ["accessory", "配件", "Accessories"],
+    ["unknown", "未知類型", "Unknown Type"],
     ["bundle", "組合包", "Bundles"],
     ["promo", "宣傳品", "Promos"],
     ["owned", "已收藏", "Owned"],
@@ -15,7 +20,8 @@ const filters = [
     ["preorder", "預購", "Preordered"],
     ["wantToPlay", "想玩", "Want to Play"],
     ["wantToBuy", "想買", "Want to Buy"]
-];
+].filter(item => capabilities.filters.includes(item[0]))
+    .sort((a, b) => capabilities.filters.indexOf(a[0]) - capabilities.filters.indexOf(b[0]));
 const sorts = [
     ["name-asc", "名稱 A → Z", "Name A → Z"],
     ["name-desc", "名稱 Z → A", "Name Z → A"],
@@ -25,7 +31,7 @@ const sorts = [
     ["rating-asc", "我的評分：低到高", "My Rating: Low to High"],
     ["bgg-rating-desc", "BGG 評分：高到低", "BGG Rating: High to Low"],
     ["weight-desc", "複雜度：高到低", "Complexity: High to Low"]
-];
+].filter(item => capabilities.sorts.includes(item[0]));
 ---
 <div class="browser-controls">
     <div class="search-row">
@@ -38,15 +44,22 @@ const sorts = [
         <button type="button" data-game-reset class="reset-button">{zh ? "重設條件" : "Reset Filters"}</button>
     </div>
     <div class="filter-bar" role="group" aria-label={zh ? "遊戲分類" : "Game categories"}>
-        {filters.map(f => (
+        {filters.filter(f => module !== "games" || f[0] !== "unknown").map(f => (
             <button type="button" data-game-filter={f[0]}
-                class:list={["filter-button", { active: f[0] === "all" }]}
-                aria-pressed={f[0] === "all" ? "true" : "false"}>
+                class:list={["filter-button", { active: f[0] === capabilities.defaultFilter }]}
+                aria-pressed={f[0] === capabilities.defaultFilter ? "true" : "false"}>
                 {zh ? f[1] : f[2]}
+                {typeCounts?.[f[0]] !== undefined && <span class="type-count"> {typeCounts[f[0]]}</span>}
             </button>
         ))}
     </div>
     <div class="advanced-filters">
+        {module === "games" && <label>{zh ? "更多類型" : "More types"}
+            <select data-game-type-advanced>
+                <option value="">{zh ? "使用上方分類" : "Use category navigation"}</option>
+                <option value="unknown">{zh ? "未知類型" : "Unknown type"} ({typeCounts?.unknown ?? 0})</option>
+            </select>
+        </label>}
         <label>{zh ? "玩家人數" : "Players"}
             <select data-game-players>
                 <option value="">{zh ? "不限" : "Any"}</option>
@@ -76,7 +89,15 @@ const sorts = [
             </select>
         </label>
     </div>
+    {module === "games" && <>
+        <div class="view-controls" role="group" aria-label={zh ? "檢視方式" : "View mode"}>
+            <button type="button" data-game-view="grid" aria-pressed="true">{zh ? "卡片 Grid" : "Grid"}</button>
+            <button type="button" data-game-view="list" aria-pressed="false">{zh ? "清單 List" : "List"}</button>
+        </div>
+        <p class="effective-type" data-game-effective-type aria-live="polite">{zh ? "生效類型：基本遊戲" : "Type: Base games"}</p>
+    </>}
     <p class="result-count" data-game-result-count aria-live="polite"></p>
+    <p class="url-hint">{zh ? "可複製網址分享目前條件；重新整理後仍會保留。搜尋文字也會包含在網址中。" : "Copy the URL to share these filters or keep them after reloading. Search text is included in the URL."}</p>
 </div>
 <style>
     .browser-controls { margin: 24px 0 30px; }
@@ -94,6 +115,12 @@ const sorts = [
     .advanced-filters label { display:flex; flex-direction:column; gap:7px; font-size:14px; min-width:0; }
     .advanced-filters select { width:100%; min-width:0; }
     .result-count { color:#666; margin:16px 0; }
+    .url-hint { color:#666; font-size:.8rem; line-height:1.5; margin:8px 0; }
+    .view-controls { display:flex; gap:8px; }
+    .view-controls button { border:1px solid #bbb; border-radius:8px; padding:8px 12px; background:white; cursor:pointer; }
+    .view-controls button[aria-pressed="true"] { background:#222; color:white; }
+    .effective-type { font-size:.9rem; line-height:1.5; }
+    .type-count { font-variant-numeric:tabular-nums; }
     @media(max-width:850px) { .advanced-filters { grid-template-columns:repeat(2,minmax(0,1fr)); } }
     @media(max-width:480px) { .advanced-filters { grid-template-columns:1fr; } }
 </style>

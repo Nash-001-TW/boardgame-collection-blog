@@ -1,0 +1,6 @@
+---
+import CollectionAdmin from '../../../components/CollectionAdmin.astro';
+export const prerender=false;
+const lang=Astro.url.searchParams.get('lang')==='en'?'en':'zh-TW';
+---
+<CollectionAdmin mode="edit" id={Astro.params.id??''} lang={lang}/>

@@ -42,6 +42,10 @@ for (const slug of [
 
     console.log(
         `${slug}：`,
-        JSON.stringify(game.collection)
+        JSON.stringify({
+            bggId: game.bggId,
+            name: game.name,
+            detailsCached: game.bgg !== null
+        })
     );
 }
