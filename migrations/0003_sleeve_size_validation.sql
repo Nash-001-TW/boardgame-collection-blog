@@ -1,4 +1,4 @@
-﻿CREATE TRIGGER IF NOT EXISTS trg_sleeve_sizes_validate_insert
+CREATE TRIGGER IF NOT EXISTS trg_sleeve_sizes_validate_insert
 BEFORE INSERT ON sleeve_sizes
 FOR EACH ROW
 WHEN NEW.width_tenth_mm > NEW.height_tenth_mm
