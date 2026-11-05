@@ -1,0 +1,1261 @@
+{
+  "startedAt": "2026-11-05T00:39:46.156Z",
+  "results": [
+    {
+      "name": "production-build",
+      "exit": 0,
+      "signal": null,
+      "seconds": 60.372
+    },
+    {
+      "name": "automated",
+      "exit": 0,
+      "signal": null,
+      "seconds": 75.258
+    },
+    {
+      "name": "strict",
+      "exit": 0,
+      "signal": null,
+      "seconds": 11.73
+    },
+    {
+      "name": "astro-check",
+      "exit": 0,
+      "signal": null,
+      "seconds": 29.907
+    },
+    {
+      "name": "d5",
+      "exit": 0,
+      "signal": null,
+      "seconds": 17.149
+    },
+    {
+      "name": "d6",
+      "exit": 0,
+      "signal": null,
+      "seconds": 12.065
+    },
+    {
+      "name": "c1",
+      "exit": 0,
+      "signal": null,
+      "seconds": 19.183
+    },
+    {
+      "name": "c2-focused",
+      "exit": 0,
+      "signal": null,
+      "seconds": 18.015
+    },
+    {
+      "name": "c3",
+      "exit": 0,
+      "signal": null,
+      "seconds": 13.143
+    }
+  ],
+  "productionWrites": false,
+  "f1": {
+    "status": "PASS",
+    "transport": "actual loopback HTTP; real production Worker/chunks/ASSETS; isolated synthetic D1",
+    "before": [
+      {
+        "workerFirst": "configured",
+        "path": "/games/santorini",
+        "chain": [
+          {
+            "url": "https://d7a.invalid/games/santorini",
+            "status": 307,
+            "location": "https://d7a.invalid/games/notbgg/000001",
+            "workerRan": true,
+            "primaryContent": false,
+            "staticBggContent": false
+          },
+          {
+            "url": "https://d7a.invalid/games/notbgg/000001",
+            "status": 200,
+            "location": null,
+            "workerRan": true,
+            "primaryContent": true,
+            "staticBggContent": false,
+            "canonical": "<link rel=\"canonical\" href=\"https://d7a.invalid/games/notbgg/000001\">"
+          }
+        ]
+      },
+      {
+        "workerFirst": "configured",
+        "path": "/games/santorini/",
+        "chain": [
+          {
+            "url": "https://d7a.invalid/games/santorini/",
+            "status": 307,
+            "location": "https://d7a.invalid/games/notbgg/000001",
+            "workerRan": true,
+            "primaryContent": false,
+            "staticBggContent": false
+          },
+          {
+            "url": "https://d7a.invalid/games/notbgg/000001",
+            "status": 200,
+            "location": null,
+            "workerRan": true,
+            "primaryContent": true,
+            "staticBggContent": false,
+            "canonical": "<link rel=\"canonical\" href=\"https://d7a.invalid/games/notbgg/000001\">"
+          }
+        ]
+      },
+      {
+        "workerFirst": "configured",
+        "path": "/games/santorini/index.html",
+        "chain": [
+          {
+            "url": "https://d7a.invalid/games/santorini/index.html",
+            "status": 200,
+            "location": null,
+            "workerRan": true,
+            "primaryContent": false,
+            "staticBggContent": true
+          }
+        ]
+      },
+      {
+        "workerFirst": "configured",
+        "path": "/games/santorini.html",
+        "chain": [
+          {
+            "url": "https://d7a.invalid/games/santorini.html",
+            "status": 200,
+            "location": null,
+            "workerRan": true,
+            "primaryContent": false,
+            "staticBggContent": true
+          }
+        ]
+      },
+      {
+        "workerFirst": "configured",
+        "path": "/en/games/santorini",
+        "chain": [
+          {
+            "url": "https://d7a.invalid/en/games/santorini",
+            "status": 307,
+            "location": "https://d7a.invalid/en/games/notbgg/000001",
+            "workerRan": true,
+            "primaryContent": false,
+            "staticBggContent": false
+          },
+          {
+            "url": "https://d7a.invalid/en/games/notbgg/000001",
+            "status": 200,
+            "location": null,
+            "workerRan": true,
+            "primaryContent": true,
+            "staticBggContent": false,
+            "canonical": "<link rel=\"canonical\" href=\"https://d7a.invalid/en/games/notbgg/000001\">"
+          }
+        ]
+      }
+    ],
+    "scenarioCount": 210,
+    "after": [
+      {
+        "stage": "unlinked",
+        "method": "GET",
+        "path": "/games/santorini",
+        "chain": [
+          {
+            "path": "/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "unlinked",
+        "method": "GET",
+        "path": "/games/santorini.html",
+        "chain": [
+          {
+            "path": "/games/santorini.html",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "unlinked",
+        "method": "GET",
+        "path": "/games/santorini/index.html",
+        "chain": [
+          {
+            "path": "/games/santorini/index.html",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "unlinked",
+        "method": "GET",
+        "path": "/%67ames/santorini/",
+        "chain": [
+          {
+            "path": "/%67ames/santorini/",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "unlinked",
+        "method": "GET",
+        "path": "/en/games/santorini.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini.html",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/en/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/en/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "unlinked",
+        "method": "GET",
+        "path": "/en/games/santorini/index.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini/index.html",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/en/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/en/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "unlinked",
+        "method": "GET",
+        "path": "/en/games/santorini%2Findex.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini%2Findex.html",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/en/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/en/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "candidate",
+        "method": "GET",
+        "path": "/games/santorini",
+        "chain": [
+          {
+            "path": "/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "candidate",
+        "method": "GET",
+        "path": "/games/santorini.html",
+        "chain": [
+          {
+            "path": "/games/santorini.html",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "candidate",
+        "method": "GET",
+        "path": "/games/santorini/index.html",
+        "chain": [
+          {
+            "path": "/games/santorini/index.html",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "candidate",
+        "method": "GET",
+        "path": "/%67ames/santorini/",
+        "chain": [
+          {
+            "path": "/%67ames/santorini/",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "candidate",
+        "method": "GET",
+        "path": "/en/games/santorini.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini.html",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/en/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/en/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "candidate",
+        "method": "GET",
+        "path": "/en/games/santorini/index.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini/index.html",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/en/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/en/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "candidate",
+        "method": "GET",
+        "path": "/en/games/santorini%2Findex.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini%2Findex.html",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/en/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/en/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "linked-notbgg",
+        "method": "GET",
+        "path": "/games/santorini",
+        "chain": [
+          {
+            "path": "/games/santorini",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/games/notbgg/000001?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/notbgg/000001",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "2",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/games/notbgg/000001\">"
+          }
+        ]
+      },
+      {
+        "stage": "linked-notbgg",
+        "method": "GET",
+        "path": "/games/santorini.html",
+        "chain": [
+          {
+            "path": "/games/santorini.html",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/games/notbgg/000001?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/notbgg/000001",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "2",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/games/notbgg/000001\">"
+          }
+        ]
+      },
+      {
+        "stage": "linked-notbgg",
+        "method": "GET",
+        "path": "/games/santorini/index.html",
+        "chain": [
+          {
+            "path": "/games/santorini/index.html",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/games/notbgg/000001?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/notbgg/000001",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "2",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/games/notbgg/000001\">"
+          }
+        ]
+      },
+      {
+        "stage": "linked-notbgg",
+        "method": "GET",
+        "path": "/%67ames/santorini/",
+        "chain": [
+          {
+            "path": "/%67ames/santorini/",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/games/notbgg/000001?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/notbgg/000001",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "2",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/games/notbgg/000001\">"
+          }
+        ]
+      },
+      {
+        "stage": "linked-notbgg",
+        "method": "GET",
+        "path": "/en/games/santorini.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini.html",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/en/games/notbgg/000001?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/notbgg/000001",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "2",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/en/games/notbgg/000001\">"
+          }
+        ]
+      },
+      {
+        "stage": "linked-notbgg",
+        "method": "GET",
+        "path": "/en/games/santorini/index.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini/index.html",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/en/games/notbgg/000001?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/notbgg/000001",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "2",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/en/games/notbgg/000001\">"
+          }
+        ]
+      },
+      {
+        "stage": "linked-notbgg",
+        "method": "GET",
+        "path": "/en/games/santorini%2Findex.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini%2Findex.html",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/en/games/notbgg/000001?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/notbgg/000001",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "2",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/en/games/notbgg/000001\">"
+          }
+        ]
+      },
+      {
+        "stage": "linked-head",
+        "method": "HEAD",
+        "path": "/games/santorini",
+        "chain": [
+          {
+            "path": "/games/santorini",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/games/notbgg/000001?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/notbgg/000001",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "2"
+          }
+        ]
+      },
+      {
+        "stage": "linked-head",
+        "method": "HEAD",
+        "path": "/games/santorini.html",
+        "chain": [
+          {
+            "path": "/games/santorini.html",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/games/notbgg/000001?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/notbgg/000001",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "2"
+          }
+        ]
+      },
+      {
+        "stage": "linked-head",
+        "method": "HEAD",
+        "path": "/games/santorini/index.html",
+        "chain": [
+          {
+            "path": "/games/santorini/index.html",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/games/notbgg/000001?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/notbgg/000001",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "2"
+          }
+        ]
+      },
+      {
+        "stage": "linked-head",
+        "method": "HEAD",
+        "path": "/%67ames/santorini/",
+        "chain": [
+          {
+            "path": "/%67ames/santorini/",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/games/notbgg/000001?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/notbgg/000001",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "2"
+          }
+        ]
+      },
+      {
+        "stage": "linked-head",
+        "method": "HEAD",
+        "path": "/en/games/santorini.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini.html",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/en/games/notbgg/000001?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/notbgg/000001",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "2"
+          }
+        ]
+      },
+      {
+        "stage": "linked-head",
+        "method": "HEAD",
+        "path": "/en/games/santorini/index.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini/index.html",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/en/games/notbgg/000001?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/notbgg/000001",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "2"
+          }
+        ]
+      },
+      {
+        "stage": "linked-head",
+        "method": "HEAD",
+        "path": "/en/games/santorini%2Findex.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini%2Findex.html",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/en/games/notbgg/000001?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/notbgg/000001",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "2"
+          }
+        ]
+      },
+      {
+        "stage": "linked-bgg",
+        "method": "GET",
+        "path": "/games/santorini",
+        "chain": [
+          {
+            "path": "/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "linked-bgg",
+        "method": "GET",
+        "path": "/games/santorini.html",
+        "chain": [
+          {
+            "path": "/games/santorini.html",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "linked-bgg",
+        "method": "GET",
+        "path": "/games/santorini/index.html",
+        "chain": [
+          {
+            "path": "/games/santorini/index.html",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "linked-bgg",
+        "method": "GET",
+        "path": "/%67ames/santorini/",
+        "chain": [
+          {
+            "path": "/%67ames/santorini/",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "linked-bgg",
+        "method": "GET",
+        "path": "/en/games/santorini.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini.html",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/en/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/en/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "linked-bgg",
+        "method": "GET",
+        "path": "/en/games/santorini/index.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini/index.html",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/en/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/en/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "linked-bgg",
+        "method": "GET",
+        "path": "/en/games/santorini%2Findex.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini%2Findex.html",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/en/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/en/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "revoked",
+        "method": "GET",
+        "path": "/games/santorini",
+        "chain": [
+          {
+            "path": "/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "revoked",
+        "method": "GET",
+        "path": "/games/santorini.html",
+        "chain": [
+          {
+            "path": "/games/santorini.html",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "revoked",
+        "method": "GET",
+        "path": "/games/santorini/index.html",
+        "chain": [
+          {
+            "path": "/games/santorini/index.html",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "revoked",
+        "method": "GET",
+        "path": "/%67ames/santorini/",
+        "chain": [
+          {
+            "path": "/%67ames/santorini/",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "revoked",
+        "method": "GET",
+        "path": "/en/games/santorini.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini.html",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/en/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/en/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "revoked",
+        "method": "GET",
+        "path": "/en/games/santorini/index.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini/index.html",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/en/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/en/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "revoked",
+        "method": "GET",
+        "path": "/en/games/santorini%2Findex.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini%2Findex.html",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/en/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/en/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "archived",
+        "method": "GET",
+        "path": "/games/santorini",
+        "chain": [
+          {
+            "path": "/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "archived",
+        "method": "GET",
+        "path": "/games/santorini.html",
+        "chain": [
+          {
+            "path": "/games/santorini.html",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "archived",
+        "method": "GET",
+        "path": "/games/santorini/index.html",
+        "chain": [
+          {
+            "path": "/games/santorini/index.html",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "archived",
+        "method": "GET",
+        "path": "/%67ames/santorini/",
+        "chain": [
+          {
+            "path": "/%67ames/santorini/",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "archived",
+        "method": "GET",
+        "path": "/en/games/santorini.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini.html",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/en/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/en/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "archived",
+        "method": "GET",
+        "path": "/en/games/santorini/index.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini/index.html",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/en/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/en/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "archived",
+        "method": "GET",
+        "path": "/en/games/santorini%2Findex.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini%2Findex.html",
+            "status": 307,
+            "location": "http://127.0.0.1:12612/en/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:12612/en/games/santorini\">"
+          }
+        ]
+      }
+    ],
+    "staticAssets": "normal CSS/JS/favicon asset-first; encoded resources pass through Worker with zero D1; all bytes match dist/client",
+    "remoteTested": false
+  },
+  "finishedAt": "2026-11-05T00:44:03.080Z",
+  "testFiles": 29,
+  "historicalF1EvidencePreserved": true,
+  "automatedSummary": {
+    "tests": 305,
+    "pass": 305,
+    "fail": 0,
+    "skipped": 0,
+    "verifiedFromLog": true
+  },
+  "astroSummary": {
+    "errors": 0,
+    "warnings": 0,
+    "hints": 13
+  },
+  "fullSuiteIncludesF1Scenarios": 210,
+  "r6RestoreReused": true,
+  "restoreRepeated": false,
+  "bggSha256": "1e345be12cf66b871f0267af622445d50ba1120ba98181ca2390dadc0da82f91",
+  "logHashes": [
+    {
+      "path": ".wrangler/deployment-prep/astro-check.log",
+      "sha256": "9045299d3bdcfbd03e41967b2dd9b4afb7036a8f8eb9930d18e3ae57d032c13c"
+    },
+    {
+      "path": ".wrangler/deployment-prep/automated.log",
+      "sha256": "40c89857d13633cb001fadc3baafccceff9a3b2fd0e71fade4ef4b9a8d992904"
+    },
+    {
+      "path": ".wrangler/deployment-prep/c1.log",
+      "sha256": "df55d288de8fa1e9184d1676f7644a59e9f5ddf86739940cf6221abe657db289"
+    },
+    {
+      "path": ".wrangler/deployment-prep/c2-focused.log",
+      "sha256": "fb791b0a6873e2e3e869c4ac40ebebc7494bc10baefcdfe27b18e030ac67a6fd"
+    },
+    {
+      "path": ".wrangler/deployment-prep/c3.log",
+      "sha256": "b7cfc6dc8c82e15714c021dc2f8d7680116e45cccfc22ce7871b711b1d7aba99"
+    },
+    {
+      "path": ".wrangler/deployment-prep/d5.log",
+      "sha256": "f96a9af9d2178a2ca662015e532f9b01cf564a4ef15327ff780bce53106ec45e"
+    },
+    {
+      "path": ".wrangler/deployment-prep/d6.log",
+      "sha256": "bc628f6dde7401e7b786a75e1d1e929ed30d64bf9cd0202133a6912324f2e207"
+    },
+    {
+      "path": ".wrangler/deployment-prep/production-build.log",
+      "sha256": "9dfe474bcd0f6ab10450c36dd666b6b7be632cb503392e77dd8cc9b1f8b63d30"
+    },
+    {
+      "path": ".wrangler/deployment-prep/strict.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ]
+}

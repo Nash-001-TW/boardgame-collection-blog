@@ -1,0 +1,3720 @@
+{
+  "mode": "built production Worker + real ASSETS + local D1/KV; no remote/private data",
+  "remote": {
+    "status": "NOT VERIFIED",
+    "reason": "OAuth expired; no valid API credential; no remote requests or credential refresh performed"
+  },
+  "migrations": [
+    {
+      "file": "0014_notbgg.sql",
+      "ms": 175.48189999999886,
+      "added": [
+        "index:idx_notbgg_games_name",
+        "index:idx_notbgg_games_type",
+        "index:idx_notbgg_link_active_bgg",
+        "index:idx_notbgg_link_active_source",
+        "index:idx_notbgg_link_events_history",
+        "index:idx_notbgg_link_history",
+        "index:idx_notbgg_link_live_source",
+        "index:idx_site_relations_active",
+        "index:idx_site_relations_target",
+        "table:notbgg_accessory_categories",
+        "table:notbgg_bgg_links",
+        "table:notbgg_game_revisions",
+        "table:notbgg_games",
+        "table:notbgg_ids",
+        "table:notbgg_link_events",
+        "table:site_game_relations",
+        "trigger:notbgg_bgg_links_no_delete",
+        "trigger:notbgg_category_insert",
+        "trigger:notbgg_category_update",
+        "trigger:notbgg_game_revisions_no_delete",
+        "trigger:notbgg_game_revisions_no_update",
+        "trigger:notbgg_games_first_revision",
+        "trigger:notbgg_games_identity_immutable",
+        "trigger:notbgg_games_manual_identity",
+        "trigger:notbgg_games_no_delete",
+        "trigger:notbgg_games_revision_step",
+        "trigger:notbgg_ids_no_delete",
+        "trigger:notbgg_ids_no_update",
+        "trigger:notbgg_link_events_no_delete",
+        "trigger:notbgg_link_events_no_update",
+        "trigger:notbgg_link_identity_immutable",
+        "trigger:notbgg_link_target_insert",
+        "trigger:notbgg_link_target_update",
+        "trigger:notbgg_profile_requires_revision",
+        "trigger:notbgg_revision_precondition",
+        "trigger:notbgg_type_change",
+        "trigger:notbgg_v2_identity_immutable",
+        "trigger:notbgg_v2_source_immutable",
+        "trigger:site_game_relations_no_delete",
+        "trigger:site_relation_identity_immutable",
+        "trigger:site_relation_insert",
+        "trigger:site_relation_update"
+      ],
+      "changed": [],
+      "removed": []
+    },
+    {
+      "file": "0015_notbgg_collection.sql",
+      "ms": 160.3794999999991,
+      "added": [
+        "index:idx_site_relation_events",
+        "table:site_relation_events",
+        "table:v2_collection_events",
+        "table:v2_collection_management",
+        "trigger:collection_events_no_delete",
+        "trigger:collection_events_no_update",
+        "trigger:collection_managed_game_guard",
+        "trigger:collection_revision_gate",
+        "trigger:relation_events_no_delete",
+        "trigger:relation_events_no_update"
+      ],
+      "changed": [
+        "table:site_game_relations",
+        "trigger:site_game_relations_no_delete"
+      ],
+      "removed": []
+    },
+    {
+      "file": "0016_notbgg_link_commands.sql",
+      "ms": 28.02900000000045,
+      "added": [
+        "trigger:notbgg_link_command_gate",
+        "trigger:notbgg_linked_type_guard"
+      ],
+      "changed": [],
+      "removed": []
+    }
+  ],
+  "routes": [
+    {
+      "label": "cold / no NotBGG",
+      "route": "/games",
+      "status": 200,
+      "ms": 140.29249999999956,
+      "queries": 2,
+      "d1Ms": 11,
+      "handlerMs": 77,
+      "htmlBytes": 760608,
+      "payloadBytes": 640328,
+      "payloadGzipEstimate": 122816,
+      "records": 815,
+      "location": null,
+      "cache": "no-store",
+      "canonical": null,
+      "hreflangCount": 0
+    },
+    {
+      "label": "cold / no NotBGG",
+      "route": "/en/games",
+      "status": 200,
+      "ms": 115.03689999999915,
+      "queries": 2,
+      "d1Ms": 15,
+      "handlerMs": 53,
+      "htmlBytes": 766044,
+      "payloadBytes": 643458,
+      "payloadGzipEstimate": 122349,
+      "records": 815,
+      "location": null,
+      "cache": "no-store",
+      "canonical": null,
+      "hreflangCount": 0
+    },
+    {
+      "label": "dynamic / 3 NotBGG",
+      "route": "/games",
+      "status": 200,
+      "ms": 102.82200000000012,
+      "queries": 2,
+      "d1Ms": 18,
+      "handlerMs": 53,
+      "htmlBytes": 762353,
+      "payloadBytes": 641877,
+      "payloadGzipEstimate": 123060,
+      "records": 818,
+      "location": null,
+      "cache": "no-store",
+      "canonical": null,
+      "hreflangCount": 0
+    },
+    {
+      "label": "unlinked / real ASSETS",
+      "route": "/games/santorini",
+      "status": 200,
+      "ms": 24.478399999999965,
+      "queries": 1,
+      "d1Ms": 4,
+      "handlerMs": 15,
+      "htmlBytes": 31067,
+      "payloadBytes": null,
+      "payloadGzipEstimate": null,
+      "records": null,
+      "location": null,
+      "cache": "no-store",
+      "canonical": "<link rel=\"canonical\" href=\"https://d7a.invalid/games/santorini\">",
+      "hreflangCount": 0
+    },
+    {
+      "label": "/games/notbgg/000001",
+      "route": "/games/notbgg/000001",
+      "status": 200,
+      "ms": 31.282799999999042,
+      "queries": 2,
+      "d1Ms": 14,
+      "handlerMs": 24,
+      "htmlBytes": 8927,
+      "payloadBytes": null,
+      "payloadGzipEstimate": null,
+      "records": null,
+      "location": null,
+      "cache": "no-store",
+      "canonical": "<link rel=\"canonical\" href=\"https://d7a.invalid/games/notbgg/000001\">",
+      "hreflangCount": 0
+    },
+    {
+      "label": "/en/games/notbgg/000001",
+      "route": "/en/games/notbgg/000001",
+      "status": 200,
+      "ms": 17.61959999999999,
+      "queries": 2,
+      "d1Ms": 7,
+      "handlerMs": 11,
+      "htmlBytes": 8952,
+      "payloadBytes": null,
+      "payloadGzipEstimate": null,
+      "records": null,
+      "location": null,
+      "cache": "no-store",
+      "canonical": "<link rel=\"canonical\" href=\"https://d7a.invalid/en/games/notbgg/000001\">",
+      "hreflangCount": 0
+    },
+    {
+      "label": "accessory / 3 fixed queries",
+      "route": "/games/notbgg/000003",
+      "status": 200,
+      "ms": 27.714500000000044,
+      "queries": 3,
+      "d1Ms": 16,
+      "handlerMs": 21,
+      "htmlBytes": 8991,
+      "payloadBytes": null,
+      "payloadGzipEstimate": null,
+      "records": null,
+      "location": null,
+      "cache": "no-store",
+      "canonical": "<link rel=\"canonical\" href=\"https://d7a.invalid/games/notbgg/000003\">",
+      "hreflangCount": 0
+    },
+    {
+      "label": "candidate / not deduplicated",
+      "route": "/games",
+      "status": 200,
+      "ms": 95.76969999999892,
+      "queries": 2,
+      "d1Ms": 20,
+      "handlerMs": 47,
+      "htmlBytes": 762353,
+      "payloadBytes": 641877,
+      "payloadGzipEstimate": 123060,
+      "records": 818,
+      "location": null,
+      "cache": "no-store",
+      "canonical": null,
+      "hreflangCount": 0
+    },
+    {
+      "label": "linked / NotBGG primary",
+      "route": "/games",
+      "status": 200,
+      "ms": 81.08379999999852,
+      "queries": 2,
+      "d1Ms": 14,
+      "handlerMs": 35,
+      "htmlBytes": 761537,
+      "payloadBytes": 641110,
+      "payloadGzipEstimate": 122915,
+      "records": 817,
+      "location": null,
+      "cache": "no-store",
+      "canonical": null,
+      "hreflangCount": 0
+    },
+    {
+      "label": "linked / Worker precedes real ASSETS",
+      "route": "/games/santorini",
+      "status": 307,
+      "ms": 11.336499999999432,
+      "queries": 1,
+      "d1Ms": 3,
+      "handlerMs": 5,
+      "htmlBytes": 0,
+      "payloadBytes": null,
+      "payloadGzipEstimate": null,
+      "records": null,
+      "location": "https://d7a.invalid/games/notbgg/000001",
+      "cache": "no-store",
+      "canonical": null,
+      "hreflangCount": 0
+    },
+    {
+      "label": "/games/notbgg/000001",
+      "route": "/games/notbgg/000001",
+      "status": 200,
+      "ms": 19.089599999999336,
+      "queries": 2,
+      "d1Ms": 8,
+      "handlerMs": 13,
+      "htmlBytes": 9007,
+      "payloadBytes": null,
+      "payloadGzipEstimate": null,
+      "records": null,
+      "location": null,
+      "cache": "no-store",
+      "canonical": "<link rel=\"canonical\" href=\"https://d7a.invalid/games/notbgg/000001\">",
+      "hreflangCount": 0
+    },
+    {
+      "label": "linked / Worker precedes real ASSETS",
+      "route": "/en/games/santorini",
+      "status": 307,
+      "ms": 8.244999999998981,
+      "queries": 1,
+      "d1Ms": 3,
+      "handlerMs": 4,
+      "htmlBytes": 0,
+      "payloadBytes": null,
+      "payloadGzipEstimate": null,
+      "records": null,
+      "location": "https://d7a.invalid/en/games/notbgg/000001",
+      "cache": "no-store",
+      "canonical": null,
+      "hreflangCount": 0
+    },
+    {
+      "label": "/en/games/notbgg/000001",
+      "route": "/en/games/notbgg/000001",
+      "status": 200,
+      "ms": 17.26130000000012,
+      "queries": 2,
+      "d1Ms": 8,
+      "handlerMs": 11,
+      "htmlBytes": 9027,
+      "payloadBytes": null,
+      "payloadGzipEstimate": null,
+      "records": null,
+      "location": null,
+      "cache": "no-store",
+      "canonical": "<link rel=\"canonical\" href=\"https://d7a.invalid/en/games/notbgg/000001\">",
+      "hreflangCount": 0
+    },
+    {
+      "label": "BGG primary / reverse alias",
+      "route": "/games/notbgg/000001",
+      "status": 307,
+      "ms": 8.816800000000512,
+      "queries": 1,
+      "d1Ms": 3,
+      "handlerMs": 4,
+      "htmlBytes": 0,
+      "payloadBytes": null,
+      "payloadGzipEstimate": null,
+      "records": null,
+      "location": "/games/santorini",
+      "cache": "no-store",
+      "canonical": null,
+      "hreflangCount": 0
+    },
+    {
+      "label": "/games/santorini",
+      "route": "/games/santorini",
+      "status": 200,
+      "ms": 12.92619999999988,
+      "queries": 1,
+      "d1Ms": 2,
+      "handlerMs": 6,
+      "htmlBytes": 31165,
+      "payloadBytes": null,
+      "payloadGzipEstimate": null,
+      "records": null,
+      "location": null,
+      "cache": "no-store",
+      "canonical": "<link rel=\"canonical\" href=\"https://d7a.invalid/games/santorini\">",
+      "hreflangCount": 0
+    },
+    {
+      "label": "BGG primary / reverse alias",
+      "route": "/en/games/notbgg/000001",
+      "status": 307,
+      "ms": 9.804399999999077,
+      "queries": 1,
+      "d1Ms": 3,
+      "handlerMs": 5,
+      "htmlBytes": 0,
+      "payloadBytes": null,
+      "payloadGzipEstimate": null,
+      "records": null,
+      "location": "/en/games/santorini",
+      "cache": "no-store",
+      "canonical": null,
+      "hreflangCount": 0
+    },
+    {
+      "label": "/en/games/santorini",
+      "route": "/en/games/santorini",
+      "status": 200,
+      "ms": 13.468600000000151,
+      "queries": 1,
+      "d1Ms": 3,
+      "handlerMs": 7,
+      "htmlBytes": 31390,
+      "payloadBytes": null,
+      "payloadGzipEstimate": null,
+      "records": null,
+      "location": null,
+      "cache": "no-store",
+      "canonical": "<link rel=\"canonical\" href=\"https://d7a.invalid/en/games/santorini\">",
+      "hreflangCount": 0
+    },
+    {
+      "label": "warm metric",
+      "route": "/games",
+      "status": 200,
+      "ms": 70.92690000000039,
+      "queries": 2,
+      "d1Ms": 10,
+      "handlerMs": 28,
+      "htmlBytes": 761862,
+      "payloadBytes": 641448,
+      "payloadGzipEstimate": 123071,
+      "records": 817,
+      "location": null,
+      "cache": "no-store",
+      "canonical": null,
+      "hreflangCount": 0
+    },
+    {
+      "label": "warm metric",
+      "route": "/games",
+      "status": 200,
+      "ms": 86.20269999999982,
+      "queries": 2,
+      "d1Ms": 18,
+      "handlerMs": 40,
+      "htmlBytes": 761862,
+      "payloadBytes": 641448,
+      "payloadGzipEstimate": 123071,
+      "records": 817,
+      "location": null,
+      "cache": "no-store",
+      "canonical": null,
+      "hreflangCount": 0
+    },
+    {
+      "label": "warm metric",
+      "route": "/games",
+      "status": 200,
+      "ms": 70.85170000000107,
+      "queries": 2,
+      "d1Ms": 14,
+      "handlerMs": 30,
+      "htmlBytes": 761862,
+      "payloadBytes": 641448,
+      "payloadGzipEstimate": 123071,
+      "records": 817,
+      "location": null,
+      "cache": "no-store",
+      "canonical": null,
+      "hreflangCount": 0
+    },
+    {
+      "label": "warm metric",
+      "route": "/en/games",
+      "status": 200,
+      "ms": 72.38390000000072,
+      "queries": 2,
+      "d1Ms": 11,
+      "handlerMs": 31,
+      "htmlBytes": 767309,
+      "payloadBytes": 644583,
+      "payloadGzipEstimate": 122575,
+      "records": 817,
+      "location": null,
+      "cache": "no-store",
+      "canonical": null,
+      "hreflangCount": 0
+    },
+    {
+      "label": "warm metric",
+      "route": "/en/games",
+      "status": 200,
+      "ms": 80.40869999999995,
+      "queries": 2,
+      "d1Ms": 13,
+      "handlerMs": 30,
+      "htmlBytes": 767309,
+      "payloadBytes": 644583,
+      "payloadGzipEstimate": 122575,
+      "records": 817,
+      "location": null,
+      "cache": "no-store",
+      "canonical": null,
+      "hreflangCount": 0
+    },
+    {
+      "label": "warm metric",
+      "route": "/en/games",
+      "status": 200,
+      "ms": 73.3786999999993,
+      "queries": 2,
+      "d1Ms": 12,
+      "handlerMs": 34,
+      "htmlBytes": 767309,
+      "payloadBytes": 644583,
+      "payloadGzipEstimate": 122575,
+      "records": 817,
+      "location": null,
+      "cache": "no-store",
+      "canonical": null,
+      "hreflangCount": 0
+    },
+    {
+      "label": "warm metric",
+      "route": "/games/santorini",
+      "status": 200,
+      "ms": 12.486000000000786,
+      "queries": 1,
+      "d1Ms": 2,
+      "handlerMs": 6,
+      "htmlBytes": 31165,
+      "payloadBytes": null,
+      "payloadGzipEstimate": null,
+      "records": null,
+      "location": null,
+      "cache": "no-store",
+      "canonical": "<link rel=\"canonical\" href=\"https://d7a.invalid/games/santorini\">",
+      "hreflangCount": 0
+    },
+    {
+      "label": "warm metric",
+      "route": "/games/santorini",
+      "status": 200,
+      "ms": 11.490399999998772,
+      "queries": 1,
+      "d1Ms": 3,
+      "handlerMs": 6,
+      "htmlBytes": 31165,
+      "payloadBytes": null,
+      "payloadGzipEstimate": null,
+      "records": null,
+      "location": null,
+      "cache": "no-store",
+      "canonical": "<link rel=\"canonical\" href=\"https://d7a.invalid/games/santorini\">",
+      "hreflangCount": 0
+    },
+    {
+      "label": "warm metric",
+      "route": "/games/santorini",
+      "status": 200,
+      "ms": 11.142299999999523,
+      "queries": 1,
+      "d1Ms": 2,
+      "handlerMs": 6,
+      "htmlBytes": 31165,
+      "payloadBytes": null,
+      "payloadGzipEstimate": null,
+      "records": null,
+      "location": null,
+      "cache": "no-store",
+      "canonical": "<link rel=\"canonical\" href=\"https://d7a.invalid/games/santorini\">",
+      "hreflangCount": 0
+    },
+    {
+      "label": "warm metric",
+      "route": "/games/notbgg/000001",
+      "status": 307,
+      "ms": 8.052700000000186,
+      "queries": 1,
+      "d1Ms": 3,
+      "handlerMs": 4,
+      "htmlBytes": 0,
+      "payloadBytes": null,
+      "payloadGzipEstimate": null,
+      "records": null,
+      "location": "/games/santorini",
+      "cache": "no-store",
+      "canonical": null,
+      "hreflangCount": 0
+    },
+    {
+      "label": "warm metric",
+      "route": "/games/notbgg/000001",
+      "status": 307,
+      "ms": 9.195299999999406,
+      "queries": 1,
+      "d1Ms": 3,
+      "handlerMs": 5,
+      "htmlBytes": 0,
+      "payloadBytes": null,
+      "payloadGzipEstimate": null,
+      "records": null,
+      "location": "/games/santorini",
+      "cache": "no-store",
+      "canonical": null,
+      "hreflangCount": 0
+    },
+    {
+      "label": "warm metric",
+      "route": "/games/notbgg/000001",
+      "status": 307,
+      "ms": 8.537399999999252,
+      "queries": 1,
+      "d1Ms": 3,
+      "handlerMs": 5,
+      "htmlBytes": 0,
+      "payloadBytes": null,
+      "payloadGzipEstimate": null,
+      "records": null,
+      "location": "/games/santorini",
+      "cache": "no-store",
+      "canonical": null,
+      "hreflangCount": 0
+    },
+    {
+      "label": "revoked / independent",
+      "route": "/games",
+      "status": 200,
+      "ms": 75.42209999999977,
+      "queries": 2,
+      "d1Ms": 14,
+      "handlerMs": 33,
+      "htmlBytes": 762353,
+      "payloadBytes": 641877,
+      "payloadGzipEstimate": 123060,
+      "records": 818,
+      "location": null,
+      "cache": "no-store",
+      "canonical": null,
+      "hreflangCount": 0
+    },
+    {
+      "label": "/games/santorini",
+      "route": "/games/santorini",
+      "status": 200,
+      "ms": 13.047300000000178,
+      "queries": 1,
+      "d1Ms": 2,
+      "handlerMs": 7,
+      "htmlBytes": 31067,
+      "payloadBytes": null,
+      "payloadGzipEstimate": null,
+      "records": null,
+      "location": null,
+      "cache": "no-store",
+      "canonical": "<link rel=\"canonical\" href=\"https://d7a.invalid/games/santorini\">",
+      "hreflangCount": 0
+    },
+    {
+      "label": "/games/notbgg/000001",
+      "route": "/games/notbgg/000001",
+      "status": 200,
+      "ms": 13.854300000000876,
+      "queries": 2,
+      "d1Ms": 7,
+      "handlerMs": 9,
+      "htmlBytes": 8927,
+      "payloadBytes": null,
+      "payloadGzipEstimate": null,
+      "records": null,
+      "location": null,
+      "cache": "no-store",
+      "canonical": "<link rel=\"canonical\" href=\"https://d7a.invalid/games/notbgg/000001\">",
+      "hreflangCount": 0
+    },
+    {
+      "label": "anonymous management denied",
+      "route": "/admin/notbgg",
+      "status": 401,
+      "ms": 5.385299999999916,
+      "queries": 0,
+      "d1Ms": 0,
+      "handlerMs": 1,
+      "htmlBytes": 12,
+      "payloadBytes": null,
+      "payloadGzipEstimate": null,
+      "records": null,
+      "location": null,
+      "cache": "no-store",
+      "canonical": null,
+      "hreflangCount": 0
+    },
+    {
+      "label": "anonymous management denied",
+      "route": "/admin/collection",
+      "status": 401,
+      "ms": 4.846199999999953,
+      "queries": 0,
+      "d1Ms": 0,
+      "handlerMs": 0,
+      "htmlBytes": 12,
+      "payloadBytes": null,
+      "payloadGzipEstimate": null,
+      "records": null,
+      "location": null,
+      "cache": "no-store",
+      "canonical": null,
+      "hreflangCount": 0
+    },
+    {
+      "label": "anonymous management denied",
+      "route": "/api/admin/notbgg/NotBGG%3A000001/link",
+      "status": 401,
+      "ms": 4.954600000000937,
+      "queries": 0,
+      "d1Ms": 0,
+      "handlerMs": 1,
+      "htmlBytes": 12,
+      "payloadBytes": null,
+      "payloadGzipEstimate": null,
+      "records": null,
+      "location": null,
+      "cache": "no-store",
+      "canonical": null,
+      "hreflangCount": 0
+    },
+    {
+      "label": "archived / unavailable",
+      "route": "/games/notbgg/000001",
+      "status": 404,
+      "ms": 13.641299999999319,
+      "queries": 2,
+      "d1Ms": 7,
+      "handlerMs": 9,
+      "htmlBytes": 6537,
+      "payloadBytes": null,
+      "payloadGzipEstimate": null,
+      "records": null,
+      "location": null,
+      "cache": "no-store",
+      "canonical": "<link rel=\"canonical\" href=\"https://d7a.invalid/games/notbgg/000001\">",
+      "hreflangCount": 0
+    }
+  ],
+  "performance": [
+    {
+      "route": "/games",
+      "samples": [
+        {
+          "label": "warm metric",
+          "route": "/games",
+          "status": 200,
+          "ms": 70.92690000000039,
+          "queries": 2,
+          "d1Ms": 10,
+          "handlerMs": 28,
+          "htmlBytes": 761862,
+          "payloadBytes": 641448,
+          "payloadGzipEstimate": 123071,
+          "records": 817,
+          "location": null,
+          "cache": "no-store",
+          "canonical": null,
+          "hreflangCount": 0
+        },
+        {
+          "label": "warm metric",
+          "route": "/games",
+          "status": 200,
+          "ms": 86.20269999999982,
+          "queries": 2,
+          "d1Ms": 18,
+          "handlerMs": 40,
+          "htmlBytes": 761862,
+          "payloadBytes": 641448,
+          "payloadGzipEstimate": 123071,
+          "records": 817,
+          "location": null,
+          "cache": "no-store",
+          "canonical": null,
+          "hreflangCount": 0
+        },
+        {
+          "label": "warm metric",
+          "route": "/games",
+          "status": 200,
+          "ms": 70.85170000000107,
+          "queries": 2,
+          "d1Ms": 14,
+          "handlerMs": 30,
+          "htmlBytes": 761862,
+          "payloadBytes": 641448,
+          "payloadGzipEstimate": 123071,
+          "records": 817,
+          "location": null,
+          "cache": "no-store",
+          "canonical": null,
+          "hreflangCount": 0
+        }
+      ]
+    },
+    {
+      "route": "/en/games",
+      "samples": [
+        {
+          "label": "warm metric",
+          "route": "/en/games",
+          "status": 200,
+          "ms": 72.38390000000072,
+          "queries": 2,
+          "d1Ms": 11,
+          "handlerMs": 31,
+          "htmlBytes": 767309,
+          "payloadBytes": 644583,
+          "payloadGzipEstimate": 122575,
+          "records": 817,
+          "location": null,
+          "cache": "no-store",
+          "canonical": null,
+          "hreflangCount": 0
+        },
+        {
+          "label": "warm metric",
+          "route": "/en/games",
+          "status": 200,
+          "ms": 80.40869999999995,
+          "queries": 2,
+          "d1Ms": 13,
+          "handlerMs": 30,
+          "htmlBytes": 767309,
+          "payloadBytes": 644583,
+          "payloadGzipEstimate": 122575,
+          "records": 817,
+          "location": null,
+          "cache": "no-store",
+          "canonical": null,
+          "hreflangCount": 0
+        },
+        {
+          "label": "warm metric",
+          "route": "/en/games",
+          "status": 200,
+          "ms": 73.3786999999993,
+          "queries": 2,
+          "d1Ms": 12,
+          "handlerMs": 34,
+          "htmlBytes": 767309,
+          "payloadBytes": 644583,
+          "payloadGzipEstimate": 122575,
+          "records": 817,
+          "location": null,
+          "cache": "no-store",
+          "canonical": null,
+          "hreflangCount": 0
+        }
+      ]
+    },
+    {
+      "route": "/games/santorini",
+      "samples": [
+        {
+          "label": "warm metric",
+          "route": "/games/santorini",
+          "status": 200,
+          "ms": 12.486000000000786,
+          "queries": 1,
+          "d1Ms": 2,
+          "handlerMs": 6,
+          "htmlBytes": 31165,
+          "payloadBytes": null,
+          "payloadGzipEstimate": null,
+          "records": null,
+          "location": null,
+          "cache": "no-store",
+          "canonical": "<link rel=\"canonical\" href=\"https://d7a.invalid/games/santorini\">",
+          "hreflangCount": 0
+        },
+        {
+          "label": "warm metric",
+          "route": "/games/santorini",
+          "status": 200,
+          "ms": 11.490399999998772,
+          "queries": 1,
+          "d1Ms": 3,
+          "handlerMs": 6,
+          "htmlBytes": 31165,
+          "payloadBytes": null,
+          "payloadGzipEstimate": null,
+          "records": null,
+          "location": null,
+          "cache": "no-store",
+          "canonical": "<link rel=\"canonical\" href=\"https://d7a.invalid/games/santorini\">",
+          "hreflangCount": 0
+        },
+        {
+          "label": "warm metric",
+          "route": "/games/santorini",
+          "status": 200,
+          "ms": 11.142299999999523,
+          "queries": 1,
+          "d1Ms": 2,
+          "handlerMs": 6,
+          "htmlBytes": 31165,
+          "payloadBytes": null,
+          "payloadGzipEstimate": null,
+          "records": null,
+          "location": null,
+          "cache": "no-store",
+          "canonical": "<link rel=\"canonical\" href=\"https://d7a.invalid/games/santorini\">",
+          "hreflangCount": 0
+        }
+      ]
+    },
+    {
+      "route": "/games/notbgg/000001",
+      "samples": [
+        {
+          "label": "warm metric",
+          "route": "/games/notbgg/000001",
+          "status": 307,
+          "ms": 8.052700000000186,
+          "queries": 1,
+          "d1Ms": 3,
+          "handlerMs": 4,
+          "htmlBytes": 0,
+          "payloadBytes": null,
+          "payloadGzipEstimate": null,
+          "records": null,
+          "location": "/games/santorini",
+          "cache": "no-store",
+          "canonical": null,
+          "hreflangCount": 0
+        },
+        {
+          "label": "warm metric",
+          "route": "/games/notbgg/000001",
+          "status": 307,
+          "ms": 9.195299999999406,
+          "queries": 1,
+          "d1Ms": 3,
+          "handlerMs": 5,
+          "htmlBytes": 0,
+          "payloadBytes": null,
+          "payloadGzipEstimate": null,
+          "records": null,
+          "location": "/games/santorini",
+          "cache": "no-store",
+          "canonical": null,
+          "hreflangCount": 0
+        },
+        {
+          "label": "warm metric",
+          "route": "/games/notbgg/000001",
+          "status": 307,
+          "ms": 8.537399999999252,
+          "queries": 1,
+          "d1Ms": 3,
+          "handlerMs": 5,
+          "htmlBytes": 0,
+          "payloadBytes": null,
+          "payloadGzipEstimate": null,
+          "records": null,
+          "location": "/games/santorini",
+          "cache": "no-store",
+          "canonical": null,
+          "hreflangCount": 0
+        }
+      ]
+    }
+  ],
+  "checks": [
+    "0013 synthetic legacy collection/game/copies unchanged across 0014→0015→0016; FK check clean"
+  ],
+  "browser": {
+    "status": "PASS",
+    "functionalStatus": "PASS",
+    "visualStabilityStatus": "PASS",
+    "moreMs": 140.34779999999955,
+    "switchMs": 14.600000023841858,
+    "mobile": {
+      "cls": 0.009541543057468127,
+      "shiftTotal": 0.009541543057468127,
+      "lcp": 3628,
+      "shifts": [
+        {
+          "startTime": 4607.100000023842,
+          "value": 0.009541543057468127,
+          "sources": [
+            {
+              "tag": "DIV",
+              "class": "game-grid",
+              "before": {
+                "x": 10,
+                "y": 557.875,
+                "width": 370,
+                "height": 286.125,
+                "top": 557.875,
+                "right": 380,
+                "bottom": 844,
+                "left": 10
+              },
+              "after": {
+                "x": 10,
+                "y": 578.875,
+                "width": 370,
+                "height": 265.125,
+                "top": 578.875,
+                "right": 380,
+                "bottom": 844,
+                "left": 10
+              }
+            },
+            {
+              "tag": "DIV",
+              "class": "result-actions",
+              "before": {
+                "x": 16,
+                "y": 500.875,
+                "width": 358,
+                "height": 46,
+                "top": 500.875,
+                "right": 374,
+                "bottom": 546.875,
+                "left": 16
+              },
+              "after": {
+                "x": 16,
+                "y": 521.875,
+                "width": 358,
+                "height": 46,
+                "top": 521.875,
+                "right": 374,
+                "bottom": 567.875,
+                "left": 16
+              }
+            }
+          ]
+        }
+      ],
+      "dcl": 4600.400000035763,
+      "overflow": false,
+      "clientIds": [
+        "BGG:175867",
+        "BGG:383053",
+        "BGG:373167",
+        "BGG:224119",
+        "BGG:451166",
+        "BGG:308238",
+        "BGG:366449",
+        "BGG:377796",
+        "BGG:295770",
+        "BGG:177572",
+        "BGG:163930",
+        "BGG:242705",
+        "BGG:330950",
+        "BGG:270871",
+        "BGG:359402",
+        "BGG:458896",
+        "BGG:380681",
+        "BGG:359871",
+        "BGG:207753",
+        "BGG:342942",
+        "BGG:205637",
+        "BGG:463126",
+        "BGG:359609",
+        "BGG:167400"
+      ],
+      "collation": "zh-TW",
+      "ssrIds": [
+        "BGG:175867",
+        "BGG:383053",
+        "BGG:373167",
+        "BGG:224119",
+        "BGG:451166",
+        "BGG:308238",
+        "BGG:366449",
+        "BGG:377796",
+        "BGG:295770",
+        "BGG:177572",
+        "BGG:163930",
+        "BGG:242705",
+        "BGG:330950",
+        "BGG:270871",
+        "BGG:359402",
+        "BGG:458896",
+        "BGG:380681",
+        "BGG:359871",
+        "BGG:207753",
+        "BGG:342942",
+        "BGG:205637",
+        "BGG:463126",
+        "BGG:359609",
+        "BGG:167400"
+      ],
+      "ssrCollation": "zh-TW",
+      "sameInitialOrder": true
+    },
+    "throttle": {
+      "latencyMs": 150,
+      "downloadBytesPerSecond": 200000
+    },
+    "images": "synthetic",
+    "compression": "identity (no network compression)"
+  },
+  "scope": [
+    {
+      "record_scope": "production",
+      "count": 1
+    }
+  ],
+  "bggSha256": "1e345be12cf66b871f0267af622445d50ba1120ba98181ca2390dadc0da82f91",
+  "workerFirstNegativeControl": {
+    "status": 307,
+    "workerRan": false,
+    "expected": "ASSETS bypasses identity when run_worker_first is disabled",
+    "assumptionMatched": false
+  },
+  "legacyRelationDeleteGuard": {
+    "status": "PASS",
+    "deletedSyntheticLegacyEdge": false,
+    "formalDataTouched": false
+  },
+  "status": "COMPLETED_WITH_FINDINGS",
+  "routeMatrix": [
+    {
+      "workerFirst": "configured",
+      "path": "/games/santorini",
+      "chain": [
+        {
+          "url": "https://d7a.invalid/games/santorini",
+          "status": 307,
+          "location": "https://d7a.invalid/games/notbgg/000001",
+          "workerRan": true,
+          "primaryContent": false,
+          "staticBggContent": false
+        },
+        {
+          "url": "https://d7a.invalid/games/notbgg/000001",
+          "status": 200,
+          "location": null,
+          "workerRan": true,
+          "primaryContent": true,
+          "staticBggContent": false,
+          "canonical": "<link rel=\"canonical\" href=\"https://d7a.invalid/games/notbgg/000001\">"
+        }
+      ]
+    },
+    {
+      "workerFirst": "configured",
+      "path": "/games/santorini/",
+      "chain": [
+        {
+          "url": "https://d7a.invalid/games/santorini/",
+          "status": 307,
+          "location": "https://d7a.invalid/games/notbgg/000001",
+          "workerRan": true,
+          "primaryContent": false,
+          "staticBggContent": false
+        },
+        {
+          "url": "https://d7a.invalid/games/notbgg/000001",
+          "status": 200,
+          "location": null,
+          "workerRan": true,
+          "primaryContent": true,
+          "staticBggContent": false,
+          "canonical": "<link rel=\"canonical\" href=\"https://d7a.invalid/games/notbgg/000001\">"
+        }
+      ]
+    },
+    {
+      "workerFirst": "configured",
+      "path": "/games/santorini/index.html",
+      "chain": [
+        {
+          "url": "https://d7a.invalid/games/santorini/index.html",
+          "status": 307,
+          "location": "https://d7a.invalid/games/notbgg/000001",
+          "workerRan": true,
+          "primaryContent": false,
+          "staticBggContent": false
+        },
+        {
+          "url": "https://d7a.invalid/games/notbgg/000001",
+          "status": 200,
+          "location": null,
+          "workerRan": true,
+          "primaryContent": true,
+          "staticBggContent": false,
+          "canonical": "<link rel=\"canonical\" href=\"https://d7a.invalid/games/notbgg/000001\">"
+        }
+      ]
+    },
+    {
+      "workerFirst": "configured",
+      "path": "/games/santorini.html",
+      "chain": [
+        {
+          "url": "https://d7a.invalid/games/santorini.html",
+          "status": 307,
+          "location": "https://d7a.invalid/games/notbgg/000001",
+          "workerRan": true,
+          "primaryContent": false,
+          "staticBggContent": false
+        },
+        {
+          "url": "https://d7a.invalid/games/notbgg/000001",
+          "status": 200,
+          "location": null,
+          "workerRan": true,
+          "primaryContent": true,
+          "staticBggContent": false,
+          "canonical": "<link rel=\"canonical\" href=\"https://d7a.invalid/games/notbgg/000001\">"
+        }
+      ]
+    },
+    {
+      "workerFirst": "configured",
+      "path": "/en/games/santorini",
+      "chain": [
+        {
+          "url": "https://d7a.invalid/en/games/santorini",
+          "status": 307,
+          "location": "https://d7a.invalid/en/games/notbgg/000001",
+          "workerRan": true,
+          "primaryContent": false,
+          "staticBggContent": false
+        },
+        {
+          "url": "https://d7a.invalid/en/games/notbgg/000001",
+          "status": 200,
+          "location": null,
+          "workerRan": true,
+          "primaryContent": true,
+          "staticBggContent": false,
+          "canonical": "<link rel=\"canonical\" href=\"https://d7a.invalid/en/games/notbgg/000001\">"
+        }
+      ]
+    },
+    {
+      "styleAudit": {
+        "headEnd": 491,
+        "bodyStart": 498,
+        "firstStylesheet": 233,
+        "stylesheetTags": [
+          "<link rel=\"stylesheet\" href=\"/_astro/Layout.C7FjRNXa.css\">",
+          "<link rel=\"stylesheet\" href=\"/_astro/GameList.CxtlCx3h.css\">"
+        ],
+        "linkHeader": null
+      }
+    },
+    {
+      "workerFirst": "disabled negative control",
+      "path": "/games/santorini",
+      "chain": [
+        {
+          "url": "https://d7a.invalid/games/santorini",
+          "status": 307,
+          "location": "/games/santorini/",
+          "workerRan": false,
+          "primaryContent": false,
+          "staticBggContent": false
+        },
+        {
+          "url": "https://d7a.invalid/games/santorini/",
+          "status": 200,
+          "location": null,
+          "workerRan": false,
+          "primaryContent": false,
+          "staticBggContent": true
+        }
+      ]
+    },
+    {
+      "workerFirst": "disabled negative control",
+      "path": "/games/santorini/",
+      "chain": [
+        {
+          "url": "https://d7a.invalid/games/santorini/",
+          "status": 200,
+          "location": null,
+          "workerRan": false,
+          "primaryContent": false,
+          "staticBggContent": true
+        }
+      ]
+    },
+    {
+      "workerFirst": "disabled negative control",
+      "path": "/games/santorini/index.html",
+      "chain": [
+        {
+          "url": "https://d7a.invalid/games/santorini/index.html",
+          "status": 307,
+          "location": "/games/santorini/",
+          "workerRan": false,
+          "primaryContent": false,
+          "staticBggContent": false
+        },
+        {
+          "url": "https://d7a.invalid/games/santorini/",
+          "status": 200,
+          "location": null,
+          "workerRan": false,
+          "primaryContent": false,
+          "staticBggContent": true
+        }
+      ]
+    },
+    {
+      "workerFirst": "disabled negative control",
+      "path": "/games/santorini.html",
+      "chain": [
+        {
+          "url": "https://d7a.invalid/games/santorini.html",
+          "status": 307,
+          "location": "/games/santorini/",
+          "workerRan": false,
+          "primaryContent": false,
+          "staticBggContent": false
+        },
+        {
+          "url": "https://d7a.invalid/games/santorini/",
+          "status": 200,
+          "location": null,
+          "workerRan": false,
+          "primaryContent": false,
+          "staticBggContent": true
+        }
+      ]
+    },
+    {
+      "workerFirst": "disabled negative control",
+      "path": "/en/games/santorini",
+      "chain": [
+        {
+          "url": "https://d7a.invalid/en/games/santorini",
+          "status": 307,
+          "location": "/en/games/santorini/",
+          "workerRan": false,
+          "primaryContent": false,
+          "staticBggContent": false
+        },
+        {
+          "url": "https://d7a.invalid/en/games/santorini/",
+          "status": 200,
+          "location": null,
+          "workerRan": false,
+          "primaryContent": false,
+          "staticBggContent": true
+        }
+      ]
+    }
+  ],
+  "inventory": {
+    "reviewTime": "2026-11-04T08:45:26.765Z",
+    "git": {
+      "branch": "main",
+      "head": "469866d6f7e3aed947f9f1c2e0d59b9cc16961a2",
+      "headSummary": "469866d 2026-10-21 feat: migrate collection pages to Cloudflare D1 V2 by ChatGPT",
+      "status": [
+        "M astro.config.mjs",
+        " M migrations/0003_sleeve_size_validation.sql",
+        " M package-lock.json",
+        " M package.json",
+        " M scripts/check-bgg-collection-sync.ts",
+        " M src/components/CollectionCard.astro",
+        " M src/components/CollectionPage.astro",
+        " M src/components/GameBrowserControls.astro",
+        " M src/components/GameDetail.astro",
+        " M src/components/GameList.astro",
+        " M src/components/GameSummary.astro",
+        " M src/components/Header.astro",
+        " M src/data/bgg-cache.json",
+        " M src/i18n/bgg-zh-TW.ts",
+        " M src/i18n/ui.ts",
+        " M src/i18n/utils.ts",
+        " M src/layouts/Layout.astro",
+        " M src/lib/auth/cloudflare-access.ts",
+        " M src/lib/collection-v2-adapter.ts",
+        " M src/lib/collection-v2-links.ts",
+        " M src/lib/collection-v2-repository.ts",
+        " M src/lib/game-list-controller.ts",
+        " M src/lib/games.ts",
+        " M src/middleware.ts",
+        " M src/pages/admin/index.astro",
+        " M src/pages/api/admin/auth-check.ts",
+        " M src/pages/collection.astro",
+        " M src/pages/en/collection.astro",
+        " M src/pages/en/games.astro",
+        " M src/pages/en/games/[slug].astro",
+        " M src/pages/games.astro",
+        " M src/pages/games/[slug].astro",
+        " A tests/b41-acceptance.test.ts",
+        " A tests/b42-acceptance.test.ts",
+        " A tests/b43c-browser.cjs",
+        " A tests/fixtures/import-batches.ts",
+        " M tests/pages/bgg-test.astro",
+        " A tests/relation-import-plan.test.ts",
+        " M wrangler.json",
+        "?? .bgg-b2-test-1JZTMi/cache.json",
+        "?? .bgg-b2-test-FSA5Oi/cache.json",
+        "?? docs/D1_V1_1_MIGRATION.md",
+        "?? docs/D1_V1_1_REQUIREMENTS.md",
+        "?? docs/D1_V1_1_SCHEMA.md",
+        "?? docs/D1_V1_1_TASKS.md",
+        "?? docs/bgg-cache-replacement-b43f.md",
+        "?? docs/bgg-relations-import.md",
+        "?? docs/d7a-local-evidence.json",
+        "?? docs/d7a-r3-cls-after-list.json",
+        "?? docs/d7a-r3-cls-after.json",
+        "?? docs/d7a-r3-cls-baseline.json",
+        "?? docs/d7a-r3-invalid-instrumentation.json",
+        "?? docs/d7a-r3-migration-evidence.json",
+        "?? docs/d7a-r4-migration-evidence.json",
+        "?? docs/notbgg-d1-contract.md",
+        "?? docs/notbgg-d2-storage.md",
+        "?? docs/notbgg-d3-admin.md",
+        "?? docs/notbgg-d4-public.md",
+        "?? docs/notbgg-d5-collection.md",
+        "?? docs/notbgg-d6-identity.md",
+        "?? docs/notbgg-d7a-preflight.md",
+        "?? docs/notbgg-d7a-r3-stability.md",
+        "?? docs/reference/d1_collection_status.json",
+        "?? docs/reference/d1_v2_counts.json",
+        "?? docs/reference/d1_v2_schema.json",
+        "?? docs/reference/phase-c1/d1_C1D_20261027_R03_run_summary.ndjson",
+        "?? docs/reference/phase-c1/d1_C1_acquisitions_columns.json",
+        "?? docs/reference/phase-c1/d1_C1_acquisitions_fk.json",
+        "?? docs/reference/phase-c1/d1_C1_acquisitions_indexes.json",
+        "?? docs/reference/phase-c1/d1_C1_acquisitions_unique_columns.json",
+        "?? docs/reference/phase-c1/d1_C1_copies_columns.json",
+        "?? docs/reference/phase-c1/d1_C1_copies_fk.json",
+        "?? docs/reference/phase-c1/d1_C1_copies_index_columns.json",
+        "?? docs/reference/phase-c1/d1_C1_copies_indexes.json",
+        "?? docs/reference/phase-c1/d1_C1_fk_check.json",
+        "?? docs/reference/phase-c1/d1_C1_master.json",
+        "?? docs/reference/phase-c1/d1_C1_migrations.json",
+        "?? docs/reference/phase-c1/d1_C1_quick_check.json",
+        "?? migrations/0014_notbgg.sql",
+        "?? migrations/0015_notbgg_collection.sql",
+        "?? migrations/0016_notbgg_link_commands.sql",
+        "?? scripts/bgg-relations-import.ts",
+        "?? scripts/lib/local-games-preview.ts",
+        "?? scripts/lib/relation-import-engine.ts",
+        "?? scripts/preview-games.ts",
+        "?? scripts/validate-bgg-relations-b3a.ts",
+        "?? scripts/validate-bgg-relations-b3c.ts",
+        "?? scripts/validate-bgg-relations-b41.ts",
+        "?? scripts/validate-bgg-relations-b42.ts",
+        "?? scripts/validate-bgg-relations-b43.ts",
+        "?? src/components/CatalogBrowserControls.astro",
+        "?? src/components/CatalogCard.astro",
+        "?? src/components/CollectionAdmin.astro",
+        "?? src/components/GameRelations.astro",
+        "?? src/components/GameSignals.astro",
+        "?? src/components/GameSleeves.astro",
+        "?? src/components/NotBggAdmin.astro",
+        "?? src/components/NotBggDetail.astro",
+        "?? src/components/NotBggLinkAdmin.astro",
+        "?? src/i18n/accessory-categories.ts",
+        "?? src/i18n/catalog-browser.ts",
+        "?? src/lib/auth/admin-request.ts",
+        "?? src/lib/bgg-identity-gateway.ts",
+        "?? src/lib/catalog-browsing.ts",
+        "?? src/lib/catalog-payload.ts",
+        "?? src/lib/catalog-presentation.ts",
+        "?? src/lib/catalog-selection.ts",
+        "?? src/lib/catalog-store.ts",
+        "?? src/lib/collection-admin-api.ts",
+        "?? src/lib/collection-admin-controller.ts",
+        "?? src/lib/collection-v2-management.ts",
+        "?? src/lib/detail-relations-controller.ts",
+        "?? src/lib/detail-relations.ts",
+        "?? src/lib/game-browser-capabilities.ts",
+        "?? src/lib/game-browser-url.ts",
+        "?? src/lib/game-catalog.ts",
+        "?? src/lib/game-complexity.ts",
+        "?? src/lib/game-content.ts",
+        "?? src/lib/game-detail-controller.ts",
+        "?? src/lib/game-detail-presentation.ts",
+        "?? src/lib/game-identity.ts",
+        "?? src/lib/game-name.ts",
+        "?? src/lib/game-view-model.ts",
+        "?? src/lib/identity-resolution.ts",
+        "?? src/lib/notbgg-admin-api.ts",
+        "?? src/lib/notbgg-admin-controller.ts",
+        "?? src/lib/notbgg-admin-fields.ts",
+        "?? src/lib/notbgg-contract.ts",
+        "?? src/lib/notbgg-link-api.ts",
+        "?? src/lib/notbgg-link-controller.ts",
+        "?? src/lib/notbgg-link-repository.ts",
+        "?? src/lib/notbgg-public.ts",
+        "?? src/lib/notbgg-repository.ts",
+        "?? src/lib/notbgg-validation.ts",
+        "?? src/lib/relation-direction.ts",
+        "?? src/lib/relation-display.ts",
+        "?? src/lib/relation-import-plan.ts",
+        "?? src/lib/site-game-relations.ts",
+        "?? src/pages/admin/collection/[id].astro",
+        "?? src/pages/admin/collection/index.astro",
+        "?? src/pages/admin/collection/new.astro",
+        "?? src/pages/admin/notbgg/[id].astro",
+        "?? src/pages/admin/notbgg/[id]/link.astro",
+        "?? src/pages/admin/notbgg/[id]/relations.astro",
+        "?? src/pages/admin/notbgg/index.astro",
+        "?? src/pages/admin/notbgg/new.astro",
+        "?? src/pages/api/admin/collection/[id].ts",
+        "?? src/pages/api/admin/collection/[id]/archive.ts",
+        "?? src/pages/api/admin/collection/index.ts",
+        "?? src/pages/api/admin/collection/search.ts",
+        "?? src/pages/api/admin/notbgg/[id].ts",
+        "?? src/pages/api/admin/notbgg/[id]/archive.ts",
+        "?? src/pages/api/admin/notbgg/[id]/history.ts",
+        "?? src/pages/api/admin/notbgg/[id]/link/compare.ts",
+        "?? src/pages/api/admin/notbgg/[id]/link/history.ts",
+        "?? src/pages/api/admin/notbgg/[id]/link/index.ts",
+        "?? src/pages/api/admin/notbgg/[id]/relations/[relationId].ts",
+        "?? src/pages/api/admin/notbgg/[id]/relations/index.ts",
+        "?? src/pages/api/admin/notbgg/index.ts",
+        "?? src/pages/en/games/notbgg/[id].astro",
+        "?? src/pages/games/notbgg/[id].astro",
+        "?? src/worker.ts",
+        "?? tests/b3c-acceptance.test.ts",
+        "?? tests/b3c-browser.cjs",
+        "?? tests/b3d-browser.cjs",
+        "?? tests/b41-browser.cjs",
+        "?? tests/b42-browser.cjs",
+        "?? tests/bgg-static-alias.test.ts",
+        "?? tests/c4-browser.cjs",
+        "?? tests/cache-replacement.test.ts",
+        "?? tests/catalog-initial-count.test.ts",
+        "?? tests/catalog-payload.test.ts",
+        "?? tests/catalog-performance.ts",
+        "?? tests/catalog-visual-v1-browser.cjs",
+        "?? tests/catalog-visual-v1.test.ts",
+        "?? tests/d7a-cli-migrations.mjs",
+        "?? tests/d7a-inventory.mjs",
+        "?? tests/d7a-preflight.ts",
+        "?? tests/d7a-r3-cls.ts",
+        "?? tests/d7a-r3-migrations.mjs",
+        "?? tests/d7a-r4-migrations.mjs",
+        "?? tests/d7a-route-matrix.ts",
+        "?? tests/detail-relations-controller.test.ts",
+        "?? tests/game-browser-navigation.cjs",
+        "?? tests/game-browser-url.test.ts",
+        "?? tests/game-catalog-browsing.test.ts",
+        "?? tests/game-complexity.test.ts",
+        "?? tests/game-content-render.test.ts",
+        "?? tests/game-content.test.ts",
+        "?? tests/game-detail-v2-browser.cjs",
+        "?? tests/game-detail-v2.test.ts",
+        "?? tests/game-module-boundaries.test.ts",
+        "?? tests/game-name.test.ts",
+        "?? tests/helpers/d7a-built-preview.ts",
+        "?? tests/helpers/notbgg-access-fixture.ts",
+        "?? tests/helpers/notbgg-admin-preview.ts",
+        "?? tests/helpers/notbgg-local-d1.ts",
+        "?? tests/notbgg-admin-api.test.ts",
+        "?? tests/notbgg-admin-browser.cjs",
+        "?? tests/notbgg-collection-browser.cjs",
+        "?? tests/notbgg-collection.test.ts",
+        "?? tests/notbgg-link-browser.cjs",
+        "?? tests/notbgg-link.test.ts",
+        "?? tests/notbgg-middleware.test.ts",
+        "?? tests/notbgg-public-browser.cjs",
+        "?? tests/notbgg-public.test.ts",
+        "?? tests/notbgg-relation-retention.test.ts",
+        "?? tests/notbgg-repository.test.ts",
+        "?? tests/notbgg.test.ts",
+        "?? tests/relation-direction.test.ts",
+        "?? tests/relation-display.test.ts",
+        "?? tests/relation-import-engine.test.ts"
+      ],
+      "deploymentCommit": "BLOCKED: D0-D6 changes are not committed",
+      "productionRollbackCommit": "NOT VERIFIED"
+    },
+    "workingTreeSourceSha256": "867fa246c0754a6e2135b470758ca5b04be6ead111d3bca31155eccf120be4f2",
+    "versions": {
+      "astro": "7.3.4",
+      "@astrojs/cloudflare": "14.3.4",
+      "@cloudflare/vite-plugin": "1.63.1",
+      "wrangler": "4.149.0",
+      "miniflare": "5.20261006.1-alpha",
+      "typescript": "6.0.3",
+      "jose": "6.2.12"
+    },
+    "node": "v24.21.0",
+    "packageLock": {
+      "rootSpecsMatch": true,
+      "installedVersionsMatch": true
+    },
+    "config": {
+      "workerName": "boardgame-collection-blog",
+      "entry": "./src/worker.ts",
+      "assets": {
+        "directory": "./dist/client",
+        "binding": "ASSETS",
+        "run_worker_first": [
+          "/games/*",
+          "/en/games/*",
+          "/*%*",
+          "//*",
+          "/en//*"
+        ]
+      },
+      "d1": [
+        {
+          "binding": "DB",
+          "databaseId": "59e9a17a-ff0f-494e-aab9-dd903a14e395",
+          "databaseName": "boardgame-collection-db",
+          "previewDatabaseConfigured": false
+        }
+      ],
+      "kvBindings": [
+        "SESSION"
+      ],
+      "r2Bindings": [],
+      "imagesBinding": "IMAGES",
+      "rateLimiterBindings": [],
+      "environments": [],
+      "routeConfigured": false,
+      "customDomainConfigured": false,
+      "variableNames": []
+    },
+    "localEnvironmentNames": {
+      ".env": [
+        "BGG_API_TOKEN"
+      ],
+      ".dev.vars": [
+        "ACCESS_TEAM_DOMAIN",
+        "ACCESS_AUD",
+        "ADMIN_EMAIL",
+        "BGG_API_TOKEN",
+        "LOCAL_ADMIN_DEV"
+      ]
+    },
+    "credential": {
+      "oauthPresent": true,
+      "expiration": "2026-10-27T01:43:36.851Z",
+      "validAtReview": false,
+      "apiTokenEnvironmentPresent": false
+    },
+    "publicArtifactSensitiveNamesFound": [],
+    "sourceDataInputs": {
+      "bggCollectionCacheTracked": false,
+      "bggCollectionCachePresent": true
+    }
+  },
+  "wranglerLocalMigrations": {
+    "status": "FAIL",
+    "localOnly": true,
+    "nativeBaseline": false,
+    "message": "Command failed: D:\\Program Files\\nodejs\\node.exe D:\\WebProject\\2026-0923 - TableGameInformation\\boardgamecollection-blog\\node_modules\\wrangler\\bin\\wrangler.js d1 migrations apply d7a-synthetic-local --local --config D:\\Temp\\notbgg-d7a-cli-5yhvNa\\wrangler.json --persist-to D:\\Temp\\notbgg-d7a-cli-5yhvNa\\state\n\u001b[31mX \u001b[41;31m[\u001b[41;97mERROR\u001b[41;31m]\u001b[0m \u001b[1mincomplete input: SQLITE_ERROR\u001b[0m\n\n\n🪵  Logs were written to \"D:\\Temp\\notbgg-d7a-cli-5yhvNa\\config\\.wrangler\\logs\\wrangler-2026-11-04_07-14-03_400.log\"\n",
+    "stdout": "\n ⛅️ wrangler 4.149.0 (update available 4.157.0)\n───────────────────────────────────────────────\nResource location: local \n\nUse --remote if you want to access the remote instance.\n\nMigrations to be applied:\n┌────────────────────────────────────────┐\n│ name                                   │\n├────────────────────────────────────────┤\n│ 0001_sleeve_management.sql             │\n├────────────────────────────────────────┤\n│ 0002_normalize_sleeve_sizes.sql        │\n├────────────────────────────────────────┤\n│ 0003_sleeve_size_validation.sql        │\n├────────────────────────────────────────┤\n│ 0004_collection_management_upgrade.sql │\n├────────────────────────────────────────┤\n│ 0005_collection_item_metadata.sql      │\n├────────────────────────────────────────┤\n│ 0006_collection_component_quantity.sql │\n├────────────────────────────────────────┤\n│ 0007_v2_core_schema.sql                │\n├────────────────────────────────────────┤\n│ 0008_v2_purchase_costs.sql             │\n├────────────────────────────────────────┤\n│ 0009_v2_purchase_integrity.sql         │\n├────────────────────────────────────────┤\n│ 0010_v2_copy_conditions.sql            │\n├────────────────────────────────────────┤\n│ 0011_v2_sleeve_management.sql          │\n├────────────────────────────────────────┤\n│ 0012_v1_to_v2_migration.sql            │\n├────────────────────────────────────────┤\n│ 0013_v2_record_scope.sql               │\n└────────────────────────────────────────┘\n? About to apply 13 migration(s)\nYour database may not be available to serve requests during the migration, continue?\n🤖 Using fallback value in non-interactive context: yes\n🌀 Executing on local database d7a-synthetic-local (d0054765-91ad-4888-96a8-8bfce5103ee3) from ./state\\v3\\d1:\n🌀 To execute on your remote database, add a --remote flag to your wrangler command.\n🚣 22 commands executed successfully.\n┌────────────────────────────────────────┬────────┐\n│ name                                   │ status │\n├────────────────────────────────────────┼────────┤\n│ 0001_sleeve_management.sql             │ ✅     │\n├────────────────────────────────────────┼────────┤\n│ 0002_normalize_sleeve_sizes.sql        │ 🕒️    │\n├────────────────────────────────────────┼────────┤\n│ 0003_sleeve_size_validation.sql        │ 🕒️    │\n├────────────────────────────────────────┼────────┤\n│ 0004_collection_management_upgrade.sql │ 🕒️    │\n├────────────────────────────────────────┼────────┤\n│ 0005_collection_item_metadata.sql      │ 🕒️    │\n├────────────────────────────────────────┼────────┤\n│ 0006_collection_component_quantity.sql │ 🕒️    │\n├────────────────────────────────────────┼────────┤\n│ 0007_v2_core_schema.sql                │ 🕒️    │\n├────────────────────────────────────────┼────────┤\n│ 0008_v2_purchase_costs.sql             │ 🕒️    │\n├────────────────────────────────────────┼────────┤\n│ 0009_v2_purchase_integrity.sql         │ 🕒️    │\n├────────────────────────────────────────┼────────┤\n│ 0010_v2_copy_conditions.sql            │ 🕒️    │\n├────────────────────────────────────────┼────────┤\n│ 0011_v2_sleeve_management.sql          │ 🕒️    │\n├────────────────────────────────────────┼────────┤\n│ 0012_v1_to_v2_migration.sql            │ 🕒️    │\n├────────────────────────────────────────┼────────┤\n│ 0013_v2_record_scope.sql               │ 🕒️    │\n└────────────────────────────────────────┴────────┘\n🌀 Executing on local database d7a-synthetic-local (d0054765-91ad-4888-96a8-8bfce5103ee3) from ./state\\v3\\d1:\n🌀 To execute on your remote database, add a --remote flag to your wrangler command.\n🚣 7 commands executed successfully.\n┌────────────────────────────────────────┬────────┐\n│ name                                   │ status │\n├────────────────────────────────────────┼────────┤\n│ 0001_sleeve_management.sql             │ ✅     │\n├────────────────────────────────────────┼────────┤\n│ 0002_normalize_sleeve_sizes.sql        │ ✅     │\n├────────────────────────────────────────┼────────┤\n│ 0003_sleeve_size_validation.sql        │ 🕒️    │\n├────────────────────────────────────────┼────────┤\n│ 0004_collection_management_upgrade.sql │ 🕒️    │\n├────────────────────────────────────────┼────────┤\n│ 0005_collection_item_metadata.sql      │ 🕒️    │\n├────────────────────────────────────────┼────────┤\n│ 0006_collection_component_quantity.sql │ 🕒️    │\n├────────────────────────────────────────┼────────┤\n│ 0007_v2_core_schema.sql                │ 🕒️    │\n├────────────────────────────────────────┼────────┤\n│ 0008_v2_purchase_costs.sql             │ 🕒️    │\n├────────────────────────────────────────┼────────┤\n│ 0009_v2_purchase_integrity.sql         │ 🕒️    │\n├────────────────────────────────────────┼────────┤\n│ 0010_v2_copy_conditions.sql            │ 🕒️    │\n├────────────────────────────────────────┼────────┤\n│ 0011_v2_sleeve_management.sql          │ 🕒️    │\n├────────────────────────────────────────┼────────┤\n│ 0012_v1_to_v2_migration.sql            │ 🕒️    │\n├────────────────────────────────────────┼────────┤\n│ 0013_v2_record_scope.sql               │ 🕒️    │\n└────────────────────────────────────────┴────────┘\n🌀 Executing on local database d7a-synthetic-local (d0054765-91ad-4888-96a8-8bfce5103ee3) from ./state\\v3\\d1:\n🌀 To execute on your remote database, add a --remote flag to your wrangler command.\n\n"
+  },
+  "wranglerUpgradeMigrations": [
+    {
+      "through": "0014_notbgg.sql",
+      "ms": 5988.8634999999995,
+      "success": true,
+      "tracking": [
+        "0014_notbgg.sql"
+      ],
+      "cliReportedApplied": true
+    },
+    {
+      "through": "0015_notbgg_collection.sql",
+      "ms": 7704.995400000002,
+      "success": true,
+      "tracking": [
+        "0014_notbgg.sql",
+        "0015_notbgg_collection.sql"
+      ],
+      "cliReportedApplied": true
+    },
+    {
+      "through": "0016_notbgg_link_commands.sql",
+      "ms": 7107.022200000003,
+      "success": true,
+      "tracking": [
+        "0014_notbgg.sql",
+        "0015_notbgg_collection.sql",
+        "0016_notbgg_link_commands.sql"
+      ],
+      "cliReportedApplied": true
+    }
+  ],
+  "mobileHistory": [
+    {
+      "label": "earlier built run; lifetime sum; largest individual shift is lower bound on standard CLS",
+      "shiftTotal": 0.34795978950296574,
+      "largestShift": 0.3384182464454976,
+      "lcp": 3632,
+      "dcl": 4587.7,
+      "overflow": false
+    },
+    {
+      "label": "standard session-window run",
+      "cls": 0.009541543057468127,
+      "shiftTotal": 0.009541543057468127,
+      "lcp": 3632,
+      "shifts": [
+        {
+          "startTime": 4632.300000011921,
+          "value": 0.009541543057468127,
+          "sources": [
+            {
+              "tag": "DIV",
+              "class": "game-grid",
+              "before": {
+                "x": 10,
+                "y": 557.875,
+                "width": 370,
+                "height": 286.125,
+                "top": 557.875,
+                "right": 380,
+                "bottom": 844,
+                "left": 10
+              },
+              "after": {
+                "x": 10,
+                "y": 578.875,
+                "width": 370,
+                "height": 265.125,
+                "top": 578.875,
+                "right": 380,
+                "bottom": 844,
+                "left": 10
+              }
+            },
+            {
+              "tag": "DIV",
+              "class": "result-actions",
+              "before": {
+                "x": 16,
+                "y": 500.875,
+                "width": 358,
+                "height": 46,
+                "top": 500.875,
+                "right": 374,
+                "bottom": 546.875,
+                "left": 16
+              },
+              "after": {
+                "x": 16,
+                "y": 521.875,
+                "width": 358,
+                "height": 46,
+                "top": 521.875,
+                "right": 374,
+                "bottom": 567.875,
+                "left": 16
+              }
+            }
+          ]
+        }
+      ],
+      "dcl": 4624.800000011921,
+      "overflow": false,
+      "clientIds": [
+        "BGG:175867",
+        "BGG:383053",
+        "BGG:373167",
+        "BGG:224119",
+        "BGG:451166",
+        "BGG:308238",
+        "BGG:366449",
+        "BGG:377796",
+        "BGG:295770",
+        "BGG:177572",
+        "BGG:163930",
+        "BGG:242705",
+        "BGG:330950",
+        "BGG:270871",
+        "BGG:359402",
+        "BGG:458896",
+        "BGG:380681",
+        "BGG:359871",
+        "BGG:207753",
+        "BGG:342942",
+        "BGG:205637",
+        "BGG:463126",
+        "BGG:359609",
+        "BGG:167400"
+      ],
+      "collation": "zh-TW",
+      "ssrIds": [
+        "BGG:175867",
+        "BGG:383053",
+        "BGG:373167",
+        "BGG:224119",
+        "BGG:451166",
+        "BGG:308238",
+        "BGG:366449",
+        "BGG:377796",
+        "BGG:295770",
+        "BGG:177572",
+        "BGG:163930",
+        "BGG:242705",
+        "BGG:330950",
+        "BGG:270871",
+        "BGG:359402",
+        "BGG:458896",
+        "BGG:380681",
+        "BGG:359871",
+        "BGG:207753",
+        "BGG:342942",
+        "BGG:205637",
+        "BGG:463126",
+        "BGG:359609",
+        "BGG:167400"
+      ],
+      "ssrCollation": "zh-TW",
+      "sameInitialOrder": true
+    },
+    {
+      "label": "standard session-window run",
+      "cls": 0.009541543057468127,
+      "shiftTotal": 0.009541543057468127,
+      "lcp": 3632,
+      "shifts": [
+        {
+          "startTime": 4608.800000011921,
+          "value": 0.009541543057468127,
+          "sources": [
+            {
+              "tag": "DIV",
+              "class": "game-grid",
+              "before": {
+                "x": 10,
+                "y": 557.875,
+                "width": 370,
+                "height": 286.125,
+                "top": 557.875,
+                "right": 380,
+                "bottom": 844,
+                "left": 10
+              },
+              "after": {
+                "x": 10,
+                "y": 578.875,
+                "width": 370,
+                "height": 265.125,
+                "top": 578.875,
+                "right": 380,
+                "bottom": 844,
+                "left": 10
+              }
+            },
+            {
+              "tag": "DIV",
+              "class": "result-actions",
+              "before": {
+                "x": 16,
+                "y": 500.875,
+                "width": 358,
+                "height": 46,
+                "top": 500.875,
+                "right": 374,
+                "bottom": 546.875,
+                "left": 16
+              },
+              "after": {
+                "x": 16,
+                "y": 521.875,
+                "width": 358,
+                "height": 46,
+                "top": 521.875,
+                "right": 374,
+                "bottom": 567.875,
+                "left": 16
+              }
+            }
+          ]
+        }
+      ],
+      "dcl": 4601.100000023842,
+      "overflow": false,
+      "clientIds": [
+        "BGG:175867",
+        "BGG:383053",
+        "BGG:373167",
+        "BGG:224119",
+        "BGG:451166",
+        "BGG:308238",
+        "BGG:366449",
+        "BGG:377796",
+        "BGG:295770",
+        "BGG:177572",
+        "BGG:163930",
+        "BGG:242705",
+        "BGG:330950",
+        "BGG:270871",
+        "BGG:359402",
+        "BGG:458896",
+        "BGG:380681",
+        "BGG:359871",
+        "BGG:207753",
+        "BGG:342942",
+        "BGG:205637",
+        "BGG:463126",
+        "BGG:359609",
+        "BGG:167400"
+      ],
+      "collation": "zh-TW",
+      "ssrIds": [
+        "BGG:175867",
+        "BGG:383053",
+        "BGG:373167",
+        "BGG:224119",
+        "BGG:451166",
+        "BGG:308238",
+        "BGG:366449",
+        "BGG:377796",
+        "BGG:295770",
+        "BGG:177572",
+        "BGG:163930",
+        "BGG:242705",
+        "BGG:330950",
+        "BGG:270871",
+        "BGG:359402",
+        "BGG:458896",
+        "BGG:380681",
+        "BGG:359871",
+        "BGG:207753",
+        "BGG:342942",
+        "BGG:205637",
+        "BGG:463126",
+        "BGG:359609",
+        "BGG:167400"
+      ],
+      "ssrCollation": "zh-TW",
+      "sameInitialOrder": true
+    },
+    {
+      "label": "standard session-window run",
+      "cls": 0.009541543057468127,
+      "shiftTotal": 0.009541543057468127,
+      "lcp": 3620,
+      "shifts": [
+        {
+          "startTime": 4597.5,
+          "value": 0.009541543057468127,
+          "sources": [
+            {
+              "tag": "DIV",
+              "class": "game-grid",
+              "before": {
+                "x": 10,
+                "y": 557.875,
+                "width": 370,
+                "height": 286.125,
+                "top": 557.875,
+                "right": 380,
+                "bottom": 844,
+                "left": 10
+              },
+              "after": {
+                "x": 10,
+                "y": 578.875,
+                "width": 370,
+                "height": 265.125,
+                "top": 578.875,
+                "right": 380,
+                "bottom": 844,
+                "left": 10
+              }
+            },
+            {
+              "tag": "DIV",
+              "class": "result-actions",
+              "before": {
+                "x": 16,
+                "y": 500.875,
+                "width": 358,
+                "height": 46,
+                "top": 500.875,
+                "right": 374,
+                "bottom": 546.875,
+                "left": 16
+              },
+              "after": {
+                "x": 16,
+                "y": 521.875,
+                "width": 358,
+                "height": 46,
+                "top": 521.875,
+                "right": 374,
+                "bottom": 567.875,
+                "left": 16
+              }
+            }
+          ]
+        }
+      ],
+      "dcl": 4587.899999976158,
+      "overflow": false,
+      "clientIds": [
+        "BGG:175867",
+        "BGG:383053",
+        "BGG:373167",
+        "BGG:224119",
+        "BGG:451166",
+        "BGG:308238",
+        "BGG:366449",
+        "BGG:377796",
+        "BGG:295770",
+        "BGG:177572",
+        "BGG:163930",
+        "BGG:242705",
+        "BGG:330950",
+        "BGG:270871",
+        "BGG:359402",
+        "BGG:458896",
+        "BGG:380681",
+        "BGG:359871",
+        "BGG:207753",
+        "BGG:342942",
+        "BGG:205637",
+        "BGG:463126",
+        "BGG:359609",
+        "BGG:167400"
+      ],
+      "collation": "zh-TW",
+      "ssrIds": [
+        "BGG:175867",
+        "BGG:383053",
+        "BGG:373167",
+        "BGG:224119",
+        "BGG:451166",
+        "BGG:308238",
+        "BGG:366449",
+        "BGG:377796",
+        "BGG:295770",
+        "BGG:177572",
+        "BGG:163930",
+        "BGG:242705",
+        "BGG:330950",
+        "BGG:270871",
+        "BGG:359402",
+        "BGG:458896",
+        "BGG:380681",
+        "BGG:359871",
+        "BGG:207753",
+        "BGG:342942",
+        "BGG:205637",
+        "BGG:463126",
+        "BGG:359609",
+        "BGG:167400"
+      ],
+      "ssrCollation": "zh-TW",
+      "sameInitialOrder": true
+    },
+    {
+      "label": "standard session-window run",
+      "cls": 0.009541543057468127,
+      "shiftTotal": 0.009541543057468127,
+      "lcp": 3628,
+      "shifts": [
+        {
+          "startTime": 4607.100000023842,
+          "value": 0.009541543057468127,
+          "sources": [
+            {
+              "tag": "DIV",
+              "class": "game-grid",
+              "before": {
+                "x": 10,
+                "y": 557.875,
+                "width": 370,
+                "height": 286.125,
+                "top": 557.875,
+                "right": 380,
+                "bottom": 844,
+                "left": 10
+              },
+              "after": {
+                "x": 10,
+                "y": 578.875,
+                "width": 370,
+                "height": 265.125,
+                "top": 578.875,
+                "right": 380,
+                "bottom": 844,
+                "left": 10
+              }
+            },
+            {
+              "tag": "DIV",
+              "class": "result-actions",
+              "before": {
+                "x": 16,
+                "y": 500.875,
+                "width": 358,
+                "height": 46,
+                "top": 500.875,
+                "right": 374,
+                "bottom": 546.875,
+                "left": 16
+              },
+              "after": {
+                "x": 16,
+                "y": 521.875,
+                "width": 358,
+                "height": 46,
+                "top": 521.875,
+                "right": 374,
+                "bottom": 567.875,
+                "left": 16
+              }
+            }
+          ]
+        }
+      ],
+      "dcl": 4600.400000035763,
+      "overflow": false,
+      "clientIds": [
+        "BGG:175867",
+        "BGG:383053",
+        "BGG:373167",
+        "BGG:224119",
+        "BGG:451166",
+        "BGG:308238",
+        "BGG:366449",
+        "BGG:377796",
+        "BGG:295770",
+        "BGG:177572",
+        "BGG:163930",
+        "BGG:242705",
+        "BGG:330950",
+        "BGG:270871",
+        "BGG:359402",
+        "BGG:458896",
+        "BGG:380681",
+        "BGG:359871",
+        "BGG:207753",
+        "BGG:342942",
+        "BGG:205637",
+        "BGG:463126",
+        "BGG:359609",
+        "BGG:167400"
+      ],
+      "collation": "zh-TW",
+      "ssrIds": [
+        "BGG:175867",
+        "BGG:383053",
+        "BGG:373167",
+        "BGG:224119",
+        "BGG:451166",
+        "BGG:308238",
+        "BGG:366449",
+        "BGG:377796",
+        "BGG:295770",
+        "BGG:177572",
+        "BGG:163930",
+        "BGG:242705",
+        "BGG:330950",
+        "BGG:270871",
+        "BGG:359402",
+        "BGG:458896",
+        "BGG:380681",
+        "BGG:359871",
+        "BGG:207753",
+        "BGG:342942",
+        "BGG:205637",
+        "BGG:463126",
+        "BGG:359609",
+        "BGG:167400"
+      ],
+      "ssrCollation": "zh-TW",
+      "sameInitialOrder": true
+    }
+  ],
+  "repair": {
+    "phase": "D-7A-R",
+    "mode": "direct authorized correction of unpublished 0015; no 0017",
+    "environmentBasis": "User confirms no remote/persistent deployment; readonly local .wrangler D1 has no NotBGG objects; known test helpers use disposable random resources",
+    "changedMigration": "0015_notbgg_collection.sql",
+    "trigger": "site_game_relations_no_delete BEFORE DELETE ON site_game_relations",
+    "focusedTests": {
+      "pass": 34,
+      "fail": 0
+    },
+    "allTests": {
+      "files": 27,
+      "pass": 290,
+      "fail": 0,
+      "skipped": 0
+    },
+    "typescript": "PASS",
+    "browsers": {
+      "d5": {
+        "desktop": "PASS",
+        "mobile": "PASS"
+      },
+      "d6": {
+        "desktop": "PASS",
+        "mobile": "PASS"
+      },
+      "d7a": "PASS"
+    },
+    "legacyDeleteGuard": {
+      "status": "PASS",
+      "deletedSyntheticLegacyEdge": false,
+      "formalDataTouched": false
+    },
+    "checks": [
+      "legacy/new/archived DELETE rejected",
+      "archive preserves original row and audit",
+      "normal create/edit/archive succeed",
+      "foreign keys and revision history retained",
+      "DELETE batch failure restores earlier UPDATE",
+      "failed audit batch leaves no new edge"
+    ],
+    "migrationHashes": {
+      "migrations/0014_notbgg.sql": "d2c7a0efabec9fb7c1d3440f09744448c9610341c0ce99e8c693b9665bf7a0c6",
+      "migrations/0015_notbgg_collection.sql": "b6ead70bf65a496c68dddece26d5704e115ece6d320ced93f52aa9669cdb9760",
+      "migrations/0016_notbgg_link_commands.sql": "cf85894f8414da3b0edd79188d02cea871d743416a8ee777c3c413a2902757a5",
+      "src/data/bgg-cache.json": "1e345be12cf66b871f0267af622445d50ba1120ba98181ca2390dadc0da82f91"
+    },
+    "remoteWrites": false,
+    "remoteQueries": false,
+    "deployment": false,
+    "gitCommit": false
+  },
+  "f1Repair": {
+    "status": "PASS",
+    "transport": "actual loopback HTTP; real production Worker/chunks/ASSETS; isolated synthetic D1",
+    "before": [
+      {
+        "workerFirst": "configured",
+        "path": "/games/santorini",
+        "chain": [
+          {
+            "url": "https://d7a.invalid/games/santorini",
+            "status": 307,
+            "location": "https://d7a.invalid/games/notbgg/000001",
+            "workerRan": true,
+            "primaryContent": false,
+            "staticBggContent": false
+          },
+          {
+            "url": "https://d7a.invalid/games/notbgg/000001",
+            "status": 200,
+            "location": null,
+            "workerRan": true,
+            "primaryContent": true,
+            "staticBggContent": false,
+            "canonical": "<link rel=\"canonical\" href=\"https://d7a.invalid/games/notbgg/000001\">"
+          }
+        ]
+      },
+      {
+        "workerFirst": "configured",
+        "path": "/games/santorini/",
+        "chain": [
+          {
+            "url": "https://d7a.invalid/games/santorini/",
+            "status": 307,
+            "location": "https://d7a.invalid/games/notbgg/000001",
+            "workerRan": true,
+            "primaryContent": false,
+            "staticBggContent": false
+          },
+          {
+            "url": "https://d7a.invalid/games/notbgg/000001",
+            "status": 200,
+            "location": null,
+            "workerRan": true,
+            "primaryContent": true,
+            "staticBggContent": false,
+            "canonical": "<link rel=\"canonical\" href=\"https://d7a.invalid/games/notbgg/000001\">"
+          }
+        ]
+      },
+      {
+        "workerFirst": "configured",
+        "path": "/games/santorini/index.html",
+        "chain": [
+          {
+            "url": "https://d7a.invalid/games/santorini/index.html",
+            "status": 200,
+            "location": null,
+            "workerRan": true,
+            "primaryContent": false,
+            "staticBggContent": true
+          }
+        ]
+      },
+      {
+        "workerFirst": "configured",
+        "path": "/games/santorini.html",
+        "chain": [
+          {
+            "url": "https://d7a.invalid/games/santorini.html",
+            "status": 200,
+            "location": null,
+            "workerRan": true,
+            "primaryContent": false,
+            "staticBggContent": true
+          }
+        ]
+      },
+      {
+        "workerFirst": "configured",
+        "path": "/en/games/santorini",
+        "chain": [
+          {
+            "url": "https://d7a.invalid/en/games/santorini",
+            "status": 307,
+            "location": "https://d7a.invalid/en/games/notbgg/000001",
+            "workerRan": true,
+            "primaryContent": false,
+            "staticBggContent": false
+          },
+          {
+            "url": "https://d7a.invalid/en/games/notbgg/000001",
+            "status": 200,
+            "location": null,
+            "workerRan": true,
+            "primaryContent": true,
+            "staticBggContent": false,
+            "canonical": "<link rel=\"canonical\" href=\"https://d7a.invalid/en/games/notbgg/000001\">"
+          }
+        ]
+      }
+    ],
+    "scenarioCount": 210,
+    "after": [
+      {
+        "stage": "unlinked",
+        "method": "GET",
+        "path": "/games/santorini",
+        "chain": [
+          {
+            "path": "/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "unlinked",
+        "method": "GET",
+        "path": "/games/santorini.html",
+        "chain": [
+          {
+            "path": "/games/santorini.html",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "unlinked",
+        "method": "GET",
+        "path": "/games/santorini/index.html",
+        "chain": [
+          {
+            "path": "/games/santorini/index.html",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "unlinked",
+        "method": "GET",
+        "path": "/%67ames/santorini/",
+        "chain": [
+          {
+            "path": "/%67ames/santorini/",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "unlinked",
+        "method": "GET",
+        "path": "/en/games/santorini.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini.html",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/en/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/en/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "unlinked",
+        "method": "GET",
+        "path": "/en/games/santorini/index.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini/index.html",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/en/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/en/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "unlinked",
+        "method": "GET",
+        "path": "/en/games/santorini%2Findex.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini%2Findex.html",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/en/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/en/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "candidate",
+        "method": "GET",
+        "path": "/games/santorini",
+        "chain": [
+          {
+            "path": "/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "candidate",
+        "method": "GET",
+        "path": "/games/santorini.html",
+        "chain": [
+          {
+            "path": "/games/santorini.html",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "candidate",
+        "method": "GET",
+        "path": "/games/santorini/index.html",
+        "chain": [
+          {
+            "path": "/games/santorini/index.html",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "candidate",
+        "method": "GET",
+        "path": "/%67ames/santorini/",
+        "chain": [
+          {
+            "path": "/%67ames/santorini/",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "candidate",
+        "method": "GET",
+        "path": "/en/games/santorini.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini.html",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/en/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/en/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "candidate",
+        "method": "GET",
+        "path": "/en/games/santorini/index.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini/index.html",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/en/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/en/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "candidate",
+        "method": "GET",
+        "path": "/en/games/santorini%2Findex.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini%2Findex.html",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/en/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/en/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "linked-notbgg",
+        "method": "GET",
+        "path": "/games/santorini",
+        "chain": [
+          {
+            "path": "/games/santorini",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/games/notbgg/000001?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/notbgg/000001",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "2",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/games/notbgg/000001\">"
+          }
+        ]
+      },
+      {
+        "stage": "linked-notbgg",
+        "method": "GET",
+        "path": "/games/santorini.html",
+        "chain": [
+          {
+            "path": "/games/santorini.html",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/games/notbgg/000001?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/notbgg/000001",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "2",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/games/notbgg/000001\">"
+          }
+        ]
+      },
+      {
+        "stage": "linked-notbgg",
+        "method": "GET",
+        "path": "/games/santorini/index.html",
+        "chain": [
+          {
+            "path": "/games/santorini/index.html",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/games/notbgg/000001?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/notbgg/000001",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "2",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/games/notbgg/000001\">"
+          }
+        ]
+      },
+      {
+        "stage": "linked-notbgg",
+        "method": "GET",
+        "path": "/%67ames/santorini/",
+        "chain": [
+          {
+            "path": "/%67ames/santorini/",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/games/notbgg/000001?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/notbgg/000001",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "2",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/games/notbgg/000001\">"
+          }
+        ]
+      },
+      {
+        "stage": "linked-notbgg",
+        "method": "GET",
+        "path": "/en/games/santorini.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini.html",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/en/games/notbgg/000001?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/notbgg/000001",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "2",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/en/games/notbgg/000001\">"
+          }
+        ]
+      },
+      {
+        "stage": "linked-notbgg",
+        "method": "GET",
+        "path": "/en/games/santorini/index.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini/index.html",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/en/games/notbgg/000001?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/notbgg/000001",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "2",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/en/games/notbgg/000001\">"
+          }
+        ]
+      },
+      {
+        "stage": "linked-notbgg",
+        "method": "GET",
+        "path": "/en/games/santorini%2Findex.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini%2Findex.html",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/en/games/notbgg/000001?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/notbgg/000001",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "2",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/en/games/notbgg/000001\">"
+          }
+        ]
+      },
+      {
+        "stage": "linked-head",
+        "method": "HEAD",
+        "path": "/games/santorini",
+        "chain": [
+          {
+            "path": "/games/santorini",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/games/notbgg/000001?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/notbgg/000001",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "2"
+          }
+        ]
+      },
+      {
+        "stage": "linked-head",
+        "method": "HEAD",
+        "path": "/games/santorini.html",
+        "chain": [
+          {
+            "path": "/games/santorini.html",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/games/notbgg/000001?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/notbgg/000001",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "2"
+          }
+        ]
+      },
+      {
+        "stage": "linked-head",
+        "method": "HEAD",
+        "path": "/games/santorini/index.html",
+        "chain": [
+          {
+            "path": "/games/santorini/index.html",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/games/notbgg/000001?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/notbgg/000001",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "2"
+          }
+        ]
+      },
+      {
+        "stage": "linked-head",
+        "method": "HEAD",
+        "path": "/%67ames/santorini/",
+        "chain": [
+          {
+            "path": "/%67ames/santorini/",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/games/notbgg/000001?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/notbgg/000001",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "2"
+          }
+        ]
+      },
+      {
+        "stage": "linked-head",
+        "method": "HEAD",
+        "path": "/en/games/santorini.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini.html",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/en/games/notbgg/000001?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/notbgg/000001",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "2"
+          }
+        ]
+      },
+      {
+        "stage": "linked-head",
+        "method": "HEAD",
+        "path": "/en/games/santorini/index.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini/index.html",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/en/games/notbgg/000001?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/notbgg/000001",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "2"
+          }
+        ]
+      },
+      {
+        "stage": "linked-head",
+        "method": "HEAD",
+        "path": "/en/games/santorini%2Findex.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini%2Findex.html",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/en/games/notbgg/000001?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/notbgg/000001",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "2"
+          }
+        ]
+      },
+      {
+        "stage": "linked-bgg",
+        "method": "GET",
+        "path": "/games/santorini",
+        "chain": [
+          {
+            "path": "/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "linked-bgg",
+        "method": "GET",
+        "path": "/games/santorini.html",
+        "chain": [
+          {
+            "path": "/games/santorini.html",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "linked-bgg",
+        "method": "GET",
+        "path": "/games/santorini/index.html",
+        "chain": [
+          {
+            "path": "/games/santorini/index.html",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "linked-bgg",
+        "method": "GET",
+        "path": "/%67ames/santorini/",
+        "chain": [
+          {
+            "path": "/%67ames/santorini/",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "linked-bgg",
+        "method": "GET",
+        "path": "/en/games/santorini.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini.html",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/en/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/en/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "linked-bgg",
+        "method": "GET",
+        "path": "/en/games/santorini/index.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini/index.html",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/en/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/en/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "linked-bgg",
+        "method": "GET",
+        "path": "/en/games/santorini%2Findex.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini%2Findex.html",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/en/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/en/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "revoked",
+        "method": "GET",
+        "path": "/games/santorini",
+        "chain": [
+          {
+            "path": "/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "revoked",
+        "method": "GET",
+        "path": "/games/santorini.html",
+        "chain": [
+          {
+            "path": "/games/santorini.html",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "revoked",
+        "method": "GET",
+        "path": "/games/santorini/index.html",
+        "chain": [
+          {
+            "path": "/games/santorini/index.html",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "revoked",
+        "method": "GET",
+        "path": "/%67ames/santorini/",
+        "chain": [
+          {
+            "path": "/%67ames/santorini/",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "revoked",
+        "method": "GET",
+        "path": "/en/games/santorini.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini.html",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/en/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/en/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "revoked",
+        "method": "GET",
+        "path": "/en/games/santorini/index.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini/index.html",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/en/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/en/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "revoked",
+        "method": "GET",
+        "path": "/en/games/santorini%2Findex.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini%2Findex.html",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/en/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/en/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "archived",
+        "method": "GET",
+        "path": "/games/santorini",
+        "chain": [
+          {
+            "path": "/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "archived",
+        "method": "GET",
+        "path": "/games/santorini.html",
+        "chain": [
+          {
+            "path": "/games/santorini.html",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "archived",
+        "method": "GET",
+        "path": "/games/santorini/index.html",
+        "chain": [
+          {
+            "path": "/games/santorini/index.html",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "archived",
+        "method": "GET",
+        "path": "/%67ames/santorini/",
+        "chain": [
+          {
+            "path": "/%67ames/santorini/",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "archived",
+        "method": "GET",
+        "path": "/en/games/santorini.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini.html",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/en/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/en/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "archived",
+        "method": "GET",
+        "path": "/en/games/santorini/index.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini/index.html",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/en/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/en/games/santorini\">"
+          }
+        ]
+      },
+      {
+        "stage": "archived",
+        "method": "GET",
+        "path": "/en/games/santorini%2Findex.html",
+        "chain": [
+          {
+            "path": "/en/games/santorini%2Findex.html",
+            "status": 307,
+            "location": "http://127.0.0.1:9382/en/games/santorini?q=keep%20state",
+            "worker": true,
+            "queries": "1"
+          },
+          {
+            "path": "/en/games/santorini",
+            "status": 200,
+            "location": null,
+            "worker": true,
+            "queries": "1",
+            "canonical": "<link rel=\"canonical\" href=\"http://127.0.0.1:9382/en/games/santorini\">"
+          }
+        ]
+      }
+    ],
+    "staticAssets": "normal CSS/JS/favicon asset-first; encoded resources pass through Worker with zero D1; all bytes match dist/client",
+    "remoteTested": false
+  },
+  "r3": {
+    "report": "docs/notbgg-d7a-r3-stability.md",
+    "status": "NO-GO",
+    "cls": {
+      "phases": {
+        "baseline": {
+          "samples": 10,
+          "cls": [
+            0.009541543057468127,
+            0.009541543057468127,
+            0.009541543057468127,
+            0.009541543057468127,
+            0.009541543057468127,
+            0.009541543057468127,
+            0.009541543057468127,
+            0.009541543057468127,
+            0.009541543057468127,
+            0.009541543057468127
+          ],
+          "lcp": [
+            3644,
+            3620,
+            3636,
+            3640,
+            3636,
+            3632,
+            3620,
+            3640,
+            3632,
+            3624
+          ],
+          "sameSSR": true,
+          "errors": []
+        },
+        "after": {
+          "samples": 10,
+          "cls": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "lcp": [
+            3620,
+            3652,
+            3640,
+            3640,
+            3600,
+            3616,
+            3624,
+            3616,
+            3608,
+            3636
+          ],
+          "sameSSR": true,
+          "errors": []
+        },
+        "after-list": {
+          "samples": 2,
+          "cls": [
+            0,
+            0
+          ],
+          "lcp": [
+            3648,
+            3660
+          ],
+          "sameSSR": true,
+          "errors": []
+        }
+      },
+      "smallShift": "FIXED via SSR result count",
+      "historicalHighBodyShift": "NOT VERIFIED"
+    },
+    "migrations": {
+      "rootCause": "UTF-8 BOM misclassified by Wrangler 4.149.0 splitter; incomplete first trigger",
+      "originalFreshReplay": "FAIL at 0003",
+      "temporaryBomRemovalControl": "PASS 0001-0016",
+      "original0013Upgrade": "PASS",
+      "allRepositoryMigrationsUnchanged": true,
+      "hashes": {
+        "0001_sleeve_management.sql": "76ee9d30733beaf2dfc6fb6dcbc8eb8d3d8d967a2a9edb66aaa617ce8f670b33",
+        "0002_normalize_sleeve_sizes.sql": "22e666c4118111ed5e346ddf86f08c0b98ed4371b3bf9ac0f94ae764123cd80b",
+        "0003_sleeve_size_validation.sql": "2d0f6c76f1ba6f80702a467c8ccee9571c1e0a1d257062a93d0b668d9820f03b",
+        "0004_collection_management_upgrade.sql": "2a32aab85d9905ee80da23bf4a794d1f55dde99826ce3da356e8dae8e89ff4a8",
+        "0005_collection_item_metadata.sql": "99d9f6a26701b7be522e246d38235e60eb49c6d148668d0588df140f3119643c",
+        "0006_collection_component_quantity.sql": "36fe6e4e1ea605a1253225cd01a2899833bd99990cdc0085cefe4cc0b8bb3ccc",
+        "0007_v2_core_schema.sql": "f79b35760c365625c6f301e0f930bf7b6faafc8bfbfbca9d43aa43a3952ce8b0",
+        "0008_v2_purchase_costs.sql": "c14ee579a5b6e6800229e17db0e0f8f41d60227acdd75e394bc8e1848ebfecdb",
+        "0009_v2_purchase_integrity.sql": "2a3ed0a951e2df431ada1c8365653d5108cf6f67e7977e7e221adedec1423c0f",
+        "0010_v2_copy_conditions.sql": "abc043fe6d320b7b015f7dd87acd2fd9770112692a16f6744b5415288c228d61",
+        "0011_v2_sleeve_management.sql": "af8465012fbcebe10c36f9ddc3d4c2bd26c6902bd7c8099d0807be61cf5dbfc7",
+        "0012_v1_to_v2_migration.sql": "4b7ab5decdc6a6a0cc6967d1ae910feb76b1973094773b233582af2c9ab1a7e8",
+        "0013_v2_record_scope.sql": "3b2beba002b15ed6b8847936c0da2fbbf8b0a07b892292cc3f2eb7f20daccfec",
+        "0014_notbgg.sql": "d2c7a0efabec9fb7c1d3440f09744448c9610341c0ce99e8c693b9665bf7a0c6",
+        "0015_notbgg_collection.sql": "b6ead70bf65a496c68dddece26d5704e115ece6d320ced93f52aa9669cdb9760",
+        "0016_notbgg_link_commands.sql": "cf85894f8414da3b0edd79188d02cea871d743416a8ee777c3c413a2902757a5"
+      }
+    },
+    "verification": {
+      "allTests": {
+        "files": 29,
+        "pass": 305,
+        "fail": 0,
+        "skip": 0
+      },
+      "f1HttpScenarios": 210,
+      "d5Browser": {
+        "desktop": "PASS",
+        "mobile": "PASS"
+      },
+      "d6Browser": {
+        "desktop": "PASS",
+        "mobile": "PASS"
+      },
+      "cBrowsers": {
+        "c1": 11,
+        "c2": 4,
+        "c3": 5,
+        "status": "PASS; C1/C3 separately rerun after cleanup EBUSY"
+      },
+      "typescript": "PASS",
+      "astro": {
+        "errors": 0,
+        "warnings": 0,
+        "hints": 13
+      },
+      "productionBuild": "PASS 58.51s after closing active ASSETS; earlier cleanup EPERM attempt recorded in report"
+    },
+    "bggSha256": "1e345be12cf66b871f0267af622445d50ba1120ba98181ca2390dadc0da82f91",
+    "remoteD1Touched": false,
+    "deployment": false,
+    "gitCommit": false
+  },
+  "r4": {
+    "encoding": {
+      "file": "migrations/0003_sleeve_size_validation.sql",
+      "originalBytes": 494,
+      "newBytes": 491,
+      "removedHex": "EF BB BF",
+      "originalSha256": "2d0f6c76f1ba6f80702a467c8ccee9571c1e0a1d257062a93d0b668d9820f03b",
+      "newSha256": "211ed3bb90dc24e5be0e39dc6b7b6662967b3b9863099f582ab020835b8f11f0",
+      "exactByteEquality": true,
+      "originalCrlf": 1,
+      "newCrlf": 1,
+      "originalLf": 15,
+      "newLf": 15
+    },
+    "cases": [
+      {
+        "case": "empty → 0001–0016",
+        "projectMigrationDirectory": "D:\\WebProject\\2026-0923 - TableGameInformation\\boardgamecollection-blog\\migrations",
+        "copiedOrPatchedSql": false,
+        "status": "PASS",
+        "tracking": [
+          {
+            "id": 1,
+            "name": "0001_sleeve_management.sql",
+            "applied_at": "2026-11-04 08:40:19"
+          },
+          {
+            "id": 2,
+            "name": "0002_normalize_sleeve_sizes.sql",
+            "applied_at": "2026-11-04 08:40:20"
+          },
+          {
+            "id": 3,
+            "name": "0003_sleeve_size_validation.sql",
+            "applied_at": "2026-11-04 08:40:21"
+          },
+          {
+            "id": 4,
+            "name": "0004_collection_management_upgrade.sql",
+            "applied_at": "2026-11-04 08:40:22"
+          },
+          {
+            "id": 5,
+            "name": "0005_collection_item_metadata.sql",
+            "applied_at": "2026-11-04 08:40:23"
+          },
+          {
+            "id": 6,
+            "name": "0006_collection_component_quantity.sql",
+            "applied_at": "2026-11-04 08:40:23"
+          },
+          {
+            "id": 7,
+            "name": "0007_v2_core_schema.sql",
+            "applied_at": "2026-11-04 08:40:24"
+          },
+          {
+            "id": 8,
+            "name": "0008_v2_purchase_costs.sql",
+            "applied_at": "2026-11-04 08:40:25"
+          },
+          {
+            "id": 9,
+            "name": "0009_v2_purchase_integrity.sql",
+            "applied_at": "2026-11-04 08:40:26"
+          },
+          {
+            "id": 10,
+            "name": "0010_v2_copy_conditions.sql",
+            "applied_at": "2026-11-04 08:40:26"
+          },
+          {
+            "id": 11,
+            "name": "0011_v2_sleeve_management.sql",
+            "applied_at": "2026-11-04 08:40:27"
+          },
+          {
+            "id": 12,
+            "name": "0012_v1_to_v2_migration.sql",
+            "applied_at": "2026-11-04 08:40:28"
+          },
+          {
+            "id": 13,
+            "name": "0013_v2_record_scope.sql",
+            "applied_at": "2026-11-04 08:40:29"
+          },
+          {
+            "id": 14,
+            "name": "0014_notbgg.sql",
+            "applied_at": "2026-11-04 08:40:29"
+          },
+          {
+            "id": 15,
+            "name": "0015_notbgg_collection.sql",
+            "applied_at": "2026-11-04 08:40:30"
+          },
+          {
+            "id": 16,
+            "name": "0016_notbgg_link_commands.sql",
+            "applied_at": "2026-11-04 08:40:31"
+          }
+        ],
+        "migrationTableColumns": [
+          "id",
+          "name",
+          "applied_at"
+        ],
+        "prior13RegistrationUnchanged": null,
+        "old0003ReplayGuard": null,
+        "triggerChecks": "INSERT/UPDATE constraints PASS",
+        "indexes": "PASS",
+        "foreignKeys": "PASS",
+        "relationDeleteAndArchive": "PASS",
+        "d6States": [
+          "candidate",
+          "linked",
+          "linked",
+          "unlinked"
+        ],
+        "repeatApply": "No migrations to apply; tracking/schema/data counts unchanged"
+      },
+      {
+        "case": "existing synthetic 0013 registration → 0016",
+        "projectMigrationDirectory": "D:\\WebProject\\2026-0923 - TableGameInformation\\boardgamecollection-blog\\migrations",
+        "copiedOrPatchedSql": false,
+        "status": "PASS",
+        "tracking": [
+          {
+            "id": 1,
+            "name": "0001_sleeve_management.sql",
+            "applied_at": "2000-01-01 00:00:00"
+          },
+          {
+            "id": 2,
+            "name": "0002_normalize_sleeve_sizes.sql",
+            "applied_at": "2000-01-01 00:00:00"
+          },
+          {
+            "id": 3,
+            "name": "0003_sleeve_size_validation.sql",
+            "applied_at": "2000-01-01 00:00:00"
+          },
+          {
+            "id": 4,
+            "name": "0004_collection_management_upgrade.sql",
+            "applied_at": "2000-01-01 00:00:00"
+          },
+          {
+            "id": 5,
+            "name": "0005_collection_item_metadata.sql",
+            "applied_at": "2000-01-01 00:00:00"
+          },
+          {
+            "id": 6,
+            "name": "0006_collection_component_quantity.sql",
+            "applied_at": "2000-01-01 00:00:00"
+          },
+          {
+            "id": 7,
+            "name": "0007_v2_core_schema.sql",
+            "applied_at": "2000-01-01 00:00:00"
+          },
+          {
+            "id": 8,
+            "name": "0008_v2_purchase_costs.sql",
+            "applied_at": "2000-01-01 00:00:00"
+          },
+          {
+            "id": 9,
+            "name": "0009_v2_purchase_integrity.sql",
+            "applied_at": "2000-01-01 00:00:00"
+          },
+          {
+            "id": 10,
+            "name": "0010_v2_copy_conditions.sql",
+            "applied_at": "2000-01-01 00:00:00"
+          },
+          {
+            "id": 11,
+            "name": "0011_v2_sleeve_management.sql",
+            "applied_at": "2000-01-01 00:00:00"
+          },
+          {
+            "id": 12,
+            "name": "0012_v1_to_v2_migration.sql",
+            "applied_at": "2000-01-01 00:00:00"
+          },
+          {
+            "id": 13,
+            "name": "0013_v2_record_scope.sql",
+            "applied_at": "2000-01-01 00:00:00"
+          },
+          {
+            "id": 14,
+            "name": "0014_notbgg.sql",
+            "applied_at": "2026-11-04 08:40:42"
+          },
+          {
+            "id": 15,
+            "name": "0015_notbgg_collection.sql",
+            "applied_at": "2026-11-04 08:40:43"
+          },
+          {
+            "id": 16,
+            "name": "0016_notbgg_link_commands.sql",
+            "applied_at": "2026-11-04 08:40:43"
+          }
+        ],
+        "migrationTableColumns": [
+          "id",
+          "name",
+          "applied_at"
+        ],
+        "prior13RegistrationUnchanged": true,
+        "old0003ReplayGuard": "not triggered",
+        "triggerChecks": "INSERT/UPDATE constraints PASS",
+        "indexes": "PASS",
+        "foreignKeys": "PASS",
+        "relationDeleteAndArchive": "PASS",
+        "d6States": [
+          "candidate",
+          "linked",
+          "linked",
+          "unlinked"
+        ],
+        "repeatApply": "No migrations to apply; tracking/schema/data counts unchanged"
+      }
+    ],
+    "verification": {
+      "allTests": {
+        "files": 29,
+        "pass": 305,
+        "fail": 0,
+        "skip": 0
+      },
+      "f1HttpScenarios": 210,
+      "typescript": "PASS",
+      "astro": {
+        "errors": 0,
+        "warnings": 0,
+        "hints": 13
+      },
+      "productionBuild": "PASS 55.08s; direct Astro; no npm data-initialization prebuild"
+    },
+    "bggSha256": "1e345be12cf66b871f0267af622445d50ba1120ba98181ca2390dadc0da82f91",
+    "f4LocalStatus": "PASS",
+    "releaseStatus": "NO-GO; high BODY CLS and formal readiness remain unverified",
+    "evidence": "docs/d7a-r4-migration-evidence.json",
+    "remoteOperations": false
+  }
+}

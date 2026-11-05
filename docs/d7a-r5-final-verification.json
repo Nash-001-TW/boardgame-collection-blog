@@ -1,0 +1,191 @@
+{
+  "phase": "D-7A-R5",
+  "results": [
+    {
+      "name": "automated",
+      "status": "PASS",
+      "files": 29,
+      "tests": 305,
+      "fail": 0,
+      "skip": 0
+    },
+    {
+      "name": "F1 HTTP",
+      "status": "PASS",
+      "scenarios": 210,
+      "transport": "real loopback HTTP + production Worker + ASSETS, isolated D1"
+    },
+    {
+      "name": "D5/D6",
+      "status": "PASS",
+      "desktop": true,
+      "mobile": true
+    },
+    {
+      "name": "C1",
+      "status": "PASS",
+      "checks": 11
+    },
+    {
+      "name": "C2",
+      "status": "PASS",
+      "checks": 4,
+      "entry": "--case=c2-focused"
+    },
+    {
+      "name": "C3",
+      "status": "PASS",
+      "checks": 5
+    },
+    {
+      "name": "TypeScript strict",
+      "status": "PASS"
+    },
+    {
+      "name": "Astro check",
+      "status": "PASS",
+      "errors": 0,
+      "warnings": 0,
+      "hints": 13
+    },
+    {
+      "name": "production build",
+      "status": "PASS",
+      "seconds": 69,
+      "entry": "node node_modules/astro/bin/astro.mjs build; no npm prebuild"
+    },
+    {
+      "name": "migrations empty 0001-0016",
+      "status": "PASS"
+    },
+    {
+      "name": "migrations 0013-0016 upgrade",
+      "status": "PASS"
+    },
+    {
+      "name": "BGG SHA256",
+      "status": "PASS",
+      "sha256": "1e345be12cf66b871f0267af622445d50ba1120ba98181ca2390dadc0da82f91"
+    },
+    {
+      "name": "raw SQL restore",
+      "status": "FAIL",
+      "reason": "no such table: main.notbgg_game_revisions"
+    },
+    {
+      "name": "controlled synthetic SQL restore",
+      "status": "PASS"
+    },
+    {
+      "name": "production checks",
+      "status": "BLOCKED",
+      "reason": "expired OAuth"
+    },
+    {
+      "name": "historical BODY high CLS",
+      "status": "NOT VERIFIED"
+    },
+    {
+      "name": "diff whitespace",
+      "status": "FAIL",
+      "reason": "pre-existing trailing whitespace src/components/GameList.astro:59; unchanged"
+    }
+  ],
+  "attempts": [
+    "initial build entry path was wrong; corrected to installed Astro bin",
+    "sandboxed build/Miniflare/browser attempts hit EACCES loopback; retried with approved local execution",
+    "automatic approval review temporarily could not complete due to quota; user requested continue, retry approved",
+    "raw export restore failed; controlled dump parser first rejected defer_foreign_keys as unknown, then explicitly allowed documented PRAGMA; unknown statements remain fail-closed"
+  ],
+  "evidenceLogs": [
+    {
+      "path": ".wrangler/r5-verification/astro-check.log",
+      "sha256": "ed8a34067ef53f079576ca4b9a0835e3418c7415b4ff9ddef73140478086ebe6"
+    },
+    {
+      "path": ".wrangler/r5-verification/automated.log",
+      "sha256": "b3e66280aa80378510f80b42888460e7567ff7f23dd1a2beee4ec2be3f739b43"
+    },
+    {
+      "path": ".wrangler/r5-verification/build-retry.log",
+      "sha256": "aad6912221f970916af59eeba9d2b66fb023e4fdc759f6164fec5a9f1d3930a1"
+    },
+    {
+      "path": ".wrangler/r5-verification/build.log",
+      "sha256": "8474cb1fb88ef1a8c9f33a6d987e05d8bb9a6aa4abd8fe06ba8bc5c3f9b8ddaa"
+    },
+    {
+      "path": ".wrangler/r5-verification/c1.log",
+      "sha256": "1c729307a8adf7a584ed294c4e075d9469511d0563c8d63bcc165ee75da8ede1"
+    },
+    {
+      "path": ".wrangler/r5-verification/c2-focused.log",
+      "sha256": "1a22be8593ab1992aae49117fc5cdc3c46fde3ada394b91014dee1109f60a71e"
+    },
+    {
+      "path": ".wrangler/r5-verification/c3.log",
+      "sha256": "c073e59cd29381e214d51dc2209074952c3c8423b105fa49fe6e5b6b1764d580"
+    },
+    {
+      "path": ".wrangler/r5-verification/d5.log",
+      "sha256": "f96a9af9d2178a2ca662015e532f9b01cf564a4ef15327ff780bce53106ec45e"
+    },
+    {
+      "path": ".wrangler/r5-verification/d6.log",
+      "sha256": "bc628f6dde7401e7b786a75e1d1e929ed30d64bf9cd0202133a6912324f2e207"
+    },
+    {
+      "path": ".wrangler/r5-verification/migrations-retry.log",
+      "sha256": "7273975e1e82fa29668af67b97c2870f2e05e0fe027bc3e7cf7afbd7d2231891"
+    },
+    {
+      "path": ".wrangler/r5-verification/migrations.log",
+      "sha256": "2b789e24adc3bf1ab3127c9953c04382b7ee391f04043f1aff1ef1f0af55776f"
+    },
+    {
+      "path": ".wrangler/r5-verification/restore-controlled.log",
+      "sha256": "5369a380cf5cb464c4c23ccd73222100e0f9d7c870a2163935d2d882ebc6da80"
+    },
+    {
+      "path": ".wrangler/r5-verification/restore-retry.log",
+      "sha256": "0baf67a07ce92289c0468ad8d975060a0795926c1b187f7e66db0ab54bbb148f"
+    },
+    {
+      "path": ".wrangler/r5-verification/restore.log",
+      "sha256": "f8af1b38697551a0033c14e2ca790e75393f13290ae6efd41077089f188c6a48"
+    },
+    {
+      "path": ".wrangler/r5-verification/strict.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "unmodifiedMigrationHashes": {
+    "migrations/0014_notbgg.sql": {
+      "sha256": "d2c7a0efabec9fb7c1d3440f09744448c9610341c0ce99e8c693b9665bf7a0c6",
+      "matchesR4": true
+    },
+    "migrations/0015_notbgg_collection.sql": {
+      "sha256": "b6ead70bf65a496c68dddece26d5704e115ece6d320ced93f52aa9669cdb9760",
+      "matchesR4": true
+    },
+    "migrations/0016_notbgg_link_commands.sql": {
+      "sha256": "cf85894f8414da3b0edd79188d02cea871d743416a8ee777c3c413a2902757a5",
+      "matchesR4": true
+    },
+    "bom": {
+      "headBytes": 493,
+      "worktreeBytes": 491,
+      "headOnlyBomRemoved": false,
+      "r4OriginalReconstructed": true,
+      "worktreeMatchesR4": true,
+      "sha256": "211ed3bb90dc24e5be0e39dc6b7b6662967b3b9863099f582ab020835b8f11f0",
+      "headSha256": "354869861c66cfc2daa6357a18f8e2217b22e6a9f3785d20c2cbfe37df973005"
+    },
+    "bgg": {
+      "sha256": "1e345be12cf66b871f0267af622445d50ba1120ba98181ca2390dadc0da82f91",
+      "matchesExpected": true
+    },
+    "ignore": ""
+  },
+  "remoteOperations": false
+}

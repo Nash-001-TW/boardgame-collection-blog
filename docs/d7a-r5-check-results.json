@@ -1,0 +1,10 @@
+[
+  {
+    "name": "strict",
+    "exit": 0
+  },
+  {
+    "name": "astro-check",
+    "exit": 0
+  }
+]

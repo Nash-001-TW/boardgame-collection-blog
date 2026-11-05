@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "mode": "isolated synthetic D1; raw R4 worktree vs prospective LF Git Blob",
+  "triggerSchemaEqual": true,
+  "triggerCount": 2,
+  "validInsert": true,
+  "invalidInsertRejected": true,
+  "invalidUpdateRejected": true,
+  "sourceModified": false,
+  "indexModified": false,
+  "limit": "Verifies 0003 normalized SQL behavior; not a full committed clean-checkout release build",
+  "runner": {
+    "path": ".wrangler/r6-verification/normalized.mjs",
+    "sha256": "78366a8d27f18a48ef075900cf3b0b36e961f9db6f048dc42592661cb2b8cde1",
+    "source": "import {isolatedNotBggD1,migrateIsolatedD1,migrationStatements} from '../../tests/helpers/notbgg-local-d1.ts';import fs from 'node:fs/promises';import assert from 'node:assert/strict';\nconst raw=await fs.readFile('migrations/0003_sleeve_size_validation.sql','utf8'),normalized=raw.replaceAll('\\r\\n','\\n');const schemas=[];for(const sql of [raw,normalized]){const local=await isolatedNotBggD1();try{await migrateIsolatedD1(local.db,'0002_normalize_sleeve_sizes.sql');await local.db.batch(migrationStatements(sql).map(x=>local.db.prepare(x)));const schema=(await local.db.prepare(\"SELECT name,sql FROM sqlite_schema WHERE type='trigger' AND name LIKE 'trg_sleeve_sizes_validate_%' ORDER BY name\").all()).results;schemas.push(schema);await local.db.prepare('INSERT INTO sleeve_sizes(width_tenth_mm,height_tenth_mm) VALUES(100,200)').run();await assert.rejects(local.db.prepare('INSERT INTO sleeve_sizes(width_tenth_mm,height_tenth_mm) VALUES(700,600)').run(),/short side first/);await assert.rejects(local.db.prepare('UPDATE sleeve_sizes SET width_tenth_mm=700,height_tenth_mm=600 WHERE width_tenth_mm=100').run(),/short side first/);}finally{await local.dispose();}}assert.deepEqual(schemas[0],schemas[1]);await fs.writeFile('docs/d7a-r6-0003-verification.json',JSON.stringify({status:'PASS',mode:'isolated synthetic D1; raw R4 worktree vs prospective LF Git Blob',triggerSchemaEqual:true,triggerCount:schemas[0].length,validInsert:true,invalidInsertRejected:true,invalidUpdateRejected:true,sourceModified:false,indexModified:false,limit:'Verifies 0003 normalized SQL behavior; not a full committed clean-checkout release build'},null,2));console.log('0003_RAW_AND_EXPECTED_BLOB_PASS');\r\n",
+    "reproduce": "Save source at indicated ignored path; node --import tsx .wrangler/r6-verification/normalized.mjs; disposable local D1 only"
+  }
+}

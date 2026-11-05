@@ -1,0 +1,12 @@
+{
+  "reviewedAt": "2026-11-05T00:15:54.854Z",
+  "oauthPresent": true,
+  "expiration": "2026-11-05T01:15:03.160Z",
+  "expired": false,
+  "apiTokenEnvironmentPresent": false,
+  "apiKeyEnvironmentPresent": false,
+  "remoteAttempted": true,
+  "remoteAuthenticated": true,
+  "status": "PASS",
+  "readonlyEvidence": "docs/d7a-r6-cloudflare-readonly.json"
+}

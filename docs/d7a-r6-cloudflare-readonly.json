@@ -1,0 +1,1431 @@
+{
+  "checkedAt": "2026-11-05T00:17:28.976Z",
+  "auth": {
+    "localExpiry": "2026-11-05T01:15:03.160Z",
+    "tokenPrinted": false,
+    "status": "PASS"
+  },
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/accounts",
+      "status": 200,
+      "codes": []
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/<id>/d1/database/59e9a17a-ff0f-494e-aab9-dd903a14e395",
+      "status": 200,
+      "codes": []
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/<id>/workers/scripts/boardgame-collection-blog/deployments",
+      "status": 200,
+      "codes": []
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/<id>/subscriptions",
+      "status": 403,
+      "codes": [
+        10000
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/<id>/access/apps",
+      "status": 200,
+      "codes": []
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/<id>/workers/domains",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/zones?account.id=<id>",
+      "status": 200,
+      "codes": []
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/<id>/workers/scripts/boardgame-collection-blog/subdomain",
+      "status": 200,
+      "codes": []
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/<id>/workers/scripts/boardgame-collection-blog/settings",
+      "status": 200,
+      "codes": []
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/<account-id>/workers/scripts/boardgame-collection-blog/versions/75e4aec7-6bdb-4202-bee4-a0827dcbca53",
+      "status": 200,
+      "codes": []
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/<account-id>/workers/subdomain",
+      "status": 200,
+      "codes": []
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/<account-id>/access/organizations",
+      "status": 403,
+      "codes": [
+        10000
+      ]
+    },
+    {
+      "method": "POST (read-only SQL)",
+      "path": "/accounts/<account-id>/d1/database/59e9a17a-ff0f-494e-aab9-dd903a14e395/query",
+      "status": 200,
+      "codes": [],
+      "sql": "SELECT type,name,tbl_name FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%' ORDER BY type,name;"
+    },
+    {
+      "method": "POST (read-only SQL)",
+      "path": "/accounts/<account-id>/d1/database/59e9a17a-ff0f-494e-aab9-dd903a14e395/query",
+      "status": 200,
+      "codes": [],
+      "sql": "PRAGMA table_info(d1_migrations);"
+    },
+    {
+      "method": "POST (read-only SQL)",
+      "path": "/accounts/<account-id>/d1/database/59e9a17a-ff0f-494e-aab9-dd903a14e395/query",
+      "status": 200,
+      "codes": [],
+      "sql": "SELECT id,name,applied_at FROM d1_migrations ORDER BY id;"
+    },
+    {
+      "method": "POST (read-only SQL)",
+      "path": "/accounts/<account-id>/d1/database/59e9a17a-ff0f-494e-aab9-dd903a14e395/query",
+      "status": 200,
+      "codes": [],
+      "sql": "PRAGMA foreign_key_check;"
+    },
+    {
+      "method": "POST (read-only SQL)",
+      "path": "/accounts/<account-id>/d1/database/59e9a17a-ff0f-494e-aab9-dd903a14e395/query",
+      "status": 200,
+      "codes": [],
+      "sql": "PRAGMA quick_check;"
+    },
+    {
+      "method": "POST (read-only SQL)",
+      "path": "/accounts/<account-id>/d1/database/59e9a17a-ff0f-494e-aab9-dd903a14e395/query",
+      "status": 200,
+      "codes": [],
+      "sql": "PRAGMA table_info(v2_collection_items);"
+    },
+    {
+      "method": "POST (read-only SQL)",
+      "path": "/accounts/<account-id>/d1/database/59e9a17a-ff0f-494e-aab9-dd903a14e395/query",
+      "status": 200,
+      "codes": [],
+      "sql": "PRAGMA table_info(v2_games);"
+    },
+    {
+      "method": "POST (read-only SQL)",
+      "path": "/accounts/<account-id>/d1/database/59e9a17a-ff0f-494e-aab9-dd903a14e395/query",
+      "status": 200,
+      "codes": [],
+      "sql": "PRAGMA table_info(v2_owned_copies);"
+    }
+  ],
+  "database": {
+    "id": "59e9a17a-ff0f-494e-aab9-dd903a14e395",
+    "name": "boardgame-collection-db",
+    "version": "production",
+    "readReplication": {
+      "mode": "disabled"
+    },
+    "storageSupportsTimeTravel": true,
+    "timeTravelEndpointCalled": false
+  },
+  "deployments": {
+    "status": "PASS",
+    "http": 200,
+    "data": {
+      "deployments": [
+        {
+          "id": "2006142e-9631-451f-bd21-958da6f16572",
+          "strategy": "percentage",
+          "source": "wrangler",
+          "versions": [
+            {
+              "version_id": "75e4aec7-6bdb-4202-bee4-a0827dcbca53",
+              "percentage": 100
+            }
+          ],
+          "created_on": "2026-10-21T09:22:18.403099Z"
+        },
+        {
+          "id": "383a0c6b-a109-44f2-977f-a26217a2c021",
+          "strategy": "percentage",
+          "source": "wrangler",
+          "versions": [
+            {
+              "version_id": "930a58ea-fd62-4f1f-9a0f-2c3f160d251c",
+              "percentage": 100
+            }
+          ],
+          "created_on": "2026-10-21T09:11:30.214544Z"
+        },
+        {
+          "id": "d5812951-d1c0-422f-9683-839430d4947d",
+          "strategy": "percentage",
+          "source": "wrangler",
+          "versions": [
+            {
+              "version_id": "fd21cad5-f8e8-48de-b444-5a5b079d0e35",
+              "percentage": 100
+            }
+          ],
+          "created_on": "2026-10-21T09:02:04.92515Z"
+        },
+        {
+          "id": "308477d7-9b61-40dc-ad42-f3023606239f",
+          "strategy": "percentage",
+          "source": "wrangler",
+          "versions": [
+            {
+              "version_id": "0cf88148-ae64-46f5-b232-302b8639e890",
+              "percentage": 100
+            }
+          ],
+          "created_on": "2026-10-20T05:24:00.699627Z"
+        },
+        {
+          "id": "2faa2e19-3c2e-41df-9de5-bd2338c5fc19",
+          "strategy": "percentage",
+          "source": "wrangler",
+          "versions": [
+            {
+              "version_id": "c0aa7d3f-6183-4535-bb7b-5132169a70dd",
+              "percentage": 100
+            }
+          ],
+          "created_on": "2026-10-19T02:01:17.928403Z"
+        },
+        {
+          "id": "222341a8-3da8-4df5-957a-1ec0a4acbbc8",
+          "strategy": "percentage",
+          "source": "wrangler",
+          "versions": [
+            {
+              "version_id": "d7120774-784b-4698-8aa0-ce5148e7f9fa",
+              "percentage": 100
+            }
+          ],
+          "created_on": "2026-10-19T01:40:25.762266Z"
+        },
+        {
+          "id": "3d25c960-c5c5-4ba4-8359-a7756ad77b1f",
+          "strategy": "percentage",
+          "source": "wrangler",
+          "versions": [
+            {
+              "version_id": "9b037795-1b7f-4a77-94b0-7040bf79bb01",
+              "percentage": 100
+            }
+          ],
+          "created_on": "2026-10-19T01:39:47.320429Z"
+        },
+        {
+          "id": "fdcf73dc-d807-452f-8c40-ff95a2798d38",
+          "strategy": "percentage",
+          "source": "wrangler",
+          "versions": [
+            {
+              "version_id": "c0c21fb3-9f50-4f24-9978-9aad61df9b60",
+              "percentage": 100
+            }
+          ],
+          "created_on": "2026-10-19T01:39:29.968224Z"
+        },
+        {
+          "id": "40ac0282-4f88-4e77-b509-9e5bacc6d4e5",
+          "strategy": "percentage",
+          "source": "wrangler",
+          "versions": [
+            {
+              "version_id": "42e18dec-b5f9-45c9-bbc8-3c5e6078ac53",
+              "percentage": 100
+            }
+          ],
+          "created_on": "2026-10-19T01:11:27.04245Z"
+        },
+        {
+          "id": "1f9e3be9-ab7b-4cc7-9cba-d46a5100d29f",
+          "strategy": "percentage",
+          "source": "wrangler",
+          "versions": [
+            {
+              "version_id": "bade7d0f-cbe1-48f9-9d66-839251d1001a",
+              "percentage": 100
+            }
+          ],
+          "created_on": "2026-10-15T09:30:45.99946Z"
+        }
+      ]
+    }
+  },
+  "settings": {
+    "status": "PASS",
+    "http": 200,
+    "compatibility_date": "2026-10-01",
+    "bindings": [
+      {
+        "name": "ACCESS_AUD",
+        "type": "secret_text"
+      },
+      {
+        "name": "ACCESS_TEAM_DOMAIN",
+        "type": "secret_text"
+      },
+      {
+        "name": "ADMIN_EMAIL",
+        "type": "secret_text"
+      },
+      {
+        "name": "ASSETS",
+        "type": "assets"
+      },
+      {
+        "name": "DB",
+        "type": "d1",
+        "id": "59e9a17a-ff0f-494e-aab9-dd903a14e395"
+      },
+      {
+        "name": "IMAGES",
+        "type": "images"
+      },
+      {
+        "name": "SESSION",
+        "type": "kv_namespace",
+        "namespace_id": "c8cacd003f7043f7a12368210f91e256"
+      }
+    ],
+    "logpush": false
+  },
+  "subdomain": {
+    "status": "PASS",
+    "http": 200,
+    "data": {
+      "enabled": true,
+      "previews_enabled": true
+    }
+  },
+  "domains": {
+    "status": "PASS",
+    "http": 200,
+    "data": []
+  },
+  "accessApps": {
+    "status": "BLOCKED",
+    "http": 200,
+    "count": 0,
+    "note": "HTTP 200 but returned no matching application; live anonymous challenge proves Access exists, policy/Audience could not be verified",
+    "httpReadStatus": "PASS"
+  },
+  "zones": {
+    "status": "PASS",
+    "http": 200
+  },
+  "subscriptions": {
+    "status": "BLOCKED",
+    "http": 403
+  },
+  "currentVersion": {
+    "status": "PASS",
+    "deploymentId": "2006142e-9631-451f-bd21-958da6f16572",
+    "createdOn": "2026-10-21T09:22:18.403099Z",
+    "versions": [
+      {
+        "version_id": "75e4aec7-6bdb-4202-bee4-a0827dcbca53",
+        "percentage": 100
+      }
+    ],
+    "resources": {
+      "bindings": [
+        {
+          "name": "ACCESS_AUD",
+          "type": "secret_text"
+        },
+        {
+          "name": "ACCESS_TEAM_DOMAIN",
+          "type": "secret_text"
+        },
+        {
+          "name": "ADMIN_EMAIL",
+          "type": "secret_text"
+        },
+        {
+          "name": "ASSETS",
+          "type": "assets"
+        },
+        {
+          "name": "DB",
+          "type": "d1"
+        },
+        {
+          "name": "IMAGES",
+          "type": "images"
+        },
+        {
+          "name": "SESSION",
+          "type": "kv_namespace"
+        }
+      ],
+      "script": {
+        "etag": "15bc1f3ceee44ccb9a8ce5f6c6d3de1c064f621079623c684ba4528f0bbf0c1a",
+        "handlers": [
+          "fetch"
+        ],
+        "last_deployed_from": "wrangler"
+      }
+    },
+    "keys": [
+      "script",
+      "script_runtime",
+      "bindings"
+    ]
+  },
+  "workerHostname": {
+    "status": "PASS",
+    "hostname": "boardgame-collection-blog.nash0710-001.workers.dev"
+  },
+  "accessOrganization": {
+    "status": "BLOCKED",
+    "http": 403
+  },
+  "routes": [],
+  "zoneVisibility": {
+    "count": 0,
+    "note": "zero visible zones is not proof of no external-account DNS/routes",
+    "status": "BLOCKED (complete route inventory)"
+  },
+  "d1": {
+    "status": "PASS",
+    "objects": [
+      {
+        "type": "index",
+        "name": "idx_bgg_relations_child",
+        "tbl_name": "bgg_game_relations"
+      },
+      {
+        "type": "index",
+        "name": "idx_collection_bgg",
+        "tbl_name": "collection_items"
+      },
+      {
+        "type": "index",
+        "name": "idx_collection_match",
+        "tbl_name": "collection_items"
+      },
+      {
+        "type": "index",
+        "name": "idx_components_bgg",
+        "tbl_name": "collection_components"
+      },
+      {
+        "type": "index",
+        "name": "idx_inventory_collection",
+        "tbl_name": "sleeve_inventory_transactions"
+      },
+      {
+        "type": "index",
+        "name": "idx_inventory_product_date",
+        "tbl_name": "sleeve_inventory_transactions"
+      },
+      {
+        "type": "index",
+        "name": "idx_products_size",
+        "tbl_name": "sleeve_products"
+      },
+      {
+        "type": "index",
+        "name": "idx_requirements_component",
+        "tbl_name": "sleeve_requirements"
+      },
+      {
+        "type": "index",
+        "name": "idx_requirements_item",
+        "tbl_name": "sleeve_requirements"
+      },
+      {
+        "type": "index",
+        "name": "idx_requirements_size",
+        "tbl_name": "sleeve_requirements"
+      },
+      {
+        "type": "index",
+        "name": "idx_v2_acquisitions_line",
+        "tbl_name": "v2_acquisitions"
+      },
+      {
+        "type": "index",
+        "name": "idx_v2_adjustments_copy",
+        "tbl_name": "v2_cost_adjustments"
+      },
+      {
+        "type": "index",
+        "name": "idx_v2_allocations_copy",
+        "tbl_name": "v2_purchase_allocations"
+      },
+      {
+        "type": "index",
+        "name": "idx_v2_allocations_item",
+        "tbl_name": "v2_purchase_allocations"
+      },
+      {
+        "type": "index",
+        "name": "idx_v2_allocations_order",
+        "tbl_name": "v2_purchase_allocations"
+      },
+      {
+        "type": "index",
+        "name": "idx_v2_collection_game",
+        "tbl_name": "v2_collection_items"
+      },
+      {
+        "type": "index",
+        "name": "idx_v2_collection_items_record_scope",
+        "tbl_name": "v2_collection_items"
+      },
+      {
+        "type": "index",
+        "name": "idx_v2_collection_relations_target",
+        "tbl_name": "v2_collection_relations"
+      },
+      {
+        "type": "index",
+        "name": "idx_v2_collection_status",
+        "tbl_name": "v2_collection_items"
+      },
+      {
+        "type": "index",
+        "name": "idx_v2_component_definitions_item",
+        "tbl_name": "v2_component_definitions"
+      },
+      {
+        "type": "index",
+        "name": "idx_v2_component_issues_copy_status",
+        "tbl_name": "v2_component_issues"
+      },
+      {
+        "type": "index",
+        "name": "idx_v2_copies_item",
+        "tbl_name": "v2_owned_copies"
+      },
+      {
+        "type": "index",
+        "name": "idx_v2_copy_components_definition",
+        "tbl_name": "v2_copy_components"
+      },
+      {
+        "type": "index",
+        "name": "idx_v2_copy_condition_history_copy_time",
+        "tbl_name": "v2_copy_condition_history"
+      },
+      {
+        "type": "index",
+        "name": "idx_v2_copy_condition_tags_code",
+        "tbl_name": "v2_copy_condition_tags"
+      },
+      {
+        "type": "index",
+        "name": "idx_v2_copy_condition_tags_copy",
+        "tbl_name": "v2_copy_condition_tags"
+      },
+      {
+        "type": "index",
+        "name": "idx_v2_game_relations_target",
+        "tbl_name": "v2_game_relations"
+      },
+      {
+        "type": "index",
+        "name": "idx_v2_games_name",
+        "tbl_name": "v2_games"
+      },
+      {
+        "type": "index",
+        "name": "idx_v2_legacy_target",
+        "tbl_name": "v2_legacy_id_map"
+      },
+      {
+        "type": "index",
+        "name": "idx_v2_order_lines_item",
+        "tbl_name": "v2_purchase_order_lines"
+      },
+      {
+        "type": "index",
+        "name": "idx_v2_orders_date",
+        "tbl_name": "v2_purchase_orders"
+      },
+      {
+        "type": "index",
+        "name": "idx_v2_orders_status",
+        "tbl_name": "v2_purchase_orders"
+      },
+      {
+        "type": "index",
+        "name": "idx_v2_sleeve_applications_copy",
+        "tbl_name": "v2_sleeve_applications"
+      },
+      {
+        "type": "index",
+        "name": "idx_v2_sleeve_inventory_copy",
+        "tbl_name": "v2_sleeve_inventory_transactions"
+      },
+      {
+        "type": "index",
+        "name": "idx_v2_sleeve_inventory_product",
+        "tbl_name": "v2_sleeve_inventory_transactions"
+      },
+      {
+        "type": "index",
+        "name": "idx_v2_sleeve_requirements_copy",
+        "tbl_name": "v2_sleeve_requirements"
+      },
+      {
+        "type": "index",
+        "name": "idx_v2_sleeve_requirements_item",
+        "tbl_name": "v2_sleeve_requirements"
+      },
+      {
+        "type": "index",
+        "name": "idx_v2_sleeve_requirements_size",
+        "tbl_name": "v2_sleeve_requirements"
+      },
+      {
+        "type": "table",
+        "name": "_cf_KV",
+        "tbl_name": "_cf_KV"
+      },
+      {
+        "type": "table",
+        "name": "bgg_game_relations",
+        "tbl_name": "bgg_game_relations"
+      },
+      {
+        "type": "table",
+        "name": "bgg_games",
+        "tbl_name": "bgg_games"
+      },
+      {
+        "type": "table",
+        "name": "collection_components",
+        "tbl_name": "collection_components"
+      },
+      {
+        "type": "table",
+        "name": "collection_items",
+        "tbl_name": "collection_items"
+      },
+      {
+        "type": "table",
+        "name": "d1_migrations",
+        "tbl_name": "d1_migrations"
+      },
+      {
+        "type": "table",
+        "name": "sleeve_inventory_transactions",
+        "tbl_name": "sleeve_inventory_transactions"
+      },
+      {
+        "type": "table",
+        "name": "sleeve_products",
+        "tbl_name": "sleeve_products"
+      },
+      {
+        "type": "table",
+        "name": "sleeve_requirements",
+        "tbl_name": "sleeve_requirements"
+      },
+      {
+        "type": "table",
+        "name": "sleeve_sizes",
+        "tbl_name": "sleeve_sizes"
+      },
+      {
+        "type": "table",
+        "name": "v2_acquisitions",
+        "tbl_name": "v2_acquisitions"
+      },
+      {
+        "type": "table",
+        "name": "v2_collection_items",
+        "tbl_name": "v2_collection_items"
+      },
+      {
+        "type": "table",
+        "name": "v2_collection_relations",
+        "tbl_name": "v2_collection_relations"
+      },
+      {
+        "type": "table",
+        "name": "v2_component_definitions",
+        "tbl_name": "v2_component_definitions"
+      },
+      {
+        "type": "table",
+        "name": "v2_component_issues",
+        "tbl_name": "v2_component_issues"
+      },
+      {
+        "type": "table",
+        "name": "v2_copy_components",
+        "tbl_name": "v2_copy_components"
+      },
+      {
+        "type": "table",
+        "name": "v2_copy_condition_history",
+        "tbl_name": "v2_copy_condition_history"
+      },
+      {
+        "type": "table",
+        "name": "v2_copy_condition_tags",
+        "tbl_name": "v2_copy_condition_tags"
+      },
+      {
+        "type": "table",
+        "name": "v2_cost_adjustments",
+        "tbl_name": "v2_cost_adjustments"
+      },
+      {
+        "type": "table",
+        "name": "v2_game_relations",
+        "tbl_name": "v2_game_relations"
+      },
+      {
+        "type": "table",
+        "name": "v2_games",
+        "tbl_name": "v2_games"
+      },
+      {
+        "type": "table",
+        "name": "v2_legacy_id_map",
+        "tbl_name": "v2_legacy_id_map"
+      },
+      {
+        "type": "table",
+        "name": "v2_owned_copies",
+        "tbl_name": "v2_owned_copies"
+      },
+      {
+        "type": "table",
+        "name": "v2_purchase_allocations",
+        "tbl_name": "v2_purchase_allocations"
+      },
+      {
+        "type": "table",
+        "name": "v2_purchase_order_lines",
+        "tbl_name": "v2_purchase_order_lines"
+      },
+      {
+        "type": "table",
+        "name": "v2_purchase_orders",
+        "tbl_name": "v2_purchase_orders"
+      },
+      {
+        "type": "table",
+        "name": "v2_sleeve_applications",
+        "tbl_name": "v2_sleeve_applications"
+      },
+      {
+        "type": "table",
+        "name": "v2_sleeve_inventory_transactions",
+        "tbl_name": "v2_sleeve_inventory_transactions"
+      },
+      {
+        "type": "table",
+        "name": "v2_sleeve_products",
+        "tbl_name": "v2_sleeve_products"
+      },
+      {
+        "type": "table",
+        "name": "v2_sleeve_requirements",
+        "tbl_name": "v2_sleeve_requirements"
+      },
+      {
+        "type": "table",
+        "name": "v2_sleeve_sizes",
+        "tbl_name": "v2_sleeve_sizes"
+      },
+      {
+        "type": "trigger",
+        "name": "trg_sleeve_sizes_validate_insert",
+        "tbl_name": "sleeve_sizes"
+      },
+      {
+        "type": "trigger",
+        "name": "trg_sleeve_sizes_validate_update",
+        "tbl_name": "sleeve_sizes"
+      },
+      {
+        "type": "trigger",
+        "name": "v2_allocation_validate_insert",
+        "tbl_name": "v2_purchase_allocations"
+      },
+      {
+        "type": "trigger",
+        "name": "v2_allocation_validate_update",
+        "tbl_name": "v2_purchase_allocations"
+      },
+      {
+        "type": "trigger",
+        "name": "v2_copy_condition_history_delete",
+        "tbl_name": "v2_copy_condition_tags"
+      },
+      {
+        "type": "trigger",
+        "name": "v2_copy_condition_history_insert",
+        "tbl_name": "v2_copy_condition_tags"
+      },
+      {
+        "type": "trigger",
+        "name": "v2_copy_condition_history_update",
+        "tbl_name": "v2_copy_condition_tags"
+      },
+      {
+        "type": "trigger",
+        "name": "v2_copy_condition_validate_insert",
+        "tbl_name": "v2_copy_condition_tags"
+      },
+      {
+        "type": "trigger",
+        "name": "v2_copy_condition_validate_update",
+        "tbl_name": "v2_copy_condition_tags"
+      },
+      {
+        "type": "trigger",
+        "name": "v2_copy_seal_status_validate_update",
+        "tbl_name": "v2_owned_copies"
+      },
+      {
+        "type": "trigger",
+        "name": "v2_order_line_validate_order_update",
+        "tbl_name": "v2_purchase_order_lines"
+      },
+      {
+        "type": "trigger",
+        "name": "v2_order_validate_amount_update",
+        "tbl_name": "v2_purchase_orders"
+      },
+      {
+        "type": "trigger",
+        "name": "v2_sleeve_application_immutable_delete",
+        "tbl_name": "v2_sleeve_applications"
+      },
+      {
+        "type": "trigger",
+        "name": "v2_sleeve_application_immutable_update",
+        "tbl_name": "v2_sleeve_applications"
+      },
+      {
+        "type": "trigger",
+        "name": "v2_sleeve_application_protect_transaction_delete",
+        "tbl_name": "v2_sleeve_inventory_transactions"
+      },
+      {
+        "type": "trigger",
+        "name": "v2_sleeve_application_protect_transaction_update",
+        "tbl_name": "v2_sleeve_inventory_transactions"
+      },
+      {
+        "type": "trigger",
+        "name": "v2_sleeve_application_validate_insert",
+        "tbl_name": "v2_sleeve_applications"
+      },
+      {
+        "type": "trigger",
+        "name": "v2_sleeve_inventory_validate_delete",
+        "tbl_name": "v2_sleeve_inventory_transactions"
+      },
+      {
+        "type": "trigger",
+        "name": "v2_sleeve_inventory_validate_insert",
+        "tbl_name": "v2_sleeve_inventory_transactions"
+      },
+      {
+        "type": "trigger",
+        "name": "v2_sleeve_inventory_validate_update",
+        "tbl_name": "v2_sleeve_inventory_transactions"
+      },
+      {
+        "type": "trigger",
+        "name": "v2_sleeve_requirement_validate_insert",
+        "tbl_name": "v2_sleeve_requirements"
+      },
+      {
+        "type": "trigger",
+        "name": "v2_sleeve_requirement_validate_update",
+        "tbl_name": "v2_sleeve_requirements"
+      },
+      {
+        "type": "view",
+        "name": "v2_purchase_order_reconciliation",
+        "tbl_name": "v2_purchase_order_reconciliation"
+      },
+      {
+        "type": "view",
+        "name": "v2_sleeve_inventory_balance",
+        "tbl_name": "v2_sleeve_inventory_balance"
+      },
+      {
+        "type": "view",
+        "name": "v2_sleeve_requirements_by_size",
+        "tbl_name": "v2_sleeve_requirements_by_size"
+      },
+      {
+        "type": "view",
+        "name": "v_sleeve_inventory_balance",
+        "tbl_name": "v_sleeve_inventory_balance"
+      },
+      {
+        "type": "view",
+        "name": "v_sleeve_requirements_by_size",
+        "tbl_name": "v_sleeve_requirements_by_size"
+      }
+    ],
+    "notbggObjectCount": 0,
+    "migrations": {
+      "status": "PASS",
+      "rows": [
+        {
+          "id": 1,
+          "name": "0001_sleeve_management.sql",
+          "applied_at": "2026-10-13 07:03:23"
+        },
+        {
+          "id": 2,
+          "name": "0002_normalize_sleeve_sizes.sql",
+          "applied_at": "2026-10-14 02:56:00"
+        },
+        {
+          "id": 3,
+          "name": "0003_sleeve_size_validation.sql",
+          "applied_at": "2026-10-14 02:56:00"
+        },
+        {
+          "id": 4,
+          "name": "0004_collection_management_upgrade.sql",
+          "applied_at": "2026-10-14 03:29:53"
+        },
+        {
+          "id": 5,
+          "name": "0005_collection_item_metadata.sql",
+          "applied_at": "2026-10-14 03:34:23"
+        },
+        {
+          "id": 6,
+          "name": "0006_collection_component_quantity.sql",
+          "applied_at": "2026-10-16 01:37:56"
+        },
+        {
+          "id": 7,
+          "name": "0007_v2_core_schema.sql",
+          "applied_at": "2026-10-19 03:12:16"
+        },
+        {
+          "id": 8,
+          "name": "0008_v2_purchase_costs.sql",
+          "applied_at": "2026-10-19 03:26:51"
+        },
+        {
+          "id": 9,
+          "name": "0009_v2_purchase_integrity.sql",
+          "applied_at": "2026-10-19 05:42:41"
+        },
+        {
+          "id": 10,
+          "name": "0010_v2_copy_conditions.sql",
+          "applied_at": "2026-10-19 06:02:34"
+        },
+        {
+          "id": 11,
+          "name": "0011_v2_sleeve_management.sql",
+          "applied_at": "2026-10-19 06:34:13"
+        },
+        {
+          "id": 12,
+          "name": "0012_v1_to_v2_migration.sql",
+          "applied_at": "2026-10-19 07:26:49"
+        },
+        {
+          "id": 13,
+          "name": "0013_v2_record_scope.sql",
+          "applied_at": "2026-10-19 08:34:18"
+        }
+      ]
+    },
+    "foreignKeyCheck": {
+      "status": "PASS",
+      "violationCount": 0
+    },
+    "quickCheck": {
+      "status": "PASS"
+    },
+    "columns": {
+      "v2_collection_items": [
+        {
+          "name": "id",
+          "type": "INTEGER",
+          "notnull": 0,
+          "pk": 1
+        },
+        {
+          "name": "game_id",
+          "type": "INTEGER",
+          "notnull": 0,
+          "pk": 0
+        },
+        {
+          "name": "display_name",
+          "type": "TEXT",
+          "notnull": 1,
+          "pk": 0
+        },
+        {
+          "name": "item_type",
+          "type": "TEXT",
+          "notnull": 1,
+          "pk": 0
+        },
+        {
+          "name": "acquisition_status",
+          "type": "TEXT",
+          "notnull": 1,
+          "pk": 0
+        },
+        {
+          "name": "wishlist",
+          "type": "INTEGER",
+          "notnull": 1,
+          "pk": 0
+        },
+        {
+          "name": "notes",
+          "type": "TEXT",
+          "notnull": 0,
+          "pk": 0
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "pk": 0
+        },
+        {
+          "name": "updated_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "pk": 0
+        },
+        {
+          "name": "record_scope",
+          "type": "TEXT",
+          "notnull": 1,
+          "pk": 0
+        }
+      ],
+      "v2_games": [
+        {
+          "name": "id",
+          "type": "INTEGER",
+          "notnull": 0,
+          "pk": 1
+        },
+        {
+          "name": "bgg_id",
+          "type": "INTEGER",
+          "notnull": 0,
+          "pk": 0
+        },
+        {
+          "name": "primary_name",
+          "type": "TEXT",
+          "notnull": 1,
+          "pk": 0
+        },
+        {
+          "name": "game_type",
+          "type": "TEXT",
+          "notnull": 1,
+          "pk": 0
+        },
+        {
+          "name": "standalone_status",
+          "type": "TEXT",
+          "notnull": 1,
+          "pk": 0
+        },
+        {
+          "name": "catalog_source",
+          "type": "TEXT",
+          "notnull": 1,
+          "pk": 0
+        },
+        {
+          "name": "description",
+          "type": "TEXT",
+          "notnull": 0,
+          "pk": 0
+        },
+        {
+          "name": "publication_year",
+          "type": "INTEGER",
+          "notnull": 0,
+          "pk": 0
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "pk": 0
+        },
+        {
+          "name": "updated_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "pk": 0
+        }
+      ],
+      "v2_owned_copies": [
+        {
+          "name": "id",
+          "type": "INTEGER",
+          "notnull": 0,
+          "pk": 1
+        },
+        {
+          "name": "collection_item_id",
+          "type": "INTEGER",
+          "notnull": 1,
+          "pk": 0
+        },
+        {
+          "name": "copy_label",
+          "type": "TEXT",
+          "notnull": 0,
+          "pk": 0
+        },
+        {
+          "name": "edition",
+          "type": "TEXT",
+          "notnull": 0,
+          "pk": 0
+        },
+        {
+          "name": "language_code",
+          "type": "TEXT",
+          "notnull": 0,
+          "pk": 0
+        },
+        {
+          "name": "acquisition_date",
+          "type": "TEXT",
+          "notnull": 0,
+          "pk": 0
+        },
+        {
+          "name": "seal_status",
+          "type": "TEXT",
+          "notnull": 1,
+          "pk": 0
+        },
+        {
+          "name": "inventory_status",
+          "type": "TEXT",
+          "notnull": 1,
+          "pk": 0
+        },
+        {
+          "name": "inspection_status",
+          "type": "TEXT",
+          "notnull": 1,
+          "pk": 0
+        },
+        {
+          "name": "notes",
+          "type": "TEXT",
+          "notnull": 0,
+          "pk": 0
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "pk": 0
+        },
+        {
+          "name": "updated_at",
+          "type": "TEXT",
+          "notnull": 1,
+          "pk": 0
+        },
+        {
+          "name": "trade_condition",
+          "type": "TEXT",
+          "notnull": 1,
+          "pk": 0
+        }
+      ]
+    },
+    "pendingReview": [
+      {
+        "file": "0014_notbgg.sql",
+        "registered": false,
+        "existingNameCollisions": []
+      },
+      {
+        "file": "0015_notbgg_collection.sql",
+        "registered": false,
+        "existingNameCollisions": []
+      },
+      {
+        "file": "0016_notbgg_link_commands.sql",
+        "registered": false,
+        "existingNameCollisions": []
+      }
+    ]
+  },
+  "publicReads": [
+    {
+      "path": "/games/santorini",
+      "status": 307,
+      "cacheControl": null,
+      "cfCacheStatus": null,
+      "accessChallenge": false,
+      "locationOrigin": "https://boardgame-collection-blog.nash0710-001.workers.dev"
+    },
+    {
+      "path": "/en/games/santorini",
+      "status": 307,
+      "cacheControl": null,
+      "cfCacheStatus": null,
+      "accessChallenge": false,
+      "locationOrigin": "https://boardgame-collection-blog.nash0710-001.workers.dev"
+    },
+    {
+      "path": "/admin/notbgg",
+      "status": 302,
+      "cacheControl": "private, max-age=0, no-store, no-cache, must-revalidate, post-check=0, pre-check=0",
+      "cfCacheStatus": null,
+      "accessChallenge": true,
+      "locationOrigin": "https://noisy-glade-c822.cloudflareaccess.com"
+    },
+    {
+      "path": "/admin/collection",
+      "status": 302,
+      "cacheControl": "private, max-age=0, no-store, no-cache, must-revalidate, post-check=0, pre-check=0",
+      "cfCacheStatus": null,
+      "accessChallenge": true,
+      "locationOrigin": "https://noisy-glade-c822.cloudflareaccess.com"
+    },
+    {
+      "path": "/admin",
+      "status": 302,
+      "cacheControl": "private, max-age=0, no-store, no-cache, must-revalidate, post-check=0, pre-check=0",
+      "cfCacheStatus": null,
+      "accessChallenge": true,
+      "locationOrigin": "https://noisy-glade-c822.cloudflareaccess.com"
+    }
+  ],
+  "rateLimiter": {
+    "status": "FAIL",
+    "bindingPresent": false,
+    "reason": "required binding absent in current settings"
+  },
+  "secretNames": [
+    "ACCESS_AUD",
+    "ACCESS_TEAM_DOMAIN",
+    "ADMIN_EMAIL"
+  ],
+  "secretNamesCheck": {
+    "status": "PASS",
+    "valuesRead": false
+  },
+  "canonicalChecks": [
+    {
+      "start": "/games/santorini",
+      "chain": [
+        {
+          "path": "/games/santorini",
+          "status": 307,
+          "cacheControl": null,
+          "cfCacheStatus": null,
+          "canonical": null,
+          "hreflangCount": 0,
+          "locationPath": "/games/santorini/",
+          "sameOrigin": true
+        },
+        {
+          "path": "/games/santorini/",
+          "status": 200,
+          "cacheControl": "public, max-age=0, must-revalidate",
+          "cfCacheStatus": "MISS",
+          "canonical": null,
+          "hreflangCount": 0,
+          "canonicalLinks": [],
+          "canonicalParser": "attribute-order independent, quoted/unquoted supported"
+        }
+      ]
+    },
+    {
+      "start": "/en/games/santorini",
+      "chain": [
+        {
+          "path": "/en/games/santorini",
+          "status": 307,
+          "cacheControl": null,
+          "cfCacheStatus": null,
+          "canonical": null,
+          "hreflangCount": 0,
+          "locationPath": "/en/games/santorini/",
+          "sameOrigin": true
+        },
+        {
+          "path": "/en/games/santorini/",
+          "status": 200,
+          "cacheControl": "public, max-age=0, must-revalidate",
+          "cfCacheStatus": "MISS",
+          "canonical": null,
+          "hreflangCount": 0,
+          "canonicalLinks": [],
+          "canonicalParser": "attribute-order independent, quoted/unquoted supported"
+        }
+      ]
+    },
+    {
+      "start": "/games/santorini.html",
+      "chain": [
+        {
+          "path": "/games/santorini.html",
+          "status": 307,
+          "cacheControl": null,
+          "cfCacheStatus": null,
+          "canonical": null,
+          "hreflangCount": 0,
+          "locationPath": "/games/santorini/",
+          "sameOrigin": true
+        },
+        {
+          "path": "/games/santorini/",
+          "status": 200,
+          "cacheControl": "public, max-age=0, must-revalidate",
+          "cfCacheStatus": "HIT",
+          "canonical": null,
+          "hreflangCount": 0,
+          "canonicalLinks": [],
+          "canonicalParser": "attribute-order independent, quoted/unquoted supported"
+        }
+      ]
+    },
+    {
+      "start": "/games/santorini/index.html",
+      "chain": [
+        {
+          "path": "/games/santorini/index.html",
+          "status": 307,
+          "cacheControl": null,
+          "cfCacheStatus": null,
+          "canonical": null,
+          "hreflangCount": 0,
+          "locationPath": "/games/santorini/",
+          "sameOrigin": true
+        },
+        {
+          "path": "/games/santorini/",
+          "status": 200,
+          "cacheControl": "public, max-age=0, must-revalidate",
+          "cfCacheStatus": "HIT",
+          "canonical": null,
+          "hreflangCount": 0,
+          "canonicalLinks": [],
+          "canonicalParser": "attribute-order independent, quoted/unquoted supported"
+        }
+      ]
+    },
+    {
+      "start": "/games",
+      "chain": [
+        {
+          "path": "/games",
+          "status": 307,
+          "cacheControl": null,
+          "cfCacheStatus": null,
+          "canonical": null,
+          "hreflangCount": 0,
+          "locationPath": "/games/",
+          "sameOrigin": true
+        },
+        {
+          "path": "/games/",
+          "status": 200,
+          "cacheControl": "public, max-age=0, must-revalidate",
+          "cfCacheStatus": "MISS",
+          "canonical": null,
+          "hreflangCount": 0,
+          "canonicalLinks": [],
+          "canonicalParser": "attribute-order independent, quoted/unquoted supported"
+        }
+      ]
+    },
+    {
+      "start": "/en/games",
+      "chain": [
+        {
+          "path": "/en/games",
+          "status": 307,
+          "cacheControl": null,
+          "cfCacheStatus": null,
+          "canonical": null,
+          "hreflangCount": 0,
+          "locationPath": "/en/games/",
+          "sameOrigin": true
+        },
+        {
+          "path": "/en/games/",
+          "status": 200,
+          "cacheControl": "public, max-age=0, must-revalidate",
+          "cfCacheStatus": "MISS",
+          "canonical": null,
+          "hreflangCount": 0,
+          "canonicalLinks": [],
+          "canonicalParser": "attribute-order independent, quoted/unquoted supported"
+        }
+      ]
+    }
+  ],
+  "assetsAssessment": {
+    "binding": "PASS",
+    "runWorkerFirst": "NOT VERIFIED",
+    "reason": "settings/version API returns ASSETS binding but not deployment asset router configuration; no speculative write/probe used"
+  },
+  "accessAssessment": {
+    "anonymousChallenge": "PASS",
+    "teamDomainObserved": "noisy-glade-c822.cloudflareaccess.com",
+    "organizationAndAudiencePolicy": "BLOCKED",
+    "reason": "organization GET 403, App list empty; no authenticated policy test or secret values read"
+  },
+  "backupAssessment": {
+    "storage": "production",
+    "timeTravelStorageEligible": true,
+    "planRetention": "BLOCKED subscriptions 403",
+    "restoreCapability": "BLOCKED no production recovery test authorized",
+    "productionExportPerformed": false
+  },
+  "canonicalAssessment": {
+    "status": "FAIL",
+    "scope": "observed current deployed public pages; candidate not deployed",
+    "reason": "No canonical link detected on sampled deployed pages"
+  }
+}

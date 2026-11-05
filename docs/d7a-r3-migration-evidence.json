@@ -1,0 +1,114 @@
+{
+  "versions": {
+    "wrangler": "4.149.0",
+    "node": "v24.21.0",
+    "sqlite": "NOT MEASURED: local D1 authorizer rejects sqlite_version()",
+    "miniflare": "5.20261006.1-alpha"
+  },
+  "order": [
+    "0001_sleeve_management.sql",
+    "0002_normalize_sleeve_sizes.sql",
+    "0003_sleeve_size_validation.sql",
+    "0004_collection_management_upgrade.sql",
+    "0005_collection_item_metadata.sql",
+    "0006_collection_component_quantity.sql",
+    "0007_v2_core_schema.sql",
+    "0008_v2_purchase_costs.sql",
+    "0009_v2_purchase_integrity.sql",
+    "0010_v2_copy_conditions.sql",
+    "0011_v2_sleeve_management.sql",
+    "0012_v1_to_v2_migration.sql",
+    "0013_v2_record_scope.sql",
+    "0014_notbgg.sql",
+    "0015_notbgg_collection.sql",
+    "0016_notbgg_link_commands.sql"
+  ],
+  "bomFiles": [
+    "0002_normalize_sleeve_sizes.sql",
+    "0003_sleeve_size_validation.sql",
+    "0005_collection_item_metadata.sql",
+    "0006_collection_component_quantity.sql"
+  ],
+  "splitter": {
+    "original": [
+      "CREATE TRIGGER IF NOT EXISTS trg_sleeve_sizes_validate_insert\nBEFORE INSERT ON sleeve_sizes\nFOR EACH ROW\nWHEN NEW.width_tenth_mm > NEW.height_tenth_mm\nBEGIN\n    SELECT RAISE(ABORT, 'Sleeve size must be short side first')",
+      "END",
+      "CREATE TRIGGER IF NOT EXISTS trg_sleeve_sizes_validate_update\nBEFORE UPDATE OF width_tenth_mm, height_tenth_mm ON sleeve_sizes\nFOR EACH ROW\nWHEN NEW.width_tenth_mm > NEW.height_tenth_mm\nBEGIN\n    SELECT RAISE(ABORT, 'Sleeve size must be short side first');\nEND"
+    ],
+    "bomRemovedInMemory": [
+      "CREATE TRIGGER IF NOT EXISTS trg_sleeve_sizes_validate_insert\nBEFORE INSERT ON sleeve_sizes\nFOR EACH ROW\nWHEN NEW.width_tenth_mm > NEW.height_tenth_mm\nBEGIN\n    SELECT RAISE(ABORT, 'Sleeve size must be short side first');\nEND",
+      "CREATE TRIGGER IF NOT EXISTS trg_sleeve_sizes_validate_update\nBEFORE UPDATE OF width_tenth_mm, height_tenth_mm ON sleeve_sizes\nFOR EACH ROW\nWHEN NEW.width_tenth_mm > NEW.height_tenth_mm\nBEGIN\n    SELECT RAISE(ABORT, 'Sleeve size must be short side first');\nEND"
+    ]
+  },
+  "native": {
+    "columns": [
+      "id",
+      "width_tenth_mm",
+      "height_tenth_mm",
+      "label"
+    ],
+    "fragmented": "Error: D1_ERROR: incomplete input: SQLITE_ERROR",
+    "completeWithBom": [
+      {
+        "name": "trg_sleeve_sizes_validate_insert"
+      },
+      {
+        "name": "trg_sleeve_sizes_validate_update"
+      }
+    ],
+    "constraint": "PASS"
+  },
+  "cli": [
+    {
+      "control": "original bytes",
+      "status": "FAIL",
+      "migrations": [
+        "0001_sleeve_management.sql",
+        "0002_normalize_sleeve_sizes.sql"
+      ],
+      "error": "X [ERROR] incomplete input: SQLITE_ERROR\n\n\n🪵"
+    },
+    {
+      "control": "BOM removed in disposable copies ONLY",
+      "status": "PASS",
+      "migrations": [
+        "0001_sleeve_management.sql",
+        "0002_normalize_sleeve_sizes.sql",
+        "0003_sleeve_size_validation.sql",
+        "0004_collection_management_upgrade.sql",
+        "0005_collection_item_metadata.sql",
+        "0006_collection_component_quantity.sql",
+        "0007_v2_core_schema.sql",
+        "0008_v2_purchase_costs.sql",
+        "0009_v2_purchase_integrity.sql",
+        "0010_v2_copy_conditions.sql",
+        "0011_v2_sleeve_management.sql",
+        "0012_v1_to_v2_migration.sql",
+        "0013_v2_record_scope.sql",
+        "0014_notbgg.sql",
+        "0015_notbgg_collection.sql",
+        "0016_notbgg_link_commands.sql"
+      ],
+      "error": null,
+      "foreignKeys": []
+    }
+  ],
+  "unchangedHashes": {
+    "0001_sleeve_management.sql": "76ee9d30733beaf2dfc6fb6dcbc8eb8d3d8d967a2a9edb66aaa617ce8f670b33",
+    "0002_normalize_sleeve_sizes.sql": "22e666c4118111ed5e346ddf86f08c0b98ed4371b3bf9ac0f94ae764123cd80b",
+    "0003_sleeve_size_validation.sql": "2d0f6c76f1ba6f80702a467c8ccee9571c1e0a1d257062a93d0b668d9820f03b",
+    "0004_collection_management_upgrade.sql": "2a32aab85d9905ee80da23bf4a794d1f55dde99826ce3da356e8dae8e89ff4a8",
+    "0005_collection_item_metadata.sql": "99d9f6a26701b7be522e246d38235e60eb49c6d148668d0588df140f3119643c",
+    "0006_collection_component_quantity.sql": "36fe6e4e1ea605a1253225cd01a2899833bd99990cdc0085cefe4cc0b8bb3ccc",
+    "0007_v2_core_schema.sql": "f79b35760c365625c6f301e0f930bf7b6faafc8bfbfbca9d43aa43a3952ce8b0",
+    "0008_v2_purchase_costs.sql": "c14ee579a5b6e6800229e17db0e0f8f41d60227acdd75e394bc8e1848ebfecdb",
+    "0009_v2_purchase_integrity.sql": "2a3ed0a951e2df431ada1c8365653d5108cf6f67e7977e7e221adedec1423c0f",
+    "0010_v2_copy_conditions.sql": "abc043fe6d320b7b015f7dd87acd2fd9770112692a16f6744b5415288c228d61",
+    "0011_v2_sleeve_management.sql": "af8465012fbcebe10c36f9ddc3d4c2bd26c6902bd7c8099d0807be61cf5dbfc7",
+    "0012_v1_to_v2_migration.sql": "4b7ab5decdc6a6a0cc6967d1ae910feb76b1973094773b233582af2c9ab1a7e8",
+    "0013_v2_record_scope.sql": "3b2beba002b15ed6b8847936c0da2fbbf8b0a07b892292cc3f2eb7f20daccfec",
+    "0014_notbgg.sql": "d2c7a0efabec9fb7c1d3440f09744448c9610341c0ce99e8c693b9665bf7a0c6",
+    "0015_notbgg_collection.sql": "b6ead70bf65a496c68dddece26d5704e115ece6d320ced93f52aa9669cdb9760",
+    "0016_notbgg_link_commands.sql": "cf85894f8414da3b0edd79188d02cea871d743416a8ee777c3c413a2902757a5"
+  }
+}

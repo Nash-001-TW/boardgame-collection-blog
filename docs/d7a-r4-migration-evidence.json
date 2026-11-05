@@ -1,0 +1,269 @@
+{
+  "phase": "D-7A-R4",
+  "encoding": {
+    "file": "migrations/0003_sleeve_size_validation.sql",
+    "originalBytes": 494,
+    "newBytes": 491,
+    "removedHex": "EF BB BF",
+    "originalSha256": "2d0f6c76f1ba6f80702a467c8ccee9571c1e0a1d257062a93d0b668d9820f03b",
+    "newSha256": "211ed3bb90dc24e5be0e39dc6b7b6662967b3b9863099f582ab020835b8f11f0",
+    "exactByteEquality": true,
+    "originalCrlf": 1,
+    "newCrlf": 1,
+    "originalLf": 15,
+    "newLf": 15
+  },
+  "originalMigrationHashes": {
+    "0001_sleeve_management.sql": "76ee9d30733beaf2dfc6fb6dcbc8eb8d3d8d967a2a9edb66aaa617ce8f670b33",
+    "0002_normalize_sleeve_sizes.sql": "22e666c4118111ed5e346ddf86f08c0b98ed4371b3bf9ac0f94ae764123cd80b",
+    "0003_sleeve_size_validation.sql": "2d0f6c76f1ba6f80702a467c8ccee9571c1e0a1d257062a93d0b668d9820f03b",
+    "0004_collection_management_upgrade.sql": "2a32aab85d9905ee80da23bf4a794d1f55dde99826ce3da356e8dae8e89ff4a8",
+    "0005_collection_item_metadata.sql": "99d9f6a26701b7be522e246d38235e60eb49c6d148668d0588df140f3119643c",
+    "0006_collection_component_quantity.sql": "36fe6e4e1ea605a1253225cd01a2899833bd99990cdc0085cefe4cc0b8bb3ccc",
+    "0007_v2_core_schema.sql": "f79b35760c365625c6f301e0f930bf7b6faafc8bfbfbca9d43aa43a3952ce8b0",
+    "0008_v2_purchase_costs.sql": "c14ee579a5b6e6800229e17db0e0f8f41d60227acdd75e394bc8e1848ebfecdb",
+    "0009_v2_purchase_integrity.sql": "2a3ed0a951e2df431ada1c8365653d5108cf6f67e7977e7e221adedec1423c0f",
+    "0010_v2_copy_conditions.sql": "abc043fe6d320b7b015f7dd87acd2fd9770112692a16f6744b5415288c228d61",
+    "0011_v2_sleeve_management.sql": "af8465012fbcebe10c36f9ddc3d4c2bd26c6902bd7c8099d0807be61cf5dbfc7",
+    "0012_v1_to_v2_migration.sql": "4b7ab5decdc6a6a0cc6967d1ae910feb76b1973094773b233582af2c9ab1a7e8",
+    "0013_v2_record_scope.sql": "3b2beba002b15ed6b8847936c0da2fbbf8b0a07b892292cc3f2eb7f20daccfec",
+    "0014_notbgg.sql": "d2c7a0efabec9fb7c1d3440f09744448c9610341c0ce99e8c693b9665bf7a0c6",
+    "0015_notbgg_collection.sql": "b6ead70bf65a496c68dddece26d5704e115ece6d320ced93f52aa9669cdb9760",
+    "0016_notbgg_link_commands.sql": "cf85894f8414da3b0edd79188d02cea871d743416a8ee777c3c413a2902757a5"
+  },
+  "otherMigrationsUnchanged": true,
+  "cases": [
+    {
+      "case": "empty → 0001–0016",
+      "projectMigrationDirectory": "D:\\WebProject\\2026-0923 - TableGameInformation\\boardgamecollection-blog\\migrations",
+      "copiedOrPatchedSql": false,
+      "status": "PASS",
+      "tracking": [
+        {
+          "id": 1,
+          "name": "0001_sleeve_management.sql",
+          "applied_at": "2026-11-04 08:40:19"
+        },
+        {
+          "id": 2,
+          "name": "0002_normalize_sleeve_sizes.sql",
+          "applied_at": "2026-11-04 08:40:20"
+        },
+        {
+          "id": 3,
+          "name": "0003_sleeve_size_validation.sql",
+          "applied_at": "2026-11-04 08:40:21"
+        },
+        {
+          "id": 4,
+          "name": "0004_collection_management_upgrade.sql",
+          "applied_at": "2026-11-04 08:40:22"
+        },
+        {
+          "id": 5,
+          "name": "0005_collection_item_metadata.sql",
+          "applied_at": "2026-11-04 08:40:23"
+        },
+        {
+          "id": 6,
+          "name": "0006_collection_component_quantity.sql",
+          "applied_at": "2026-11-04 08:40:23"
+        },
+        {
+          "id": 7,
+          "name": "0007_v2_core_schema.sql",
+          "applied_at": "2026-11-04 08:40:24"
+        },
+        {
+          "id": 8,
+          "name": "0008_v2_purchase_costs.sql",
+          "applied_at": "2026-11-04 08:40:25"
+        },
+        {
+          "id": 9,
+          "name": "0009_v2_purchase_integrity.sql",
+          "applied_at": "2026-11-04 08:40:26"
+        },
+        {
+          "id": 10,
+          "name": "0010_v2_copy_conditions.sql",
+          "applied_at": "2026-11-04 08:40:26"
+        },
+        {
+          "id": 11,
+          "name": "0011_v2_sleeve_management.sql",
+          "applied_at": "2026-11-04 08:40:27"
+        },
+        {
+          "id": 12,
+          "name": "0012_v1_to_v2_migration.sql",
+          "applied_at": "2026-11-04 08:40:28"
+        },
+        {
+          "id": 13,
+          "name": "0013_v2_record_scope.sql",
+          "applied_at": "2026-11-04 08:40:29"
+        },
+        {
+          "id": 14,
+          "name": "0014_notbgg.sql",
+          "applied_at": "2026-11-04 08:40:29"
+        },
+        {
+          "id": 15,
+          "name": "0015_notbgg_collection.sql",
+          "applied_at": "2026-11-04 08:40:30"
+        },
+        {
+          "id": 16,
+          "name": "0016_notbgg_link_commands.sql",
+          "applied_at": "2026-11-04 08:40:31"
+        }
+      ],
+      "migrationTableColumns": [
+        "id",
+        "name",
+        "applied_at"
+      ],
+      "prior13RegistrationUnchanged": null,
+      "old0003ReplayGuard": null,
+      "triggerChecks": "INSERT/UPDATE constraints PASS",
+      "indexes": "PASS",
+      "foreignKeys": "PASS",
+      "relationDeleteAndArchive": "PASS",
+      "d6States": [
+        "candidate",
+        "linked",
+        "linked",
+        "unlinked"
+      ],
+      "repeatApply": "No migrations to apply; tracking/schema/data counts unchanged"
+    },
+    {
+      "case": "existing synthetic 0013 registration → 0016",
+      "projectMigrationDirectory": "D:\\WebProject\\2026-0923 - TableGameInformation\\boardgamecollection-blog\\migrations",
+      "copiedOrPatchedSql": false,
+      "status": "PASS",
+      "tracking": [
+        {
+          "id": 1,
+          "name": "0001_sleeve_management.sql",
+          "applied_at": "2000-01-01 00:00:00"
+        },
+        {
+          "id": 2,
+          "name": "0002_normalize_sleeve_sizes.sql",
+          "applied_at": "2000-01-01 00:00:00"
+        },
+        {
+          "id": 3,
+          "name": "0003_sleeve_size_validation.sql",
+          "applied_at": "2000-01-01 00:00:00"
+        },
+        {
+          "id": 4,
+          "name": "0004_collection_management_upgrade.sql",
+          "applied_at": "2000-01-01 00:00:00"
+        },
+        {
+          "id": 5,
+          "name": "0005_collection_item_metadata.sql",
+          "applied_at": "2000-01-01 00:00:00"
+        },
+        {
+          "id": 6,
+          "name": "0006_collection_component_quantity.sql",
+          "applied_at": "2000-01-01 00:00:00"
+        },
+        {
+          "id": 7,
+          "name": "0007_v2_core_schema.sql",
+          "applied_at": "2000-01-01 00:00:00"
+        },
+        {
+          "id": 8,
+          "name": "0008_v2_purchase_costs.sql",
+          "applied_at": "2000-01-01 00:00:00"
+        },
+        {
+          "id": 9,
+          "name": "0009_v2_purchase_integrity.sql",
+          "applied_at": "2000-01-01 00:00:00"
+        },
+        {
+          "id": 10,
+          "name": "0010_v2_copy_conditions.sql",
+          "applied_at": "2000-01-01 00:00:00"
+        },
+        {
+          "id": 11,
+          "name": "0011_v2_sleeve_management.sql",
+          "applied_at": "2000-01-01 00:00:00"
+        },
+        {
+          "id": 12,
+          "name": "0012_v1_to_v2_migration.sql",
+          "applied_at": "2000-01-01 00:00:00"
+        },
+        {
+          "id": 13,
+          "name": "0013_v2_record_scope.sql",
+          "applied_at": "2000-01-01 00:00:00"
+        },
+        {
+          "id": 14,
+          "name": "0014_notbgg.sql",
+          "applied_at": "2026-11-04 08:40:42"
+        },
+        {
+          "id": 15,
+          "name": "0015_notbgg_collection.sql",
+          "applied_at": "2026-11-04 08:40:43"
+        },
+        {
+          "id": 16,
+          "name": "0016_notbgg_link_commands.sql",
+          "applied_at": "2026-11-04 08:40:43"
+        }
+      ],
+      "migrationTableColumns": [
+        "id",
+        "name",
+        "applied_at"
+      ],
+      "prior13RegistrationUnchanged": true,
+      "old0003ReplayGuard": "not triggered",
+      "triggerChecks": "INSERT/UPDATE constraints PASS",
+      "indexes": "PASS",
+      "foreignKeys": "PASS",
+      "relationDeleteAndArchive": "PASS",
+      "d6States": [
+        "candidate",
+        "linked",
+        "linked",
+        "unlinked"
+      ],
+      "repeatApply": "No migrations to apply; tracking/schema/data counts unchanged"
+    }
+  ],
+  "remoteOperations": false,
+  "status": "PASS",
+  "verification": {
+    "allTests": {
+      "files": 29,
+      "pass": 305,
+      "fail": 0,
+      "skip": 0
+    },
+    "f1HttpScenarios": 210,
+    "typescript": "PASS",
+    "astro": {
+      "errors": 0,
+      "warnings": 0,
+      "hints": 13
+    },
+    "productionBuild": "PASS 55.08s; direct Astro; no npm data-initialization prebuild"
+  },
+  "bggSha256": "1e345be12cf66b871f0267af622445d50ba1120ba98181ca2390dadc0da82f91",
+  "formalEnvironment": "NOT VERIFIED; no remote requests, writes or deployment"
+}

@@ -1,0 +1,120 @@
+{
+  "mode": "Wrangler LOCAL export/import; random IDs; synthetic only; no credentials/network",
+  "status": "PASS",
+  "steps": [
+    "source 0001–0016 actual Wrangler apply PASS",
+    "Wrangler --local SQL export PASS",
+    "restore to separate random local D1 PASS",
+    "exact all-table rows/schema/sqlite_sequence equality PASS",
+    "foreign_key_check empty; quick_check ok PASS"
+  ],
+  "export": {
+    "sha256": "e4b4acc98b881f611df9bcdac8886e78e623b58dbd4a329b13b4c04c3531fe8b",
+    "bytes": 71437
+  },
+  "rawRestore": {
+    "status": "FAIL",
+    "cause": "no such table: main.notbgg_game_revisions"
+  },
+  "unexpectedStatements": [],
+  "orderDiagnosis": {
+    "notbggGamesFirstInsertIndex": 66,
+    "revisionCreateIndex": 68,
+    "revisionTableCreatedAfterProfileInsert": true,
+    "priorTriggerCount": 0
+  },
+  "diagnosticControls": [
+    {
+      "name": "original order, triggers removed",
+      "result": "FAIL",
+      "error": "no such table: main.notbgg_game_revisions"
+    },
+    {
+      "name": "all schema first, no triggers, deferred FK",
+      "result": "PASS"
+    },
+    {
+      "name": "all schema first, no triggers, immediate FK",
+      "result": "PASS"
+    },
+    {
+      "name": "all schema first, triggers before data, deferred FK",
+      "result": "FAIL",
+      "error": "LINK_SOURCE_CONFLICT"
+    }
+  ],
+  "controlledRestore": {
+    "policy": "all CREATE TABLE first; rows with deferred FK; source sequence manifest; indexes/views then triggers; reject unknown statements",
+    "tableStatements": 40,
+    "rowStatements": 68,
+    "indexStatements": 53,
+    "triggerStatements": 56,
+    "sha256": "ae4ae9f412db71669fc8bf2f37124c43fc528cc2387b596acff9116e19a690d1"
+  },
+  "counts": {
+    "bgg_game_relations": 0,
+    "bgg_games": 0,
+    "collection_components": 0,
+    "collection_items": 0,
+    "d1_migrations": 16,
+    "notbgg_accessory_categories": 1,
+    "notbgg_bgg_links": 1,
+    "notbgg_game_revisions": 2,
+    "notbgg_games": 2,
+    "notbgg_ids": 2,
+    "notbgg_link_events": 3,
+    "site_game_relations": 1,
+    "site_relation_events": 1,
+    "sleeve_inventory_transactions": 0,
+    "sleeve_products": 0,
+    "sleeve_requirements": 0,
+    "sleeve_sizes": 0,
+    "v2_acquisitions": 2,
+    "v2_collection_events": 2,
+    "v2_collection_items": 2,
+    "v2_collection_management": 2,
+    "v2_collection_relations": 0,
+    "v2_component_definitions": 0,
+    "v2_component_issues": 0,
+    "v2_copy_components": 0,
+    "v2_copy_condition_history": 0,
+    "v2_copy_condition_tags": 0,
+    "v2_cost_adjustments": 0,
+    "v2_game_relations": 0,
+    "v2_games": 3,
+    "v2_legacy_id_map": 0,
+    "v2_owned_copies": 2,
+    "v2_purchase_allocations": 2,
+    "v2_purchase_order_lines": 2,
+    "v2_purchase_orders": 2,
+    "v2_sleeve_applications": 0,
+    "v2_sleeve_inventory_transactions": 0,
+    "v2_sleeve_products": 0,
+    "v2_sleeve_requirements": 0,
+    "v2_sleeve_sizes": 0
+  },
+  "scope": [
+    {
+      "record_scope": "production",
+      "count": 1
+    },
+    {
+      "record_scope": "test",
+      "count": 1
+    }
+  ],
+  "phase": "D-7A-R6",
+  "diagnosticInterpretation": {
+    "primaryFailure": "INSERT notbgg_games references not-yet-created notbgg_game_revisions via deferred FK; missing parent table is a schema resolution error, not a deferred row-constraint violation",
+    "triggerRole": "No triggers precede the failing original insert; removing triggers reproduces error. Installing triggers before restored history separately fails LINK_SOURCE_CONFLICT.",
+    "foreignKeyRole": "Schema-first succeeds with and without defer PRAGMA in one D1 batch for this fixture because declared constraints include DEFERRABLE INITIALLY DEFERRED; do not claim pragma alone fixes missing table.",
+    "format": "Wrangler SQL export and execute parse format successfully; ordering makes the raw data-bearing dump non-round-trippable for this schema",
+    "production": "BLOCKED: no production export, backup or restore performed"
+  },
+  "runner": {
+    "path": ".wrangler/r6-verification/restore.mjs",
+    "sha256": "278aa51653453eef541db4b2ccbea96d452e476f4a4c35d970e35af9aa22693b",
+    "source": "import {unstable_splitSqlQuery as split} from 'wrangler';\nimport fs from 'node:fs/promises';import path from 'node:path';import os from 'node:os';import {pathToFileURL} from 'node:url';import {execFile} from 'node:child_process';import {promisify} from 'node:util';import assert from 'node:assert/strict';import {createHash} from 'node:crypto';import {Miniflare,convertV4MiniflareOptions} from 'miniflare';\nconst root=process.cwd(),exec=promisify(execFile),dir=await fs.mkdtemp(path.join(os.tmpdir(),'notbgg-r5-restore-'));const evidence={mode:'Wrangler LOCAL export/import; random IDs; synthetic only; no credentials/network',status:'FAIL',steps:[]};\nconst env={...process.env,CI:'true',WRANGLER_SEND_METRICS:'false',XDG_CONFIG_HOME:path.join(dir,'config'),WRANGLER_LOG_PATH:path.join(dir,'logs')};for(const k of Object.keys(env))if(/^(CLOUDFLARE_|CF_)/.test(k))delete env[k];\nlet runtime;const close=async()=>{if(runtime){await runtime.dispose();runtime=undefined;}};\nconst cli=async(cwd,args)=>{assert(args.includes('--local')&&!args.includes('--remote'));return exec(process.execPath,[path.join(root,'node_modules/wrangler/bin/wrangler.js'),...args],{cwd,env,windowsHide:true,maxBuffer:8e6});};\nconst open=async(d,id)=>{runtime=new Miniflare(convertV4MiniflareOptions({modules:true,script:'export default {}',resourcePersistencePath:path.join(d,'.wrangler/state/v3'),d1Databases:{TEST:id},outboundService:()=>new Response('disabled',{status:403})}));return runtime.getD1Database('TEST');};\nconst snapshot=async db=>{const schema=(await db.prepare(\"SELECT type,name,tbl_name,sql FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%' ORDER BY type,name\").all()).results;const data={};for(const row of schema.filter(x=>x.type==='table')){data[row.name]=(await db.prepare('SELECT * FROM \"'+row.name.replaceAll('\"','\"\"')+'\" ORDER BY rowid').all()).results;}return {schema,data,sequence:(await db.prepare('SELECT * FROM sqlite_sequence ORDER BY name').all()).results};};\ntry{const source=path.join(dir,'source'),target=path.join(dir,'target');await fs.mkdir(source);await fs.mkdir(target);const ids=[crypto.randomUUID(),crypto.randomUUID()];for(const [i,d]of [source,target].entries())await fs.writeFile(path.join(d,'wrangler.json'),JSON.stringify({name:'r5-synthetic',compatibility_date:'2026-10-01',d1_databases:[{binding:'TEST',database_name:'r5-synthetic',database_id:ids[i],migrations_dir:path.join(root,'migrations')}]}));\nawait cli(source,['d1','migrations','apply','r5-synthetic','--local','--config',path.join(source,'wrangler.json')]);evidence.steps.push('source 0001–0016 actual Wrangler apply PASS');let db=await open(source,ids[0]);\nconst {NotBggRepository}=await import(pathToFileURL(path.join(root,'src/lib/notbgg-repository.ts')).href);const {CollectionV2Repository}=await import(pathToFileURL(path.join(root,'src/lib/collection-v2-repository.ts')).href);const {SiteGameRelations}=await import(pathToFileURL(path.join(root,'src/lib/site-game-relations.ts')).href);\nconst repo=new NotBggRepository(db),writer=new CollectionV2Repository(db).management,relations=new SiteGameRelations(db);const base=(await repo.create({name:'Synthetic restore base',type:'boardgame'},{actor:'synthetic',idempotencyKey:'restore-base'})).game;const kit=(await repo.create({name:'Synthetic restore kit',type:'boardgameaccessory',accessoryCategories:['storage']},{actor:'synthetic',idempotencyKey:'restore-kit'})).game;\nawait relations.add(kit.notBggId,{source:'notbgg',notBggId:base.notBggId},'accessory_for','synthetic only','synthetic');\nfor(const scope of ['production','test'])await writer.create({source:'notbgg',notBggId:base.notBggId},{displayName:'Synthetic '+scope,acquisitionStatus:'owned',wishlist:false,language:'zh-TW',edition:'Synthetic',purchaseDate:'2026-11-01',priceMinor:123456,currency:'TWD',merchant:'Synthetic shop'},{actor:'synthetic',idempotencyKey:'restore-'+scope,scope,createCopy:true});\nconst {NotBggLinkRepository}=await import(pathToFileURL(path.join(root,'src/lib/notbgg-link-repository.ts')).href);const links=new NotBggLinkRepository(db);for(const action of ['propose','confirm','revoke']){const state=await links.state(base.notBggId);await links.execute(base.notBggId,{action,expectedProfileRevision:1,expectedEventId:state.expectedEventId,reason:'Synthetic restore history',...(state.link?{linkId:state.link.id}:{}),...(action==='propose'?{bggId:194655}:{})},'synthetic');}\nconst before=await snapshot(db);assert.equal(before.data.v2_collection_items.length,2);assert.equal(before.data.v2_owned_copies.length,2);assert.equal(before.data.v2_purchase_orders.length,2);assert.equal(before.data.site_game_relations.length,1);await close();\nconst dump=path.join(dir,'synthetic.sql');await cli(source,['d1','export','r5-synthetic','--local','--config',path.join(source,'wrangler.json'),'--output',dump]);const bytes=await fs.readFile(dump);evidence.export={sha256:createHash('sha256').update(bytes).digest('hex'),bytes:bytes.length};evidence.steps.push('Wrangler --local SQL export PASS');await fs.writeFile(path.join(root,'.wrangler/r6-verification/synthetic.sql'),bytes);\ntry{await cli(target,['d1','execute','r5-synthetic','--local','--config',path.join(target,'wrangler.json'),'--file',dump]);evidence.rawRestore='PASS';}catch(e){evidence.rawRestore={status:'FAIL',cause:String(e.message).includes('no such table: main.notbgg_game_revisions')?'no such table: main.notbgg_game_revisions':'local SQL import rejected'};}\nconst controlled=path.join(dir,'controlled');await fs.mkdir(controlled);const controlledId=crypto.randomUUID();await fs.writeFile(path.join(controlled,'wrangler.json'),JSON.stringify({name:'r5-synthetic',compatibility_date:'2026-10-01',d1_databases:[{binding:'TEST',database_name:'r5-synthetic',database_id:controlledId}]}));\nconst statements=split(bytes.toString());const clean=x=>x.replace(/^(?:\\s*--[^\\n]*\\n)*/,'').trim();const tables=[],rows=[],indexes=[],triggers=[],other=[];for(const raw of statements){const x=clean(raw);if(!x)continue;if(/^CREATE TABLE\\b/i.test(x))tables.push(x);else if(/^CREATE TRIGGER\\b/i.test(x))triggers.push(x);else if(/^CREATE (?:UNIQUE )?INDEX\\b/i.test(x)||/^CREATE VIEW\\b/i.test(x))indexes.push(x);else if(/^(?:INSERT|DELETE)\\b/i.test(x))rows.push(x);else if(/^PRAGMA (?:foreign_keys|defer_foreign_keys)\\s*=\\s*(?:ON|OFF|TRUE|FALSE|0|1)$/i.test(x)){}else other.push(x);}\nevidence.unexpectedStatements=other;assert.equal(other.length,0,'Unexpected dump statement; fail closed');assert.ok(triggers.length>0);\nconst firstInsert=statements.findIndex(x=>/^INSERT INTO [\"`]?notbgg_games[\"`]?\\b/i.test(clean(x)));const revisionCreate=statements.findIndex(x=>/^CREATE TABLE [\"`]?notbgg_game_revisions[\"`]?\\b/i.test(clean(x)));evidence.orderDiagnosis={notbggGamesFirstInsertIndex:firstInsert,revisionCreateIndex:revisionCreate,revisionTableCreatedAfterProfileInsert:revisionCreate>firstInsert,priorTriggerCount:statements.slice(0,firstInsert).filter(x=>/^CREATE TRIGGER/i.test(clean(x))).length};\nconst {isolatedNotBggD1}=await import(pathToFileURL(path.join(root,'tests/helpers/notbgg-local-d1.ts')).href);const controls=[];for(const [name,queries]of [\n['original order, triggers removed',['PRAGMA defer_foreign_keys=ON',...statements.map(clean).filter(x=>x&&!/^CREATE TRIGGER|^PRAGMA/i.test(x))]],\n['all schema first, no triggers, deferred FK',['PRAGMA defer_foreign_keys=ON',...tables,...rows,...indexes]],\n['all schema first, no triggers, immediate FK',[...tables,...rows,...indexes]],\n['all schema first, triggers before data, deferred FK',['PRAGMA defer_foreign_keys=ON',...tables,...indexes,...triggers,...rows]]\n]){const local=await isolatedNotBggD1();try{await local.db.batch(queries.map(x=>local.db.prepare(x)));controls.push({name,result:'PASS'});}catch(e){const msg=String(e.message);controls.push({name,result:'FAIL',error:msg.match(/(?:no such table: [^\\s:]+|FOREIGN KEY constraint failed|NotBGG[^:]+|LINK_[A-Z_]+|NOTBGG_[A-Z_]+|Expected next revision|UNIQUE constraint failed[^:]+)/)?.[0]??msg.slice(0,180)});}finally{await local.dispose();}}evidence.diagnosticControls=controls;\nconst quote=x=>\"'\"+x.replaceAll(\"'\",\"''\")+\"'\";const sequence=['DELETE FROM sqlite_sequence',...before.sequence.map(x=>'INSERT INTO sqlite_sequence(name,seq) VALUES('+quote(x.name)+','+x.seq+')')];const reordered=['PRAGMA defer_foreign_keys=ON',...tables,...rows,...sequence,...indexes,...triggers].map(x=>x.replace(/;\\s*$/,'')+';').join('\\n');const orderedFile=path.join(dir,'controlled.sql');await fs.writeFile(orderedFile,reordered);evidence.controlledRestore={policy:'all CREATE TABLE first; rows with deferred FK; source sequence manifest; indexes/views then triggers; reject unknown statements',tableStatements:tables.length,rowStatements:rows.length,indexStatements:indexes.length,triggerStatements:triggers.length,sha256:createHash('sha256').update(reordered).digest('hex')};\nawait cli(controlled,['d1','execute','r5-synthetic','--local','--config',path.join(controlled,'wrangler.json'),'--file',orderedFile]);db=await open(controlled,controlledId);const after=await snapshot(db);assert.deepEqual(after,before);assert.deepEqual((await db.prepare('PRAGMA foreign_key_check').all()).results,[]);const integrity=(await db.prepare('PRAGMA quick_check').all()).results;assert.equal(Object.values(integrity[0])[0],'ok');\nevidence.counts=Object.fromEntries(Object.entries(after.data).map(([k,v])=>[k,v.length]));evidence.scope=(await db.prepare('SELECT record_scope,COUNT(*) AS count FROM v2_collection_items GROUP BY record_scope ORDER BY record_scope').all()).results;evidence.steps.push('restore to separate random local D1 PASS','exact all-table rows/schema/sqlite_sequence equality PASS','foreign_key_check empty; quick_check ok PASS');evidence.status='PASS';\n}catch(e){evidence.error=String(e.message).replaceAll(dir,'<isolated-temp>');process.exitCode=1;}finally{await close();await fs.writeFile(path.join(root,'docs/d7a-r6-restore-evidence.json'),JSON.stringify(evidence,null,2));console.log(JSON.stringify(evidence));if(path.dirname(path.resolve(dir))!==path.resolve(os.tmpdir())||!path.basename(dir).startsWith('notbgg-r5-restore-'))throw Error('Unsafe cleanup');await fs.rm(dir,{recursive:true,force:true,maxRetries:3,retryDelay:100});}\r\n",
+    "reproduce": "From repo root save source to indicated ignored path and run node --import tsx .wrangler/r6-verification/restore.mjs; local loopback permission required; never --remote"
+  }
+}

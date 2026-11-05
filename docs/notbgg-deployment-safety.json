@@ -1,0 +1,256 @@
+{
+  "checkedAt": "2026-11-05T00:41:51.264Z",
+  "oauthExpiry": "2026-11-05T01:15:03.160Z",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/accounts/<account>/workers/scripts/boardgame-collection-blog/settings",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/<account>/workers/scripts/boardgame-collection-blog/deployments",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/<account>/workers/scripts/boardgame-collection-blog/content/v2",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/<account>/d1/database/59e9a17a-ff0f-494e-aab9-dd903a14e395",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/<account>/d1/database/59e9a17a-ff0f-494e-aab9-dd903a14e395/time_travel/bookmark?timestamp=2026-11-05T00%3A40%3A56.137Z",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/<account>/d1/database/59e9a17a-ff0f-494e-aab9-dd903a14e395/time_travel/bookmark?timestamp=2026-11-05T00%3A40%3A56.137Z",
+      "status": 200
+    }
+  ],
+  "publicChecks": [
+    {
+      "method": "GET",
+      "path": "/admin",
+      "forgedHeader": false,
+      "status": 302,
+      "accessChallenge": true,
+      "cacheControl": "private, max-age=0, no-store, no-cache, must-revalidate, post-check=0, pre-check=0",
+      "denied": true,
+      "locationHost": "noisy-glade-c822.cloudflareaccess.com"
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin",
+      "forgedHeader": false,
+      "status": 302,
+      "accessChallenge": true,
+      "cacheControl": "private, max-age=0, no-store, no-cache, must-revalidate, post-check=0, pre-check=0",
+      "denied": true,
+      "locationHost": "noisy-glade-c822.cloudflareaccess.com"
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/auth-check",
+      "forgedHeader": false,
+      "status": 302,
+      "accessChallenge": true,
+      "cacheControl": "private, max-age=0, no-store, no-cache, must-revalidate, post-check=0, pre-check=0",
+      "denied": true,
+      "locationHost": "noisy-glade-c822.cloudflareaccess.com"
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/notbgg",
+      "forgedHeader": false,
+      "status": 302,
+      "accessChallenge": true,
+      "cacheControl": "private, max-age=0, no-store, no-cache, must-revalidate, post-check=0, pre-check=0",
+      "denied": true,
+      "locationHost": "noisy-glade-c822.cloudflareaccess.com"
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/collection",
+      "forgedHeader": false,
+      "status": 302,
+      "accessChallenge": true,
+      "cacheControl": "private, max-age=0, no-store, no-cache, must-revalidate, post-check=0, pre-check=0",
+      "denied": true,
+      "locationHost": "noisy-glade-c822.cloudflareaccess.com"
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/auth-check",
+      "forgedHeader": true,
+      "status": 302,
+      "accessChallenge": true,
+      "cacheControl": "private, max-age=0, no-store, no-cache, must-revalidate, post-check=0, pre-check=0",
+      "denied": true,
+      "locationHost": "noisy-glade-c822.cloudflareaccess.com"
+    },
+    {
+      "method": "GET",
+      "path": "/%61pi/admin/auth-check",
+      "forgedHeader": false,
+      "status": 302,
+      "accessChallenge": true,
+      "cacheControl": "private, max-age=0, no-store, no-cache, must-revalidate, post-check=0, pre-check=0",
+      "denied": true,
+      "locationHost": "noisy-glade-c822.cloudflareaccess.com"
+    },
+    {
+      "method": "GET",
+      "path": "/api//admin/auth-check",
+      "forgedHeader": false,
+      "status": 302,
+      "accessChallenge": true,
+      "cacheControl": "private, max-age=0, no-store, no-cache, must-revalidate, post-check=0, pre-check=0",
+      "denied": true,
+      "locationHost": "noisy-glade-c822.cloudflareaccess.com"
+    },
+    {
+      "method": "GET",
+      "path": "//api/admin/auth-check",
+      "forgedHeader": false,
+      "status": 302,
+      "accessChallenge": true,
+      "cacheControl": "private, max-age=0, no-store, no-cache, must-revalidate, post-check=0, pre-check=0",
+      "denied": true,
+      "locationHost": "noisy-glade-c822.cloudflareaccess.com"
+    }
+  ],
+  "noProductionWriteRequests": true,
+  "bindings": [
+    {
+      "name": "ACCESS_AUD",
+      "type": "secret_text"
+    },
+    {
+      "name": "ACCESS_TEAM_DOMAIN",
+      "type": "secret_text"
+    },
+    {
+      "name": "ADMIN_EMAIL",
+      "type": "secret_text"
+    },
+    {
+      "name": "ASSETS",
+      "type": "assets"
+    },
+    {
+      "name": "DB",
+      "type": "d1",
+      "id": "59e9a17a-ff0f-494e-aab9-dd903a14e395"
+    },
+    {
+      "name": "IMAGES",
+      "type": "images"
+    },
+    {
+      "name": "SESSION",
+      "type": "kv_namespace"
+    }
+  ],
+  "rateLimiter": {
+    "status": "BLOCKED",
+    "present": false,
+    "candidatePresent": false,
+    "missingBehavior": "authenticated writes skip limit() when binding absent; authentication still mandatory"
+  },
+  "currentDeployment": {
+    "id": "2006142e-9631-451f-bd21-958da6f16572",
+    "versions": [
+      {
+        "version_id": "75e4aec7-6bdb-4202-bee4-a0827dcbca53",
+        "percentage": 100
+      }
+    ],
+    "created_on": "2026-10-21T09:22:18.403099Z"
+  },
+  "deployedCode": {
+    "http": 200,
+    "sha256": "d2cddde320a0deaf9f619a51a1047dd48a42549addf766c2784a27b923a54862",
+    "bytes": 3745450,
+    "jwtHeader": true,
+    "issuerArgument": true,
+    "audienceArgument": true,
+    "rs256": true,
+    "verifyFunctionFound": true,
+    "contentRetainedInDeliverable": false,
+    "issuerShorthand": true,
+    "verifierReplay": {
+      "status": "PASS",
+      "mode": "exact deployed verifier replayed locally with generated test RSA/JWKS; no production JWT used",
+      "results": [
+        {
+          "case": "missing JWT",
+          "denied": true
+        },
+        {
+          "case": "synthetic valid RS256/issuer/audience/admin",
+          "accepted": true
+        },
+        {
+          "case": "wrong signature",
+          "denied": true
+        },
+        {
+          "case": "wrong issuer",
+          "denied": true
+        },
+        {
+          "case": "wrong audience",
+          "denied": true
+        },
+        {
+          "case": "expired",
+          "denied": true
+        },
+        {
+          "case": "wrong admin",
+          "denied": true
+        }
+      ],
+      "missingExpAccepted": true,
+      "limitation": "deployed version does not require exp claim when absent; candidate requires exp/iat/sub/email and existing full tests cover it"
+    },
+    "fullSourceRetained": false,
+    "localRetainedExtract": "JWT verifier only; temporary full code response discarded"
+  },
+  "recovery": {
+    "storageVersion": "production",
+    "productionBackupsCreated": false,
+    "exportPerformed": false,
+    "restorePerformed": false,
+    "bookmarkMetadata": {
+      "status": "PASS",
+      "requestedTimestamp": "2026-11-05T00:40:56.137Z",
+      "http": [
+        200,
+        200
+      ],
+      "repeatLookupEqual": true,
+      "bookmarkSha256": "acebfbb438a390d3f3504c9085a2536e4bb78426e32cdf9e482994a5f04a2f6b",
+      "bookmarkValueSaved": false
+    },
+    "limitations": [
+      "metadata lookup verifies available recent history, not a destructive production restore rehearsal",
+      "fresh bookmark must be retrieved after writes are frozen immediately before migration",
+      "full retention/plan remains unverified; do not reuse this old observation as deployment recovery point"
+    ]
+  },
+  "accessSummary": {
+    "edgeAnonymous": "PASS",
+    "deployedSignatureIssuerAudienceImplementation": "PASS (source plus exact local verifier replay)",
+    "candidateMissingJwtWrongSignatureIssuerAudienceExpiry": "PASS in final automated suite",
+    "liveAuthorizedAdminSession": "NOT VERIFIED; no production login/session or write attempted",
+    "bypassObserved": false,
+    "scope": "sampled GET aliases plus code/handler review; no unauthenticated POST sent to production"
+  }
+}

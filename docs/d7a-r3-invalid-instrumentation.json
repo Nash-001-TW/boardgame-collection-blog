@@ -1,0 +1,87 @@
+{
+  "status": "INVALID HARNESS; excluded from CLS measurements",
+  "reason": "tsx keepNames __name helper absent in serialized init script; observers never installed",
+  "attempts": [
+    {
+      "sample": 1,
+      "lcp": null,
+      "errors": [
+        "__name is not defined",
+        "__name is not defined"
+      ]
+    },
+    {
+      "sample": 2,
+      "lcp": null,
+      "errors": [
+        "__name is not defined",
+        "__name is not defined"
+      ]
+    },
+    {
+      "sample": 3,
+      "lcp": null,
+      "errors": [
+        "__name is not defined",
+        "__name is not defined"
+      ]
+    },
+    {
+      "sample": 4,
+      "lcp": null,
+      "errors": [
+        "__name is not defined",
+        "__name is not defined"
+      ]
+    },
+    {
+      "sample": 5,
+      "lcp": null,
+      "errors": [
+        "__name is not defined",
+        "__name is not defined"
+      ]
+    },
+    {
+      "sample": 6,
+      "lcp": null,
+      "errors": [
+        "__name is not defined",
+        "__name is not defined"
+      ]
+    },
+    {
+      "sample": 7,
+      "lcp": null,
+      "errors": [
+        "__name is not defined",
+        "__name is not defined"
+      ]
+    },
+    {
+      "sample": 8,
+      "lcp": null,
+      "errors": [
+        "__name is not defined",
+        "__name is not defined"
+      ]
+    },
+    {
+      "sample": 9,
+      "lcp": null,
+      "errors": [
+        "__name is not defined",
+        "__name is not defined"
+      ]
+    },
+    {
+      "sample": 10,
+      "lcp": null,
+      "errors": [
+        "__name is not defined",
+        "__name is not defined"
+      ]
+    }
+  ],
+  "corrected": "browser-side helper installed; invalid/null-LCP/empty-frame samples now rejected"
+}

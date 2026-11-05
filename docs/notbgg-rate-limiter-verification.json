@@ -1,0 +1,172 @@
+{
+  "namespaceReview": {
+    "checkedAt": "2026-11-05T01:10:13.173Z",
+    "namespaceId": "12071",
+    "scope": "current visible Worker settings only; future use must keep this namespace dedicated",
+    "status": "PASS",
+    "collisions": [],
+    "requests": [
+      {
+        "method": "GET",
+        "path": "/accounts/<account>/workers/scripts?per_page=100&page=1",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "path": "/accounts/<account>/workers/scripts/boardgame-collection-blog/settings",
+        "status": 200
+      }
+    ],
+    "workersListed": 1,
+    "workersChecked": 1,
+    "inventoryComplete": true,
+    "reason": "No current visible Worker binding uses 12071"
+  },
+  "startedAt": "2026-11-05T01:12:04.079Z",
+  "results": [
+    {
+      "name": "wrangler-types",
+      "exit": 0,
+      "seconds": 1.948
+    },
+    {
+      "name": "targeted-security-d5-d6",
+      "exit": 0,
+      "seconds": 29.756
+    },
+    {
+      "name": "strict",
+      "exit": 0,
+      "seconds": 8.117
+    },
+    {
+      "name": "astro-check",
+      "exit": 0,
+      "seconds": 34.5
+    },
+    {
+      "name": "production-build",
+      "exit": 0,
+      "seconds": 62.651
+    },
+    {
+      "name": "notbgg-admin-browser",
+      "exit": 0,
+      "seconds": 14.474
+    },
+    {
+      "name": "notbgg-collection-browser",
+      "exit": 0,
+      "seconds": 12.186
+    },
+    {
+      "name": "notbgg-link-browser",
+      "exit": 0,
+      "seconds": 13.694
+    }
+  ],
+  "finishedAt": "2026-11-05T01:15:01.458Z",
+  "productionModified": false,
+  "candidateSourceId": "41855c8f7ea80de577e5461c1c4eb61b0e030665e948927488685da72b2b211d",
+  "previousCandidateSourceId": "cc713488d9fc84466e41e9423a82d1efbf9a35d8c182cc7c58a7927999d15d44",
+  "approvedConfiguration": {
+    "name": "NOTBGG_WRITE_LIMITER",
+    "namespace_id": "12071",
+    "simple": {
+      "limit": 30,
+      "period": 60
+    }
+  },
+  "platformSemantics": "unchanged: approximate per Cloudflare location, shared hashed subject key across write families; no strict global quota claim",
+  "installedWrangler": "4.149.0",
+  "configValidatedBy": [
+    "wrangler types",
+    "Astro Cloudflare production build preserves exact binding",
+    "installed workerd/Miniflare native binding smoke"
+  ],
+  "tests": {
+    "files": 4,
+    "pass": 46,
+    "fail": 0,
+    "skipped": 0,
+    "focusedLimiterTests": 7,
+    "coveredWriteRoutes": 9,
+    "d5d6Browser": true,
+    "adminBrowser": true,
+    "strict": "PASS",
+    "astro": {
+      "errors": 0,
+      "warnings": 0,
+      "hints": 13
+    }
+  },
+  "initialStrictAttempt": "Two new test typing annotations failed initially; corrected Record headers and literal period typing; final strict PASS. Production code/protection was not relaxed.",
+  "bggSha256": "1e345be12cf66b871f0267af622445d50ba1120ba98181ca2390dadc0da82f91",
+  "migrationHashesUnchanged": true,
+  "workerFirstUnchanged": true,
+  "generatedBindingMatches": true,
+  "formalBindingActivated": false,
+  "formalNamespaceCheck": "current visible settings GET only; no formal configuration changed",
+  "goNoGo": {
+    "candidate": "GO for reviewed limiter fix",
+    "productionDeployment": "NO-GO without separate Git/Migration/Worker approvals and actual post-deploy binding verification"
+  },
+  "changedFiles": [
+    "docs/notbgg-d7b-deployment-runbook.md",
+    "docs/notbgg-deployment-candidate.json",
+    "docs/notbgg-rate-limiter-verification.json",
+    "src/lib/collection-admin-api.ts",
+    "src/lib/notbgg-admin-api.ts",
+    "src/lib/notbgg-link-api.ts",
+    "tests/notbgg-admin-api.test.ts",
+    "tests/notbgg-admin-browser.cjs",
+    "tests/notbgg-collection-browser.cjs",
+    "tests/notbgg-collection.test.ts",
+    "tests/notbgg-link-browser.cjs",
+    "tests/notbgg-link.test.ts",
+    "tests/notbgg-rate-limiter.test.ts",
+    "wrangler.json"
+  ],
+  "logHashes": [
+    {
+      "path": ".wrangler/rate-limiter-fix/astro-check.log",
+      "sha256": "4f9c8d24087341029da64c6e7bdaa695cb665252baf7f2a0d8eb9ece6689eec4"
+    },
+    {
+      "path": ".wrangler/rate-limiter-fix/focused.log",
+      "sha256": "7dace2a7f43745ba1118464af43e4a3e0457f494e6bb848653446b7712159df4"
+    },
+    {
+      "path": ".wrangler/rate-limiter-fix/notbgg-admin-browser.log",
+      "sha256": "d36c446b2cce7c2607dabccec0ae647539e5fb1a80fee09dfb7627362cfd4af0"
+    },
+    {
+      "path": ".wrangler/rate-limiter-fix/notbgg-collection-browser.log",
+      "sha256": "f96a9af9d2178a2ca662015e532f9b01cf564a4ef15327ff780bce53106ec45e"
+    },
+    {
+      "path": ".wrangler/rate-limiter-fix/notbgg-link-browser.log",
+      "sha256": "bc628f6dde7401e7b786a75e1d1e929ed30d64bf9cd0202133a6912324f2e207"
+    },
+    {
+      "path": ".wrangler/rate-limiter-fix/production-build.log",
+      "sha256": "c4499d363cd90b6538fb98411106b5fdda8bfea36331feb27971ddd17cf67801"
+    },
+    {
+      "path": ".wrangler/rate-limiter-fix/strict-initial.log",
+      "sha256": "cd0b50e54a790d31dd505c5bb2a992036f9ffaaf9d88bbe4902f1ac7b5084edd"
+    },
+    {
+      "path": ".wrangler/rate-limiter-fix/strict.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".wrangler/rate-limiter-fix/targeted-security-d5-d6.log",
+      "sha256": "dee65e37dc5da96d7aaa0100367aa1c15e2e1ea9b0e505f299f0168a192aec59"
+    },
+    {
+      "path": ".wrangler/rate-limiter-fix/wrangler-types.log",
+      "sha256": "9c03cef694e9100af1622620e49d6004704dc2b68975defa2d686e3b50f69bb5"
+    }
+  ]
+}

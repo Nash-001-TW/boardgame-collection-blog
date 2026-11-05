@@ -1,0 +1,27 @@
+[
+  {
+    "name": "d5",
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "d6",
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "c1",
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "c2-focused",
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "c3",
+    "exit": 0,
+    "signal": null
+  }
+]

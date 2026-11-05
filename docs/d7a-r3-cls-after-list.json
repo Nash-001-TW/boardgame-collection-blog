@@ -1,0 +1,2113 @@
+{
+  "phase": "after-list",
+  "environment": {
+    "engine": "Edge headless; new browser/context per sample; built Worker+ASSETS; local D1; Node bridge",
+    "data": "815 BGG + 3 synthetic NotBGG",
+    "viewport": "390x844",
+    "initialView": "list",
+    "network": {
+      "latencyMs": 150,
+      "downloadBytesPerSecond": 200000,
+      "uploadBytesPerSecond": 100000
+    },
+    "cpuRate": 1,
+    "cacheDisabled": true,
+    "compression": "identity",
+    "images": "synthetic SVG 300x400; no external image requests",
+    "observation": "load + controller readiness + 1200ms; frame instrumentation up to 10s"
+  },
+  "samples": [
+    {
+      "cls": 0,
+      "shiftTotal": 0,
+      "lcp": 3648,
+      "shifts": [],
+      "events": [
+        {
+          "name": "fonts.ready",
+          "at": 226.30000001192093,
+          "bodyMargin": null,
+          "fonts": "loaded",
+          "images": [],
+          "styles": []
+        },
+        {
+          "name": "controller/count mutation",
+          "at": 229.4000000357628,
+          "bodyMargin": "8px",
+          "fonts": "loaded",
+          "view": "list",
+          "initialized": null,
+          "countText": "找到 327 款遊戲",
+          "body": {
+            "x": 8,
+            "y": 8,
+            "width": 374,
+            "height": 412.875,
+            "top": 8,
+            "right": 382,
+            "bottom": 420.875,
+            "left": 8
+          },
+          "images": [],
+          "styles": [
+            {
+              "path": "/_astro/Layout.C7FjRNXa.css",
+              "loaded": false
+            },
+            {
+              "path": "/_astro/GameList.CxtlCx3h.css",
+              "loaded": false
+            }
+          ]
+        },
+        {
+          "name": "controller/count mutation",
+          "at": 3582.600000023842,
+          "bodyMargin": "0px",
+          "fonts": "loaded",
+          "view": "list",
+          "initialized": null,
+          "countText": "找到 327 款遊戲",
+          "body": {
+            "x": 0,
+            "y": 0,
+            "width": 390,
+            "height": 844,
+            "top": 0,
+            "right": 390,
+            "bottom": 844,
+            "left": 0
+          },
+          "images": [],
+          "styles": [
+            {
+              "path": "/_astro/Layout.C7FjRNXa.css",
+              "loaded": true
+            },
+            {
+              "path": "/_astro/GameList.CxtlCx3h.css",
+              "loaded": true
+            }
+          ]
+        },
+        {
+          "name": "controller/count mutation",
+          "at": 3597.199999988079,
+          "bodyMargin": "0px",
+          "fonts": "loaded",
+          "view": "list",
+          "initialized": null,
+          "countText": "找到 327 款遊戲",
+          "body": {
+            "x": 0,
+            "y": 0,
+            "width": 390,
+            "height": 950.265625,
+            "top": 0,
+            "right": 390,
+            "bottom": 950.265625,
+            "left": 0
+          },
+          "grid": {
+            "x": 16,
+            "y": 583.875,
+            "width": 358,
+            "height": 318.390625,
+            "top": 583.875,
+            "right": 374,
+            "bottom": 902.265625,
+            "left": 16
+          },
+          "images": [
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 0,
+              "naturalHeight": 0,
+              "complete": false,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": null,
+              "heightAttr": null,
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 584.875,
+                "width": 96,
+                "height": 128,
+                "top": 584.875,
+                "right": 113,
+                "bottom": 712.875,
+                "left": 17
+              }
+            },
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 0,
+              "naturalHeight": 0,
+              "complete": false,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": null,
+              "heightAttr": null,
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 773.265625,
+                "width": 96,
+                "height": 128,
+                "top": 773.265625,
+                "right": 113,
+                "bottom": 901.265625,
+                "left": 17
+              }
+            }
+          ],
+          "styles": [
+            {
+              "path": "/_astro/Layout.C7FjRNXa.css",
+              "loaded": true
+            },
+            {
+              "path": "/_astro/GameList.CxtlCx3h.css",
+              "loaded": true
+            }
+          ]
+        },
+        {
+          "name": "controller/count mutation",
+          "at": 3818.600000023842,
+          "bodyMargin": "0px",
+          "fonts": "loaded",
+          "view": "list",
+          "initialized": null,
+          "countText": "找到 327 款遊戲",
+          "body": {
+            "x": 0,
+            "y": 0,
+            "width": 390,
+            "height": 5145.421875,
+            "top": 0,
+            "right": 390,
+            "bottom": 5145.421875,
+            "left": 0
+          },
+          "grid": {
+            "x": 16,
+            "y": 583.875,
+            "width": 358,
+            "height": 4395.546875,
+            "top": 583.875,
+            "right": 374,
+            "bottom": 4979.421875,
+            "left": 16
+          },
+          "images": [
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 300,
+              "naturalHeight": 400,
+              "complete": true,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": null,
+              "heightAttr": null,
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 584.875,
+                "width": 96,
+                "height": 128,
+                "top": 584.875,
+                "right": 113,
+                "bottom": 712.875,
+                "left": 17
+              }
+            },
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 300,
+              "naturalHeight": 400,
+              "complete": true,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": null,
+              "heightAttr": null,
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 773.265625,
+                "width": 96,
+                "height": 128,
+                "top": 773.265625,
+                "right": 113,
+                "bottom": 901.265625,
+                "left": 17
+              }
+            },
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 300,
+              "naturalHeight": 400,
+              "complete": true,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": null,
+              "heightAttr": null,
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 932.65625,
+                "width": 96,
+                "height": 128,
+                "top": 932.65625,
+                "right": 113,
+                "bottom": 1060.65625,
+                "left": 17
+              }
+            },
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 300,
+              "naturalHeight": 400,
+              "complete": true,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": null,
+              "heightAttr": null,
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 1147.046875,
+                "width": 96,
+                "height": 128,
+                "top": 1147.046875,
+                "right": 113,
+                "bottom": 1275.046875,
+                "left": 17
+              }
+            }
+          ],
+          "styles": [
+            {
+              "path": "/_astro/Layout.C7FjRNXa.css",
+              "loaded": true
+            },
+            {
+              "path": "/_astro/GameList.CxtlCx3h.css",
+              "loaded": true
+            }
+          ]
+        },
+        {
+          "name": "controller/count mutation",
+          "at": 4628.400000035763,
+          "bodyMargin": "0px",
+          "fonts": "loaded",
+          "view": "list",
+          "initialized": "true",
+          "countText": "找到 327 款遊戲",
+          "body": {
+            "x": 0,
+            "y": 0,
+            "width": 390,
+            "height": 5289.421875,
+            "top": 0,
+            "right": 390,
+            "bottom": 5289.421875,
+            "left": 0
+          },
+          "grid": {
+            "x": 16,
+            "y": 583.875,
+            "width": 358,
+            "height": 4395.546875,
+            "top": 583.875,
+            "right": 374,
+            "bottom": 4979.421875,
+            "left": 16
+          },
+          "images": [
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 300,
+              "naturalHeight": 400,
+              "complete": true,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": "300",
+              "heightAttr": "400",
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 584.875,
+                "width": 96,
+                "height": 128,
+                "top": 584.875,
+                "right": 113,
+                "bottom": 712.875,
+                "left": 17
+              }
+            },
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 300,
+              "naturalHeight": 400,
+              "complete": true,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": "300",
+              "heightAttr": "400",
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 773.265625,
+                "width": 96,
+                "height": 128,
+                "top": 773.265625,
+                "right": 113,
+                "bottom": 901.265625,
+                "left": 17
+              }
+            },
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 300,
+              "naturalHeight": 400,
+              "complete": true,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": "300",
+              "heightAttr": "400",
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 932.65625,
+                "width": 96,
+                "height": 128,
+                "top": 932.65625,
+                "right": 113,
+                "bottom": 1060.65625,
+                "left": 17
+              }
+            },
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 300,
+              "naturalHeight": 400,
+              "complete": true,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": "300",
+              "heightAttr": "400",
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 1147.046875,
+                "width": 96,
+                "height": 128,
+                "top": 1147.046875,
+                "right": 113,
+                "bottom": 1275.046875,
+                "left": 17
+              }
+            }
+          ],
+          "styles": [
+            {
+              "path": "/_astro/Layout.C7FjRNXa.css",
+              "loaded": true
+            },
+            {
+              "path": "/_astro/GameList.CxtlCx3h.css",
+              "loaded": true
+            }
+          ]
+        },
+        {
+          "name": "DOMContentLoaded",
+          "at": 4632.100000023842,
+          "bodyMargin": "0px",
+          "fonts": "loaded",
+          "view": "list",
+          "initialized": "true",
+          "countText": "找到 327 款遊戲",
+          "body": {
+            "x": 0,
+            "y": 0,
+            "width": 390,
+            "height": 5289.421875,
+            "top": 0,
+            "right": 390,
+            "bottom": 5289.421875,
+            "left": 0
+          },
+          "grid": {
+            "x": 16,
+            "y": 583.875,
+            "width": 358,
+            "height": 4395.546875,
+            "top": 583.875,
+            "right": 374,
+            "bottom": 4979.421875,
+            "left": 16
+          },
+          "images": [
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 300,
+              "naturalHeight": 400,
+              "complete": true,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": "300",
+              "heightAttr": "400",
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 584.875,
+                "width": 96,
+                "height": 128,
+                "top": 584.875,
+                "right": 113,
+                "bottom": 712.875,
+                "left": 17
+              }
+            },
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 300,
+              "naturalHeight": 400,
+              "complete": true,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": "300",
+              "heightAttr": "400",
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 773.265625,
+                "width": 96,
+                "height": 128,
+                "top": 773.265625,
+                "right": 113,
+                "bottom": 901.265625,
+                "left": 17
+              }
+            },
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 300,
+              "naturalHeight": 400,
+              "complete": true,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": "300",
+              "heightAttr": "400",
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 932.65625,
+                "width": 96,
+                "height": 128,
+                "top": 932.65625,
+                "right": 113,
+                "bottom": 1060.65625,
+                "left": 17
+              }
+            },
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 300,
+              "naturalHeight": 400,
+              "complete": true,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": "300",
+              "heightAttr": "400",
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 1147.046875,
+                "width": 96,
+                "height": 128,
+                "top": 1147.046875,
+                "right": 113,
+                "bottom": 1275.046875,
+                "left": 17
+              }
+            }
+          ],
+          "styles": [
+            {
+              "path": "/_astro/Layout.C7FjRNXa.css",
+              "loaded": true
+            },
+            {
+              "path": "/_astro/GameList.CxtlCx3h.css",
+              "loaded": true
+            }
+          ]
+        },
+        {
+          "name": "load",
+          "at": 4636.699999988079,
+          "bodyMargin": "0px",
+          "fonts": "loaded",
+          "view": "list",
+          "initialized": "true",
+          "countText": "找到 327 款遊戲",
+          "body": {
+            "x": 0,
+            "y": 0,
+            "width": 390,
+            "height": 5289.421875,
+            "top": 0,
+            "right": 390,
+            "bottom": 5289.421875,
+            "left": 0
+          },
+          "grid": {
+            "x": 16,
+            "y": 583.875,
+            "width": 358,
+            "height": 4395.546875,
+            "top": 583.875,
+            "right": 374,
+            "bottom": 4979.421875,
+            "left": 16
+          },
+          "images": [
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 300,
+              "naturalHeight": 400,
+              "complete": true,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": "300",
+              "heightAttr": "400",
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 584.875,
+                "width": 96,
+                "height": 128,
+                "top": 584.875,
+                "right": 113,
+                "bottom": 712.875,
+                "left": 17
+              }
+            },
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 300,
+              "naturalHeight": 400,
+              "complete": true,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": "300",
+              "heightAttr": "400",
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 773.265625,
+                "width": 96,
+                "height": 128,
+                "top": 773.265625,
+                "right": 113,
+                "bottom": 901.265625,
+                "left": 17
+              }
+            },
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 300,
+              "naturalHeight": 400,
+              "complete": true,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": "300",
+              "heightAttr": "400",
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 932.65625,
+                "width": 96,
+                "height": 128,
+                "top": 932.65625,
+                "right": 113,
+                "bottom": 1060.65625,
+                "left": 17
+              }
+            },
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 300,
+              "naturalHeight": 400,
+              "complete": true,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": "300",
+              "heightAttr": "400",
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 1147.046875,
+                "width": 96,
+                "height": 128,
+                "top": 1147.046875,
+                "right": 113,
+                "bottom": 1275.046875,
+                "left": 17
+              }
+            }
+          ],
+          "styles": [
+            {
+              "path": "/_astro/Layout.C7FjRNXa.css",
+              "loaded": true
+            },
+            {
+              "path": "/_astro/GameList.CxtlCx3h.css",
+              "loaded": true
+            }
+          ]
+        }
+      ],
+      "frames": [
+        {
+          "at": 568.4000000357628,
+          "bodyMargin": "0px",
+          "fonts": "loaded",
+          "view": "list",
+          "initialized": null,
+          "countText": "找到 327 款遊戲",
+          "body": {
+            "x": 0,
+            "y": 0,
+            "width": 390,
+            "height": 844,
+            "top": 0,
+            "right": 390,
+            "bottom": 844,
+            "left": 0
+          },
+          "images": [],
+          "styles": [
+            {
+              "path": "/_astro/Layout.C7FjRNXa.css",
+              "loaded": true
+            },
+            {
+              "path": "/_astro/GameList.CxtlCx3h.css",
+              "loaded": true
+            }
+          ]
+        },
+        {
+          "at": 4638.900000035763,
+          "bodyMargin": "0px",
+          "fonts": "loaded",
+          "view": "list",
+          "initialized": "true",
+          "countText": "找到 327 款遊戲",
+          "body": {
+            "x": 0,
+            "y": 0,
+            "width": 390,
+            "height": 5289.421875,
+            "top": 0,
+            "right": 390,
+            "bottom": 5289.421875,
+            "left": 0
+          },
+          "grid": {
+            "x": 16,
+            "y": 583.875,
+            "width": 358,
+            "height": 4395.546875,
+            "top": 583.875,
+            "right": 374,
+            "bottom": 4979.421875,
+            "left": 16
+          },
+          "images": [
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 300,
+              "naturalHeight": 400,
+              "complete": true,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": "300",
+              "heightAttr": "400",
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 584.875,
+                "width": 96,
+                "height": 128,
+                "top": 584.875,
+                "right": 113,
+                "bottom": 712.875,
+                "left": 17
+              }
+            },
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 300,
+              "naturalHeight": 400,
+              "complete": true,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": "300",
+              "heightAttr": "400",
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 773.265625,
+                "width": 96,
+                "height": 128,
+                "top": 773.265625,
+                "right": 113,
+                "bottom": 901.265625,
+                "left": 17
+              }
+            },
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 300,
+              "naturalHeight": 400,
+              "complete": true,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": "300",
+              "heightAttr": "400",
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 932.65625,
+                "width": 96,
+                "height": 128,
+                "top": 932.65625,
+                "right": 113,
+                "bottom": 1060.65625,
+                "left": 17
+              }
+            },
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 300,
+              "naturalHeight": 400,
+              "complete": true,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": "300",
+              "heightAttr": "400",
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 1147.046875,
+                "width": 96,
+                "height": 128,
+                "top": 1147.046875,
+                "right": 113,
+                "bottom": 1275.046875,
+                "left": 17
+              }
+            }
+          ],
+          "styles": [
+            {
+              "path": "/_astro/Layout.C7FjRNXa.css",
+              "loaded": true
+            },
+            {
+              "path": "/_astro/GameList.CxtlCx3h.css",
+              "loaded": true
+            }
+          ]
+        }
+      ],
+      "final": {
+        "at": 4638.900000035763,
+        "bodyMargin": "0px",
+        "fonts": "loaded",
+        "view": "list",
+        "initialized": "true",
+        "countText": "找到 327 款遊戲",
+        "body": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 5289.421875,
+          "top": 0,
+          "right": 390,
+          "bottom": 5289.421875,
+          "left": 0
+        },
+        "grid": {
+          "x": 16,
+          "y": 583.875,
+          "width": 358,
+          "height": 4395.546875,
+          "top": 583.875,
+          "right": 374,
+          "bottom": 4979.421875,
+          "left": 16
+        },
+        "images": [
+          {
+            "width": 96,
+            "height": 128,
+            "naturalWidth": 300,
+            "naturalHeight": 400,
+            "complete": true,
+            "loading": "eager",
+            "decoding": "async",
+            "widthAttr": "300",
+            "heightAttr": "400",
+            "aspectRatio": "3 / 4",
+            "rect": {
+              "x": 17,
+              "y": 584.875,
+              "width": 96,
+              "height": 128,
+              "top": 584.875,
+              "right": 113,
+              "bottom": 712.875,
+              "left": 17
+            }
+          },
+          {
+            "width": 96,
+            "height": 128,
+            "naturalWidth": 300,
+            "naturalHeight": 400,
+            "complete": true,
+            "loading": "eager",
+            "decoding": "async",
+            "widthAttr": "300",
+            "heightAttr": "400",
+            "aspectRatio": "3 / 4",
+            "rect": {
+              "x": 17,
+              "y": 773.265625,
+              "width": 96,
+              "height": 128,
+              "top": 773.265625,
+              "right": 113,
+              "bottom": 901.265625,
+              "left": 17
+            }
+          },
+          {
+            "width": 96,
+            "height": 128,
+            "naturalWidth": 300,
+            "naturalHeight": 400,
+            "complete": true,
+            "loading": "eager",
+            "decoding": "async",
+            "widthAttr": "300",
+            "heightAttr": "400",
+            "aspectRatio": "3 / 4",
+            "rect": {
+              "x": 17,
+              "y": 932.65625,
+              "width": 96,
+              "height": 128,
+              "top": 932.65625,
+              "right": 113,
+              "bottom": 1060.65625,
+              "left": 17
+            }
+          },
+          {
+            "width": 96,
+            "height": 128,
+            "naturalWidth": 300,
+            "naturalHeight": 400,
+            "complete": true,
+            "loading": "eager",
+            "decoding": "async",
+            "widthAttr": "300",
+            "heightAttr": "400",
+            "aspectRatio": "3 / 4",
+            "rect": {
+              "x": 17,
+              "y": 1147.046875,
+              "width": 96,
+              "height": 128,
+              "top": 1147.046875,
+              "right": 113,
+              "bottom": 1275.046875,
+              "left": 17
+            }
+          }
+        ],
+        "styles": [
+          {
+            "path": "/_astro/Layout.C7FjRNXa.css",
+            "loaded": true
+          },
+          {
+            "path": "/_astro/GameList.CxtlCx3h.css",
+            "loaded": true
+          }
+        ]
+      },
+      "dcl": 4632.5,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "dpr": 1,
+      "resources": [
+        {
+          "path": "/_astro/Layout.C7FjRNXa.css",
+          "type": "link",
+          "start": 222.30000001192093,
+          "end": 566.1999999880791,
+          "bytes": 9079
+        },
+        {
+          "path": "/_astro/GameList.CxtlCx3h.css",
+          "type": "link",
+          "start": 222.5,
+          "end": 566.4000000357628,
+          "bytes": 9113
+        },
+        {
+          "path": "/_astro/page.BT6biUx8.js",
+          "type": "script",
+          "start": 222.69999998807907,
+          "end": 458.69999998807907,
+          "bytes": 2786
+        },
+        {
+          "path": "/_astro/GameList.astro_astro_type_script_index_0_lang.DFe-UDAR.js",
+          "type": "script",
+          "start": 4136.5,
+          "end": 4322,
+          "bytes": 529
+        },
+        {
+          "path": "/_astro/game-list-controller.lnGOJenI.js",
+          "type": "script",
+          "start": 4323.800000011921,
+          "end": 4614.5,
+          "bytes": 22115
+        }
+      ],
+      "fontFaces": [],
+      "cardIds": [
+        "BGG:175867",
+        "BGG:383053",
+        "BGG:373167",
+        "BGG:224119",
+        "BGG:451166",
+        "BGG:308238",
+        "BGG:366449",
+        "BGG:377796",
+        "BGG:295770",
+        "BGG:177572",
+        "BGG:163930",
+        "BGG:242705",
+        "BGG:330950",
+        "BGG:270871",
+        "BGG:359402",
+        "BGG:458896",
+        "BGG:380681",
+        "BGG:359871",
+        "BGG:207753",
+        "BGG:342942",
+        "BGG:205637",
+        "BGG:463126",
+        "BGG:359609",
+        "BGG:167400"
+      ],
+      "imageSummary": {
+        "total": 24,
+        "loaded": 9,
+        "pending": 15,
+        "failed": 0
+      },
+      "initialView": "list",
+      "overflow": false,
+      "ssrIds": [
+        "BGG:175867",
+        "BGG:383053",
+        "BGG:373167",
+        "BGG:224119",
+        "BGG:451166",
+        "BGG:308238",
+        "BGG:366449",
+        "BGG:377796",
+        "BGG:295770",
+        "BGG:177572",
+        "BGG:163930",
+        "BGG:242705",
+        "BGG:330950",
+        "BGG:270871",
+        "BGG:359402",
+        "BGG:458896",
+        "BGG:380681",
+        "BGG:359871",
+        "BGG:207753",
+        "BGG:342942",
+        "BGG:205637",
+        "BGG:463126",
+        "BGG:359609",
+        "BGG:167400"
+      ],
+      "sameSsrOrder": true,
+      "errors": [],
+      "sample": 1,
+      "phase": "after-list"
+    },
+    {
+      "cls": 0,
+      "shiftTotal": 0,
+      "lcp": 3660,
+      "shifts": [],
+      "events": [
+        {
+          "name": "fonts.ready",
+          "at": 267.30000001192093,
+          "bodyMargin": null,
+          "fonts": "loaded",
+          "images": [],
+          "styles": []
+        },
+        {
+          "name": "controller/count mutation",
+          "at": 271.19999998807907,
+          "bodyMargin": "8px",
+          "fonts": "loaded",
+          "view": "list",
+          "initialized": null,
+          "countText": "找到 327 款遊戲",
+          "body": {
+            "x": 8,
+            "y": 8,
+            "width": 374,
+            "height": 412.875,
+            "top": 8,
+            "right": 382,
+            "bottom": 420.875,
+            "left": 8
+          },
+          "images": [],
+          "styles": [
+            {
+              "path": "/_astro/Layout.C7FjRNXa.css",
+              "loaded": false
+            },
+            {
+              "path": "/_astro/GameList.CxtlCx3h.css",
+              "loaded": false
+            }
+          ]
+        },
+        {
+          "name": "controller/count mutation",
+          "at": 3616.800000011921,
+          "bodyMargin": "0px",
+          "fonts": "loaded",
+          "view": "list",
+          "initialized": null,
+          "countText": "找到 327 款遊戲",
+          "body": {
+            "x": 0,
+            "y": 0,
+            "width": 390,
+            "height": 844,
+            "top": 0,
+            "right": 390,
+            "bottom": 844,
+            "left": 0
+          },
+          "grid": {
+            "x": 16,
+            "y": 583.875,
+            "width": 358,
+            "height": 130,
+            "top": 583.875,
+            "right": 374,
+            "bottom": 713.875,
+            "left": 16
+          },
+          "images": [
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 0,
+              "naturalHeight": 0,
+              "complete": false,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": null,
+              "heightAttr": null,
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 584.875,
+                "width": 96,
+                "height": 128,
+                "top": 584.875,
+                "right": 113,
+                "bottom": 712.875,
+                "left": 17
+              }
+            }
+          ],
+          "styles": [
+            {
+              "path": "/_astro/Layout.C7FjRNXa.css",
+              "loaded": true
+            },
+            {
+              "path": "/_astro/GameList.CxtlCx3h.css",
+              "loaded": true
+            }
+          ]
+        },
+        {
+          "name": "controller/count mutation",
+          "at": 3849.100000023842,
+          "bodyMargin": "0px",
+          "fonts": "loaded",
+          "view": "list",
+          "initialized": null,
+          "countText": "找到 327 款遊戲",
+          "body": {
+            "x": 0,
+            "y": 0,
+            "width": 390,
+            "height": 5145.421875,
+            "top": 0,
+            "right": 390,
+            "bottom": 5145.421875,
+            "left": 0
+          },
+          "grid": {
+            "x": 16,
+            "y": 583.875,
+            "width": 358,
+            "height": 4395.546875,
+            "top": 583.875,
+            "right": 374,
+            "bottom": 4979.421875,
+            "left": 16
+          },
+          "images": [
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 300,
+              "naturalHeight": 400,
+              "complete": true,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": null,
+              "heightAttr": null,
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 584.875,
+                "width": 96,
+                "height": 128,
+                "top": 584.875,
+                "right": 113,
+                "bottom": 712.875,
+                "left": 17
+              }
+            },
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 300,
+              "naturalHeight": 400,
+              "complete": true,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": null,
+              "heightAttr": null,
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 773.265625,
+                "width": 96,
+                "height": 128,
+                "top": 773.265625,
+                "right": 113,
+                "bottom": 901.265625,
+                "left": 17
+              }
+            },
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 300,
+              "naturalHeight": 400,
+              "complete": true,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": null,
+              "heightAttr": null,
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 932.65625,
+                "width": 96,
+                "height": 128,
+                "top": 932.65625,
+                "right": 113,
+                "bottom": 1060.65625,
+                "left": 17
+              }
+            },
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 300,
+              "naturalHeight": 400,
+              "complete": true,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": null,
+              "heightAttr": null,
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 1147.046875,
+                "width": 96,
+                "height": 128,
+                "top": 1147.046875,
+                "right": 113,
+                "bottom": 1275.046875,
+                "left": 17
+              }
+            }
+          ],
+          "styles": [
+            {
+              "path": "/_astro/Layout.C7FjRNXa.css",
+              "loaded": true
+            },
+            {
+              "path": "/_astro/GameList.CxtlCx3h.css",
+              "loaded": true
+            }
+          ]
+        },
+        {
+          "name": "controller/count mutation",
+          "at": 4651,
+          "bodyMargin": "0px",
+          "fonts": "loaded",
+          "view": "list",
+          "initialized": "true",
+          "countText": "找到 327 款遊戲",
+          "body": {
+            "x": 0,
+            "y": 0,
+            "width": 390,
+            "height": 5289.421875,
+            "top": 0,
+            "right": 390,
+            "bottom": 5289.421875,
+            "left": 0
+          },
+          "grid": {
+            "x": 16,
+            "y": 583.875,
+            "width": 358,
+            "height": 4395.546875,
+            "top": 583.875,
+            "right": 374,
+            "bottom": 4979.421875,
+            "left": 16
+          },
+          "images": [
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 300,
+              "naturalHeight": 400,
+              "complete": true,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": "300",
+              "heightAttr": "400",
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 584.875,
+                "width": 96,
+                "height": 128,
+                "top": 584.875,
+                "right": 113,
+                "bottom": 712.875,
+                "left": 17
+              }
+            },
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 300,
+              "naturalHeight": 400,
+              "complete": true,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": "300",
+              "heightAttr": "400",
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 773.265625,
+                "width": 96,
+                "height": 128,
+                "top": 773.265625,
+                "right": 113,
+                "bottom": 901.265625,
+                "left": 17
+              }
+            },
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 300,
+              "naturalHeight": 400,
+              "complete": true,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": "300",
+              "heightAttr": "400",
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 932.65625,
+                "width": 96,
+                "height": 128,
+                "top": 932.65625,
+                "right": 113,
+                "bottom": 1060.65625,
+                "left": 17
+              }
+            },
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 300,
+              "naturalHeight": 400,
+              "complete": true,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": "300",
+              "heightAttr": "400",
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 1147.046875,
+                "width": 96,
+                "height": 128,
+                "top": 1147.046875,
+                "right": 113,
+                "bottom": 1275.046875,
+                "left": 17
+              }
+            }
+          ],
+          "styles": [
+            {
+              "path": "/_astro/Layout.C7FjRNXa.css",
+              "loaded": true
+            },
+            {
+              "path": "/_astro/GameList.CxtlCx3h.css",
+              "loaded": true
+            }
+          ]
+        },
+        {
+          "name": "DOMContentLoaded",
+          "at": 4654.199999988079,
+          "bodyMargin": "0px",
+          "fonts": "loaded",
+          "view": "list",
+          "initialized": "true",
+          "countText": "找到 327 款遊戲",
+          "body": {
+            "x": 0,
+            "y": 0,
+            "width": 390,
+            "height": 5289.421875,
+            "top": 0,
+            "right": 390,
+            "bottom": 5289.421875,
+            "left": 0
+          },
+          "grid": {
+            "x": 16,
+            "y": 583.875,
+            "width": 358,
+            "height": 4395.546875,
+            "top": 583.875,
+            "right": 374,
+            "bottom": 4979.421875,
+            "left": 16
+          },
+          "images": [
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 300,
+              "naturalHeight": 400,
+              "complete": true,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": "300",
+              "heightAttr": "400",
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 584.875,
+                "width": 96,
+                "height": 128,
+                "top": 584.875,
+                "right": 113,
+                "bottom": 712.875,
+                "left": 17
+              }
+            },
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 300,
+              "naturalHeight": 400,
+              "complete": true,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": "300",
+              "heightAttr": "400",
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 773.265625,
+                "width": 96,
+                "height": 128,
+                "top": 773.265625,
+                "right": 113,
+                "bottom": 901.265625,
+                "left": 17
+              }
+            },
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 300,
+              "naturalHeight": 400,
+              "complete": true,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": "300",
+              "heightAttr": "400",
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 932.65625,
+                "width": 96,
+                "height": 128,
+                "top": 932.65625,
+                "right": 113,
+                "bottom": 1060.65625,
+                "left": 17
+              }
+            },
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 300,
+              "naturalHeight": 400,
+              "complete": true,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": "300",
+              "heightAttr": "400",
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 1147.046875,
+                "width": 96,
+                "height": 128,
+                "top": 1147.046875,
+                "right": 113,
+                "bottom": 1275.046875,
+                "left": 17
+              }
+            }
+          ],
+          "styles": [
+            {
+              "path": "/_astro/Layout.C7FjRNXa.css",
+              "loaded": true
+            },
+            {
+              "path": "/_astro/GameList.CxtlCx3h.css",
+              "loaded": true
+            }
+          ]
+        },
+        {
+          "name": "load",
+          "at": 4659.5,
+          "bodyMargin": "0px",
+          "fonts": "loaded",
+          "view": "list",
+          "initialized": "true",
+          "countText": "找到 327 款遊戲",
+          "body": {
+            "x": 0,
+            "y": 0,
+            "width": 390,
+            "height": 5289.421875,
+            "top": 0,
+            "right": 390,
+            "bottom": 5289.421875,
+            "left": 0
+          },
+          "grid": {
+            "x": 16,
+            "y": 583.875,
+            "width": 358,
+            "height": 4395.546875,
+            "top": 583.875,
+            "right": 374,
+            "bottom": 4979.421875,
+            "left": 16
+          },
+          "images": [
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 300,
+              "naturalHeight": 400,
+              "complete": true,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": "300",
+              "heightAttr": "400",
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 584.875,
+                "width": 96,
+                "height": 128,
+                "top": 584.875,
+                "right": 113,
+                "bottom": 712.875,
+                "left": 17
+              }
+            },
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 300,
+              "naturalHeight": 400,
+              "complete": true,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": "300",
+              "heightAttr": "400",
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 773.265625,
+                "width": 96,
+                "height": 128,
+                "top": 773.265625,
+                "right": 113,
+                "bottom": 901.265625,
+                "left": 17
+              }
+            },
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 300,
+              "naturalHeight": 400,
+              "complete": true,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": "300",
+              "heightAttr": "400",
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 932.65625,
+                "width": 96,
+                "height": 128,
+                "top": 932.65625,
+                "right": 113,
+                "bottom": 1060.65625,
+                "left": 17
+              }
+            },
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 300,
+              "naturalHeight": 400,
+              "complete": true,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": "300",
+              "heightAttr": "400",
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 1147.046875,
+                "width": 96,
+                "height": 128,
+                "top": 1147.046875,
+                "right": 113,
+                "bottom": 1275.046875,
+                "left": 17
+              }
+            }
+          ],
+          "styles": [
+            {
+              "path": "/_astro/Layout.C7FjRNXa.css",
+              "loaded": true
+            },
+            {
+              "path": "/_astro/GameList.CxtlCx3h.css",
+              "loaded": true
+            }
+          ]
+        }
+      ],
+      "frames": [
+        {
+          "at": 630.6999999880791,
+          "bodyMargin": "0px",
+          "fonts": "loaded",
+          "view": "list",
+          "initialized": null,
+          "countText": "找到 327 款遊戲",
+          "body": {
+            "x": 0,
+            "y": 0,
+            "width": 390,
+            "height": 844,
+            "top": 0,
+            "right": 390,
+            "bottom": 844,
+            "left": 0
+          },
+          "images": [],
+          "styles": [
+            {
+              "path": "/_astro/Layout.C7FjRNXa.css",
+              "loaded": true
+            },
+            {
+              "path": "/_astro/GameList.CxtlCx3h.css",
+              "loaded": true
+            }
+          ]
+        },
+        {
+          "at": 4661,
+          "bodyMargin": "0px",
+          "fonts": "loaded",
+          "view": "list",
+          "initialized": "true",
+          "countText": "找到 327 款遊戲",
+          "body": {
+            "x": 0,
+            "y": 0,
+            "width": 390,
+            "height": 5289.421875,
+            "top": 0,
+            "right": 390,
+            "bottom": 5289.421875,
+            "left": 0
+          },
+          "grid": {
+            "x": 16,
+            "y": 583.875,
+            "width": 358,
+            "height": 4395.546875,
+            "top": 583.875,
+            "right": 374,
+            "bottom": 4979.421875,
+            "left": 16
+          },
+          "images": [
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 300,
+              "naturalHeight": 400,
+              "complete": true,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": "300",
+              "heightAttr": "400",
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 584.875,
+                "width": 96,
+                "height": 128,
+                "top": 584.875,
+                "right": 113,
+                "bottom": 712.875,
+                "left": 17
+              }
+            },
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 300,
+              "naturalHeight": 400,
+              "complete": true,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": "300",
+              "heightAttr": "400",
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 773.265625,
+                "width": 96,
+                "height": 128,
+                "top": 773.265625,
+                "right": 113,
+                "bottom": 901.265625,
+                "left": 17
+              }
+            },
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 300,
+              "naturalHeight": 400,
+              "complete": true,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": "300",
+              "heightAttr": "400",
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 932.65625,
+                "width": 96,
+                "height": 128,
+                "top": 932.65625,
+                "right": 113,
+                "bottom": 1060.65625,
+                "left": 17
+              }
+            },
+            {
+              "width": 96,
+              "height": 128,
+              "naturalWidth": 300,
+              "naturalHeight": 400,
+              "complete": true,
+              "loading": "eager",
+              "decoding": "async",
+              "widthAttr": "300",
+              "heightAttr": "400",
+              "aspectRatio": "3 / 4",
+              "rect": {
+                "x": 17,
+                "y": 1147.046875,
+                "width": 96,
+                "height": 128,
+                "top": 1147.046875,
+                "right": 113,
+                "bottom": 1275.046875,
+                "left": 17
+              }
+            }
+          ],
+          "styles": [
+            {
+              "path": "/_astro/Layout.C7FjRNXa.css",
+              "loaded": true
+            },
+            {
+              "path": "/_astro/GameList.CxtlCx3h.css",
+              "loaded": true
+            }
+          ]
+        }
+      ],
+      "final": {
+        "at": 4661,
+        "bodyMargin": "0px",
+        "fonts": "loaded",
+        "view": "list",
+        "initialized": "true",
+        "countText": "找到 327 款遊戲",
+        "body": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 5289.421875,
+          "top": 0,
+          "right": 390,
+          "bottom": 5289.421875,
+          "left": 0
+        },
+        "grid": {
+          "x": 16,
+          "y": 583.875,
+          "width": 358,
+          "height": 4395.546875,
+          "top": 583.875,
+          "right": 374,
+          "bottom": 4979.421875,
+          "left": 16
+        },
+        "images": [
+          {
+            "width": 96,
+            "height": 128,
+            "naturalWidth": 300,
+            "naturalHeight": 400,
+            "complete": true,
+            "loading": "eager",
+            "decoding": "async",
+            "widthAttr": "300",
+            "heightAttr": "400",
+            "aspectRatio": "3 / 4",
+            "rect": {
+              "x": 17,
+              "y": 584.875,
+              "width": 96,
+              "height": 128,
+              "top": 584.875,
+              "right": 113,
+              "bottom": 712.875,
+              "left": 17
+            }
+          },
+          {
+            "width": 96,
+            "height": 128,
+            "naturalWidth": 300,
+            "naturalHeight": 400,
+            "complete": true,
+            "loading": "eager",
+            "decoding": "async",
+            "widthAttr": "300",
+            "heightAttr": "400",
+            "aspectRatio": "3 / 4",
+            "rect": {
+              "x": 17,
+              "y": 773.265625,
+              "width": 96,
+              "height": 128,
+              "top": 773.265625,
+              "right": 113,
+              "bottom": 901.265625,
+              "left": 17
+            }
+          },
+          {
+            "width": 96,
+            "height": 128,
+            "naturalWidth": 300,
+            "naturalHeight": 400,
+            "complete": true,
+            "loading": "eager",
+            "decoding": "async",
+            "widthAttr": "300",
+            "heightAttr": "400",
+            "aspectRatio": "3 / 4",
+            "rect": {
+              "x": 17,
+              "y": 932.65625,
+              "width": 96,
+              "height": 128,
+              "top": 932.65625,
+              "right": 113,
+              "bottom": 1060.65625,
+              "left": 17
+            }
+          },
+          {
+            "width": 96,
+            "height": 128,
+            "naturalWidth": 300,
+            "naturalHeight": 400,
+            "complete": true,
+            "loading": "eager",
+            "decoding": "async",
+            "widthAttr": "300",
+            "heightAttr": "400",
+            "aspectRatio": "3 / 4",
+            "rect": {
+              "x": 17,
+              "y": 1147.046875,
+              "width": 96,
+              "height": 128,
+              "top": 1147.046875,
+              "right": 113,
+              "bottom": 1275.046875,
+              "left": 17
+            }
+          }
+        ],
+        "styles": [
+          {
+            "path": "/_astro/Layout.C7FjRNXa.css",
+            "loaded": true
+          },
+          {
+            "path": "/_astro/GameList.CxtlCx3h.css",
+            "loaded": true
+          }
+        ]
+      },
+      "dcl": 4654.5,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "dpr": 1,
+      "resources": [
+        {
+          "path": "/_astro/Layout.C7FjRNXa.css",
+          "type": "link",
+          "start": 260.39999997615814,
+          "end": 613.6000000238419,
+          "bytes": 9079
+        },
+        {
+          "path": "/_astro/GameList.CxtlCx3h.css",
+          "type": "link",
+          "start": 260.80000001192093,
+          "end": 629.3999999761581,
+          "bytes": 9113
+        },
+        {
+          "path": "/_astro/page.BT6biUx8.js",
+          "type": "script",
+          "start": 260.89999997615814,
+          "end": 521.5,
+          "bytes": 2786
+        },
+        {
+          "path": "/_astro/GameList.astro_astro_type_script_index_0_lang.DFe-UDAR.js",
+          "type": "script",
+          "start": 4159,
+          "end": 4344.5,
+          "bytes": 529
+        },
+        {
+          "path": "/_astro/game-list-controller.lnGOJenI.js",
+          "type": "script",
+          "start": 4346.800000011921,
+          "end": 4638.800000011921,
+          "bytes": 22115
+        }
+      ],
+      "fontFaces": [],
+      "cardIds": [
+        "BGG:175867",
+        "BGG:383053",
+        "BGG:373167",
+        "BGG:224119",
+        "BGG:451166",
+        "BGG:308238",
+        "BGG:366449",
+        "BGG:377796",
+        "BGG:295770",
+        "BGG:177572",
+        "BGG:163930",
+        "BGG:242705",
+        "BGG:330950",
+        "BGG:270871",
+        "BGG:359402",
+        "BGG:458896",
+        "BGG:380681",
+        "BGG:359871",
+        "BGG:207753",
+        "BGG:342942",
+        "BGG:205637",
+        "BGG:463126",
+        "BGG:359609",
+        "BGG:167400"
+      ],
+      "imageSummary": {
+        "total": 24,
+        "loaded": 9,
+        "pending": 15,
+        "failed": 0
+      },
+      "initialView": "list",
+      "overflow": false,
+      "ssrIds": [
+        "BGG:175867",
+        "BGG:383053",
+        "BGG:373167",
+        "BGG:224119",
+        "BGG:451166",
+        "BGG:308238",
+        "BGG:366449",
+        "BGG:377796",
+        "BGG:295770",
+        "BGG:177572",
+        "BGG:163930",
+        "BGG:242705",
+        "BGG:330950",
+        "BGG:270871",
+        "BGG:359402",
+        "BGG:458896",
+        "BGG:380681",
+        "BGG:359871",
+        "BGG:207753",
+        "BGG:342942",
+        "BGG:205637",
+        "BGG:463126",
+        "BGG:359609",
+        "BGG:167400"
+      ],
+      "sameSsrOrder": true,
+      "errors": [],
+      "sample": 2,
+      "phase": "after-list"
+    }
+  ]
+}

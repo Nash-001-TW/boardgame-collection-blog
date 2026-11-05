@@ -26,11 +26,11 @@ const games =
                 <article>
 
                     {
-                        game.bgg.image && (
+                        game.bgg?.image && (
 
                             <img
                                 src={game.bgg.image}
-                                alt={game.bgg.name}
+                                alt={game.name}
                                 width="200"
                             />
 
@@ -39,7 +39,7 @@ const games =
 
 
                     <h2>
-                        {game.bgg.name}
+                        {game.name}
                     </h2>
 
 
@@ -51,15 +51,15 @@ const games =
 
                     <p>
                         年份：
-                        {game.bgg.year}
+                        {game.bgg?.year ?? "未提供"}
                     </p>
 
 
                     <p>
                         BGG Rating：
                         {
-                            game.bgg.averageRating
-                                ?.toFixed(2)
+                            game.bgg?.averageRating
+                                ?.toFixed(2) ?? "未提供"
                         }
                     </p>
 
@@ -67,28 +67,11 @@ const games =
                     <p>
                         BGG Rank：
                         {
-                            game.bgg.overallRank
+                            game.bgg?.overallRank
                             ?? "未排名"
                         }
                     </p>
 
-
-                    <p>
-                        我的評分：
-                        {
-                            game.collection.myRating
-                            ?? "未評分"
-                        }
-                    </p>
-
-
-                    <p>
-                        購入價格：
-                        {
-                            game.collection.purchasePrice
-                            ?? "未記錄"
-                        }
-                    </p>
 
                 </article>
 

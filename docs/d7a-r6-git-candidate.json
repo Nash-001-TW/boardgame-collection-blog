@@ -1,0 +1,2368 @@
+{
+  "phase": "D-7A-R6",
+  "baselinePaths": 224,
+  "missing": [],
+  "changedSinceR5": [],
+  "rows": [
+    {
+      "path": ".bgg-b2-test-1JZTMi/cache.json",
+      "group": "EX",
+      "disposition": "EXCLUDE (prior principle approved)",
+      "sha256": "cf22bbd517175870e58bd30bd5f11a311d272a854909949107987f51549d50a0",
+      "changedSinceR5": false
+    },
+    {
+      "path": ".bgg-b2-test-FSA5Oi/cache.json",
+      "group": "EX",
+      "disposition": "EXCLUDE (prior principle approved)",
+      "sha256": "cf22bbd517175870e58bd30bd5f11a311d272a854909949107987f51549d50a0",
+      "changedSinceR5": false
+    },
+    {
+      "path": "astro.config.mjs",
+      "group": "05",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "e21ef3a75c88ad81b483af8295bf74b3e4c3ad8e22ed8f408dc0d5406738c6c6",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/D1_V1_1_MIGRATION.md",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "4847ec75b006bed926e849509ffd40a63aebac8288a59632790e7ef4ef2ee522",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/D1_V1_1_REQUIREMENTS.md",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "dd3262efa34d0c0e051235e5cb76438dc37c2298b9500f35c072c659be8002b5",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/D1_V1_1_SCHEMA.md",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "a569ec5a487bbae2d60b47a957bb6755169ab512944490bd2848df92484e167b",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/D1_V1_1_TASKS.md",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "e119751c4eba6557379ed63893d3d624dceea65608c27b5ee9f5392e69c1e5ff",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/bgg-cache-replacement-b43f.md",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "9ca22a7e54771fbe2c263d3fc80833478c78e27141be4c41a16ed57e76ae1c98",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/bgg-relations-import.md",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "c69d07e5ce08e1cfdfa67dc8d53056b22b1055916905baab59460b7be3f0f7ff",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/d7a-local-evidence.json",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "dc48e4398dc4110a9a247b62a03f07a15624781d5bf63fc101ee1ab3fafc7b3e",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/d7a-r3-cls-after-list.json",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "cfb0a13cc9ecb2f280cc29b893fec0bf94a89974c4b3250da730a5afd9fe6615",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/d7a-r3-cls-after.json",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "d4ae04d966efb9b265f804aa9a987c7fd3ca29ad60b8ed7aa84cf4200d76b0f0",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/d7a-r3-cls-baseline.json",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "851c29a32a16eb0878ca018d2960915c327401ebba3bd698c3c1cffe1c6dab9c",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/d7a-r3-invalid-instrumentation.json",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "5a36bf29be9a142c22f68652f12b56a65a118b03080c7812bdf426183dff1563",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/d7a-r3-migration-evidence.json",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "c451f36c7c394d8df31e3cb6eff70033065bdb15bd7842649b8c48256e3aac5d",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/d7a-r4-migration-evidence.json",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "c818a08c108655d3f20cf265d77cb40490d29ebf2be63e00fbfb50d838aa7963",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/d7a-r5-0003-bytes.json",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "a11b5fdee8120ce482119c4a374de5c0df47cca99aa79e9a12969e0f30c2877f",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/d7a-r5-auth-status.json",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "2b444507925f5c654ba90530d9cf0ab345bf31248c89375f3b99a630878a0e97",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/d7a-r5-browser-results.json",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "1e5e198bcbf5d7511afdc24ddf0c277d87132a861b06725fe5b746b2574af7b0",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/d7a-r5-candidate-manifest.json",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "98edc52f72d4bfa4d9fa7c55792b5abe774099d0f66da1666cdd75660bd803f3",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/d7a-r5-check-results.json",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "37065ebc5978ee5749a6b4a85eb5d065802399ab67ef686a8e5f010cab42748a",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/d7a-r5-final-verification.json",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "851d8ebf88b0f2f5dbb247953393782f66e56df89578b235222fde223a094e66",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/d7a-r5-git-inventory.json",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "9519c273bf44e4bb3ebb75f17868a55844c51a408ac2bde9da0632693a22f842",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/d7a-r5-migration-evidence.json",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "2c1ff4f864cf075877d1efde5cbc4e040a4795bc8b504ae5a008458ddf3210b0",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/d7a-r5-restore-evidence.json",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "ed25b263388e327a6c892aeb5951a3c00e81cd6b233d6c7d55c6951217ac82a0",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/d7a-r5-sensitive-audit.json",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "3c779c89772fd329bf3036c65e2ed22c1d20705d0473666cc2f9c053cadd5aa8",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/d7a-r5-smoke-matrix.json",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "f023bcd311560cde2856bff97a763bb9c946eb140c71284a9f923361aaac6c20",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/notbgg-d1-contract.md",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "66ce814e157f321a69087ffb6f82d55438a0c214aa8ff56f0fb87b0f010a243b",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/notbgg-d2-storage.md",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "4767074ea49092ca9b35a282c1f68223c2f06cc4c870045093c8e64888893db4",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/notbgg-d3-admin.md",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "fe420bda4f678dc9c30e9b66ea3e1055ac858a3ffa46efefe9fcd3e42bc5c21b",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/notbgg-d4-public.md",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "701f0e43ebc39be8e48a5a5d4776a03fa2cd2a38df498430518fa6d134e1faed",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/notbgg-d5-collection.md",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "bc90cba4fee465701be0bffc998ff2fb46bb048e5b6147c8daf107b2ef6d293a",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/notbgg-d6-identity.md",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "0b35d36439af17be573c882761516802806c42ae60266915c1618136bc361666",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/notbgg-d7a-preflight.md",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "eecf4639cd11634c451e6e376f47e5254664c5e7dd75479ffec39567e6b25ab8",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/notbgg-d7a-r3-stability.md",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "808b3c921a9f9afa411b5b6aab1144d4c906c30b5b437865f2dc05a4052f2c2c",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/notbgg-d7a-r5-release-readiness.md",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "1f7d59d78cde066ad2a0aca575e5accba097dae059cc1a72864c0ee41280ec5f",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/reference/d1_collection_status.json",
+      "group": "06",
+      "disposition": "HOLD; propose exclude + protected archive, pending approval",
+      "sha256": "80dd2dda5a98c9fe5fdf866fcbf5c71cc231608667fd17ad52f40d6654f877f0",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/reference/d1_v2_counts.json",
+      "group": "06",
+      "disposition": "HOLD; propose exclude + protected archive, pending approval",
+      "sha256": "034ac3ee5d431e9423893fe21fe7ea21a938d240ed427f9617610ec130452be9",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/reference/d1_v2_schema.json",
+      "group": "06",
+      "disposition": "HOLD; propose exclude + protected archive, pending approval",
+      "sha256": "28a215ae571d4f00730b9ce64ec08e24014223229143d607454598654938e150",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/reference/phase-c1/d1_C1D_20261027_R03_run_summary.ndjson",
+      "group": "06",
+      "disposition": "HOLD; propose exclude + protected archive, pending approval",
+      "sha256": "496bda154528a0f203b5587612c5a8f26bfe454219f2f836cdb60461e7afaf40",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/reference/phase-c1/d1_C1_acquisitions_columns.json",
+      "group": "06",
+      "disposition": "HOLD; propose exclude + protected archive, pending approval",
+      "sha256": "1e2f9c85d7f3d4f4616040f61e577e5a96c01801daabfd027a8d16574a21aadc",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/reference/phase-c1/d1_C1_acquisitions_fk.json",
+      "group": "06",
+      "disposition": "HOLD; propose exclude + protected archive, pending approval",
+      "sha256": "42873c21d96e28bf03cddeb27f6aa0ba51c3742e21fde20615c2ebf688d13090",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/reference/phase-c1/d1_C1_acquisitions_indexes.json",
+      "group": "06",
+      "disposition": "HOLD; propose exclude + protected archive, pending approval",
+      "sha256": "d6ba3270709a93bc162df3239261f28bfd2365c8b8f1a064729566bbf8100d34",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/reference/phase-c1/d1_C1_acquisitions_unique_columns.json",
+      "group": "06",
+      "disposition": "HOLD; propose exclude + protected archive, pending approval",
+      "sha256": "8d1daec8e6477002b876807f1931a174125043d81cda635c83af7b9b1440682a",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/reference/phase-c1/d1_C1_copies_columns.json",
+      "group": "06",
+      "disposition": "HOLD; propose exclude + protected archive, pending approval",
+      "sha256": "5a580030c6743844c7fdcdd55760763287934b0bf8813bfa32bb895af1ebe198",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/reference/phase-c1/d1_C1_copies_fk.json",
+      "group": "06",
+      "disposition": "HOLD; propose exclude + protected archive, pending approval",
+      "sha256": "51726fffa8da49b08f8d70d9184f8637ca1f65f755d22ef70b4c4fe661b76a43",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/reference/phase-c1/d1_C1_copies_index_columns.json",
+      "group": "06",
+      "disposition": "HOLD; propose exclude + protected archive, pending approval",
+      "sha256": "13ebb333d659a8b079a39491d450b1b8348b122cddbd5a8fe9fafd0e809bcbdb",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/reference/phase-c1/d1_C1_copies_indexes.json",
+      "group": "06",
+      "disposition": "HOLD; propose exclude + protected archive, pending approval",
+      "sha256": "6c431c4266dd304dd907c1ad590c10249e7fe8a88ad7a527d4f24e67475e4890",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/reference/phase-c1/d1_C1_fk_check.json",
+      "group": "06",
+      "disposition": "HOLD; propose exclude + protected archive, pending approval",
+      "sha256": "ee8a42970f1f6a1e544db6598dccb1096d1f0067d116eb82102c2ae948ad7a74",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/reference/phase-c1/d1_C1_master.json",
+      "group": "06",
+      "disposition": "HOLD; propose exclude + protected archive, pending approval",
+      "sha256": "162b089310ac7a0390d94a6622bf6172689f224def6075900352d821468b9135",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/reference/phase-c1/d1_C1_migrations.json",
+      "group": "06",
+      "disposition": "HOLD; propose exclude + protected archive, pending approval",
+      "sha256": "1f666b039c21777064d168d37ec24bd6b9e3468bb2938f67e23268ce007411a6",
+      "changedSinceR5": false
+    },
+    {
+      "path": "docs/reference/phase-c1/d1_C1_quick_check.json",
+      "group": "06",
+      "disposition": "HOLD; propose exclude + protected archive, pending approval",
+      "sha256": "cf0b23af27769a60db7dec7a6cd629a11183d82217915a446a40491fbf8a0b96",
+      "changedSinceR5": false
+    },
+    {
+      "path": "migrations/0003_sleeve_size_validation.sql",
+      "group": "04",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "211ed3bb90dc24e5be0e39dc6b7b6662967b3b9863099f582ab020835b8f11f0",
+      "changedSinceR5": false
+    },
+    {
+      "path": "migrations/0014_notbgg.sql",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "d2c7a0efabec9fb7c1d3440f09744448c9610341c0ce99e8c693b9665bf7a0c6",
+      "changedSinceR5": false
+    },
+    {
+      "path": "migrations/0015_notbgg_collection.sql",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "b6ead70bf65a496c68dddece26d5704e115ece6d320ced93f52aa9669cdb9760",
+      "changedSinceR5": false
+    },
+    {
+      "path": "migrations/0016_notbgg_link_commands.sql",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "cf85894f8414da3b0edd79188d02cea871d743416a8ee777c3c413a2902757a5",
+      "changedSinceR5": false
+    },
+    {
+      "path": "package-lock.json",
+      "group": "01",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "13ee4cc9e1dd8afaf9d82e2f25a6542ecc4d0c7cb0cbdae91cd8dda62346ccb5",
+      "changedSinceR5": false
+    },
+    {
+      "path": "package.json",
+      "group": "01",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "c0098e5b6805849b4e68aaff504425fa1090b4adef1f9cf07bb0bf9a07f2224e",
+      "changedSinceR5": false
+    },
+    {
+      "path": "scripts/bgg-relations-import.ts",
+      "group": "01",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "0084d8497c222e5bd2d0514a4ba8482ca18089e0c1584dbd29933949f46a1525",
+      "changedSinceR5": false
+    },
+    {
+      "path": "scripts/check-bgg-collection-sync.ts",
+      "group": "01",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "700f4eb38b62530ab3e7315b6183cc34f674b223ce3646b46be9a5ca246b82d6",
+      "changedSinceR5": false
+    },
+    {
+      "path": "scripts/lib/local-games-preview.ts",
+      "group": "01",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "bbb44f9c5d6a468186ddce97e3fabedff22bc4d1ec1c4bf0dfe50fc236f454b1",
+      "changedSinceR5": false
+    },
+    {
+      "path": "scripts/lib/relation-import-engine.ts",
+      "group": "01",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "02cc04bb8ee064f87571097619d582b3ebd26a374d015d87cb2463ded68fe0d5",
+      "changedSinceR5": false
+    },
+    {
+      "path": "scripts/preview-games.ts",
+      "group": "01",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "614afc3fa6cfedf8e8498166422197c9058705d136df005bff8fb0e878c9e1e1",
+      "changedSinceR5": false
+    },
+    {
+      "path": "scripts/validate-bgg-relations-b3a.ts",
+      "group": "01",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "01b1790aace32a273ef4eba5d6003c4c6c225e09dd77560ead09dab744bbe8ea",
+      "changedSinceR5": false
+    },
+    {
+      "path": "scripts/validate-bgg-relations-b3c.ts",
+      "group": "01",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "6012fa35b18f736bb5db1a05762211e62f581e68f4def1d9d4a6b1c56142beda",
+      "changedSinceR5": false
+    },
+    {
+      "path": "scripts/validate-bgg-relations-b41.ts",
+      "group": "01",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "8b4abf79db8287119a2cd9bbbff629af46925a150237c68c3f40b3c68f153bc5",
+      "changedSinceR5": false
+    },
+    {
+      "path": "scripts/validate-bgg-relations-b42.ts",
+      "group": "01",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "6d74ee5829abad6fa6e7e9e08681e02045b367e720ec212647cf0860987fd61e",
+      "changedSinceR5": false
+    },
+    {
+      "path": "scripts/validate-bgg-relations-b43.ts",
+      "group": "01",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "b0440983fc4071c8ed3cf936939b7e17ab546ca83906b5538c5b0c0e3d94118c",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/components/CatalogBrowserControls.astro",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "f5a15c453ac62305e4e72d0cdf55a31baaf43f7154b80179f2b5d6546a4bc43d",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/components/CatalogCard.astro",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "7ed28c19203a2b1a1b5b38cee3a8c7781fe2f4012437f8af217eef421928f99b",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/components/CollectionAdmin.astro",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "793ef81eba986838be6d2ae7fccb8ff98a7dbea957f66b35510c8858bbff3b74",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/components/CollectionCard.astro",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "b49c6c48236ca0146646c109d3dfe583ef4d7fd256ca1b16f98ab5a749176edc",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/components/CollectionPage.astro",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "7b66043abb7be6264a75caec0426b2a2a2e7cbdd8b73afb57d63bea98a68c9cd",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/components/GameBrowserControls.astro",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "3dc3e37a111677a62f9f22f1a02809588738fcd45d18c863c2b6a3a241c53507",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/components/GameDetail.astro",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "17f55d2b01609e2f7130553ed85dfc690d281392de873b7fc774076aca0b3948",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/components/GameList.astro",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "c2bbe56448ceff4205077f685937c358485d3b1af253541e3875954f3662730b",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/components/GameRelations.astro",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "0954b6674fea980029ee5419ebd5c4ddf2bd93145fd2bf1f5019315fefe1e0c6",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/components/GameSignals.astro",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "58a5530d6ac62fec287c4c16924bff97b65dc7884051646aa9fb4625673a38ff",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/components/GameSleeves.astro",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "4e921395228513c9e8c01c631681c70841bd537a4be903a3441c17c7f16f687c",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/components/GameSummary.astro",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "7aa856e4bb7a20f70e4ac23262549ff7a69ea246d4751dfb355cea95515d3d20",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/components/Header.astro",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "651540d781a3723e0ee4d5d754f6564fb52c62da4a92a089b7c989022f5c75bd",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/components/NotBggAdmin.astro",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "c1afd1bd131d0cba2ac8a7f629dac7276b9fbf9dffa95777268b6bddd549ba67",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/components/NotBggDetail.astro",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "ee133d5683a0d7654e8e2876fd48c20ce3c794c34801a883eab2da10e95b0f43",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/components/NotBggLinkAdmin.astro",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "85b9949f0fe2bf10cc84b43d7c0346a35ba0c8e7fad63a776f40f0772f3e16ac",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/data/bgg-cache.json",
+      "group": "01",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "1e345be12cf66b871f0267af622445d50ba1120ba98181ca2390dadc0da82f91",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/i18n/accessory-categories.ts",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "d151822e385a7449640bf115095d1d2e58d381b2e27eccb306dbcaa7cd061c62",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/i18n/bgg-zh-TW.ts",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "9d93f7c09173a2362e5370636fb980e9d5187d32cf98cea521a8281194ee5888",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/i18n/catalog-browser.ts",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "6e1ba7cd36f10fea8aad5dcf1f1a0d0369839b582d05ee0578171916f15227a7",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/i18n/ui.ts",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "f3c2579ac51597253ea1982d102c44308977da2e34318dc78ae3a6ceda0a56c0",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/i18n/utils.ts",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "3ab2511c6200eec8c862179e8966dc4a8307c702449bbfe6e218ab0c16408c12",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/layouts/Layout.astro",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "dd2a0d1db61b20eae42f22e7b27f0de7738b074313634b2f1fa7a58b64ea89ef",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/auth/admin-request.ts",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "8e23757690daa21d8663af647a60b83b17285171f67a3a461009aeb32eb2ad15",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/auth/cloudflare-access.ts",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "5812da972ef322520d09f0637075ea4519f256ef45294f142a16d414c12513ff",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/bgg-identity-gateway.ts",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "b22c195a9d80b2d988dfc98226d6c0f01c4f7e7dfa0ebcae9e73c6252b28ab07",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/catalog-browsing.ts",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "e6b588212beebe73075c835a9863c124b9770b2e1eb4508ec054cecc20b5bbae",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/catalog-payload.ts",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "22a58d976d03f61a81ca87de037a1edd5890e3fe0202455fb120eb4ac7389eb4",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/catalog-presentation.ts",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "553520e8ea0efa8517866a9968f9dbbeaecac69368442b97775b990108f395ce",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/catalog-selection.ts",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "d913a45b20d7499226ad5e230482fa0ac0be64defa99acb429924000a4ce747b",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/catalog-store.ts",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "e34cf615fae32642d757a3dbb8b64d575b2609b71a54229004f518225247a756",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/collection-admin-api.ts",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "64cab52f04aefbe5dbb23018fbb8cdb4ed8f6294a90127afabaa386fc468941e",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/collection-admin-controller.ts",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "16dd6c6e3b6e463a5903220282d69c98180579e1ed4178e2e6b5ea916a15fd23",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/collection-v2-adapter.ts",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "2cae291a0c875362142ee38ef6fbe6e93a83e52a5cf609fd176c466e7c46ef75",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/collection-v2-links.ts",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "9cbb7480d908f5e0e2fe4933c6b3080c054c7edd6c898fbb458e26a17a43b556",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/collection-v2-management.ts",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "576332b53f4316c25515046d1c1271a6ce8940d3a361ccdec213d8a6484f2369",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/collection-v2-repository.ts",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "95b4d4229e2cd1e04be789875de247a046ea29ec613de9dcf418c86d19ec4e1e",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/detail-relations-controller.ts",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "75ea88275b0590f3d20632f48b40afcfd5583c3944cfed879222af13a599cf93",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/detail-relations.ts",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "c7493e494ea6a35713e1ebefa64d1f6aad16ebc06b8493d68b62514d5a7d268c",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/game-browser-capabilities.ts",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "987828cf8e9d327d0e819ee55c7a5a4325d42f51feb0ddb91be9a01a2263e05d",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/game-browser-url.ts",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "9724b5a2824f6fbe459efe9eae4b082f761f62520fd3ae7ee106800a46f1f69d",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/game-catalog.ts",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "3ae6dd0420a41a462d62b518a481d9c3766d63ba1888f6b18fe4258f0cb95497",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/game-complexity.ts",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "8297985a57d944623c9459bb767f55da30b385aabeec65bba42570ab8fce75ee",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/game-content.ts",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "fcaf272750ca129bd94b530d9b672207d4ddc0e724c771dec717243be17933f6",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/game-detail-controller.ts",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "4c0e865508025992b3234bf750613ff1a270b651cac41a6a99024bf67e9d6638",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/game-detail-presentation.ts",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "e5c6e355c18aa916aaf307e072d1369de4a5c03646cdaf7a4aeffbaba133b580",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/game-identity.ts",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "f77dc55b11c612931b50066b7883c6d0ae28bf0fa779d1de3c997f71ff1c4430",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/game-list-controller.ts",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "ebbf5645c9dd931760dd4fe488a6ff8552b5ddf1d0278a697f11216832bc7453",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/game-name.ts",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "e1ac3a80da68456c1f7770b6fedc26fd00777bd758e5d185c9bb716b222de0fd",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/game-view-model.ts",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "41f9c623f9580a04182d6edbdf14bfafd840c063cb24be754e6c52b43529eef2",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/games.ts",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "aa8f75a6d95397f39b09f77cc9a2a1737e1e780e2cc936ac5afb4b6eb54adaac",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/identity-resolution.ts",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "75d1d76f0d46192a0763b4760711b3e87fa1540c8422f3a07e06b9eac161b48e",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/notbgg-admin-api.ts",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "70ddda5ea5f13e959c52149f299af29d16fe611c9aa569be67c56c235f5fae54",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/notbgg-admin-controller.ts",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "3ddb3c61004d7a8ad4fc36845a0d4353121273165dbde3a5b3abc80baaad0432",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/notbgg-admin-fields.ts",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "0f96dfc9cedc1b9ad19a607246a6182516fb11dfcf18f7c42d0b5f91fa07f489",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/notbgg-contract.ts",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "856888e1996e0715927cb0a5ec5524b18c23e61bd3e888de2dd823751c620a6a",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/notbgg-link-api.ts",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "7024fede9f0f41ed2b6ee7f84f5a42993168e1c6598c6ee7d71a198bd600632c",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/notbgg-link-controller.ts",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "e6214bf826700be10e967319ae3441edeb9f387a916dad82d03207d65d37daa7",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/notbgg-link-repository.ts",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "c9b68804b96c46151dbe3a6fe0b52074f5beba6f9695c0f5696b44c381332ef1",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/notbgg-public.ts",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "be29dd23d55e23c0012053ad209a8ccc92df4ec4a603435240815814e7f7821b",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/notbgg-repository.ts",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "0e20a7685977168a4a0a8e668e3bbf6886eab575c100cc18905400553ef2c4fa",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/notbgg-validation.ts",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "ecbc8ce0d03f43168e3b812ac567c5601d743a3f8c2440ed75a5a94d8ebf877b",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/relation-direction.ts",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "9b1629b57167b3a0e1aa50907cbfee3a329558b0ef5e8060ebbd7d1e60a23cc3",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/relation-display.ts",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "3a6d8b4d9b0910a8c8891422710fc62c5dbba04595bfc268d73cea4ef4806d60",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/relation-import-plan.ts",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "060a66c844716ebba4c586fe397a4fd7f3cc56b97583d8b09954627a824e28a2",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/lib/site-game-relations.ts",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "13c3a6919dd42685dabfdff00d89df02f506c456aca3eec0d437f456795e3ca1",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/middleware.ts",
+      "group": "05",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "b3d53f54d2c26ecea797180a5bde1258b8ce145e32eba20aebafbc8fffebe857",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/pages/admin/collection/[id].astro",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "64015e793287bbdfa828807dd92db8824f37fea812367ca03b115dc44ba445ab",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/pages/admin/collection/index.astro",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "bafa3af2fb8c03db8a30c0c1c28799a1038f7fcf8fe938c0a24a02ddb6e62c97",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/pages/admin/collection/new.astro",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "90e6fca7927e4f514b47178193ea6f7b9840a0c477870cb59183cfde6bebefdc",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/pages/admin/index.astro",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "31ffb32581e9b8feeb14394f8078ccb25bb525386b39249778db023e14302d77",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/pages/admin/notbgg/[id].astro",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "b40ded12e2b225b6f091a91cbec693eb445b5a91908b7221080f0fd308379a20",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/pages/admin/notbgg/[id]/link.astro",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "86830a4e126356551d4506df7702a6429a9d21ffa24c5e082f0686f8f3c96568",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/pages/admin/notbgg/[id]/relations.astro",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "a533bb5de52b86aec6a992d99c01ab542de5e25a541c73cf7f164ad9358b9f61",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/pages/admin/notbgg/index.astro",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "8f3a6bfa2b274160817f959be5edfcbdaf7f7861aec2567fc38c8814e8162863",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/pages/admin/notbgg/new.astro",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "8f750d7e81b309c5bd5b7ec75be642cc4155b4b8e36aa7d78f349c68c0dcd838",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/pages/api/admin/auth-check.ts",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "0a8b7927dcc79357ae5dbe0bc959a3cfd4fa4137421cefc4738f17a67ad2ba0b",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/pages/api/admin/collection/[id].ts",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "3862698dbeff14a4074d0aa5cd8fc03e41e3852a36b71052c144abc9e4230bdc",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/pages/api/admin/collection/[id]/archive.ts",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "3577102d8bb5070db8ac8198150cab2eec937c328c0d609c4187ec3aba458e01",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/pages/api/admin/collection/index.ts",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "3862698dbeff14a4074d0aa5cd8fc03e41e3852a36b71052c144abc9e4230bdc",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/pages/api/admin/collection/search.ts",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "3862698dbeff14a4074d0aa5cd8fc03e41e3852a36b71052c144abc9e4230bdc",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/pages/api/admin/notbgg/[id].ts",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "bb930cf82542288a789bf48bc753f14035ede289cce4d30b3a11a211b6354c3a",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/pages/api/admin/notbgg/[id]/archive.ts",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "c8f3ea44f87300362e167cc2e3dde0dfdb46b76eb808579c1b7d1156fe96da1b",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/pages/api/admin/notbgg/[id]/history.ts",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "c8f3ea44f87300362e167cc2e3dde0dfdb46b76eb808579c1b7d1156fe96da1b",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/pages/api/admin/notbgg/[id]/link/compare.ts",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "6b88cfa39eb7274c07dec022e0a960c22ad1a33516eba9b40403cde52c0e31c0",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/pages/api/admin/notbgg/[id]/link/history.ts",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "6b88cfa39eb7274c07dec022e0a960c22ad1a33516eba9b40403cde52c0e31c0",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/pages/api/admin/notbgg/[id]/link/index.ts",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "6b88cfa39eb7274c07dec022e0a960c22ad1a33516eba9b40403cde52c0e31c0",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/pages/api/admin/notbgg/[id]/relations/[relationId].ts",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "3121bbc801c8b5cb73e01004d6e38723cfc447bdbd78d9d545f3d7fe385f4906",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/pages/api/admin/notbgg/[id]/relations/index.ts",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "3121bbc801c8b5cb73e01004d6e38723cfc447bdbd78d9d545f3d7fe385f4906",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/pages/api/admin/notbgg/index.ts",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "bb930cf82542288a789bf48bc753f14035ede289cce4d30b3a11a211b6354c3a",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/pages/collection.astro",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "7710fb0cd0db946d33be00241fb3ade794d70cba46fdbc29161314d439340b43",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/pages/en/collection.astro",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "6ebcb503f4f63b0580314442ae549565ecc82983b5c269c4f8eb72c6b16988b9",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/pages/en/games.astro",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "c66d3d7b29c791e56f2d0f6184eb0d5a7028537986924bdb45388dd93a71978e",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/pages/en/games/[slug].astro",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "e771f3f82f92cf6737fe18b95a0ec3787833c2f78caf081426accb88eaeade96",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/pages/en/games/notbgg/[id].astro",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "e3a08492ccae6a4b67557447e08ec2d3efbd5815c8ac1d143d45d12f411e2edc",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/pages/games.astro",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "4fc2b4cde7e3ad3f02f0717f841b01b727365bcb282eb0d91fd5c3f9063f7010",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/pages/games/[slug].astro",
+      "group": "02",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "255f960a50ae31d3e997dadb0a1f4ea910281371858346c5bae09d2f4e9f2785",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/pages/games/notbgg/[id].astro",
+      "group": "03",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "465013b7f430304fd032868df2528f14711effa4a8a76cab3d01ca969fb0f590",
+      "changedSinceR5": false
+    },
+    {
+      "path": "src/worker.ts",
+      "group": "05",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "63137c1c59f371c1faa9614eb8fb85188e11660e4bae2831e618d4da59d924f9",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/b3c-acceptance.test.ts",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "8be24edf3909ef32887e54441ad90c3bdeb734dbf597ddbdc0ec7554424ef115",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/b3c-browser.cjs",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "9d6c84e9e1fdc01c015756ad572a0a4be7cbdc2d0e0bc6750d371b35aea06eff",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/b3d-browser.cjs",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "4d4157490036c15023f0a228908be4662ed9e0478bf6f05009246b816cbbe14f",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/b41-acceptance.test.ts",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "c4f40160791e80c1534ea2e543c7710f09f8f9c2e5e89b342271cecf694b154c",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/b41-browser.cjs",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "bc857823f22628eb032e8d82c2df164df5aecd5b87352072d475543575dad042",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/b42-acceptance.test.ts",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "61611a20a7d986c8da5191e42b0dd1b3fbd36e095e5b48f1ab9bb40a08647a34",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/b42-browser.cjs",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "c60e2e4e6591ce4b6f89bd4fe26c8798c012050c022d8163151f1a61dc5abdfe",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/b43c-browser.cjs",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "c5c645c24400e20a7db09b0906ae88d252bd7aa290278c1a5e6ff8be87b9b90a",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/bgg-static-alias.test.ts",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "592019f6bc9a52410517692f11dfa628ae05d28844f448cc7881b445cc09cb7f",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/c4-browser.cjs",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "2a7d3339a553c64730c16541070c5382f35fb3d22ac4d4fc1c99946a959fe9bf",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/cache-replacement.test.ts",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "ef7d11459d940db992f080502ec916d963063c72a1a6ec94ea1111ade45c4fb1",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/catalog-initial-count.test.ts",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "c5f85f0956db5a470b9c60487c1d884a39a83426da15bd0fc12c59b671c737c9",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/catalog-payload.test.ts",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "d778267f422f1c9abed6fbb14de63396f44d5ad52c51f93cc74275ab4dd343bc",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/catalog-performance.ts",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "4bd05f252151eca9b65862dbd26d5c2d2fbbfb92657f5d7b1f6a857661e0a5bb",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/catalog-visual-v1-browser.cjs",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "39214eaf451fa68f24cd4579589bfca931ed1654967f796b1236136a12ed71a5",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/catalog-visual-v1.test.ts",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "30fcc5a9b43029f18090e27673c7a0207c9f4fa7fdd161ce9c25d5b386eb6021",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/d7a-cli-migrations.mjs",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "1a17aa6bb07e47cd28a93b3e0eab51136c54923593d92939456b06bd96f6f01e",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/d7a-inventory.mjs",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "2bbbae1e4d27519103007c1d282efc41f313b98c0ae89d53ca7a58053f854fc7",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/d7a-preflight.ts",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "0a1f3b750aefa4ed5e34dcdf87d137b4f6213533852b6b5b8ab07680032841ad",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/d7a-r3-cls.ts",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "335ce3cde0c6b0832362753785559712cc824f3df14973866ab31a10f23389d2",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/d7a-r3-migrations.mjs",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "4f6d0798870eccee4fa6236e2ef8e45185f1f26d7c1d136637ce28688a7bf7a4",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/d7a-r4-migrations.mjs",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "6a4e1f97aacffb1540f9aa0156664f9f74bbd9ccd729555dd6ee05660ebf11b1",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/d7a-route-matrix.ts",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "62688c57823852c2ef8c66f3e5f3dc35432b863fe35cb3bff729a7ea8bcc31e7",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/detail-relations-controller.test.ts",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "afb6c3a4f1b9c61bc1d78c1c772b8e3c352e1a67766219828835f0ef66d0fe19",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/fixtures/import-batches.ts",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "922da5a8e78fdd0dc176ff65092570f15c91ba336f6771e6112f8273d0c38aa6",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/game-browser-navigation.cjs",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "043303b8f29cab56ab9dbffb5c9bef7229465a14a123c771e0951ca38ecd7e28",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/game-browser-url.test.ts",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "6cecb7b8f3c153e531b1c2dfe7f7b2625575bfdd4a94486246b453b2a4718852",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/game-catalog-browsing.test.ts",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "2dca99abbba4af3068829884d5fac9cc6e6fced3b183d26dc741754315346549",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/game-complexity.test.ts",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "6effe5df6f766dc1d2f405ed6b60a8af08e0f1987590b9be9f0b55f68229f8fb",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/game-content-render.test.ts",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "a1d9da807e4b1883fd8e6b2621ae7109362ce46e84dff603d682e55e90b32b12",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/game-content.test.ts",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "09b0c6eab9fec2649917a01f57ebcb541fcd5ebebf606265c2cd351f1d308814",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/game-detail-v2-browser.cjs",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "6c6694870a003aca39e7bc1a40c6ecdd391c8de316493335f776084f1c59ab69",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/game-detail-v2.test.ts",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "a0a97fc353a5f3982570ff47a5a8550d87ad80fcef497bc1b26aadea2d4cc2a1",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/game-module-boundaries.test.ts",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "49f054c80ef3f8f5dfbd475feb1832011496bf0d03a10626be8b2d57354ae057",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/game-name.test.ts",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "c16f563a9fe6a1d616224bfcbe775fdfed3ca1f5d75aca3698259f7d213820d1",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/helpers/d7a-built-preview.ts",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "d3b27c64e998ea303271f17014b8cfa6e75425d0b6ef10e27661b8862528b163",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/helpers/notbgg-access-fixture.ts",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "3f690b37ce2f202203a4c2863d1c670a999997a401e944261ae2384bbcabd371",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/helpers/notbgg-admin-preview.ts",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "69b69e52821c943100eeb33b4d3ec9a3a73118b7d473959e37fee11a8d2f3b19",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/helpers/notbgg-local-d1.ts",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "d6b3c5adc46696778e9beead9ae9b4eb49f0ddd07048be0b790e11db911d5eda",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/notbgg-admin-api.test.ts",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "832370acff6418e5a0c4fba6d4ef4a0ae64c926ff3ab162e29ef8c697e3267d4",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/notbgg-admin-browser.cjs",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "e6a9652889a294650c8807f3d402fe354c24973250cd92a15c0d29c817ba5d43",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/notbgg-collection-browser.cjs",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "2089a86224c9722b089571969129234a09e48c48f30470750251a67fced9854e",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/notbgg-collection.test.ts",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "c18a063f462c14fc10bebe3b55a1590c06f961cca8cca1b37cee9e45c95709e4",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/notbgg-link-browser.cjs",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "980065e3d91fb8569683611603a3ac1c0331c72039ca585ea6cadbe43e30c7cf",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/notbgg-link.test.ts",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "4efac73074d7de1e2ffb09cdb83fad78bdd918b47bb1be462759c404973a3822",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/notbgg-middleware.test.ts",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "0c4be881d01251b2eaedc780caed4bd1d89ef1fecaaa80d327162a592de183cd",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/notbgg-public-browser.cjs",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "d8a0c56bd17580c9c9e84da04bd03da1f265bf92d9f5b2b62f7f6594c69f617b",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/notbgg-public.test.ts",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "a4abcdda99d3a3bba8d985634b2584cfb418c6801bbec99d9066d6ea6f359f8f",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/notbgg-relation-retention.test.ts",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "8176def9f0a47b8c1c10544868f2f366ff68dd61d78c4f4b8e7b03a1b61100c1",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/notbgg-repository.test.ts",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "71a4ff5cfc1604e9293cb96f98aeb48e45e521669334ce4c1c6ad9c02a2df364",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/notbgg.test.ts",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "7a5e34030721efa80168f9ae715b0227f49496bc5931781083543aa5fbd4455b",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/pages/bgg-test.astro",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "e3dca7ee2b95f1f3b012eb509026c6ee2696c4ca626c2367c677d7180f6dedf7",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/relation-direction.test.ts",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "5f2ccc56d17a1c5a60aa88572084a2aabfb762624d6590df5682caf1cae3c555",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/relation-display.test.ts",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "7d9ca24494ec658b92d87e0551a6ecada44bedb95f4c90d3cd6a6bae70bb6f85",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/relation-import-engine.test.ts",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "3366fe676a513afc8248f89a88014a9add415748bd3b51b109213f2d74d48cfe",
+      "changedSinceR5": false
+    },
+    {
+      "path": "tests/relation-import-plan.test.ts",
+      "group": "06",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "b4fe1bf155f8181b13b631f17b6f3b08d8476fafcee7607d00c7a95c917f7086",
+      "changedSinceR5": false
+    },
+    {
+      "path": "wrangler.json",
+      "group": "05",
+      "disposition": "INCLUDE PROPOSED; requires human approval",
+      "sha256": "72ea1f9c38e6b8774f6cee0de07e88cec497ba8118a81f79d4c6a3d55205ed29",
+      "changedSinceR5": false
+    }
+  ],
+  "crossGroupImports": [
+    {
+      "from": "01",
+      "to": "02",
+      "path": "scripts/bgg-relations-import.ts",
+      "dependency": "src/lib/relation-import-plan.ts"
+    },
+    {
+      "from": "01",
+      "to": "02",
+      "path": "scripts/check-bgg-collection-sync.ts",
+      "dependency": "src/lib/games.ts"
+    },
+    {
+      "from": "01",
+      "to": "02",
+      "path": "scripts/lib/local-games-preview.ts",
+      "dependency": "src/lib/games.ts"
+    },
+    {
+      "from": "01",
+      "to": "03",
+      "path": "scripts/lib/local-games-preview.ts",
+      "dependency": "src/lib/notbgg-public.ts"
+    },
+    {
+      "from": "01",
+      "to": "02",
+      "path": "scripts/lib/local-games-preview.ts",
+      "dependency": "src/lib/bgg-identity-gateway.ts"
+    },
+    {
+      "from": "01",
+      "to": "03",
+      "path": "scripts/lib/local-games-preview.ts",
+      "dependency": "src/lib/identity-resolution.ts"
+    },
+    {
+      "from": "01",
+      "to": "03",
+      "path": "scripts/lib/local-games-preview.ts",
+      "dependency": "src/lib/game-identity.ts"
+    },
+    {
+      "from": "01",
+      "to": "03",
+      "path": "scripts/lib/local-games-preview.ts",
+      "dependency": "src/lib/collection-v2-repository.ts"
+    },
+    {
+      "from": "01",
+      "to": "03",
+      "path": "scripts/lib/local-games-preview.ts",
+      "dependency": "src/lib/collection-v2-adapter.ts"
+    },
+    {
+      "from": "01",
+      "to": "02",
+      "path": "scripts/lib/local-games-preview.ts",
+      "dependency": "src/i18n/utils.ts"
+    },
+    {
+      "from": "01",
+      "to": "02",
+      "path": "scripts/lib/relation-import-engine.ts",
+      "dependency": "src/lib/relation-import-plan.ts"
+    },
+    {
+      "from": "01",
+      "to": "02",
+      "path": "scripts/validate-bgg-relations-b3a.ts",
+      "dependency": "src/lib/relation-import-plan.ts"
+    },
+    {
+      "from": "01",
+      "to": "02",
+      "path": "scripts/validate-bgg-relations-b3a.ts",
+      "dependency": "src/lib/game-catalog.ts"
+    },
+    {
+      "from": "01",
+      "to": "02",
+      "path": "scripts/validate-bgg-relations-b3a.ts",
+      "dependency": "src/lib/detail-relations.ts"
+    },
+    {
+      "from": "01",
+      "to": "02",
+      "path": "scripts/validate-bgg-relations-b3a.ts",
+      "dependency": "src/lib/relation-display.ts"
+    },
+    {
+      "from": "01",
+      "to": "02",
+      "path": "scripts/validate-bgg-relations-b3c.ts",
+      "dependency": "src/lib/relation-import-plan.ts"
+    },
+    {
+      "from": "01",
+      "to": "02",
+      "path": "scripts/validate-bgg-relations-b3c.ts",
+      "dependency": "src/lib/game-catalog.ts"
+    },
+    {
+      "from": "01",
+      "to": "02",
+      "path": "scripts/validate-bgg-relations-b3c.ts",
+      "dependency": "src/lib/detail-relations.ts"
+    },
+    {
+      "from": "01",
+      "to": "02",
+      "path": "scripts/validate-bgg-relations-b3c.ts",
+      "dependency": "src/lib/relation-display.ts"
+    },
+    {
+      "from": "01",
+      "to": "02",
+      "path": "scripts/validate-bgg-relations-b41.ts",
+      "dependency": "src/lib/relation-import-plan.ts"
+    },
+    {
+      "from": "01",
+      "to": "02",
+      "path": "scripts/validate-bgg-relations-b41.ts",
+      "dependency": "src/lib/game-catalog.ts"
+    },
+    {
+      "from": "01",
+      "to": "02",
+      "path": "scripts/validate-bgg-relations-b41.ts",
+      "dependency": "src/lib/detail-relations.ts"
+    },
+    {
+      "from": "01",
+      "to": "02",
+      "path": "scripts/validate-bgg-relations-b41.ts",
+      "dependency": "src/lib/relation-display.ts"
+    },
+    {
+      "from": "01",
+      "to": "02",
+      "path": "scripts/validate-bgg-relations-b42.ts",
+      "dependency": "src/lib/relation-import-plan.ts"
+    },
+    {
+      "from": "01",
+      "to": "02",
+      "path": "scripts/validate-bgg-relations-b42.ts",
+      "dependency": "src/lib/game-catalog.ts"
+    },
+    {
+      "from": "01",
+      "to": "02",
+      "path": "scripts/validate-bgg-relations-b42.ts",
+      "dependency": "src/lib/detail-relations.ts"
+    },
+    {
+      "from": "01",
+      "to": "02",
+      "path": "scripts/validate-bgg-relations-b42.ts",
+      "dependency": "src/lib/relation-display.ts"
+    },
+    {
+      "from": "01",
+      "to": "02",
+      "path": "scripts/validate-bgg-relations-b43.ts",
+      "dependency": "src/lib/relation-import-plan.ts"
+    },
+    {
+      "from": "01",
+      "to": "02",
+      "path": "scripts/validate-bgg-relations-b43.ts",
+      "dependency": "src/lib/game-catalog.ts"
+    },
+    {
+      "from": "01",
+      "to": "02",
+      "path": "scripts/validate-bgg-relations-b43.ts",
+      "dependency": "src/lib/detail-relations.ts"
+    },
+    {
+      "from": "01",
+      "to": "02",
+      "path": "scripts/validate-bgg-relations-b43.ts",
+      "dependency": "src/lib/relation-display.ts"
+    },
+    {
+      "from": "03",
+      "to": "02",
+      "path": "src/components/CollectionCard.astro",
+      "dependency": "src/i18n/ui.ts"
+    },
+    {
+      "from": "03",
+      "to": "02",
+      "path": "src/components/CollectionPage.astro",
+      "dependency": "src/components/GameSummary.astro"
+    },
+    {
+      "from": "03",
+      "to": "02",
+      "path": "src/components/CollectionPage.astro",
+      "dependency": "src/components/GameBrowserControls.astro"
+    },
+    {
+      "from": "03",
+      "to": "02",
+      "path": "src/components/CollectionPage.astro",
+      "dependency": "src/i18n/ui.ts"
+    },
+    {
+      "from": "03",
+      "to": "02",
+      "path": "src/components/CollectionPage.astro",
+      "dependency": "src/i18n/utils.ts"
+    },
+    {
+      "from": "03",
+      "to": "02",
+      "path": "src/components/CollectionPage.astro",
+      "dependency": "src/lib/game-list-controller.ts"
+    },
+    {
+      "from": "02",
+      "to": "03",
+      "path": "src/components/GameSummary.astro",
+      "dependency": "src/lib/collection-v2-adapter.ts"
+    },
+    {
+      "from": "03",
+      "to": "02",
+      "path": "src/components/NotBggDetail.astro",
+      "dependency": "src/i18n/accessory-categories.ts"
+    },
+    {
+      "from": "03",
+      "to": "02",
+      "path": "src/components/NotBggDetail.astro",
+      "dependency": "src/lib/game-content.ts"
+    },
+    {
+      "from": "03",
+      "to": "02",
+      "path": "src/components/NotBggDetail.astro",
+      "dependency": "src/lib/catalog-browsing.ts"
+    },
+    {
+      "from": "03",
+      "to": "02",
+      "path": "src/components/NotBggDetail.astro",
+      "dependency": "src/lib/game-detail-controller.ts"
+    },
+    {
+      "from": "02",
+      "to": "03",
+      "path": "src/i18n/accessory-categories.ts",
+      "dependency": "src/lib/notbgg-contract.ts"
+    },
+    {
+      "from": "02",
+      "to": "03",
+      "path": "src/lib/bgg-identity-gateway.ts",
+      "dependency": "src/lib/identity-resolution.ts"
+    },
+    {
+      "from": "02",
+      "to": "03",
+      "path": "src/lib/catalog-selection.ts",
+      "dependency": "src/lib/notbgg-contract.ts"
+    },
+    {
+      "from": "03",
+      "to": "02",
+      "path": "src/lib/collection-v2-adapter.ts",
+      "dependency": "src/i18n/utils.ts"
+    },
+    {
+      "from": "03",
+      "to": "01",
+      "path": "src/lib/collection-v2-adapter.ts",
+      "dependency": "src/data/bgg-cache.json"
+    },
+    {
+      "from": "03",
+      "to": "02",
+      "path": "src/lib/collection-v2-links.ts",
+      "dependency": "src/lib/games.ts"
+    },
+    {
+      "from": "03",
+      "to": "02",
+      "path": "src/lib/collection-v2-links.ts",
+      "dependency": "src/i18n/ui.ts"
+    },
+    {
+      "from": "03",
+      "to": "02",
+      "path": "src/lib/collection-v2-management.ts",
+      "dependency": "src/lib/games.ts"
+    },
+    {
+      "from": "03",
+      "to": "02",
+      "path": "src/lib/collection-v2-management.ts",
+      "dependency": "src/lib/game-content.ts"
+    },
+    {
+      "from": "02",
+      "to": "03",
+      "path": "src/lib/game-view-model.ts",
+      "dependency": "src/lib/game-identity.ts"
+    },
+    {
+      "from": "02",
+      "to": "03",
+      "path": "src/lib/game-view-model.ts",
+      "dependency": "src/lib/game-identity.ts"
+    },
+    {
+      "from": "02",
+      "to": "03",
+      "path": "src/lib/game-view-model.ts",
+      "dependency": "src/lib/notbgg-contract.ts"
+    },
+    {
+      "from": "02",
+      "to": "01",
+      "path": "src/lib/games.ts",
+      "dependency": "src/data/bgg-cache.json"
+    },
+    {
+      "from": "03",
+      "to": "02",
+      "path": "src/lib/identity-resolution.ts",
+      "dependency": "src/lib/game-catalog.ts"
+    },
+    {
+      "from": "03",
+      "to": "02",
+      "path": "src/lib/identity-resolution.ts",
+      "dependency": "src/i18n/utils.ts"
+    },
+    {
+      "from": "03",
+      "to": "02",
+      "path": "src/lib/notbgg-admin-api.ts",
+      "dependency": "src/lib/game-view-model.ts"
+    },
+    {
+      "from": "03",
+      "to": "02",
+      "path": "src/lib/notbgg-link-repository.ts",
+      "dependency": "src/lib/games.ts"
+    },
+    {
+      "from": "03",
+      "to": "02",
+      "path": "src/lib/notbgg-link-repository.ts",
+      "dependency": "src/lib/game-catalog.ts"
+    },
+    {
+      "from": "03",
+      "to": "02",
+      "path": "src/lib/notbgg-link-repository.ts",
+      "dependency": "src/lib/game-content.ts"
+    },
+    {
+      "from": "03",
+      "to": "02",
+      "path": "src/lib/notbgg-link-repository.ts",
+      "dependency": "src/lib/game-view-model.ts"
+    },
+    {
+      "from": "03",
+      "to": "02",
+      "path": "src/lib/notbgg-public.ts",
+      "dependency": "src/lib/game-catalog.ts"
+    },
+    {
+      "from": "03",
+      "to": "02",
+      "path": "src/lib/notbgg-public.ts",
+      "dependency": "src/lib/catalog-payload.ts"
+    },
+    {
+      "from": "03",
+      "to": "02",
+      "path": "src/lib/notbgg-public.ts",
+      "dependency": "src/lib/catalog-payload.ts"
+    },
+    {
+      "from": "03",
+      "to": "02",
+      "path": "src/lib/notbgg-public.ts",
+      "dependency": "src/lib/game-view-model.ts"
+    },
+    {
+      "from": "03",
+      "to": "02",
+      "path": "src/lib/notbgg-public.ts",
+      "dependency": "src/lib/game-content.ts"
+    },
+    {
+      "from": "03",
+      "to": "02",
+      "path": "src/lib/notbgg-public.ts",
+      "dependency": "src/lib/catalog-browsing.ts"
+    },
+    {
+      "from": "03",
+      "to": "02",
+      "path": "src/lib/notbgg-public.ts",
+      "dependency": "src/i18n/accessory-categories.ts"
+    },
+    {
+      "from": "03",
+      "to": "02",
+      "path": "src/lib/notbgg-public.ts",
+      "dependency": "src/i18n/utils.ts"
+    },
+    {
+      "from": "05",
+      "to": "03",
+      "path": "src/middleware.ts",
+      "dependency": "src/lib/auth/cloudflare-access.ts"
+    },
+    {
+      "from": "05",
+      "to": "03",
+      "path": "src/middleware.ts",
+      "dependency": "src/lib/auth/admin-request.ts"
+    },
+    {
+      "from": "03",
+      "to": "02",
+      "path": "src/pages/collection.astro",
+      "dependency": "src/layouts/Layout.astro"
+    },
+    {
+      "from": "03",
+      "to": "02",
+      "path": "src/pages/en/collection.astro",
+      "dependency": "src/layouts/Layout.astro"
+    },
+    {
+      "from": "02",
+      "to": "03",
+      "path": "src/pages/en/games.astro",
+      "dependency": "src/lib/notbgg-public.ts"
+    },
+    {
+      "from": "03",
+      "to": "02",
+      "path": "src/pages/en/games/notbgg/[id].astro",
+      "dependency": "src/layouts/Layout.astro"
+    },
+    {
+      "from": "03",
+      "to": "02",
+      "path": "src/pages/en/games/notbgg/[id].astro",
+      "dependency": "src/lib/games.ts"
+    },
+    {
+      "from": "02",
+      "to": "03",
+      "path": "src/pages/games.astro",
+      "dependency": "src/lib/notbgg-public.ts"
+    },
+    {
+      "from": "03",
+      "to": "02",
+      "path": "src/pages/games/notbgg/[id].astro",
+      "dependency": "src/layouts/Layout.astro"
+    },
+    {
+      "from": "03",
+      "to": "02",
+      "path": "src/pages/games/notbgg/[id].astro",
+      "dependency": "src/lib/games.ts"
+    },
+    {
+      "from": "05",
+      "to": "02",
+      "path": "src/worker.ts",
+      "dependency": "src/lib/games.ts"
+    },
+    {
+      "from": "05",
+      "to": "02",
+      "path": "src/worker.ts",
+      "dependency": "src/lib/bgg-identity-gateway.ts"
+    }
+  ],
+  "groupEdges": [
+    "01 -> 02",
+    "01 -> 03",
+    "02 -> 01",
+    "02 -> 03",
+    "03 -> 01",
+    "03 -> 02",
+    "05 -> 02",
+    "05 -> 03"
+  ],
+  "bytes0003": {
+    "headSha256": "354869861c66cfc2daa6357a18f8e2217b22e6a9f3785d20c2cbfe37df973005",
+    "workingSha256": "211ed3bb90dc24e5be0e39dc6b7b6662967b3b9863099f582ab020835b8f11f0",
+    "expectedBlobSha256": "5f70e687a582c2cb8c4598a7bd776b205b12e4a59d738b1d281ac7552805e76e",
+    "expectedBlobOid": "b80fa2945d8b5ea3ae1ddf5441163dd22c95ced6",
+    "expectedBlobBytes": 490,
+    "expectedEqualsHeadMinusBom": true,
+    "worktreeEqualsR4": true,
+    "expectedBlobEqualsR4Raw": false,
+    "attributes": "",
+    "autocrlf": "input"
+  },
+  "head": "469866d6f7e3aed947f9f1c2e0d59b9cc16961a2",
+  "indexDiffEmpty": true,
+  "planApplied": false,
+  "newR6EvidenceGroup06": [
+    "docs/notbgg-d7a-r6-release-preparation.md",
+    "docs/d7a-r6-auth-status.json",
+    "docs/d7a-r6-metadata-review.json",
+    "docs/d7a-r6-cloudflare-readonly.json",
+    "docs/d7a-r6-restore-evidence.json",
+    "docs/d7a-r6-git-candidate.json",
+    "docs/d7a-r6-0003-verification.json"
+  ],
+  "recommendedCommitPlan": [
+    {
+      "order": 1,
+      "groups": [
+        "04"
+      ],
+      "title": "fix(db): remove legacy 0003 UTF-8 BOM",
+      "files": [
+        "migrations/0003_sleeve_size_validation.sql"
+      ],
+      "condition": "human approves LF clean Blob; validate clean checkout"
+    },
+    {
+      "order": 2,
+      "groups": [
+        "01",
+        "02",
+        "03",
+        "05"
+      ],
+      "title": "feat(notbgg): prepare V1.2 runtime, schema and identity routing",
+      "files": [
+        "package-lock.json",
+        "package.json",
+        "scripts/bgg-relations-import.ts",
+        "scripts/check-bgg-collection-sync.ts",
+        "scripts/lib/local-games-preview.ts",
+        "scripts/lib/relation-import-engine.ts",
+        "scripts/preview-games.ts",
+        "scripts/validate-bgg-relations-b3a.ts",
+        "scripts/validate-bgg-relations-b3c.ts",
+        "scripts/validate-bgg-relations-b41.ts",
+        "scripts/validate-bgg-relations-b42.ts",
+        "scripts/validate-bgg-relations-b43.ts",
+        "src/data/bgg-cache.json",
+        "src/components/CatalogBrowserControls.astro",
+        "src/components/CatalogCard.astro",
+        "src/components/GameBrowserControls.astro",
+        "src/components/GameDetail.astro",
+        "src/components/GameList.astro",
+        "src/components/GameRelations.astro",
+        "src/components/GameSignals.astro",
+        "src/components/GameSleeves.astro",
+        "src/components/GameSummary.astro",
+        "src/components/Header.astro",
+        "src/i18n/accessory-categories.ts",
+        "src/i18n/bgg-zh-TW.ts",
+        "src/i18n/catalog-browser.ts",
+        "src/i18n/ui.ts",
+        "src/i18n/utils.ts",
+        "src/layouts/Layout.astro",
+        "src/lib/bgg-identity-gateway.ts",
+        "src/lib/catalog-browsing.ts",
+        "src/lib/catalog-payload.ts",
+        "src/lib/catalog-presentation.ts",
+        "src/lib/catalog-selection.ts",
+        "src/lib/catalog-store.ts",
+        "src/lib/detail-relations-controller.ts",
+        "src/lib/detail-relations.ts",
+        "src/lib/game-browser-capabilities.ts",
+        "src/lib/game-browser-url.ts",
+        "src/lib/game-catalog.ts",
+        "src/lib/game-complexity.ts",
+        "src/lib/game-content.ts",
+        "src/lib/game-detail-controller.ts",
+        "src/lib/game-detail-presentation.ts",
+        "src/lib/game-list-controller.ts",
+        "src/lib/game-name.ts",
+        "src/lib/game-view-model.ts",
+        "src/lib/games.ts",
+        "src/lib/relation-direction.ts",
+        "src/lib/relation-display.ts",
+        "src/lib/relation-import-plan.ts",
+        "src/pages/en/games.astro",
+        "src/pages/en/games/[slug].astro",
+        "src/pages/games.astro",
+        "src/pages/games/[slug].astro",
+        "migrations/0014_notbgg.sql",
+        "migrations/0015_notbgg_collection.sql",
+        "migrations/0016_notbgg_link_commands.sql",
+        "src/components/CollectionAdmin.astro",
+        "src/components/CollectionCard.astro",
+        "src/components/CollectionPage.astro",
+        "src/components/NotBggAdmin.astro",
+        "src/components/NotBggDetail.astro",
+        "src/components/NotBggLinkAdmin.astro",
+        "src/lib/auth/admin-request.ts",
+        "src/lib/auth/cloudflare-access.ts",
+        "src/lib/collection-admin-api.ts",
+        "src/lib/collection-admin-controller.ts",
+        "src/lib/collection-v2-adapter.ts",
+        "src/lib/collection-v2-links.ts",
+        "src/lib/collection-v2-management.ts",
+        "src/lib/collection-v2-repository.ts",
+        "src/lib/game-identity.ts",
+        "src/lib/identity-resolution.ts",
+        "src/lib/notbgg-admin-api.ts",
+        "src/lib/notbgg-admin-controller.ts",
+        "src/lib/notbgg-admin-fields.ts",
+        "src/lib/notbgg-contract.ts",
+        "src/lib/notbgg-link-api.ts",
+        "src/lib/notbgg-link-controller.ts",
+        "src/lib/notbgg-link-repository.ts",
+        "src/lib/notbgg-public.ts",
+        "src/lib/notbgg-repository.ts",
+        "src/lib/notbgg-validation.ts",
+        "src/lib/site-game-relations.ts",
+        "src/pages/admin/collection/[id].astro",
+        "src/pages/admin/collection/index.astro",
+        "src/pages/admin/collection/new.astro",
+        "src/pages/admin/index.astro",
+        "src/pages/admin/notbgg/[id].astro",
+        "src/pages/admin/notbgg/[id]/link.astro",
+        "src/pages/admin/notbgg/[id]/relations.astro",
+        "src/pages/admin/notbgg/index.astro",
+        "src/pages/admin/notbgg/new.astro",
+        "src/pages/api/admin/auth-check.ts",
+        "src/pages/api/admin/collection/[id].ts",
+        "src/pages/api/admin/collection/[id]/archive.ts",
+        "src/pages/api/admin/collection/index.ts",
+        "src/pages/api/admin/collection/search.ts",
+        "src/pages/api/admin/notbgg/[id].ts",
+        "src/pages/api/admin/notbgg/[id]/archive.ts",
+        "src/pages/api/admin/notbgg/[id]/history.ts",
+        "src/pages/api/admin/notbgg/[id]/link/compare.ts",
+        "src/pages/api/admin/notbgg/[id]/link/history.ts",
+        "src/pages/api/admin/notbgg/[id]/link/index.ts",
+        "src/pages/api/admin/notbgg/[id]/relations/[relationId].ts",
+        "src/pages/api/admin/notbgg/[id]/relations/index.ts",
+        "src/pages/api/admin/notbgg/index.ts",
+        "src/pages/collection.astro",
+        "src/pages/en/collection.astro",
+        "src/pages/en/games/notbgg/[id].astro",
+        "src/pages/games/notbgg/[id].astro",
+        "astro.config.mjs",
+        "src/middleware.ts",
+        "src/worker.ts",
+        "wrangler.json"
+      ],
+      "condition": "atomic runtime commit because 01/02/03 form import cycle; all are pre-existing accepted functionality, no new functionality added in R6"
+    },
+    {
+      "order": 3,
+      "groups": [
+        "06"
+      ],
+      "title": "test(docs): record V1.2 regressions and release readiness",
+      "files": [
+        "docs/D1_V1_1_MIGRATION.md",
+        "docs/D1_V1_1_REQUIREMENTS.md",
+        "docs/D1_V1_1_SCHEMA.md",
+        "docs/D1_V1_1_TASKS.md",
+        "docs/bgg-cache-replacement-b43f.md",
+        "docs/bgg-relations-import.md",
+        "docs/d7a-local-evidence.json",
+        "docs/d7a-r3-cls-after-list.json",
+        "docs/d7a-r3-cls-after.json",
+        "docs/d7a-r3-cls-baseline.json",
+        "docs/d7a-r3-invalid-instrumentation.json",
+        "docs/d7a-r3-migration-evidence.json",
+        "docs/d7a-r4-migration-evidence.json",
+        "docs/notbgg-d1-contract.md",
+        "docs/notbgg-d2-storage.md",
+        "docs/notbgg-d3-admin.md",
+        "docs/notbgg-d4-public.md",
+        "docs/notbgg-d5-collection.md",
+        "docs/notbgg-d6-identity.md",
+        "docs/notbgg-d7a-preflight.md",
+        "docs/notbgg-d7a-r3-stability.md",
+        "tests/b3c-acceptance.test.ts",
+        "tests/b3c-browser.cjs",
+        "tests/b3d-browser.cjs",
+        "tests/b41-acceptance.test.ts",
+        "tests/b41-browser.cjs",
+        "tests/b42-acceptance.test.ts",
+        "tests/b42-browser.cjs",
+        "tests/b43c-browser.cjs",
+        "tests/bgg-static-alias.test.ts",
+        "tests/c4-browser.cjs",
+        "tests/cache-replacement.test.ts",
+        "tests/catalog-initial-count.test.ts",
+        "tests/catalog-payload.test.ts",
+        "tests/catalog-performance.ts",
+        "tests/catalog-visual-v1-browser.cjs",
+        "tests/catalog-visual-v1.test.ts",
+        "tests/d7a-cli-migrations.mjs",
+        "tests/d7a-inventory.mjs",
+        "tests/d7a-preflight.ts",
+        "tests/d7a-r3-cls.ts",
+        "tests/d7a-r3-migrations.mjs",
+        "tests/d7a-r4-migrations.mjs",
+        "tests/d7a-route-matrix.ts",
+        "tests/detail-relations-controller.test.ts",
+        "tests/fixtures/import-batches.ts",
+        "tests/game-browser-navigation.cjs",
+        "tests/game-browser-url.test.ts",
+        "tests/game-catalog-browsing.test.ts",
+        "tests/game-complexity.test.ts",
+        "tests/game-content-render.test.ts",
+        "tests/game-content.test.ts",
+        "tests/game-detail-v2-browser.cjs",
+        "tests/game-detail-v2.test.ts",
+        "tests/game-module-boundaries.test.ts",
+        "tests/game-name.test.ts",
+        "tests/helpers/d7a-built-preview.ts",
+        "tests/helpers/notbgg-access-fixture.ts",
+        "tests/helpers/notbgg-admin-preview.ts",
+        "tests/helpers/notbgg-local-d1.ts",
+        "tests/notbgg-admin-api.test.ts",
+        "tests/notbgg-admin-browser.cjs",
+        "tests/notbgg-collection-browser.cjs",
+        "tests/notbgg-collection.test.ts",
+        "tests/notbgg-link-browser.cjs",
+        "tests/notbgg-link.test.ts",
+        "tests/notbgg-middleware.test.ts",
+        "tests/notbgg-public-browser.cjs",
+        "tests/notbgg-public.test.ts",
+        "tests/notbgg-relation-retention.test.ts",
+        "tests/notbgg-repository.test.ts",
+        "tests/notbgg.test.ts",
+        "tests/pages/bgg-test.astro",
+        "tests/relation-direction.test.ts",
+        "tests/relation-display.test.ts",
+        "tests/relation-import-engine.test.ts",
+        "tests/relation-import-plan.test.ts",
+        "docs/d7a-r5-0003-bytes.json",
+        "docs/d7a-r5-auth-status.json",
+        "docs/d7a-r5-browser-results.json",
+        "docs/d7a-r5-candidate-manifest.json",
+        "docs/d7a-r5-check-results.json",
+        "docs/d7a-r5-final-verification.json",
+        "docs/d7a-r5-git-inventory.json",
+        "docs/d7a-r5-migration-evidence.json",
+        "docs/d7a-r5-restore-evidence.json",
+        "docs/d7a-r5-sensitive-audit.json",
+        "docs/d7a-r5-smoke-matrix.json",
+        "docs/notbgg-d7a-r5-release-readiness.md",
+        "docs/notbgg-d7a-r6-release-preparation.md",
+        "docs/d7a-r6-auth-status.json",
+        "docs/d7a-r6-metadata-review.json",
+        "docs/d7a-r6-cloudflare-readonly.json",
+        "docs/d7a-r6-restore-evidence.json",
+        "docs/d7a-r6-git-candidate.json",
+        "docs/d7a-r6-0003-verification.json"
+      ],
+      "condition": "16 raw metadata paths held outside proposed commit; protected archive decision and all file approvals still pending"
+    }
+  ],
+  "planChange": "Proposal only: retain six thematic review groups, consolidate cyclic runtime groups into one commit; no Git mutations",
+  "normalized0003Test": "docs/d7a-r6-0003-verification.json",
+  "finalSafety": {
+    "checkedAt": "2026-11-05T00:28:08.763Z",
+    "baseline224Unchanged": true,
+    "changedBaselinePaths": [],
+    "metadata16Unchanged": true,
+    "privateBuildInputHashMatchesR5": true,
+    "knownSensitiveValueMatches": [],
+    "totalReviewedPaths": 231,
+    "indexDiffEmpty": true,
+    "head": "469866d6f7e3aed947f9f1c2e0d59b9cc16961a2",
+    "r6Restore": "PASS",
+    "r6Normalized0003": "PASS",
+    "bggHash": "1e345be12cf66b871f0267af622445d50ba1120ba98181ca2390dadc0da82f91"
+  }
+}
