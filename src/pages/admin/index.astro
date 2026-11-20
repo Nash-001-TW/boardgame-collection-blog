@@ -1,6 +1,11 @@
-
 ---
 import { env } from 'cloudflare:workers';
+import AdminLayout from '../../layouts/AdminLayout.astro';
+
+const lang = Astro.url.searchParams.get('lang') === 'en' ? 'en' : 'zh-TW';
+const en = lang === 'en';
+const t = (zh: string, english: string) => en ? english : zh;
+const suffix = en ? '?lang=en' : '';
 
 export const prerender = false;
 
@@ -8,6 +13,9 @@ interface AdminSummary {
   collection_count: number;
   owned_count: number;
   wishlist_count: number;
+  preorder_count: number;
+  notbgg_count: number;
+  notbgg_archived_count: number;
   bgg_count: number;
   component_count: number;
   sleeve_size_count: number;
@@ -21,7 +29,7 @@ try {
   const db = env.DB;
 
   if (!db) {
-    errorMessage = 'Cloudflare D1 Binding DB 無法使用';
+    errorMessage = t('Cloudflare D1 Binding DB 無法使用', 'Cloudflare D1 binding DB is unavailable');
   } else {
 
     const result = await db.prepare(`
@@ -29,6 +37,7 @@ try {
         SELECT
         id,
         wishlist,
+        acquisition_status,
         CASE
             WHEN json_valid(notes) = 1 THEN
             CASE
@@ -54,6 +63,14 @@ try {
         (SELECT COUNT(*)
         FROM imported
         WHERE wishlist = 1) AS wishlist_count,
+
+        (SELECT COUNT(*) FROM imported
+        WHERE acquisition_status = 'preordered') AS preorder_count,
+
+        (SELECT COUNT(*) FROM notbgg_games) AS notbgg_count,
+
+        (SELECT COUNT(*) FROM notbgg_games
+        WHERE archived_at IS NOT NULL) AS notbgg_archived_count,
 
         (SELECT COUNT(*)
         FROM v2_games g
@@ -83,191 +100,91 @@ try {
     if (result) {
       summary = result;
     } else {
-      errorMessage = '無法取得收藏統計資料';
+      errorMessage = t('無法取得收藏統計資料', 'Unable to retrieve collection statistics');
     }
   }
 } catch (error) {
   console.error('Admin dashboard error:', error);
-  errorMessage = '讀取 D1 資料庫時發生錯誤';
+  errorMessage = t('讀取 D1 資料庫時發生錯誤', 'An error occurred while reading the D1 database');
 }
 
-const statistics = summary
-  ? [
-      { label: '收藏項目', value: summary.collection_count, icon: '🎲' },
-      { label: '已收藏', value: summary.owned_count, icon: '📦' },
-      { label: '願望清單', value: summary.wishlist_count, icon: '❤️' },
-      { label: 'BGG 遊戲', value: summary.bgg_count, icon: '🌐' },
-      { label: '收藏組件', value: summary.component_count, icon: '🧩' },
-      { label: '卡套尺寸', value: summary.sleeve_size_count, icon: '📏' },
-      { label: '卡套需求紀錄', value: summary.sleeve_requirement_count, icon: '🃏' }
-    ]
-  : [];
+const cards = [
+  { title: t('收藏', 'Collection'), stats: [
+    { label: t('收藏項目', 'Collection items'), value: summary?.collection_count },
+    { label: t('已收藏', 'Owned'), value: summary?.owned_count },
+    { label: t('願望清單', 'Wishlist'), value: summary?.wishlist_count },
+    { label: t('預購', 'Preordered'), value: summary?.preorder_count }
+  ], actions: [{ label: t('收藏管理', 'Manage collection'), href: '/admin/collection' + suffix }] },
+  { title: t('卡套', 'Sleeves'), stats: [
+    { label: t('卡套尺寸', 'Sleeve sizes'), value: summary?.sleeve_size_count },
+    { label: t('卡套需求紀錄', 'Sleeve requirements'), value: summary?.sleeve_requirement_count }
+  ], actions: [{ label: t('卡套管理', 'Sleeve management'), href: '/admin/sleeves' + suffix }] },
+  { title: t('組件', 'Components'), stats: [
+    { label: t('組件定義筆數', 'Component definitions'), value: summary?.component_count }
+  ], actions: [{ label: t('組件管理', 'Manage components'), href: '/admin/collection/components/classification' + suffix }] },
+  { title: t('資料來源', 'Data sources'), stats: [
+    { label: t('BGG 遊戲', 'BGG games'), value: summary?.bgg_count },
+    { label: t('非 BGG 遊戲', 'Non-BGG games'), value: summary?.notbgg_count,
+      note: summary ? t(`含已封存 ${summary.notbgg_archived_count.toLocaleString(lang)} 筆`, `Includes ${summary.notbgg_archived_count.toLocaleString(lang)} archived`) : t('封存數量無法取得', 'Archived count unavailable') }
+  ], actions: [
+    { label: t('BGG 管理（待開發）', 'BGG management (coming soon)'), href: null },
+    { label: t('NotBGG 管理', 'Manage NotBGG'), href: '/admin/notbgg' + suffix }
+  ] }
+];
 ---
 
-<!doctype html>
-<html lang="zh-Hant">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="robots" content="noindex, nofollow" />
-    <title>管理後台 | Soma's Board Game Collection</title>
-
-    <style>
-      :root {
-        font-family: system-ui, "Microsoft JhengHei", sans-serif;
-        color-scheme: dark;
-      }
-
-      * { box-sizing: border-box; }
-
-      body {
-        margin: 0;
-        background: #101827;
-        color: #e5e7eb;
-      }
-
-      header {
-        padding: 24px 32px;
-        background: #172338;
-        border-bottom: 1px solid #334155;
-      }
-
-      header h1 {
-        margin: 0 0 8px;
-        font-size: 26px;
-      }
-
-      header p {
-        margin: 0;
-        color: #94a3b8;
-      }
-
-      main {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 32px 20px;
-      }
-
-      h2 { margin: 0 0 20px; }
-
-      .stats {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 16px;
-        margin-bottom: 36px;
-      }
-
-      .stat-card, .menu-card {
-        background: #1e293b;
-        border: 1px solid #334155;
-        border-radius: 12px;
-        padding: 22px;
-      }
-
-      .stat-icon { font-size: 28px; }
-
-      .stat-value {
-        margin: 14px 0 6px;
-        font-size: 34px;
-        font-weight: bold;
-        color: #60a5fa;
-      }
-
-      .stat-label { color: #cbd5e1; }
-
-      .menu {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: 16px;
-      }
-
-      .menu-card h3 { margin-top: 0; }
-
-      .menu-card p {
-        color: #94a3b8;
-        line-height: 1.6;
-      }
-
-      .status {
-        display: inline-block;
-        margin-top: 8px;
-        color: #fbbf24;
-        font-size: 14px;
-      }
-
-      .error {
-        padding: 18px;
-        background: #450a0a;
-        border: 1px solid #dc2626;
-        border-radius: 8px;
-        margin-bottom: 24px;
-      }
-
-      .back {
-        display: inline-block;
-        margin-top: 32px;
-        color: #93c5fd;
-      }
-    </style>
-  </head>
-
-  <body>
-    <header>
-      <h1>🎲 桌遊收藏管理後台</h1>
-      <p>Soma's Board Game Collection — Administration</p>
-    </header>
-
-    <main>
-      <h2>收藏資料總覽</h2>
-
-      {errorMessage && (
-        <div class="error" role="alert">{errorMessage}</div>
-      )}
-
-      <section class="stats">
-        {statistics.map((item) => (
-          <article class="stat-card">
-            <div class="stat-icon">{item.icon}</div>
-            <div class="stat-value">{item.value.toLocaleString()}</div>
-            <div class="stat-label">{item.label}</div>
-          </article>
-        ))}
-      </section>
-
-      <h2>管理功能</h2>
-
-      <section class="menu">
-        <article class="menu-card">
-          <h3>NotBGG 自建遊戲</h3>
-          <p>管理本體、擴充與配件的原始建檔資料。</p>
-          <a class="back" href="/admin/notbgg">開啟 NotBGG 管理</a>
+<AdminLayout lang={lang} title={t('管理首頁', 'Dashboard')}>
+  <main id="editor-content" class="dashboard" tabindex="-1">
+    <div class="dashboard-heading">
+      <div><p class="eyebrow">NOTBGG / ADMINISTRATION</p><h1>{t('管理首頁', 'Dashboard')}</h1>
+        <p class="intro">{t('收藏資料總覽與管理入口', 'Collection overview and management')}</p></div>
+      <a class="public-link" href={en ? '/en/' : '/'}>{t('← 返回公開網站', '← Back to public site')}</a>
+    </div>
+    {errorMessage && <div class="dashboard-error" role="alert">{errorMessage}</div>}
+    <section class="dashboard-grid" aria-label={t('管理區塊', 'Management sections')}>
+      {cards.map((card) => (
+        <article class="dashboard-card">
+          <h2>{card.title}</h2>
+          <dl class="dashboard-stats">
+            {card.stats.map((stat) => (
+              <div class="dashboard-stat">
+                <dt>{stat.label}</dt>
+                <dd>{stat.value === undefined ? '—' : stat.value.toLocaleString(lang)}
+                  {stat.value === undefined && <span class="sr-only">{t('統計無法取得', 'Statistics unavailable')}</span>}
+                </dd>
+                {'note' in stat && <p class="stat-note">{stat.note}</p>}
+              </div>
+            ))}
+          </dl>
+          <footer class:list={['dashboard-actions', { paired: card.actions.length === 2 }]}>
+            {card.actions.map((action) => action.href
+              ? <a class="admin-button primary" href={action.href}>{action.label}</a>
+              : <button class="admin-button" type="button" disabled>{action.label}</button>)}
+          </footer>
         </article>
-        <article class="menu-card">
-          <h3>📚 收藏管理</h3>
-          <p>搜尋、篩選及編輯個人桌遊收藏資料。</p>
-          <span class="status">待開發</span>
-        </article>
+      ))}
+    </section>
+  </main>
+</AdminLayout>
 
-        <article class="menu-card">
-          <h3>🧩 組件管理</h3>
-          <p>管理擴充、配件、組件數量及 BGG 對應關係。</p>
-          <span class="status">待開發</span>
-        </article>
-
-        <article class="menu-card">
-          <h3>🃏 卡套管理</h3>
-          <p>管理卡套尺寸、需求與庫存紀錄。</p>
-          <span class="status">待開發</span>
-        </article>
-
-        <article class="menu-card">
-          <h3>🔄 BGG 資料同步</h3>
-          <p>更新遊戲基本資訊、分類及統計資料。</p>
-          <span class="status">待開發</span>
-        </article>
-      </section>
-
-      <a class="back" href="/">← 返回網站首頁</a>
-    </main>
-  </body>
-</html>
+<style>
+  .dashboard{max-width:1200px;margin:auto;padding:40px 24px 64px;color:#202822}
+  .dashboard-heading{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:20px;margin-bottom:28px}
+  .eyebrow{margin:0 0 8px;font-size:11px;letter-spacing:.14em;color:#0f6b5c}
+  h1{margin:0;font-size:30px;line-height:1.3} .intro{margin:8px 0 0;color:#68675f}
+  .public-link{font-size:13px}
+  .dashboard-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+  .dashboard-card{min-width:0;display:flex;flex-direction:column;padding:26px;background:#fff;border:1px solid #dad8d0;border-radius:12px}
+  h2{margin:0 0 22px;font-size:20px;font-weight:650}
+  .dashboard-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0 0 24px}
+  .dashboard-stat{min-width:0;padding:18px;background:#f3f6f2;border-radius:8px;overflow-wrap:anywhere}
+  dt{font-size:13px;color:#68675f} dd{margin:6px 0 0;font-size:32px;line-height:1.3;font-weight:650;color:#0f6b5c;font-variant-numeric:tabular-nums}
+  .stat-note{font-size:12px;color:#68675f;margin:8px 0 0}
+  .dashboard-actions{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;border-top:1px solid #e5e5dd;padding-top:20px;margin-top:auto}
+  .dashboard-actions.paired{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .dashboard-actions .admin-button{display:flex;align-items:center;justify-content:center;min-height:60px;width:100%;min-width:0;text-align:center;white-space:normal;overflow-wrap:anywhere;line-height:1.5}
+  .dashboard-actions button:disabled{background:#eceeea;border-color:#eceeea;color:#68675f;opacity:1;cursor:not-allowed}
+  .dashboard-error{padding:16px;margin-bottom:24px;background:#fff0ed;border:1px solid #e8bab3;border-radius:8px;color:#8d251c}
+  @media(max-width:760px){.dashboard{padding:28px 16px 40px}.dashboard-grid{grid-template-columns:minmax(0,1fr);gap:16px}.dashboard-card{padding:20px}h1{font-size:26px}}
+  @media(max-width:380px){.dashboard-card{padding:16px}.dashboard-stat{padding:12px}.dashboard-actions{gap:8px}.dashboard-actions .admin-button{padding:8px;font-size:12px}}
+</style>

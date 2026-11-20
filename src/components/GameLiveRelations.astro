@@ -1,0 +1,12 @@
+---
+interface Props{gameKey:string;lang:'en'|'zh-TW'}
+const{gameKey,lang}=Astro.props,en=lang==='en';
+---
+<section class="live-relations" data-live-relations data-key={gameKey} data-lang={lang}>
+ <h2>{en?'Current game relations':'即時遊戲關聯'}</h2>
+ <p>{en?'BGG evidence and confirmed site relations; ownership is independent.':'BGG 證據與已確認站內關聯；是否收藏另行判定。'}</p>
+ <div data-live-relation-body aria-live="polite">{en?'Loading…':'載入中…'}</div>
+ <button type="button" data-live-relation-retry hidden>{en?'Retry relations':'重試關聯查詢'}</button>
+</section>
+<script>import '../lib/public-live-relations-controller';</script>
+<style>.live-relations{min-width:0;padding:22px;border:1px solid #e3e4e4;border-radius:14px;background:white;margin:18px 0}.live-relations h2{font-size:1.1rem}.live-relations p,.live-relations :global(li){font-size:.85rem;line-height:1.8;overflow-wrap:anywhere}.live-relations :global(ul){padding-left:20px}.live-relations button{min-height:44px;padding:10px;border:1px solid #ccd5de;border-radius:7px;background:white;cursor:pointer}@media(max-width:680px){.live-relations{padding:17px}}</style>

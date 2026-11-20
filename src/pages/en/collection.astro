@@ -1,28 +1,5 @@
-
 ---
-import { env } from "cloudflare:workers";
-
-import Layout from "../../layouts/Layout.astro";
-import CollectionPage from "../../components/CollectionPage.astro";
-
-import { CollectionV2Repository } from "../../lib/collection-v2-repository";
-import { adaptCollectionV2Rows } from "../../lib/collection-v2-adapter";
-
-export const prerender = false;
-
-let collectionGames:ReturnType<typeof adaptCollectionV2Rows>=[],unavailable=false;
-try{if(!env.DB)throw new Error('Unavailable');const repository=new CollectionV2Repository(env.DB);collectionGames=adaptCollectionV2Rows(await repository.getProductionItems(),'en');}catch{unavailable=true;Astro.response.status=503;}
-Astro.response.headers.set('Cache-Control','no-store');
+import Page from '../../components/PublicBrowse.astro';
+export const prerender=false;
 ---
-
-<Layout
-    title="My Collection | Soma's Board Game Collection Blog"
-    lang="en"
->
-    {unavailable&&<p role="status">Collection data is temporarily unavailable</p>}
-    <p><a href="/admin/collection">Manage collection</a></p>
-    <CollectionPage
-        lang="en"
-        collectionGames={collectionGames}
-    />
-</Layout>
+<Page lang='en' collection/>

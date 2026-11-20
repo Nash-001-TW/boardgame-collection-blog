@@ -24,15 +24,170 @@ export function validateCollectionInput(input:unknown):CollectionInput {
   personalRating:number(d.personalRating,10,false),playCount:number(d.playCount,1e7),comment:text(d.comment,10000),storageNotes:text(d.storageNotes,3000),accessoryNotes:text(d.accessoryNotes,3000),sleeveNotes:text(d.sleeveNotes,3000),
   language:text(d.language,40),edition:text(d.edition),purchaseDate:date,priceMinor:number(d.priceMinor,1e12),currency,merchant:text(d.merchant)};
 }
+
+/** The partial API owns only these columns; each SQL fragment is a fixed literal. */
+function collectionPatchFields(input: unknown) {
+ if (!input || typeof input !== 'object' || Object.getPrototypeOf(input) !== Object.prototype) {
+  throw new CollectionWriteError('VALIDATION');
+ }
+ const entries = Object.entries(input);
+ if (!entries.length) throw new CollectionWriteError('VALIDATION');
+ const assignments: string[] = [];
+ const values: (string | number | null)[] = [];
+ for (const [field, value] of entries) {
+  switch (field) {
+   case 'displayName': {
+    const name = text(value);
+    if (!name) throw new CollectionWriteError('VALIDATION');
+    assignments.push('display_name=?'); values.push(name);
+    break;
+   }
+   case 'acquisitionStatus':
+    if (!collectionStatuses.some(status => status === value)) throw new CollectionWriteError('VALIDATION');
+    assignments.push('acquisition_status=?'); values.push(value as CollectionInput['acquisitionStatus']);
+    break;
+   case 'wishlist':
+    if (value !== true && value !== false && value !== 0 && value !== 1) throw new CollectionWriteError('VALIDATION');
+    assignments.push('wishlist=?'); values.push(Number(value));
+    break;
+   case 'notes': {
+    if (value !== null && (typeof value !== 'string' || value.includes('\0'))) throw new CollectionWriteError('VALIDATION');
+    let parsed: unknown;
+    if (typeof value === 'string') {
+     try { parsed = JSON.parse(value); } catch { /* Legacy plain text is supported. */ }
+    }
+    if (parsed && typeof parsed === 'object' && Object.hasOwn(parsed, 'd5_create_token')) {
+     throw new CollectionWriteError('VALIDATION');
+    }
+    assignments.push('notes=?'); values.push(value);
+    break;
+   }
+   default: throw new CollectionWriteError('UNKNOWN_FIELD');
+  }
+ }
+ return {assignments, values};
+}
 const hash=async(value:unknown)=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(value)))),n=>n.toString(16).padStart(2,'0')).join('');
 const scopeCheck=(s:string):CollectionScope=>{if(s!=='production'&&s!=='test')throw new CollectionWriteError('VALIDATION');return s;};
 const positive=(n:number)=>{if(!Number.isSafeInteger(n)||n<1)throw new CollectionWriteError('VALIDATION');return n;};
 const personal=(d:CollectionInput)=>({personal_rating:d.personalRating,play_count:d.playCount,personal_comment:d.comment,storage_notes:d.storageNotes,accessory_notes:d.accessoryNotes,sleeve_notes:d.sleeveNotes,purchase_source_hint:d.merchant,purchase_date_hint:d.purchaseDate,purchase_currency_hint:d.currency});
 type AdminRow=Record<string,unknown>&{id:number;notes:string|null;revision:number;game_id:number|null;archived_at:string|null;managed_copy_id:number|null;managed_order_id:number|null;notbgg_seq:number|null;source_archived:string|null};
+interface CollectionListItem {
+ id: number;
+ display_name: string;
+ item_type: string;
+ acquisition_status: string;
+ archived_at: string | null;
+ wishlist?: number;
+}
+
+interface CollectionListIdentity {
+ game_name: string;
+ source: 'bgg' | 'notbgg' | 'missing';
+ source_id: string | null;
+ source_archived: string | null;
+ link_status: 'pending' | 'linked' | null;
+ linked_source_id: string | null;
+ primary_source: 'bgg' | 'notbgg' | null;
+}
+
+interface CollectionListGroup extends CollectionListIdentity {
+ key: string;
+ items: CollectionListItem[];
+}
+
+export interface CollectionListPage {
+ groups: CollectionListGroup[];
+ nextCursor: number | null;
+}
+
+interface CollectionListOptions {
+ view: string;
+ query: string;
+ source: string | null;
+ status: string | null;
+ archive: string | null;
+ wishlist?: string | null;
+ after: number;
+ limit: number;
+}
+
 /** Extends the existing V2 tables, never a parallel collection identity or storage backend. */
 export class CollectionV2Writer {
  constructor(private db:D1Database){}
  async list(scope:CollectionScope,after=0,limit=20){scopeCheck(scope);if(!Number.isSafeInteger(after)||after<0||!Number.isInteger(limit)||limit<1||limit>100)throw new CollectionWriteError('VALIDATION');return (await this.db.prepare(`SELECT c.id,c.display_name,c.item_type,c.acquisition_status,c.record_scope,m.archived_at,COALESCE(m.revision,0) revision,n.seq notbgg_seq,n.archived_at source_archived FROM v2_collection_items c LEFT JOIN v2_collection_management m ON m.collection_item_id=c.id LEFT JOIN notbgg_games n ON n.game_id=c.game_id WHERE c.record_scope=? AND c.id>? ORDER BY c.id LIMIT ?`).bind(scope,after,limit).all()).results;}
+ async listPage(scope: CollectionScope, options: CollectionListOptions): Promise<CollectionListPage> {
+  scopeCheck(scope);
+  const {view, query, source, status, archive, after, limit, wishlist = null} = options;
+  if (!['grouped', 'records'].includes(view) || query.length > 200
+      || (source !== null && !['bgg', 'notbgg', 'missing'].includes(source))
+      || (status !== null && !collectionStatuses.some(value => value === status))
+      || (archive !== null && !['active', 'archived'].includes(archive))
+      || (wishlist !== null && wishlist !== '0' && wishlist !== '1')
+      || !Number.isSafeInteger(after) || after < 0 || !Number.isInteger(limit) || limit < 1 || limit > 100) {
+   throw new CollectionWriteError('VALIDATION');
+  }
+  const keyword = query.trim().toLowerCase();
+  // Each group owns a disjoint set of collection IDs, so its minimum ID is a unique cursor.
+  const {results} = await this.db.prepare(`
+   WITH identified AS (
+    SELECT c.id, c.display_name, c.item_type, c.acquisition_status, c.wishlist, m.archived_at,
+           COALESCE(n.name, g.primary_name, c.display_name) AS game_name,
+           CASE WHEN n.seq IS NOT NULL THEN 'notbgg'
+                WHEN g.bgg_id IS NOT NULL THEN 'bgg' ELSE 'missing' END AS source,
+           CASE WHEN n.seq IS NOT NULL THEN printf('NotBGG:%06d', n.seq)
+                WHEN g.bgg_id IS NOT NULL THEN 'BGG:' || g.bgg_id END AS source_id,
+           n.archived_at AS source_archived, l.status AS link_status,
+           CASE WHEN n.seq IS NOT NULL AND l.id IS NOT NULL THEN 'BGG:' || l.candidate_bgg_id
+                WHEN l.status = 'linked' THEN printf('NotBGG:%06d', l.seq) END AS linked_source_id,
+           CASE WHEN l.status = 'linked' THEN l.primary_source END AS primary_source,
+           CASE WHEN ? = 'grouped' AND c.game_id IS NOT NULL THEN 'game:' || c.game_id
+                ELSE 'collection:' || c.id END AS group_key
+    FROM v2_collection_items c
+    LEFT JOIN v2_collection_management m ON m.collection_item_id = c.id
+    LEFT JOIN v2_games g ON g.id = c.game_id
+    LEFT JOIN notbgg_games n ON n.game_id = g.id
+    LEFT JOIN notbgg_bgg_links l
+      ON (n.seq IS NOT NULL AND l.seq = n.seq AND l.status IN ('pending', 'linked'))
+      OR (n.seq IS NULL AND g.bgg_id IS NOT NULL AND l.candidate_bgg_id = g.bgg_id
+          AND l.bgg_game_id = g.id AND l.status = 'linked')
+    WHERE c.record_scope = ?
+   ), filtered AS (
+    SELECT * FROM identified
+    WHERE source = COALESCE(?, source)
+      AND acquisition_status = COALESCE(?, acquisition_status)
+      AND wishlist = COALESCE(?, wishlist)
+      AND COALESCE(?, CASE WHEN archived_at IS NULL THEN 'active' ELSE 'archived' END)
+          = CASE WHEN archived_at IS NULL THEN 'active' ELSE 'archived' END
+      AND (instr(lower(display_name), ?) > 0 OR instr(lower(game_name), ?) > 0
+           OR lower(source_id) = ? OR CAST(id AS TEXT) = ? OR 'collection:' || id = ?)
+   ), candidates AS (
+    SELECT group_key, MIN(id) AS cursor FROM filtered
+    GROUP BY group_key HAVING MIN(id) > ?
+    ORDER BY cursor LIMIT ?
+   ), page AS (
+    SELECT group_key, cursor FROM candidates ORDER BY cursor LIMIT ?
+   )
+   SELECT f.*, p.cursor, (SELECT COUNT(*) FROM candidates) > ? AS has_next
+   FROM page p JOIN filtered f ON f.group_key = p.group_key
+   ORDER BY p.cursor, f.id
+  `).bind(view, scope, source, status, wishlist === null ? null : Number(wishlist), archive, keyword, keyword, keyword, keyword, keyword,
+   after, limit + 1, limit, limit).all<CollectionListItem & CollectionListIdentity & {
+    group_key: string; cursor: number; has_next: number;
+   }>();
+  const groups = new Map<string, CollectionListGroup>();
+  for (const row of results) {
+   const {group_key, cursor, has_next, id, display_name, item_type, acquisition_status, wishlist, archived_at, ...identity} = row;
+   let group = groups.get(group_key);
+   if (!group) {
+    group = {key: group_key, ...identity, items: []};
+    groups.set(group_key, group);
+   }
+   group.items.push({id, display_name, item_type, acquisition_status, wishlist, archived_at});
+  }
+  const last = results.at(-1);
+  return {groups: [...groups.values()], nextCursor: last?.has_next ? last.cursor : null};
+ }
  async get(id:number,scope:CollectionScope):Promise<AdminRow|null>{positive(id);scopeCheck(scope);return this.db.prepare(`SELECT c.*,EXISTS(SELECT 1 FROM v2_games g WHERE g.id=c.game_id) resolved_game,COALESCE(m.revision,0) revision,m.archived_at,m.managed_copy_id,m.managed_order_id,n.seq notbgg_seq,n.archived_at source_archived FROM v2_collection_items c LEFT JOIN v2_collection_management m ON m.collection_item_id=c.id LEFT JOIN notbgg_games n ON n.game_id=c.game_id WHERE c.id=? AND c.record_scope=?`).bind(id,scope).first<AdminRow>();}
  async detail(id:number,scope:CollectionScope){const item=await this.get(id,scope);if(!item)return null;
   const copies=(await this.db.prepare('SELECT * FROM v2_owned_copies WHERE collection_item_id=? ORDER BY id').bind(id).all()).results;
@@ -79,6 +234,32 @@ export class CollectionV2Writer {
   }
   const created=await this.db.prepare('SELECT collection_item_id FROM v2_collection_management WHERE request_key=?').bind(key).first<{collection_item_id:number}>();return {collectionId:created!.collection_item_id,replayed:false};
  }
+ async patchFields(id: number, changes: unknown, ctx: {actor: string; scope: CollectionScope; revision: unknown}) {
+  const {revision, actor, scope} = ctx;
+  if (!actor.trim() || typeof revision !== 'number' || !Number.isSafeInteger(revision)
+      || revision < 0 || revision >= Number.MAX_SAFE_INTEGER) throw new CollectionWriteError('VALIDATION');
+  const {assignments, values} = collectionPatchFields(changes);
+  const current = await this.get(id, scope);
+  if (!current) throw new CollectionWriteError('NOT_FOUND');
+  if (current.revision !== revision) throw new CollectionWriteError('CONFLICT');
+  if (current.archived_at) throw new CollectionWriteError('ARCHIVED');
+  const next = revision + 1;
+  try {
+   // Insert the event first: collection_revision_gate checks the revision inside the batch,
+   // including when this request races a full edit or archive after the preflight read.
+   await this.db.batch([
+    this.db.prepare("INSERT INTO v2_collection_events(collection_item_id,revision,operation,actor) VALUES (?,?,'update',?)").bind(id, next, actor),
+    this.db.prepare(`INSERT INTO v2_collection_management(collection_item_id,revision) VALUES (?,?)
+      ON CONFLICT(collection_item_id) DO UPDATE SET revision=excluded.revision`).bind(id, next),
+    this.db.prepare(`UPDATE v2_collection_items SET ${assignments.join(', ')}, updated_at=? WHERE id=? AND record_scope=?`)
+     .bind(...values, new Date().toISOString(), id, scope),
+   ]);
+  } catch (error) {
+   throw new CollectionWriteError(String(error).includes('COLLECTION_REVISION_CONFLICT') ? 'CONFLICT' : 'STORAGE');
+  }
+  return this.detail(id, scope);
+ }
+
  async update(id:number,input:unknown,ctx:{actor:string;scope:CollectionScope;expectedRevision:number;createCopy?:boolean},archive=false){
   const current=await this.get(id,ctx.scope);if(!current)throw new CollectionWriteError('NOT_FOUND');if(current.archived_at)throw new CollectionWriteError('ARCHIVED');
   if(!Number.isSafeInteger(ctx.expectedRevision)||ctx.expectedRevision<0||ctx.expectedRevision!==current.revision)throw new CollectionWriteError('CONFLICT');

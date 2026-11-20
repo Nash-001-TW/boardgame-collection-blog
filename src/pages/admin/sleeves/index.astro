@@ -1,0 +1,144 @@
+---
+import { env } from 'cloudflare:workers';
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { readSleeveAdmin, sleeveTransactions } from '../../../lib/sleeve-admin';
+import { HttpError } from '../../../lib/notbgg-admin-api';
+export const prerender = false;
+const lang = Astro.url.searchParams.get('lang')==='en'?'en':'zh-TW';
+const en = lang==='en', t=(zh:string,english:string)=>en?english:zh;
+const title=t('卡套管理','Sleeve management');
+const params=Astro.url.searchParams;
+const view=params.get('view')??'products';
+const kinds={
+    OPENING_BALANCE:t('期初張數','Opening balance'),
+    PURCHASE:t('進貨（包）','Purchase (packs)'),
+    USE:t('手動使用（張）','Manual use (sleeves)'),
+    RETURN:t('退回庫存（張）','Return to stock (sleeves)'),
+    ADJUST:t('增減調整（正／負張數）','Adjustment (signed sleeves)'),
+    DISCARD:t('報廢（張）','Discard (sleeves)'),
+};
+let data: Awaited<ReturnType<typeof readSleeveAdmin>> | undefined;
+let error='';
+try {
+    data=await readSleeveAdmin(env.DB,params,(env as unknown as Record<string,unknown>).PHYSICAL_COMPONENT_SIGNING_KEY);
+} catch (failure) { Astro.response.status=failure instanceof HttpError?failure.status:503;error=t('無法讀取卡套資料，請確認篩選條件、資料庫版本或稍後重試。','Sleeve data could not be loaded. Check filters and the database version, or retry later.'); }
+const link=(changes:Record<string,string|null>)=>{
+    const query=new URLSearchParams(params);
+    for(const [key,value] of Object.entries(changes)) {if(value===null)query.delete(key);else query.set(key,value);}
+    return '?'+query.toString();
+};
+const sizeLabel=(row:Record<string,unknown>)=>Number(row.width_tenth_mm)/10+' × '+Number(row.height_tenth_mm)/10+' mm';
+const number=(value:unknown)=>value===null?t('尚未建立','Not established'):Number.isSafeInteger(value)?Number(value).toLocaleString(lang):t('無法計算','Unavailable');
+---
+<AdminLayout lang={lang} title={title}>
+<main id="editor-content" class="admin-page sleeve-admin" data-sleeve-admin data-lang={lang}>
+    <h1>{title}</h1>
+    <p><a class="admin-button" href={'/admin/sleeves/requirements?lang='+lang}>{t('管理需求與逐副本套用','Manage requirements & copy applications')}</a></p>
+    <nav aria-label={t('卡套管理分頁','Sleeve sections')}>
+        {(['products','sizes','requirements','transactions'] as const).map((tab,i)=>
+            <a class="admin-button" aria-current={view===tab?'page':undefined} href={link({view:tab,after:null,product:null})}>
+                {[t('產品與庫存','Products & stock'),t('尺寸規格','Sizes'),t('收藏需求與組件','Requirements & components'),t('庫存交易','Stock ledger')][i]}
+            </a>)}
+    </nav>
+    <p data-sleeve-status role="status" aria-live="polite" tabindex="-1"></p>
+    {error&&<p role="alert">{error}</p>}
+    <form method="get" class="fields">
+        <input type="hidden" name="lang" value={lang}/><input type="hidden" name="view" value={view}/>
+        {view!=='sizes'&&<label>{t('搜尋','Search')}<input name="q" value={params.get('q')??''} maxlength="160"/></label>}
+        <label>{t('尺寸 ID（可留空）','Size ID (optional)')}<input name="size" type="number" min="1" step="1" value={params.get('size')??undefined}/></label>
+        {(view==='products'||view==='transactions')&&<label>{t('產品 ID（可留空）','Product ID (optional)')}<input name="product" type="number" min="1" step="1" value={params.get('product')??undefined}/></label>}
+        {view==='products'&&<label>{t('產品狀態','Product status')}<select name="active">
+            {['all','active','inactive'].map((value,i)=><option value={value} selected={value===(params.get('active')??'all')}>{[t('全部','All'),t('啟用','Active'),t('停用','Inactive')][i]}</option>)}
+        </select></label>}
+        {view==='requirements'&&<label>{t('收藏範圍','Collection scope')}<select name="scope"><option value="production" selected={params.get('scope')!=='test'}>production</option><option value="test" selected={params.get('scope')==='test'}>test</option></select></label>}
+        <button class="admin-button">{t('篩選','Filter')}</button>
+    </form>
+    {view==='products'&&<>
+        <details class="sleeve-panel">
+            <summary>{t('新增卡套產品','Add sleeve product')}</summary>
+            <form data-sleeve-action="create" class="fields">
+                <label>{t('品牌','Brand')}<input name="brand" maxlength="100"/></label>
+                <label>{t('產品名稱','Product name')}<input name="name" required maxlength="160"/></label>
+                <label>{t('寬度 mm','Width mm')}<input name="width" required type="number" min="1" max="2000" step=".1"/></label>
+                <label>{t('高度 mm','Height mm')}<input name="height" required type="number" min="1" max="2000" step=".1"/></label>
+                <label>{t('每包張數','Sleeves per pack')}<input name="sheetsPerPack" required type="number" min="1" max="10000" step="1"/></label>
+                <label>{t('厚度 µm（可留空）','Thickness µm (optional)')}<input name="thickness" type="number" min="1" max="2000" step="1"/></label>
+                <label>{t('備註','Notes')}<textarea name="notes" maxlength="1000"/></label>
+                <label><input name="active" type="checkbox" checked/>{t('啟用產品','Active product')}</label>
+                <button class="admin-button primary">{t('新增產品','Add product')}</button>
+            </form>
+        </details>
+        <p>{t('以下為已記錄交易的帳面數量。沒有交易時顯示尚未建立；不代表實際持有零張。使用、退回、調整與報廢請明確登錄，需求關聯不會自動扣庫存。',
+            'Quantities reflect recorded ledger entries. No entries means not established. Record use, returns, adjustments and discards explicitly. Requirement assignments do not reduce stock.')}</p>
+    </>}
+    {data&&data.rows.length===0&&<p class="sleeve-panel">{t('沒有符合條件的資料。','No matching records.')}</p>}
+    {data?.rows.map(row=><article class="record" data-sleeve-record={String(row.id)}>
+        {view==='products'?<>
+            <h2>#{String(row.id)} {String(row.brand??'')} {String(row.product_name)}</h2>
+            <p>{sizeLabel(row)} · {String(row.sheets_per_pack)} {t('張／包','sleeves/pack')} · {Number(row.is_active)?t('啟用','Active'):t('停用','Inactive')}</p>
+            <dl>
+                <div><dt>{t('已記錄期初與進貨（張）','Recorded opening & purchases (sleeves)')}</dt><dd>{Number(row.transaction_count)?number(row.received??0):number(null)}</dd></div>
+                <div><dt>{t('已記錄使用（張，未扣除退回）','Recorded use (gross sleeves)')}</dt><dd>{Number(row.transaction_count)?number(row.used??0):number(null)}</dd></div>
+                <div><dt>{t('帳面剩餘（張）','Ledger balance (sleeves)')}</dt><dd>{number(row.balance)}</dd></div>
+            </dl>
+            <a href={link({view:'transactions',product:String(row.id),after:null})}>{t('查看完整交易','View full ledger')}</a>
+            <details><summary>{t('編輯產品','Edit product')}</summary>
+                <form data-sleeve-action="edit" class="fields">
+                    <input name="productId" type="hidden" value={String(row.id)}/><input name="revision" type="hidden" value={String(row.admin_revision)}/>
+                    <label>{t('品牌','Brand')}<input name="brand" maxlength="100" value={String(row.brand??'')}/></label>
+                    <label>{t('產品名稱','Product name')}<input name="name" required maxlength="160" value={String(row.product_name)}/></label>
+                    <label>{t('寬度 mm','Width mm')}<input name="width" required type="number" min="1" max="2000" step=".1" value={Number(row.width_tenth_mm)/10}/></label>
+                    <label>{t('高度 mm','Height mm')}<input name="height" required type="number" min="1" max="2000" step=".1" value={Number(row.height_tenth_mm)/10}/></label>
+                    <label>{t('每包張數','Sleeves per pack')}<input name="sheetsPerPack" required type="number" min="1" max="10000" step="1" value={Number(row.sheets_per_pack)}/></label>
+                    <label>{t('厚度 µm（可留空）','Thickness µm (optional)')}<input name="thickness" type="number" min="1" max="2000" step="1" value={row.thickness_microns===null?undefined:Number(row.thickness_microns)}/></label>
+                    <label>{t('備註','Notes')}<textarea name="notes" maxlength="1000">{String(row.notes??'')}</textarea></label>
+                    <label><input name="active" type="checkbox" checked={Number(row.is_active)===1}/>{t('啟用產品','Active product')}</label>
+                    <button class="admin-button">{t('儲存產品','Save product')}</button>
+                </form>
+            </details>
+            {Number(row.is_active)===1&&<>
+                <details><summary>{t('登錄庫存變更','Record stock change')}</summary>
+                    <form data-sleeve-action="stock" class="fields">
+                        <input name="productId" type="hidden" value={String(row.id)}/><input name="revision" type="hidden" value={String(row.admin_revision)}/>
+                        <input name="lastTransactionId" type="hidden" value={String(row.last_transaction_id)}/>
+                        <label>{t('操作','Operation')}<select name="kind">{sleeveTransactions.filter(kind=>Number(row.transaction_count)>0?kind!=='OPENING_BALANCE':kind==='OPENING_BALANCE'||kind==='PURCHASE').map(kind=><option value={kind}>{kinds[kind]}</option>)}</select></label>
+                        <label>{t('數量（進貨填包數，其餘填張數；調整可為負數）','Quantity (packs for purchase, sleeves otherwise; signed for adjustment)')}<input name="quantity" type="number" required step="1" min="-1000000" max="1000000"/></label>
+                        <label>{t('交易日期','Transaction date')}<input name="date" type="date" required/></label>
+                        <label>{t('原因或備註','Reason or notes')}<textarea name="notes" maxlength="1000"/></label>
+                        <button class="admin-button">{t('確認登錄','Record change')}</button>
+                    </form>
+                </details>
+                <form data-sleeve-action="archive">
+                    <input name="productId" type="hidden" value={String(row.id)}/><input name="revision" type="hidden" value={String(row.admin_revision)}/>
+                    <button class="admin-button danger">{t('停用產品','Deactivate product')}</button>
+                </form>
+            </>}
+        </>:view==='sizes'?<>
+            <h2>#{String(row.id)} {sizeLabel(row)}</h2>
+            <p>{t('產品數','Products')} {number(row.product_count)} · {t('需求筆數','Requirements')} {number(row.requirement_count)} · {t('需求張數','Required sleeves')} {number(row.required??0)}</p>
+            <a href={link({view:'products',size:String(row.id),after:null})}>{t('查看產品','View products')}</a>
+        </>:view==='requirements'?<>
+            <h2>#{String(row.id)} {String(row.display_name)}</h2>
+            <p>{sizeLabel(row)} · {number(row.quantity_sheets)} {t('張','sleeves')} · {String(row.record_scope)}</p>
+            <p>{t('組件','Component')} {String(row.component_name??t('未指派','Unassigned'))} · {
+                row.classification==='PHYSICAL_COMPONENT'?t('已確認實體組件','Confirmed physical component'):
+                row.classification==='LEGACY_PRODUCT'?t('歷史商品來源','Legacy product source'):
+                row.classification===null?t('未指派','Unassigned'):t('待確認','Pending verification')}</p>
+            {row.classification_reason==='EVIDENCE_UNAVAILABLE'&&<p role="alert">{t('完整組件證據無法驗證。','Complete component evidence is unavailable.')}</p>}
+            <a href={'/admin/collection/components/manage?collection='+row.collection_item_id+'&lang='+lang}>{t('查看收藏與卡牌關聯','View collection and card assignment')}</a>
+            <a class="admin-button" href={'/admin/sleeves/requirements?collection='+row.collection_item_id+'&lang='+lang}>{t('編輯需求與逐副本套用','Edit requirements & copy applications')}</a>
+        </>:<>
+            <h2>#{String(row.id)} {String(row.brand??'')} {String(row.product_name)}</h2>
+            <p>{kinds[row.transaction_type as keyof typeof kinds]} · {String(row.transaction_date)} · {number(row.quantity_sheets)} {t('張','sleeves')}</p>
+            {row.pack_count!==null&&<p>{String(row.pack_count)} × {String(row.sheets_per_pack_snapshot)} {t('張／包（交易時快照）','sleeves/pack (snapshot)')}</p>}
+            <p>{String(row.notes??'')}</p>
+        </>}
+    </article>)}
+    <nav aria-label={t('分頁','Pagination')}>
+        {params.has('after')&&<a class="admin-button" href={link({after:null})}>{t('第一頁','First page')}</a>}
+        {data?.nextCursor!=null&&<a class="admin-button" href={link({after:String(data.nextCursor)})}>{t('下一頁','Next page')}</a>}
+    </nav>
+</main>
+</AdminLayout>
+<script>import '../../../lib/sleeve-admin-controller';</script>
+<style>.sleeve-panel{padding:20px;border:1px solid var(--admin-border);border-radius:8px;background:#fff;margin:20px 0}.sleeve-panel>summary{cursor:pointer;font-weight:600}.sleeve-admin details{margin:16px 0}.sleeve-admin summary{cursor:pointer;padding:8px 0}.sleeve-admin nav a[aria-current=page]{background:#dceee5;color:#075342;font-weight:650}</style>

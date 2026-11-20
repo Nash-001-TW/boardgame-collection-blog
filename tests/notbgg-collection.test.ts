@@ -13,6 +13,111 @@ import { accessFixture } from './helpers/notbgg-access-fixture.ts';
 import { migrationStatements } from './helpers/notbgg-local-d1.ts';
 import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
+import type { CollectionListPage } from '../src/lib/collection-v2-management.ts';
+
+test('P1 collection GET filters before grouping and paginates complete source groups', async () => {
+ const local = await isolatedNotBggD1();
+ const auth = await accessFixture();
+ try {
+  const {db} = local;
+  await migrateIsolatedD1(db);
+  const profiles = new NotBggRepository(db);
+  const writer = new CollectionV2Repository(db).management;
+  const context = {actor: 'p1-fixture'};
+  const linked = (await profiles.create({name: 'P1 NotBGG title', type: 'boardgame'},
+   {...context, idempotencyKey: 'p1-linked'})).game;
+  const pending = (await profiles.create({name: 'P1 Candidate title', type: 'boardgame'},
+   {...context, idempotencyKey: 'p1-pending'})).game;
+  const bgg = await db.prepare("INSERT INTO v2_games(bgg_id,primary_name,catalog_source) VALUES(980001,'P1 Canonical BGG title','bgg') RETURNING id").first<{id: number}>();
+  const candidate = await db.prepare("INSERT INTO v2_games(bgg_id,primary_name,catalog_source) VALUES(980002,'P1 Candidate BGG title','bgg') RETURNING id").first<{id: number}>();
+  await db.prepare(`INSERT INTO notbgg_bgg_links(seq,candidate_bgg_id,bgg_game_id,status,primary_source,created_by,confirmed_by,linked_at)
+   VALUES(?,980001,?,'linked','bgg','fixture','fixture',CURRENT_TIMESTAMP)`).bind(Number(linked.notBggId.slice(7)), bgg!.id).run();
+  await db.prepare("INSERT INTO notbgg_bgg_links(seq,candidate_bgg_id,created_by) VALUES(?,980002,'fixture')")
+   .bind(Number(pending.notBggId.slice(7))).run();
+  await profiles.archive(linked.notBggId, {...context, expectedRevision: 1});
+  const insert = async (gameId: number | null, name: string, status = 'owned', scope = 'test') => {
+   const row = await db.prepare(`INSERT INTO v2_collection_items(game_id,display_name,acquisition_status,record_scope)
+    VALUES(?,?,?,?) RETURNING id`).bind(gameId, 'P1 fixture ' + name, status, scope).first<{id: number}>();
+   return row!.id;
+  };
+  const bggFirst = await insert(bgg!.id, 'BGG first');
+  const linkedFirst = await insert(linked.gameId, 'linked first');
+  const pendingId = await insert(pending.gameId, 'pending');
+  const missingFirst = await insert(null, 'missing');
+  const bggSecond = await insert(bgg!.id, 'BGG second', 'wishlist');
+  const linkedSecond = await insert(linked.gameId, 'linked second');
+  const candidateId = await insert(candidate!.id, 'candidate target');
+  const missingSecond = await insert(null, 'missing');
+  const production = await insert(bgg!.id, 'production', 'owned', 'production');
+  await writer.update(linkedSecond, undefined, {...context, scope: 'test', expectedRevision: 0}, true);
+  const jwt = await auth.token();
+  const get = (params: string) => handleCollectionAdminRequest(new Request(
+   'https://example.test/api/admin/collection?' + params,
+   {headers: {'Cf-Access-Jwt-Assertion': jwt}},
+  ), {...auth.bindings, DB: db});
+  const page = async (params: string): Promise<CollectionListPage> => {
+   const response = await get(params);
+   assert.equal(response.status, 200);
+   return (await response.json() as {data: CollectionListPage}).data;
+  };
+  const query = 'scope=test&q=P1+fixture';
+  const ids = (groups: CollectionListPage['groups']) => groups.flatMap(group => group.items.map(item => item.id));
+  const traverse = async (view: string, pageCount: number) => {
+   const groups: CollectionListPage['groups'] = [];
+   let after = 0;
+   for (let i = 0; i < pageCount; i++) {
+    const data = await page(`${query}&view=${view}&limit=2&after=${after}`);
+    assert.equal(data.groups.length, 2);
+    groups.push(...data.groups);
+    if (i === pageCount - 1) assert.equal(data.nextCursor, null);
+    else {
+     assert.ok(data.nextCursor !== null && data.nextCursor > after);
+     after = data.nextCursor;
+    }
+   }
+   return groups;
+  };
+  const grouped = await traverse('grouped', 3);
+  const records = await traverse('records', 4);
+  assert.deepEqual(ids(grouped), [bggFirst, bggSecond, linkedFirst, linkedSecond, pendingId, missingFirst, candidateId, missingSecond]);
+  assert.deepEqual(ids(records), [bggFirst, linkedFirst, pendingId, missingFirst, bggSecond, linkedSecond, candidateId, missingSecond]);
+  assert.deepEqual(grouped.map(group => group.key), [`game:${bgg!.id}`, `game:${linked.gameId}`, `game:${pending.gameId}`, `collection:${missingFirst}`, `game:${candidate!.id}`, `collection:${missingSecond}`]);
+  assert.deepEqual(grouped.map(group => [group.source_id, group.link_status, group.linked_source_id, group.primary_source]), [
+   ['BGG:980001', 'linked', linked.notBggId, 'bgg'],
+   [linked.notBggId, 'linked', 'BGG:980001', 'bgg'],
+   [pending.notBggId, 'pending', 'BGG:980002', null],
+   [null, null, null, null],
+   ['BGG:980002', null, null, null],
+   [null, null, null, null],
+  ]);
+  assert.ok(grouped[1].source_archived);
+  assert.equal(grouped[1].items[0].archived_at, null);
+  assert.ok(grouped[1].items[1].archived_at);
+  assert.deepEqual(ids((await page(`${query}&view=grouped&source=bgg&status=wishlist&archive=active`)).groups), [bggSecond]);
+  assert.deepEqual(ids((await page(`${query}&view=grouped&source=notbgg&archive=archived`)).groups), [linkedSecond]);
+  assert.deepEqual(ids((await page(`${query}&view=records&source=missing`)).groups), [missingFirst, missingSecond]);
+  for (const [term, matches] of [
+   ['p1 canonical bgg', [bggFirst, bggSecond]],
+   ['bgg:980001', [bggFirst, bggSecond]],
+   [linked.notBggId.toLowerCase(), [linkedFirst, linkedSecond]],
+   [`Collection:${bggSecond}`, [bggSecond]],
+   [String(bggSecond), [bggSecond]],
+  ] as const) {
+   assert.deepEqual(ids((await page(`scope=test&view=grouped&q=${encodeURIComponent(term)}`)).groups), matches);
+  }
+  assert.deepEqual(ids((await page('view=grouped&q=P1+fixture')).groups), [production]);
+  assert.equal((await get('scope=other&view=grouped')).status, 400);
+  assert.equal((await get('scope=test&view=other')).status, 400);
+  assert.equal((await get('scope=test&view=grouped&source=other')).status, 400);
+  const legacy = (await (await get(`scope=test&after=${bggFirst - 1}&limit=1`)).json() as {data: unknown[]}).data;
+  assert.deepEqual(legacy, await writer.list('test', bggFirst - 1, 1));
+  assert.deepEqual(ids((await page(`${query}&view=grouped&after=${production}`)).groups), []);
+ } finally {
+  auth.restore();
+  await local.dispose();
+ }
+});
+
 test('D5 isolated V2 collection, copy/purchase preservation, independent site edges and signed admin API',async t=>{
  const local=await isolatedNotBggD1(),db=local.db,auth=await accessFixture();
  try{

@@ -1,4 +1,5 @@
 ---
+import AdminLayout from '../layouts/AdminLayout.astro';
 import { adminFieldGroups, accessoryLabels } from '../lib/notbgg-admin-fields';
 import { accessoryCategories } from '../lib/notbgg-contract';
 interface Props { mode:'list'|'new'|'edit'; id?:string; lang?:'en'|'zh-TW'; }
@@ -6,8 +7,8 @@ const {mode,id='',lang='zh-TW'}=Astro.props;
 const en=lang==='en',t=(zh:string,english:string)=>en?english:zh,li=en?1:0;
 const suffix=en?'?lang=en':'';
 ---
-<!doctype html><html lang={lang}><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta name="robots" content="noindex,nofollow"/><meta name="referrer" content="no-referrer"/><title>NotBGG | Soma's Administration</title></head>
-<body><main data-notbgg-admin data-mode={mode} data-id={id} data-lang={lang}>
+<AdminLayout lang={lang} title={t('NotBGG 管理','NotBGG administration')}>
+<main id="editor-content" class="admin-page" data-notbgg-admin data-mode={mode} data-id={id} data-lang={lang}>
 <header><p class="eyebrow">SOMA’S COLLECTION · ADMINISTRATION</p><h1>{t('NotBGG 遊戲管理','NotBGG game management')}</h1><nav aria-label={t('管理導覽','Administration navigation')}>
 <a href="/admin">{t('管理首頁','Dashboard')}</a><a href={'/admin/notbgg'+suffix}>{t('遊戲列表','Game list')}</a><a href={'/admin/notbgg/new'+suffix}>{t('新增遊戲','New game')}</a><a href={'?lang='+(en?'zh-TW':'en')}>{en?'繁體中文':'English'}</a></nav></header>
 {mode==='edit'&&<p><a href={`/admin/notbgg/${id.slice(7)}/link?lang=${lang}`}>{t('身份對應與主要來源','Identity mapping and primary source')}</a> · <a href={`/admin/notbgg/${id.slice(7)}/relations?lang=${lang}`}>{t('管理專用／相容配件關聯','Manage accessory / compatibility edges')}</a></p>}
@@ -31,8 +32,6 @@ const suffix=en?'?lang=en':'';
 <section class="panel" data-history-section hidden><h2>{t('修訂歷史（唯讀）','Revision history (read only)')}</h2><button type="button" data-history-load>{t('讀取修訂歷史','Load history')}</button><div data-history></div><button type="button" data-history-next hidden>{t('更多修訂','More revisions')}</button></section>
 </>}
 <noscript>{t('此管理介面需要 JavaScript；停用時不會送出資料。','JavaScript is required. No data is submitted when it is disabled.')}</noscript>
-</main></body></html>
-<style is:global>
-html{font-family:system-ui,"Microsoft JhengHei",sans-serif;color-scheme:dark;background:#101827;color:#e5e7eb}*{box-sizing:border-box}body{margin:0}main[data-notbgg-admin]{max-width:1120px;margin:auto;padding:28px 20px 70px}header{border-bottom:1px solid #334155;padding-bottom:24px}h1{font-size:clamp(1.5rem,4vw,2rem);margin:8px 0 20px}h2{font-size:1.15rem}nav,.toolbar,.checks{display:flex;flex-wrap:wrap;align-items:center;gap:14px}a{color:#93c5fd;overflow-wrap:anywhere}nav a,button{min-height:44px;display:inline-flex;align-items:center}button{font:inherit;border:1px solid #5278a1;background:#264b76;color:white;border-radius:8px;padding:10px 18px;cursor:pointer}button:disabled{opacity:.6;cursor:wait}button[data-archive]{background:#652f3c;border-color:#ad6576}.eyebrow{font-size:.75rem;letter-spacing:.12em;color:#94a3b8}.notice{color:#b4c2d6;line-height:1.7}.panel,.record{min-width:0;background:#1e293b;border:1px solid #334155;border-radius:12px;padding:22px;margin:22px 0}.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.field{min-width:0}label{display:grid;gap:8px;font-size:.9rem}input,textarea,select{width:100%;min-width:0;border:1px solid #64748b;border-radius:7px;padding:11px;background:#111d30;color:#f1f5f9;font:inherit}textarea{resize:vertical;line-height:1.5}.check{display:flex;align-items:center;gap:8px;min-height:44px}.check input{width:20px;height:20px}.checks{margin:12px 0}.toolbar>label:first-child{flex:1;min-width:180px}legend{padding:0 8px;font-weight:600}.error{display:block;color:#fda4af;font-size:.85rem;line-height:1.5;margin-top:5px}[aria-invalid=true]{border-color:#fb7185}dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}dl>div{min-width:0}dt{color:#94a3b8;font-size:.8rem}dd{margin:4px 0;overflow-wrap:anywhere}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:.8rem}summary{cursor:pointer;padding:14px 0;overflow-wrap:anywhere}.record h2{overflow-wrap:anywhere}[data-status]{line-height:1.6;white-space:pre-line;overflow-wrap:anywhere}[data-status]:not(:empty){padding:14px;background:#172d45;border-radius:8px}[hidden]{display:none!important}:focus-visible{outline:3px solid #93c5fd;outline-offset:3px}.records{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.record{margin:10px 0;padding:18px}@media(max-width:640px){.fields,.records,dl{grid-template-columns:1fr}main[data-notbgg-admin]{padding:18px 14px 55px}.panel{padding:17px}nav{gap:8px 16px}.toolbar{align-items:stretch}.toolbar button{justify-content:center}}
-</style>
+</main></AdminLayout>
+
 <script>import { initializeNotBggAdmin } from '../lib/notbgg-admin-controller';document.querySelectorAll<HTMLElement>('[data-notbgg-admin]').forEach(initializeNotBggAdmin);</script>

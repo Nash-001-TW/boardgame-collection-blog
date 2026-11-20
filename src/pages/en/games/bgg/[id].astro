@@ -1,0 +1,10 @@
+---
+import {env} from 'cloudflare:workers';
+import Page from '../../../../components/PublicBggPage.astro';
+import {publicBggRoute} from '../../../../lib/public-site-data';
+export const prerender=false;
+const route=await publicBggRoute(env.DB,Astro.url,Number(Astro.params.id),'en');
+if(route.redirect)return new Response(null,{status:307,headers:{Location:route.redirect,'Cache-Control':'no-store'}});
+Astro.response.status=route.status;Astro.response.headers.set('Cache-Control','no-store');
+---
+<Page lang='en' route={route}/>

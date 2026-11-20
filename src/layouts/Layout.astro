@@ -5,6 +5,9 @@ import "../styles/cat-adventure-theme.css";
 
 interface Props {
     canonical?: string;
+    description?: string;
+    image?: string;
+    noindex?: boolean;
     title: string;
     lang?: Language;
     catalogPage?: boolean;
@@ -13,6 +16,8 @@ interface Props {
 
 const { title, lang = "zh-TW", catalogPage = false, detailPage = false } = Astro.props;
 const isZh = lang === "zh-TW";
+const canonical=Astro.props.canonical??new URL(Astro.url.pathname,Astro.url.origin).href;
+const description=Astro.props.description??(isZh?'Soma 的桌遊收藏、遊戲資訊與心得分享。':"Soma's board game collection, game information and stories.");
 ---
 <!doctype html>
 <html lang={lang}>
@@ -21,9 +26,14 @@ const isZh = lang === "zh-TW";
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#fbf5e9" />
         <title>{title}</title>
-        {Astro.props.canonical&&<link rel="canonical" href={Astro.props.canonical}/>}
+        <meta name="description" content={description}/>
+        <link rel="canonical" href={canonical}/>
+        <meta property="og:title" content={title}/><meta property="og:description" content={description}/><meta property="og:url" content={canonical}/><meta property="og:type" content={detailPage?'article':'website'}/>
+        {Astro.props.image&&<meta property="og:image" content={Astro.props.image}/>}
+        {Astro.props.noindex&&<meta name="robots" content="noindex,nofollow"/>}
     </head>
     <body class:list={{ "catalog-layout": catalogPage, "detail-layout": detailPage }}>
+        <a class="public-skip" href="#content">{isZh?'跳至主要內容':'Skip to content'}</a>
         <div class="site-shell">
             <Header lang={lang} />
             {!catalogPage && <>
@@ -65,15 +75,16 @@ const isZh = lang === "zh-TW";
     html { scroll-behavior: smooth; }
     body {
         margin: 0;
-        min-width: 320px;
+        min-width: 0;
         font-family: "Microsoft JhengHei", "Noto Sans TC", Arial, sans-serif;
         background: #fbf5e9;
         color: #392b27;
     }
     .site-shell { min-height: 100vh; display: flex; flex-direction: column; }
+    .public-skip{position:absolute;left:12px;top:-80px;z-index:100;background:#fff;padding:12px;color:#244e73}.public-skip:focus{top:10px}
     body.catalog-layout { background:#f7f9fb; color:#303b46; }
     .catalog-layout .site-content { max-width:1440px; margin:0 auto; padding:28px clamp(16px,3vw,42px) 48px; }
-    body.detail-layout { background:#f6f4ef; }
+    body.detail-layout { background:#f6f4ef; min-width:0; }
     .detail-layout .site-content { max-width:1360px; padding:24px clamp(16px,3vw,40px) 30px; }
     .detail-layout .site-footer { padding:18px 16px; }
     .adventure-banner {

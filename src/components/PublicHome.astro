@@ -1,0 +1,21 @@
+---
+import {env} from 'cloudflare:workers';
+import Layout from '../layouts/Layout.astro';
+import {readPublicOverview} from '../lib/public-site-data';
+import '../styles/public-ui.css';
+interface Props{lang:'en'|'zh-TW'}
+const{lang}=Astro.props,en=lang==='en',p=en?'/en':'',t=(zh:string,english:string)=>en?english:zh;
+let overview:Awaited<ReturnType<typeof readPublicOverview>>|undefined;
+try{overview=await readPublicOverview(env.DB);}catch{Astro.response.status=503;}
+Astro.response.headers.set('Cache-Control','no-store');
+---
+<Layout lang={lang} catalogPage title={t('Soma 的桌遊收藏','Soma’s board game collection')} description={t('探索 Soma 的桌遊收藏、版本、卡套需求與遊戲心得。','Explore Soma’s board game collection, editions, sleeve requirements and stories.')} noindex={!overview}>
+ <main class="public-page" data-public-home>
+  <header class="public-heading"><p class="public-eyebrow">SOMA'S COLLECTION</p><h1>{t('收藏遊戲，也收藏每次相聚','Collect games. Share time together.')}</h1><p>{t('這裡記錄我的桌遊收藏、遊戲資訊與心得。從一款遊戲出發，探索版本、卡套與相關遊戲。','A personal collection of board games, game information and stories. Explore editions, sleeve needs and related games.')}</p></header>
+  <nav class="public-intro-links"><a class="public-button primary" href={p+'/games'}>{t('探索遊戲','Explore games')}</a><a class="public-button" href={p+'/collection'}>{t('我的收藏','My collection')}</a><a class="public-button" href={p+'/collection?status=wishlist'}>{t('願望清單','Wishlist')}</a><a class="public-button" href={p+'/blog'}>{t('閱讀文章','Read stories')}</a></nav>
+  <section><h2>{t('公開收藏概況','Public collection overview')}</h2><p>{t('以下為正式且未封存的收藏紀錄筆數；不代表遊戲款數、副本數量或實體零件總數。','Counts of active production collection records, not unique games, physical copies or parts.')}</p>
+   {overview?<div class="public-overview">{[['records',t('收藏紀錄','Collection records')],['owned',t('已收藏紀錄','Owned records')],['wishlist',t('願望清單紀錄','Wishlist records')],['preordered',t('預購紀錄','Preordered records')]].map(([key,label])=><article>{label}<strong>{overview![key as keyof typeof overview]}</strong></article>)}</div>:<div class="public-notice error" role="alert"><p>{t('收藏概況暫時無法載入，並非零筆資料。','Collection overview is unavailable; this does not mean zero records.')}</p><a href={Astro.url.pathname} class="public-button">{t('重試','Retry')}</a></div>}
+  </section>
+  <section class="public-notice"><h2>{t('從收藏走進遊戲','From collection to table')}</h2><p>{t('BGG 與 NotBGG 遊戲共用清單。詳細頁提供公開版本、卡套需求及已確認關聯；採購、庫存與私人備註留在管理後台。','BGG and NotBGG games share one catalog. Detail pages show public editions, sleeve needs and confirmed relations; purchases, stock and private notes remain in administration.')}</p><a href={p+'/about'}>{t('關於這個網站','About this site')}</a> · <a href={p+'/blog'}>{t('遊戲心得與既有文章','Game stories and articles')}</a></section>
+ </main>
+</Layout>

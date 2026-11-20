@@ -28,12 +28,23 @@ export async function handleCollectionAdminRequest(request:Request,bindings:NotB
   if(request.method==='GET'){
    if(match[1]==='search')return ok(await repo.search(url.searchParams.get('q')??''));
    if(id){const d=await repo.detail(id,s);if(!d)throw new HttpError(404,'NOT_FOUND');return ok(d);}
-   const after=Number(url.searchParams.get('after')??0),limit=Number(url.searchParams.get('limit')??20);return ok(await repo.list(s,after,limit));
+   const after=Number(url.searchParams.get('after')??0),limit=Number(url.searchParams.get('limit')??20);
+   const view=url.searchParams.get('view');
+   if(view!==null)return ok(await repo.listPage(s,{
+    view,after,limit,query:url.searchParams.get('q')??'',source:url.searchParams.get('source'),
+    status:url.searchParams.get('status'),archive:url.searchParams.get('archive'),
+    wishlist:url.searchParams.get('wishlist'),
+   }));
+   return ok(await repo.list(s,after,limit));
   }
   const body=await readJson(request);
   if(!match[1]&&request.method==='POST'){
    keys(body,['ref','data','createCopy']);const key=request.headers.get('Idempotency-Key');if(!key||!/^[A-Za-z0-9_-]{8,128}$/.test(key))throw new HttpError(400,'INVALID_IDEMPOTENCY_KEY');
    const result=await repo.create(parseGameRef(body.ref),body.data,{actor,idempotencyKey:key,scope:s,createCopy:body.createCopy as boolean});return ok(result,result.replayed?200:201);
+  }
+  if(id&&!match[2]&&request.method==='PATCH'&&(Object.hasOwn(body,'revision')||Object.hasOwn(body,'changes'))){
+   keys(body,['revision','changes']);
+   return ok(await repo.patchFields(id,body.changes,{actor,scope:s,revision:body.revision}));
   }
   if(id&&((match[2]==='archive'&&request.method==='POST')||(!match[2]&&request.method==='PATCH'))){keys(body,match[2]?['expectedRevision']:['expectedRevision','data','createCopy']);
    return ok(await repo.update(id,body.data,{actor,scope:s,expectedRevision:body.expectedRevision as number,createCopy:body.createCopy as boolean|undefined},!!match[2]));}

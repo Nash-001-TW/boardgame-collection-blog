@@ -1,0 +1,16 @@
+---
+interface Props {row?:Record<string,unknown>;allocated?:number;collectionId?:number;existing?:boolean;lang:'en'|'zh-TW'}
+const {row,allocated=0,collectionId,existing=false,lang}=Astro.props,t=(zh:string,en:string)=>lang==='en'?en:zh;
+---
+<fieldset data-purchase-line>
+ <legend>{t('採購明細','Purchase line')}</legend>
+ <div class="fields">
+ <label>{t('收藏 ID','Collection ID')}<input name="collectionId" type="number" min="1" step="1" required value={Number(row?.collection_item_id??collectionId)||undefined}/></label>
+ <label>{t('商品說明','Description')}<input name="description" required maxlength="200" value={String(row?.description??'')}/></label>
+ <label>{t('數量','Quantity')}<input name="quantity" type="number" min="1" max="10000" step="1" required value={Number(row?.quantity??1)}/></label>
+ <label>{t('單價（最小貨幣單位）','Unit price (minor units)')}<input name="price" type="number" min="0" max="1000000000000" step="1" required value={Number(row?.unit_price_minor??0)}/></label>
+ <label>{t('本項折扣（最小貨幣單位）','Line discount (minor units)')}<input name="discount" type="number" min="0" step="1" required value={Number(row?.line_discount_minor??0)}/></label>
+ <label>{t('直接／手動分攤成本（含共同費用）','Direct / manual allocated cost (including shared costs)')}<input name="allocated" type="number" min="0" step="1" required value={allocated}/></label>
+ </div>
+ {!existing&&<button type="button" class="admin-button" data-remove-line>{t('移除此新增明細','Remove new line')}</button>}
+</fieldset>

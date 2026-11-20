@@ -2,6 +2,7 @@ import { adminFieldGroups, accessoryLabels } from './notbgg-admin-fields';
 import { deserializeGameRef, serializeGameRef } from './game-identity';
 import { validateCreateNotBggGame, NotBggValidationError } from './notbgg-validation';
 import type { NotBggGame, NotBggEditableFields } from './notbgg-contract';
+import { editorTime, initializeEditorPresentation } from './notbgg-editor-presentation';
 
 class ApiFailure extends Error {
     constructor(public status: number, public code: string, public field?: string) { super(code); }
@@ -11,7 +12,7 @@ export function initializeNotBggAdmin(root: HTMLElement) {
     const en = root.dataset.lang === 'en', li = en ? 1 : 0, t = (zh: string, english: string) => en ? english : zh;
     const status = root.querySelector<HTMLElement>('[data-status]')!;
     const suffix = en ? '?lang=en' : '';
-    function message(text: string, focus = false) { status.textContent = text; if (focus) status.focus(); }
+    function message(text: string, focus = false, tone: 'info' | 'success' | 'error' = 'info') { status.textContent = text; status.dataset.tone = tone; if (focus) status.focus(); }
     const typeName = (type: string) => type === 'boardgame' ? t('本體', 'Base game') : type === 'boardgameexpansion' ? t('擴充', 'Expansion') : t('配件', 'Accessory');
     const categoryNames = (items: string[]) => items.map(item => accessoryLabels[item as keyof typeof accessoryLabels]?.[li] ?? item).join(' · ') || '—';
     async function api(path: string, method = 'GET', body?: unknown, key?: string): Promise<any> {
@@ -43,12 +44,20 @@ export function initializeNotBggAdmin(root: HTMLElement) {
     }
     function details(container: HTMLElement, pairs: [string, string][]) {
         container.replaceChildren();
-        for (const [label, value] of pairs) { const row = document.createElement('div'), dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = label; dd.textContent = value; row.appendChild(dt); row.appendChild(dd); container.appendChild(row); }
+        for (const [label, value] of pairs) {
+            const row = document.createElement('div'), dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = label;
+            if (root.hasAttribute('data-editor-redesign') && /^\d{4}-\d{2}-\d{2}[T ]\d{2}:/.test(value)) dd.appendChild(editorTime(value, en ? 'en' : 'zh-TW'));
+            else dd.textContent = value;
+            row.appendChild(dt); row.appendChild(dd); container.appendChild(row);
+        }
     }
 
     if (root.dataset.mode === 'list') {
         const form = root.querySelector<HTMLFormElement>('[data-search-form]')!, list = root.querySelector<HTMLElement>('[data-list]')!;
         const next = root.querySelector<HTMLButtonElement>('[data-next]')!, previous = root.querySelector<HTMLButtonElement>('[data-prev]')!;
+        const initial = new URL(location.href);
+        (form.elements.namedItem('q') as HTMLInputElement).value = initial.searchParams.get('q') ?? '';
+        (form.elements.namedItem('includeArchived') as HTMLInputElement).checked = initial.searchParams.get('includeArchived') === 'true';
         let cursor: string | null = null, currentAfter: string | null = null, generation = 0; const stack: (string | null)[] = [];
         async function load(after: string | null = null) {
             const token = ++generation; next.disabled = previous.disabled = true;
@@ -56,6 +65,9 @@ export function initializeNotBggAdmin(root: HTMLElement) {
             const params = new URLSearchParams({ limit: '20', q: (form.elements.namedItem('q') as HTMLInputElement).value,
                 includeArchived: String((form.elements.namedItem('includeArchived') as HTMLInputElement).checked) });
             if (after) params.set('after', after);
+            const address = new URL(location.href);
+            for (const name of ['q', 'includeArchived']) address.searchParams.set(name, params.get(name)!);
+            window.history.replaceState(window.history.state, '', address);
             try {
                 const data = await api('?' + params); if (token !== generation) return;
                 list.replaceChildren();
@@ -70,7 +82,7 @@ export function initializeNotBggAdmin(root: HTMLElement) {
                 }
                 cursor = data.nextCursor; currentAfter = after; next.hidden = !cursor; previous.hidden = !stack.length;
                 message(data.items.length ? t(`本頁 ${data.items.length} 筆`, `${data.items.length} records on this page`) : t('沒有符合條件的遊戲。', 'No matching games.'));
-            } catch (error) { message(errorMessage(error), true); }
+            } catch (error) { message(errorMessage(error), true, 'error'); }
             finally { if (token === generation) next.disabled = previous.disabled = false; }
         }
         form.addEventListener('submit', event => { event.preventDefault(); stack.length = 0; void load(); });
@@ -80,22 +92,73 @@ export function initializeNotBggAdmin(root: HTMLElement) {
     }
 
     const form = root.querySelector<HTMLFormElement>('[data-editor]')!, type = form.elements.namedItem('type') as unknown as HTMLSelectElement;
-    const save = form.querySelector<HTMLButtonElement>('[data-save]')!, archive = form.querySelector<HTMLButtonElement>('[data-archive]')!;
+    const save = root.querySelector<HTMLButtonElement>('[data-save]')!, archive = root.querySelector<HTMLButtonElement>('[data-archive]')!;
     const reload = root.querySelector<HTMLButtonElement>('[data-reload]')!, history = root.querySelector<HTMLElement>('[data-history]')!;
     const historyNext = root.querySelector<HTMLButtonElement>('[data-history-next]')!;
     let current: NotBggGame | null = null, busy = false, dirty = false, lastType = 'boardgame', historyCursor: number | null = null;
+    const redesigned = root.hasAttribute('data-editor-redesign');
+    const presentation = redesigned ? initializeEditorPresentation(root, en ? 'en' : 'zh-TW') : null;
+    let activePanel = 'basic';
+    const tabs = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-editor-tab]'));
+    function activatePanel(panel: string, focus = false) {
+        if (!redesigned || panel === 'history' && !current) return;
+        activePanel = panel;
+        tabs.forEach(tab => { const selected = tab.dataset.editorTab === panel; tab.setAttribute('aria-selected', String(selected)); tab.tabIndex = selected ? 0 : -1; if (selected && focus) tab.focus(); });
+        root.querySelectorAll<HTMLElement>('[data-editor-panel]').forEach(el => { el.hidden = el.dataset.editorPanel !== panel; });
+        presentation?.refreshNavigation();
+    }
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => activatePanel(tab.dataset.editorTab!));
+        tab.addEventListener('keydown', event => {
+            const enabled = tabs.filter(t => !t.disabled), index = enabled.indexOf(tab);
+            const next = event.key === 'ArrowRight' ? (index + 1) % enabled.length : event.key === 'ArrowLeft' ? (index - 1 + enabled.length) % enabled.length : event.key === 'Home' ? 0 : event.key === 'End' ? enabled.length - 1 : -1;
+            if (next >= 0) { event.preventDefault(); activatePanel(enabled[next].dataset.editorTab!, true); }
+        });
+    });
+    function syncEditor() {
+        if (!redesigned) return;
+        const state = root.querySelector<HTMLElement>('[data-dirty-state]')!;
+        state.textContent = current?.archivedAt ? t('已封存 · 唯讀', 'Archived · read only') : dirty ? t('有未儲存修改', 'Unsaved changes') : t('尚無未儲存修改', 'No unsaved changes');
+        state.dataset.dirty = String(dirty);
+        root.querySelector<HTMLButtonElement>('[data-discard]')!.disabled = busy || !dirty || !!current?.archivedAt;
+        const historyTab = tabs.find(tab => tab.dataset.editorTab === 'history');
+        if (historyTab) historyTab.disabled = !current;
+        root.querySelector<HTMLElement>('[data-danger-zone]')!.hidden = !current || !!current.archivedAt;
+        root.querySelector<HTMLElement>('[data-archived-notice]')!.hidden = !current?.archivedAt;
+        root.querySelectorAll<HTMLAnchorElement>('[data-editor-link]').forEach(link => {
+            link.setAttribute('aria-disabled', String(!current));
+            if (current) link.href = `/admin/notbgg/${current.notBggId.slice(7)}/${link.dataset.editorLink}?lang=${en ? 'en' : 'zh-TW'}`;
+        });
+        activatePanel(activePanel);
+    }
     const creationKey = crypto.randomUUID();
     const input = (key: string) => form.elements.namedItem(key) as HTMLInputElement | HTMLTextAreaElement;
     const categoryInputs = () => Array.from(form.querySelectorAll<HTMLInputElement>('[name="accessoryCategories"]'));
+    function rawSnapshot() {
+        return JSON.stringify(Array.from(form.querySelectorAll('input[name],textarea[name],select[name]'))
+            .map(el => {
+                // The selector is exhaustive; avoid Cloudflare/DOM select.remove() type overlap.
+                const control = el as unknown as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
+                return [control.name, control.value, control instanceof HTMLInputElement && control.type === 'checkbox' ? control.checked : null];
+            }));
+    }
+    let savedSnapshot = rawSnapshot();
+    function updateDirty() { dirty = redesigned ? rawSnapshot() !== savedSnapshot : true; if (redesigned) applyType(); }
     const playFields = adminFieldGroups.find(group => group.key === 'play')!.fields.map(field => field.key);
     function applyType() {
         const accessory = type.value === 'boardgameaccessory';
         for (const group of form.querySelectorAll<HTMLFieldSetElement>('[data-group]')) {
             group.hidden = group.dataset.group === 'play' ? accessory : group.dataset.group === 'accessory' ? !accessory : false;
+            const section = group.closest<HTMLElement>('[data-section]');
+            if (section) section.hidden = group.hidden;
+            const sectionLink = root.querySelector<HTMLElement>(`[data-section-link="${group.dataset.group}"]`);
+            if (sectionLink) sectionLink.hidden = group.hidden;
         }
         const unloadedEdit = root.dataset.mode === 'edit' && !current;
         for (const group of form.querySelectorAll<HTMLFieldSetElement>('fieldset')) group.disabled = busy || unloadedEdit || !!current?.archivedAt || !!group.hidden;
-        save.disabled = busy || unloadedEdit || !!current?.archivedAt; archive.disabled = busy; archive.hidden = !current || !!current.archivedAt;
+        save.disabled = busy || unloadedEdit || !!current?.archivedAt; archive.disabled = busy || redesigned && dirty; archive.hidden = !current || !!current.archivedAt;
+        if (redesigned) type.disabled = busy || unloadedEdit || !!current?.archivedAt || current?.linkStatus === 'linked';
+        syncEditor();
     }
     function setBusy(value: boolean) { busy = value; applyType(); save.textContent = value ? t('儲存中…', 'Saving…') : t('儲存遊戲', 'Save game'); reload.disabled = value; }
     function clearErrors() {
@@ -103,6 +166,7 @@ export function initializeNotBggAdmin(root: HTMLElement) {
         form.querySelectorAll('[aria-invalid]').forEach(el => el.removeAttribute('aria-invalid'));
     }
     function showError(error: unknown) {
+        activatePanel('basic');
         const field = error instanceof ApiFailure || error instanceof NotBggValidationError ? error.field : undefined;
         if (field) {
             const label = Array.from(form.querySelectorAll<HTMLElement>('[data-error]')).find(el => el.dataset.error === field);
@@ -111,7 +175,8 @@ export function initializeNotBggAdmin(root: HTMLElement) {
             if (target) { target.setAttribute('aria-invalid', 'true'); target.focus(); }
         }
         reload.hidden = !(error instanceof ApiFailure && ['CONFLICT', 'REVISION_CONFLICT', 'ARCHIVED'].includes(error.code));
-        message(errorMessage(error), !field);
+        message(errorMessage(error), !field, 'error');
+        if (redesigned) status.dataset.tone = 'error';
     }
     function payload(): NotBggEditableFields {
         const values: Record<string, unknown> = { type: type.value };
@@ -142,12 +207,24 @@ export function initializeNotBggAdmin(root: HTMLElement) {
             [t('建立時間', 'Created'), game.createdAt], [t('修改時間', 'Updated'), game.updatedAt], [t('狀態', 'Status'), game.archivedAt ? t('已封存', 'Archived') : t('有效', 'Active')]]);
         root.querySelector<HTMLElement>('[data-history-section]')!.hidden = false;
         history.replaceChildren(); historyNext.hidden = true; historyCursor = null;
-        dirty = false; reload.hidden = true; applyType();
+        dirty = false; savedSnapshot = rawSnapshot(); reload.hidden = true; applyType();
+        presentation?.refreshImages();
+        if (redesigned) {
+            root.querySelector<HTMLElement>('[data-heading-name]')!.textContent = game.name;
+            root.querySelector<HTMLElement>('[data-heading-id]')!.textContent = game.notBggId;
+            root.querySelector<HTMLElement>('[data-heading-revision]')!.textContent = `Revision ${game.revision}`;
+            const badge = root.querySelector<HTMLElement>('[data-game-status]')!;
+            badge.textContent = game.archivedAt ? t('已封存', 'Archived') : t('使用中', 'Active');
+            badge.dataset.state = game.archivedAt ? 'archived' : 'active';
+        }
     }
     async function loadGame() {
         if (busy) return; setBusy(true); message(t('讀取中…', 'Loading…'));
-        try { const data = await api('/' + encodeURIComponent(root.dataset.id!)); fill(data.admin); message(t('資料已載入。', 'Record loaded.')); }
-        catch (error) { showError(error); reload.hidden = false; }
+        try { const data = await api('/' + encodeURIComponent(root.dataset.id!)); fill(data.admin); message(t('資料已載入。', 'Record loaded.'), false, 'success'); }
+        catch (error) {
+            showError(error); reload.hidden = false;
+            if (redesigned && !current) root.querySelector<HTMLElement>('[data-game-status]')!.textContent = t('無法載入', 'Unavailable');
+        }
         finally { setBusy(false); }
     }
     type.addEventListener('change', event => {
@@ -156,16 +233,25 @@ export function initializeNotBggAdmin(root: HTMLElement) {
             : categoryInputs().some(el => el.checked) || !!input('contents').value.trim() || !!input('relatedGameIds').value.trim();
         if (needsClear && !window.confirm(accessory ? t('切換為配件需要清除玩家、時間與推薦人數。確認清除？', 'Switching to an accessory requires clearing player counts, times and recommendations. Clear them?')
             : t('切換類型需要清除配件子分類、適用遊戲及內容物。確認清除？', 'Changing type requires clearing accessory categories, related games and contents. Clear them?'))) {
-            type.value = lastType; event.stopPropagation(); return;
+            type.value = lastType; if (redesigned) updateDirty(); event.stopPropagation(); return;
         }
         if (accessory) playFields.forEach(key => { input(key).value = ''; });
         else { categoryInputs().forEach(el => { el.checked = false; }); input('contents').value = ''; input('relatedGameIds').value = ''; }
         lastType = type.value; applyType();
     });
-    for (const name of ['input', 'change']) form.addEventListener(name, () => { dirty = true; });
+    for (const name of ['input', 'change']) form.addEventListener(name, updateDirty);
+    root.querySelector<HTMLButtonElement>('[data-discard]')?.addEventListener('click', () => {
+        if (busy || !dirty || !window.confirm(t('捨棄尚未儲存的修改？', 'Discard unsaved changes?'))) return;
+        clearErrors();
+        if (current) fill(current);
+        else { form.reset(); dirty = false; savedSnapshot = rawSnapshot(); lastType = type.value; applyType(); }
+        message(t('已捨棄未儲存修改。', 'Unsaved changes discarded.'), false, 'success');
+    });
     window.addEventListener('beforeunload', event => { if (dirty) { event.preventDefault(); } });
     form.addEventListener('submit', async event => {
         event.preventDefault(); if (busy || current?.archivedAt || root.dataset.mode === 'edit' && !current) return; clearErrors();
+        activatePanel('basic');
+        if (redesigned) delete status.dataset.tone;
         if (!form.reportValidity()) return;
         let data: NotBggEditableFields;
         try { data = payload(); } catch (error) { showError(error); return; }
@@ -175,7 +261,7 @@ export function initializeNotBggAdmin(root: HTMLElement) {
                 : await api('', 'POST', data, creationKey);
             root.dataset.id = result.admin.notBggId; fill(result.admin);
             window.history.replaceState(null, '', '/admin/notbgg/' + result.admin.notBggId.slice(7) + suffix);
-            message(t(`已儲存 ${result.admin.notBggId}，Revision ${result.admin.revision}。`, `Saved ${result.admin.notBggId}, revision ${result.admin.revision}.`), true);
+            message(t(`已儲存 ${result.admin.notBggId}，Revision ${result.admin.revision}。`, `Saved ${result.admin.notBggId}, revision ${result.admin.revision}.`), true, 'success');
         } catch (error) { setBusy(false); showError(error); }
         finally { setBusy(false); }
     });
@@ -183,7 +269,7 @@ export function initializeNotBggAdmin(root: HTMLElement) {
     archive.addEventListener('click', async () => {
         if (busy || !current || !window.confirm(t('確認封存？永久 ID、修訂歷史與收藏引用都會保留。尚未儲存的修改不會保存。', 'Archive this game? Permanent ID, revisions and collection references will remain. Unsaved changes will not be saved.'))) return;
         setBusy(true); message(t('封存中…', 'Archiving…'));
-        try { const data = await api('/' + encodeURIComponent(current.notBggId) + '/archive', 'POST', { expectedRevision: current.revision }); fill(data.admin); message(t('已封存，身份與歷史已保留。', 'Archived. Identity and history are retained.'), true); }
+        try { const data = await api('/' + encodeURIComponent(current.notBggId) + '/archive', 'POST', { expectedRevision: current.revision }); fill(data.admin); message(t('已封存，身份與歷史已保留。', 'Archived. Identity and history are retained.'), true, 'success'); }
         catch (error) { setBusy(false); showError(error); } finally { setBusy(false); }
     });
     async function loadHistory(append = false) {
@@ -195,7 +281,12 @@ export function initializeNotBggAdmin(root: HTMLElement) {
             for (const row of data.items) {
                 const section = document.createElement('details'), summary = document.createElement('summary'), pre = document.createElement('pre');
                 const operation = row.operation === 'create' ? t('新增', 'Created') : row.operation === 'archive' ? t('封存', 'Archived') : t('修改', 'Updated');
-                summary.textContent = `Revision ${row.revision} · ${operation} · ${row.createdAt} · ${row.actor}`;
+                if (redesigned) {
+                    summary.appendChild(document.createTextNode(`Revision ${row.revision} · ${operation} · `));
+                    summary.appendChild(editorTime(row.createdAt, en ? 'en' : 'zh-TW'));
+                    summary.appendChild(document.createTextNode(` · ${row.actor}`));
+                }
+                else summary.textContent = `Revision ${row.revision} · ${operation} · ${row.createdAt} · ${row.actor}`;
                 pre.textContent = JSON.stringify(row.snapshot, null, 2); section.appendChild(summary); section.appendChild(pre); history.appendChild(section);
             }
             historyCursor = data.nextRevision; historyNext.hidden = historyCursor === null;

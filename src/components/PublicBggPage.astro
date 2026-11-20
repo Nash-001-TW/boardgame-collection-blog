@@ -1,0 +1,15 @@
+---
+import Layout from '../layouts/Layout.astro';
+import GameDetail from './GameDetail.astro';
+import {publicBggHref,type publicBggRoute} from '../lib/public-site-data';
+import {descriptionParagraphs} from '../lib/game-detail-presentation';
+import '../styles/public-ui.css';
+interface Props{lang:'en'|'zh-TW';route:Awaited<ReturnType<typeof publicBggRoute>>}
+const{lang,route}=Astro.props,en=lang==='en',prefix=en?'/en':'',{data,unavailable}=route;
+const title=data?.game?.bgg.name??(unavailable?(en?'Game data unavailable':'遊戲資料暫時無法載入'):(en?'Game not found':'找不到遊戲'));
+const description=data?.game?descriptionParagraphs(data.game.bgg.description).join(' ').slice(0,180):title;
+---
+<Layout catalogPage detailPage lang={lang} title={title+" | Soma's Collection"} description={description} image={data?.game?.bgg.image} canonical={data?.game?new URL(publicBggHref(data.game.bggId,lang),Astro.url.origin).href:undefined} noindex={!data?.game}>
+ {data?.game?<><p class="public-meta">{data.origin==='D1'?(en?'Source: latest successfully synchronized BGG data':'來源：最後成功同步的 BGG 資料'):(en?'Source: established static BGG cache':'來源：既有靜態 BGG 快取')}</p><GameDetail game={data.game} lang={lang}/></>:<section class="public-notice" role={unavailable?'alert':undefined}><h1>{title}</h1><p>{unavailable?(en?'Please retry. This is a service error, not an empty record.':'請稍後重試；這是資料服務錯誤，不代表沒有遊戲。'):''}</p>{unavailable&&<a class="public-button" href={Astro.url.pathname+Astro.url.search}>{en?'Retry':'重試'}</a>} <a href={prefix+'/games'}>{en?'Back to catalog':'返回遊戲清單'}</a></section>}
+</Layout>
+<script>import '../lib/public-ui-controller';</script>

@@ -1,0 +1,44 @@
+---
+import {env} from 'cloudflare:workers';
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import RelationForm from '../../../components/admin/RelationForm.astro';
+import {readBggSync} from '../../../lib/bgg-sync-admin';
+import {readRelationAdmin} from '../../../lib/relation-admin';
+export const prerender=false;
+const params=Astro.url.searchParams,lang=params.get('lang')==='en'?'en':'zh-TW',t=(zh:string,en:string)=>lang==='en'?en:zh;
+const relations=params.get('view')==='relations';
+let cache:Awaited<ReturnType<typeof readBggSync>>|undefined,edges:Awaited<ReturnType<typeof readRelationAdmin>>|undefined,error='';
+try{if(relations)edges=await readRelationAdmin(env.DB,params);else cache=await readBggSync(env.DB,params);}catch{Astro.response.status=503;error=t('無法載入資料，請檢查篩選或稍後重試。','Could not load data. Check filters or retry later.');}
+const link=(changes:Record<string,string|null>)=>{const q=new URLSearchParams(params);for(const[k,v]of Object.entries(changes))v===null?q.delete(k):q.set(k,v);return '?'+q;};
+const states:Record<string,string>={unknown:t('時間／狀態未建立','Time / status not established'),success:t('同步成功','Sync succeeded'),failed:t('同步失敗／中斷','Sync failed / interrupted'),syncing:t('同步中','Syncing')};
+const title=t('BGG 同步與關聯管理','BGG sync & relations');
+---
+<AdminLayout lang={lang} title={title}>
+<main id="editor-content" class="admin-page" data-bgg-admin data-lang={lang}>
+ <h1>{title}</h1>
+ <nav><a class="admin-button" href={link({view:null,domain:null,after:null})}>{t('BGG 快取','BGG cache')}</a> <a class="admin-button" href={link({view:'relations',domain:'game',after:null,source:null})}>{t('遊戲關聯','Game relations')}</a> <a class="admin-button" href={link({view:'relations',domain:'collection',after:null,source:null})}>{t('收藏組合','Collection combinations')}</a></nav>
+ <p role="status" aria-live="polite" tabindex="-1" data-bgg-status></p>
+ {error&&<p role="alert">{error}</p>}
+ {!relations&&<>
+  <p>{t('每次最多 3 筆、並行 1 筆、請求間隔至少 2 秒，每筆最多 2 次嘗試。失敗保留上次成功快取。靜態 JSON 無同步時間時不推估；同步不修改個人收藏資料。','Up to 3 IDs per batch, concurrency 1, at least 2 seconds between requests and at most 2 attempts per ID. Failed updates preserve the last successful cache. No inferred timestamps for static JSON; personal collection data is unchanged.')}</p>
+  <form data-bgg-action="sync" class="fields"><label>{t('BGG ID（逗號分隔，最多 3 筆）','BGG IDs (comma separated, max 3)')}<input name="ids" required pattern="[0-9, ]+"/></label><button class="admin-button primary">{t('同步指定 ID','Sync IDs')}</button></form>
+  <form method="get" class="fields"><input name="lang" type="hidden" value={lang}/><label>{t('BGG ID 或名稱','BGG ID or name')}<input name="q" maxlength="100" value={params.get('q')??''}/></label><label>{t('狀態','Status')}<select name="state">{['all','unknown','success','failed','syncing'].map(state=><option value={state} selected={state===(params.get('state')??'all')}>{states[state]??t('全部','All')}</option>)}</select></label><button class="admin-button">{t('搜尋','Search')}</button></form>
+  <button type="button" class="admin-button" data-sync-selected>{t('同步所選項目（最多 3 筆）','Sync selected (max 3)')}</button>
+  {cache?.rows.length===0&&<p>{t('沒有符合的快取。','No matching cache records.')}</p>}
+  {cache?.rows.map(row=><article class="bgg-panel"><label><input type="checkbox" data-sync-select value={String(row.bgg_id)}/> BGG {String(row.bgg_id)} · {String(row.name)}</label><p>{states[String(row.sync_status)]} · {t('最後成功','Last success')}: {String(row.last_success_at??'—')}</p><p>{t('最後嘗試','Last attempt')}: {String(row.last_attempt_at??'—')} · {String(row.last_error_code??'')}</p><button type="button" class="admin-button" data-sync-id={String(row.bgg_id)}>{row.sync_status==='failed'?t('重試','Retry'):t('同步此筆','Sync this ID')}</button><details><summary>{t('BGG 原始關聯證據（不推估方向）','Raw BGG relation evidence (no inferred direction)')}</summary><ul>{(row.evidence as {id:number;name:string;kind:string;inbound:boolean|null}[]).map(e=><li>BGG {e.id} · {e.name} · {e.kind} · inbound={e.inbound===null?'unknown':String(e.inbound)}</li>)}</ul></details></article>)}
+ </>}
+ {edges&&<>
+  <p>{t('遊戲關聯與收藏組合互相獨立，不會新增副本、採購或組件。方向不明時拒絕依賴型關聯；相關、同系列及整合遊玩允許循環。BGG 原始關聯不會被手動編輯覆寫。','Game and collection edges are independent and never create copies, purchases or components. Dependency edges require verified direction; related, same-series and integration edges may cycle. BGG evidence is not overwritten by manual edits.')}</p>
+  <p>{t('重新實作與合輯保留 BGG 原始關聯。現有手動 Schema 沒有 Promo 或重新實作專屬類型，不將其他關聯自動解讀成這些類型。','BGG evidence may include implementations and compilations. The manual schema has no dedicated promo or implementation type; other relations are not reinterpreted as those types.')}</p>
+  <details class="bgg-panel"><summary>{t('新增關聯','Add relation')}</summary><RelationForm data={edges} source={Number(params.get('source')||0)} lang={lang}/></details>
+  <form method="get" class="fields"><input name="view" type="hidden" value="relations"/><input name="domain" type="hidden" value={edges.domain}/><input name="lang" type="hidden" value={lang}/><label>{t('來源或目標 ID','Source or target ID')}<input name="source" type="number" min="1" value={params.get('source')??''}/></label><button class="admin-button">{t('篩選','Filter')}</button></form>
+  {edges.rows.length===0&&<p>{t('沒有符合的關聯。','No matching relations.')}</p>}
+  {edges.rows.map(row=><article class="bgg-panel"><h2>#{String(row.id)} · {String(row.relation_type)}</h2><p>#{String(row.source_game_id??row.source_item_id)} → #{String(row.target_game_id??row.target_item_id)} · {String(row.relation_source??'manual')} · {row.archived_at?t('已封存','Archived'):edges!.domain==='game'&&!row.admin_confirmed?t('待確認','Unconfirmed'):t('已確認','Confirmed')}</p>
+   {!row.archived_at&&(edges!.domain==='collection'||row.relation_source==='manual')&&<><details><summary>{t('編輯關聯','Edit relation')}</summary><RelationForm data={edges!} row={row} lang={lang}/></details><form data-bgg-action="archive"><input name="domain" type="hidden" value={edges!.domain}/><input name="id" type="hidden" value={String(row.id)}/><input name="revision" type="hidden" value={String(row.admin_revision)}/><button class="admin-button danger">{t('封存關聯','Archive relation')}</button></form></>}
+  </article>)}
+ </>}
+ <nav><a class="admin-button" href={link({after:null})}>{t('第一頁','First page')}</a>{(cache?.nextCursor??edges?.nextCursor)!=null&&<a class="admin-button" href={link({after:String(cache?.nextCursor??edges?.nextCursor)})}>{t('下一頁','Next page')}</a>}</nav>
+</main>
+</AdminLayout>
+<script>import '../../../lib/bgg-admin-controller';</script>
+<style>.bgg-panel{padding:20px;margin:20px 0;border:1px solid var(--admin-border);border-radius:10px;background:var(--admin-surface);min-width:0;overflow-wrap:anywhere}.bgg-panel summary{cursor:pointer;padding:10px 0}.bgg-panel form{margin-top:14px}</style>

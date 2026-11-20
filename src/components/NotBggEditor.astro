@@ -1,0 +1,57 @@
+---
+import AdminLayout from '../layouts/AdminLayout.astro';
+import AdminField from './admin/AdminField.astro';
+import { adminFieldGroups, accessoryLabels } from '../lib/notbgg-admin-fields';
+import { accessoryCategories } from '../lib/notbgg-contract';
+interface Props { mode: 'new' | 'edit'; id?: string; lang?: 'zh-TW' | 'en' }
+const { mode, id = '', lang = 'zh-TW' } = Astro.props;
+const en = lang === 'en', t = (zh: string, english: string) => en ? english : zh, suffix = en ? '?lang=en' : '';
+---
+<AdminLayout lang={lang} title={t('NotBGG 遊戲管理', 'NotBGG game management')}>
+  <div data-notbgg-admin data-mode={mode} data-id={id} data-lang={lang} data-editor-redesign>
+    <header class="editor-heading">
+      <div class="editor-heading-inner">
+        <nav class="breadcrumbs" aria-label={t('麵包屑', 'Breadcrumb')}><a href={'/admin/notbgg' + suffix}>{t('遊戲管理', 'Game management')}</a><span aria-hidden="true">/</span><span data-heading-id>{id || t('新增遊戲', 'New game')}</span></nav>
+        <div class="editor-title-row">
+          <div class="editor-title"><h1 data-heading-name>{t(mode === 'new' ? '新增 NotBGG 遊戲' : '編輯 NotBGG 遊戲', mode === 'new' ? 'New NotBGG game' : 'Edit NotBGG game')}</h1><span class="status-badge" data-game-status>{t(mode === 'new' ? '尚未建立' : '讀取中', mode === 'new' ? 'Not created' : 'Loading')}</span><span class="revision-label" data-heading-revision></span></div>
+          <div class="heading-actions"><span class="dirty-state" data-dirty-state role="status" aria-live="polite">{t('尚無未儲存修改', 'No unsaved changes')}</span><button type="button" class="admin-button" data-discard disabled>{t('捨棄變更', 'Discard changes')}</button><button type="submit" form="notbgg-editor" class="admin-button primary" data-save disabled>{t('儲存遊戲', 'Save game')}</button></div>
+        </div>
+        <nav class="editor-tabs" aria-label={t('遊戲分頁', 'Game navigation')}>
+          <div class="local-tabs" role="tablist" aria-label={t('編輯內容', 'Editor content')}>
+            <button type="button" role="tab" id="tab-basic" aria-controls="panel-basic" aria-selected="true" tabindex="0" data-editor-tab="basic">{t('基本資料', 'Game details')}</button>
+            <button type="button" role="tab" id="tab-history" aria-controls="panel-history" aria-selected="false" tabindex="-1" data-editor-tab="history" disabled>{t('修訂歷史', 'Revision history')}</button>
+          </div>
+          <a data-editor-link="link" aria-disabled="true">{t('身分對應與主要來源', 'Identity and primary source')} <span aria-hidden="true">↗</span></a>
+          <a data-editor-link="relations" aria-disabled="true">{t('配件關聯', 'Accessory relations')} <span aria-hidden="true">↗</span></a>
+        </nav>
+      </div>
+    </header>
+    <main id="editor-content" class="editor-content">
+      <div class="editor-notifications"><p data-status role="status" aria-live="polite" tabindex="-1"></p><button type="button" class="admin-button" data-reload hidden>{t('重新載入最新資料', 'Reload latest data')}</button><p class="archive-notice" data-archived-notice hidden>{t('此遊戲已封存，目前為唯讀。永久 ID、修訂與既有收藏引用均已保留。', 'This game is archived and read only. Its permanent ID, revisions and existing collection references are retained.')}</p></div>
+      <section id="panel-basic" role="tabpanel" aria-labelledby="tab-basic" data-editor-panel="basic">
+        <form id="notbgg-editor" data-editor novalidate class="editor-grid">
+          <nav class="section-nav" aria-label={t('本頁區段', 'Page sections')}><p>{t('遊戲資料', 'GAME DETAILS')}</p>{adminFieldGroups.map(g => <a href={'#section-' + g.key} data-section-link={g.key}>{g.label[en ? 1 : 0]}</a>)}</nav>
+          <div class="editor-sections">
+            {adminFieldGroups.map(group => <section class="editor-card" id={'section-' + group.key} data-section={group.key} hidden={group.key === 'accessory'}>
+              <div class="section-heading"><span class="section-number" aria-hidden="true">{String(adminFieldGroups.indexOf(group) + 1).padStart(2, '0')}</span><h2>{group.label[en ? 1 : 0]}</h2></div>
+              <p class="section-hint">{group.key === 'basic' || group.key === 'play' ? t('未知的數值請留空；不要以 0 代替未知值。', 'Leave unknown numbers blank; do not substitute zero.') : group.key === 'sources' ? t('圖片僅預覽 HTTP(S) 網址，不會上傳。參考網址每行一筆。', 'Preview HTTP(S) image URLs without uploading. One reference URL per line.') : group.key === 'publication' || group.key === 'taxonomy' ? t('每行一筆，儲存時整理重複項目。', 'One entry per line; duplicates are normalized on save.') : ''}</p>
+              {group.key === 'basic' && <fieldset class="type-fieldset" disabled><legend>{t('遊戲類型 *', 'Game type *')}</legend><label class="sr-only" for="type">{t('類型', 'Type')}</label><select name="type" id="type" required aria-describedby="help-type error-type"><option value="boardgame">{t('桌遊本體', 'Base game')}</option><option value="boardgameexpansion">{t('桌遊擴充', 'Expansion')}</option><option value="boardgameaccessory">{t('桌遊配件', 'Accessory')}</option></select><small class="field-help" id="help-type">{t('切換類型時會確認清除不適用的欄位。有效身分對應須先解除，才可更改類型。', 'Changing type asks before clearing inapplicable fields. Revoke an active mapping before changing type.')}</small><span class="error" id="error-type" data-error="type"></span></fieldset>}
+              <fieldset disabled data-group={group.key} hidden={group.key === 'accessory'}><legend class="sr-only">{group.label[en ? 1 : 0]}</legend>
+                {group.key === 'accessory' && <><p id="category-help" class="field-label">{t('配件子分類 *（至少一項）', 'Accessory categories * (select at least one)')}</p><div class="category-grid" role="group" aria-labelledby="category-help">{accessoryCategories.map(c => <label><input type="checkbox" name="accessoryCategories" value={c} aria-describedby="error-accessoryCategories"/>{accessoryLabels[c][en ? 1 : 0]}</label>)}</div><span id="error-accessoryCategories" class="error" data-error="accessoryCategories"></span></>}
+                <div class="admin-fields">{group.fields.filter(f => f.key !== 'editorNotes').map(field => <AdminField field={field} lang={lang}/>)}</div>
+              </fieldset>
+            </section>)}
+          </div>
+          <aside class="editor-aside" aria-label={t('系統資料及操作', 'System information and actions')}>
+            <section class="editor-card"><h2>{t('系統資料', 'System information')} <span class="small-badge">{t('唯讀', 'Read only')}</span></h2><dl data-system><div><dt>NotBGG ID</dt><dd>{id || t('儲存後自動產生', 'Assigned after saving')}</dd></div></dl><p class="field-help">{t('這裡編輯自建原稿，不覆寫 BGG 原始資料。', 'Edit the custom original without overwriting BGG source data.')}</p></section>
+            <section class="editor-card"><h2>{t('管理員備註', 'Editor notes')} <span class="small-badge">{t('不公開', 'Private')}</span></h2><fieldset disabled><legend class="sr-only">{t('管理員備註', 'Editor notes')}</legend><AdminField field={adminFieldGroups[4].fields[3]} lang={lang}/></fieldset></section>
+            <section class="editor-card danger-zone" data-danger-zone hidden><h2>{t('危險操作', 'Danger zone')}</h2><p>{t('封存後無法再編輯，目前沒有解除封存功能。永久身份、修訂歷史與收藏引用會保留。', 'Archiving disables editing. There is no unarchive action. Permanent identity, revision history and collection references remain.')}</p><button class="admin-button danger" type="button" data-archive hidden>{t('封存遊戲', 'Archive game')}</button><small class="field-help">{t('請先儲存或捨棄未儲存修改，再進行封存。', 'Save or discard unsaved changes before archiving.')}</small></section>
+          </aside>
+        </form>
+      </section>
+      <section class="editor-card history-panel" id="panel-history" role="tabpanel" aria-labelledby="tab-history" data-editor-panel="history" data-history-section hidden><h2>{t('修訂歷史', 'Revision history')} <span class="small-badge">{t('唯讀', 'Read only')}</span></h2><p class="field-help">{t('保留每次儲存的原稿及操作人。此處不會還原或覆寫目前資料。', 'Original snapshots and actors are retained. This view never restores or overwrites the current record.')}</p><button class="admin-button" type="button" data-history-load>{t('讀取修訂歷史', 'Load history')}</button><div data-history></div><button class="admin-button" type="button" data-history-next hidden>{t('更多修訂', 'More revisions')}</button></section>
+      <noscript>{t('此管理介面需要 JavaScript；停用時不會送出資料。', 'JavaScript is required. No data is submitted when it is disabled.')}</noscript>
+    </main>
+  </div>
+  <script>import { initializeNotBggAdmin } from '../lib/notbgg-admin-controller';document.querySelectorAll<HTMLElement>('[data-editor-redesign]').forEach(initializeNotBggAdmin);</script>
+</AdminLayout>

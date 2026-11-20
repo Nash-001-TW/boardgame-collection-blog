@@ -1,0 +1,16 @@
+---
+interface Props { gameKey: string; lang: 'zh-TW' | 'en' }
+const { gameKey,lang }=Astro.props;
+---
+<a hidden data-public-admin-entry href={'/admin/collection/new?game='+encodeURIComponent(gameKey)+'&lang='+lang}>
+    {lang==='en'?'Add to collection (admin)':'管理員加入收藏'}
+</a>
+<script>
+async function updateAdminEntries(){
+ const links=document.querySelectorAll<HTMLAnchorElement>('[data-public-admin-entry]');if(!links.length)return;
+ links.forEach(a=>a.hidden=true);
+ try{const response=await fetch('/api/admin/auth-check',{cache:'no-store',redirect:'manual'});const result=await response.json() as {success?:boolean}|null;if(response.ok&&result?.success===true)links.forEach(a=>a.hidden=false);}catch{/* Keep administration entry hidden when verification is unavailable. */}
+}
+void updateAdminEntries();document.addEventListener('astro:page-load',()=>void updateAdminEntries());
+window.addEventListener('pageshow',event=>{if(event.persisted)void updateAdminEntries();});
+</script>

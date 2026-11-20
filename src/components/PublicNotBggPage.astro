@@ -1,0 +1,13 @@
+---
+import Layout from '../layouts/Layout.astro';
+import NotBggDetail from './NotBggDetail.astro';
+import type {publicNotBggRoute} from '../lib/public-site-data';
+import '../styles/public-ui.css';
+interface Props{lang:'en'|'zh-TW';id:number;route:Awaited<ReturnType<typeof publicNotBggRoute>>}
+const{lang,id,route}=Astro.props,en=lang==='en',prefix=en?'/en':'',{result,unavailable}=route;
+const detail=result?.detail,title=detail?.game.name??(unavailable?(en?'Game data unavailable':'遊戲資料暫時無法載入'):(en?'Game not found':'找不到遊戲'));
+---
+<Layout catalogPage detailPage lang={lang} title={title+" | Soma's Collection"} description={detail?.game.description?.slice(0,180)??title} image={detail?.game.images.primary??undefined} canonical={new URL(prefix+'/games/notbgg/'+String(id).padStart(6,'0'),Astro.url.origin).href} noindex={!detail}>
+ {detail?<NotBggDetail detail={detail} lang={lang}/>:<section class="public-notice" role={unavailable?'alert':undefined}><h1>{title}</h1>{unavailable&&<a class="public-button" href={Astro.url.pathname+Astro.url.search}>{en?'Retry':'重試'}</a>} <a href={prefix+'/games'}>{en?'Back to catalog':'返回遊戲清單'}</a></section>}
+</Layout>
+<script>import '../lib/public-ui-controller';</script>

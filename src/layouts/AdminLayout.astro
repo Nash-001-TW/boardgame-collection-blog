@@ -1,0 +1,50 @@
+---
+import '../styles/admin-editor.css';
+import '../styles/admin-ui.css';
+interface Props { lang?: 'zh-TW' | 'en'; title: string; languageParams?: Record<string, string> }
+const { lang = 'zh-TW', title, languageParams } = Astro.props;
+const en = lang === 'en', suffix = en ? '?lang=en' : '';
+const alternateLang = en ? 'zh-TW' : 'en';
+const languageHref = '?' + new URLSearchParams({ ...languageParams, lang: alternateLang }).toString();
+const section = Astro.url.pathname;
+const navigation = [
+  ['/admin', en ? 'Dashboard' : '管理首頁'],
+  ['/admin/collection', en ? 'Collection' : '收藏管理'],
+  ['/admin/collection/components/manage', en ? 'Physical components' : '實體組件'],
+  ['/admin/collection/components/classification', en ? 'Classification' : '組件分類'],
+  ['/admin/sleeves', en ? 'Sleeves' : '卡套管理'],
+  ['/admin/purchases', en ? 'Purchases' : '採購管理'],
+  ['/admin/bgg', en ? 'BGG & relations' : 'BGG 與關聯'],
+  ['/admin/notbgg', en ? 'NotBGG games' : 'NotBGG 遊戲'],
+];
+const activeHref = navigation.findLast(([href]) => section === href || section.startsWith(href + '/'))?.[0];
+---
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <meta name="referrer" content="no-referrer" />
+    <title>{title} | Soma’s Administration</title>
+  </head>
+  <body class="admin-app">
+    <a class="admin-skip" href="#editor-content">{en ? 'Skip to editor' : '跳至編輯內容'}</a>
+    <header class="admin-masthead">
+      <div class="admin-brand"><span class="brand-mark" aria-hidden="true">N.</span><div><span class="brand-eyebrow">SOMA’S COLLECTION</span><strong>{en ? 'Administration' : '管理後台'}</strong></div></div>
+      <nav aria-label={en ? 'Administration navigation' : '管理導覽'}>
+        <a href={en ? '/en/' : '/'}>{en ? 'Public website' : '公開網站'}</a>
+        <a href={languageHref} data-language-switch lang={alternateLang}>{en ? '繁體中文' : 'English'}</a>
+      </nav>
+    </header>
+    <div class="admin-workspace">
+      <aside class="admin-sidebar">
+        <nav aria-label={en ? 'Management sections' : '管理區塊'}>
+          {navigation.map(([href, label]) => <a href={href + suffix} aria-current={activeHref === href ? 'page' : undefined}>{label}</a>)}
+        </nav>
+      </aside>
+      <div class="admin-main"><slot /></div>
+    </div>
+    <script>import '../lib/admin-navigation';</script>
+  </body>
+</html>

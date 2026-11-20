@@ -1,9 +1,9 @@
 ---
 import type { GameDetailModel } from '../lib/games';
-import { getGames } from '../lib/games';
-import GameRelations from './GameRelations.astro';
-import GameSleeves from './GameSleeves.astro';
+import GameCollectionInfo from './GameCollectionInfo.astro';
+import GameLiveRelations from './GameLiveRelations.astro';
 import GameSignals from './GameSignals.astro';
+import AdminCollectionEntry from './AdminCollectionEntry.astro';
 import { getCatalogGameType,catalogTypeLabels } from '../lib/game-content';
 import { translateGameName,translateBggCategory,translateBggMechanic,translateBggComplexity,useTranslations } from '../i18n/utils';
 import { decodeGameName } from '../lib/game-name';
@@ -20,6 +20,7 @@ const ratings=[{label:t('bgg.averageRating'),value:positiveNumber(b.averageRatin
 ---
 <main class="detail-v2" data-detail-v2>
 <a class="back-link" href={zh?'/games':'/en/games'} data-detail-back>← {t('game.backToGames')}</a>
+<p><AdminCollectionEntry gameKey={'BGG:'+game.bggId} lang={lang}/></p>
 <section class="detail-hero panel">
 <div class="cover-column">{cover?<button type="button" class="cover-button" data-cover-open data-cover-error-label={zh?'圖片無法載入':'Image unavailable'} aria-label={zh?'放大遊戲封面':'Enlarge game cover'} aria-haspopup="dialog"><img src={cover} alt={name} fetchpriority="high" decoding="async"/><span>{zh?'點擊放大':'Enlarge cover'} ⤢</span></button>:<div class="no-cover">{zh?'暫無封面':'No cover available'}</div>}</div>
 <div class="hero-copy"><p class="eyebrow">{catalogTypeLabels[getCatalogGameType(b.gameType)][zh?0:1]} <span>· {b.year>0?b.year:'—'}</span></p>
@@ -29,16 +30,16 @@ const ratings=[{label:t('bgg.averageRating'),value:positiveNumber(b.averageRatin
 {b.categoryRanks?.length>0&&<ul class="rank-list">{b.categoryRanks.map(r=><li>{rankLabel(r,lang)} <strong>{r.rank&&r.rank>0?`#${positiveNumber(r.rank)}`:'—'}</strong></li>)}</ul>}</div>
 <GameSignals game={b} lang={lang} compact />
 </div></section>
-<nav class="section-nav" aria-label={zh?'詳細頁區塊':'Detail sections'}><a href="#game-info">{zh?'遊戲資訊':'Game information'}</a><a href="#game-sleeves">{zh?'牌套需求':'Card sleeves'}</a><a href="#game-relations">{zh?'遊戲關聯':'Relations'}</a></nav>
+<nav class="section-nav" aria-label={zh?'詳細頁區塊':'Detail sections'}><a href="#game-info">{zh?'遊戲資訊':'Game information'}</a><a href="#game-collection">{zh?'收藏資訊':'My collection'}</a><a href="#game-sleeves">{zh?'牌套需求':'Card sleeves'}</a><a href="#game-relations">{zh?'遊戲關聯':'Relations'}</a></nav>
 <div class="detail-columns">
 <div class="detail-column">
 <section class="panel description" id="game-info"><h2>{t('game.description')}</h2>
 {paragraphs.length?long?<><p class="description-preview">{paragraphs.join('\n\n').slice(0,420)}…</p><details data-description><summary><span class="more-label">{zh?'顯示更多':'Show more'}</span><span class="less-label">{zh?'收合':'Show less'}</span></summary><div class="description-body">{paragraphs.map(p=><p>{p}</p>)}</div></details></>:<div class="description-body">{paragraphs.map(p=><p>{p}</p>)}</div>:<p class="muted">{zh?'目前沒有遊戲介紹。':'No description available.'}</p>}
 </section>
 <section class="panel"><h2>{t('info.title')}</h2><dl class="metadata">{metadata.map(row=><div><dt>{row.label}</dt><dd>{row.items.map(item=><span class="tag">{item}</span>)}</dd></div>)}</dl>{!metadata.length&&<p class="muted">{zh?'目前尚無其他資料。':'No further metadata available.'}</p>}</section>
-<section class="panel" id="game-sleeves"><GameSleeves bggId={game.bggId} lang={lang}/></section>
+<GameCollectionInfo gameKey={'BGG:'+game.bggId} lang={lang}/>
 </div>
-<div class="detail-column"><section class="panel" id="game-relations"><GameRelations game={game} catalog={getGames()} lang={lang}/></section>
+<div class="detail-column"><div id="game-relations"><GameLiveRelations gameKey={'BGG:'+game.bggId} lang={lang}/></div>
 <section class="panel related-links"><h2>{zh?'相關連結':'Related links'}</h2><a class="primary-link" href={`https://boardgamegeek.com/boardgame/${game.bggId}`} target="_blank" rel="noopener noreferrer">{zh?'查看 BGG 原始資料':'View on BoardGameGeek'} ↗</a><a href={zh?'/collection':'/en/collection'}>{zh?'前往個人收藏模組':'Open My Collection'} →</a><p class="muted">{zh?'個人評價、購買及牌套紀錄請至收藏模組管理；此處不代表已收藏。':'Manage personal ratings, purchases and sleeves in My Collection. This page does not imply ownership.'}</p></section></div>
 </div>
 {cover&&<dialog class="cover-dialog" data-cover-dialog aria-labelledby="cover-dialog-title"><div class="dialog-toolbar"><h2 id="cover-dialog-title">{name}</h2><button type="button" data-cover-close autofocus aria-label={zh?'關閉封面':'Close cover'}>✕</button></div><img data-dialog-cover data-src={cover} alt={name} decoding="async"/></dialog>}

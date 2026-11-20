@@ -1,0 +1,31 @@
+---
+import { componentTypes, componentUnits, maxComponentQuantity } from '../lib/physical-component-values';
+interface Props {
+    en: boolean;
+    component?: { component_name: string; component_type: string; expected_quantity: number | null; quantity_unit: string };
+}
+const { en, component } = Astro.props;
+const t = (zh: string, english: string) => en ? english : zh;
+const types = {
+    card: t('卡牌', 'Card'), token: t('標記', 'Token'), miniature: t('模型', 'Miniature'),
+    tile: t('板塊', 'Tile'), board: t('圖板', 'Board'), die: t('骰子', 'Die'), other: t('其他', 'Other'),
+};
+const units = {
+    piece: t('件', 'Piece'), card: t('張', 'Card'), tile: t('塊', 'Tile'), die: t('顆', 'Die'),
+    sheet: t('頁', 'Sheet'), box: t('盒', 'Box'), pack: t('包', 'Pack'), set: t('組', 'Set'), other: t('其他', 'Other'),
+};
+---
+<label>{t('名稱', 'Name')} <input name="name" required maxlength="160" value={component?.component_name} /></label>
+<label>{t('類型', 'Type')}
+    <select name="type">
+        {componentTypes.map(type => <option value={type} selected={type === (component?.component_type ?? 'card')}>{types[type]}</option>)}
+    </select>
+</label>
+<label>{t('單位', 'Unit')}
+    <select name="unit">
+        {componentUnits.map(unit => <option value={unit} selected={unit === (component?.quantity_unit ?? 'card')}>{units[unit]}</option>)}
+    </select>
+</label>
+<label>{t('預期數量（可留空）', 'Expected quantity (optional)')}
+    <input name="expected" type="number" min="1" max={maxComponentQuantity} step="1" value={component?.expected_quantity ?? undefined} />
+</label>

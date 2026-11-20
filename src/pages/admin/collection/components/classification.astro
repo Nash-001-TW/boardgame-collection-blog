@@ -1,0 +1,138 @@
+---
+import { env } from 'cloudflare:workers';
+import AdminLayout from '../../../../layouts/AdminLayout.astro';
+import { loadAdminComponentClassification } from '../../../../lib/admin-component-classification';
+import type { ComponentClassificationResult } from '../../../../lib/component-classifier';
+
+export const prerender = false;
+
+const lang = Astro.url.searchParams.get('lang') === 'en' ? 'en' : 'zh-TW';
+const en = lang === 'en';
+const t = (zh: string, english: string) => en ? english : zh;
+const title = t('組件分類', 'Component classification');
+const labels = {
+    LEGACY_PRODUCT: t('歷史商品來源', 'Legacy product source'),
+    PHYSICAL_COMPONENT: t('已確認實體組件', 'Confirmed physical component'),
+    UNKNOWN: t('待確認', 'Pending verification'),
+};
+const reasons: Record<ComponentClassificationResult['reason'], string> = {
+    CONFIRMED_PHYSICAL_COMPONENT: t('已驗證實體組件建立紀錄', 'Verified physical component creation record'),
+    PHYSICAL_SOURCE_INVALID: t('實體來源無法驗證', 'Physical source could not be verified'),
+    PHYSICAL_SOURCE_CONFLICT: t('實體來源與歷史證據衝突', 'Physical source conflicts with legacy evidence'),
+    CONFIRMED_LEGACY_PRODUCT: t('已核對歷史商品來源與遷移紀錄', 'Legacy source and migration records agree'),
+    EVIDENCE_UNAVAILABLE: t('無法驗證完整證據', 'Complete evidence could not be verified'),
+    DEFINITION_NOT_UNIQUE: t('無法確認唯一的組件定義', 'A unique component definition could not be verified'),
+    LEGACY_MAP_MISSING: t('缺少歷史組件對照', 'Legacy component mapping is missing'),
+    LEGACY_MAP_AMBIGUOUS: t('存在多筆歷史組件對照', 'Multiple legacy component mappings exist'),
+    LEGACY_MAP_ID_INVALID: t('歷史組件對照 ID 無效', 'The legacy component mapping ID is invalid'),
+    MIGRATION_NOTES_MISSING: t('缺少遷移備註', 'Migration notes are missing'),
+    MIGRATION_NOTES_INVALID: t('遷移備註無效', 'Migration notes are invalid'),
+    MIGRATION_NOTES_MISMATCH: t('遷移備註與歷史對照不符', 'Migration notes disagree with the legacy mapping'),
+    LEGACY_SOURCE_NOT_UNIQUE: t('無法確認唯一的歷史來源', 'A unique legacy source could not be verified'),
+    COMPETING_SOURCE_CLAIM: t('多筆組件定義指向相同歷史來源', 'Multiple definitions claim the same legacy source'),
+    COLLECTION_EVIDENCE_MISSING: t('缺少可驗證的收藏證據', 'Verifiable collection evidence is missing'),
+    COLLECTION_MAP_MISMATCH: t('收藏對照不一致', 'Collection mappings disagree'),
+    LEGACY_TYPE_UNSUPPORTED: t('歷史來源類型不在可驗證範圍內', 'The legacy source type is unsupported'),
+    LEGACY_TYPE_MISMATCH: t('歷史來源類型與遷移備註不符', 'The legacy source type disagrees with migration notes'),
+};
+
+const cursor = Astro.url.searchParams.get('after');
+const after = cursor === null ? 0 : Number(cursor);
+const pageUrl = (next: number | null = null) => {
+    const params = new URLSearchParams();
+    if (en) params.set('lang', 'en');
+    if (next !== null) params.set('after', String(next));
+    return Astro.url.pathname + (params.size ? '?' + params.toString() : '');
+};
+
+let page: Awaited<ReturnType<typeof loadAdminComponentClassification>> | undefined;
+let error = '';
+if (cursor !== null && (!/^[1-9][0-9]*$/.test(cursor) || !Number.isSafeInteger(after))) {
+    Astro.response.status = 400;
+    error = t('分頁參數無效。', 'The page cursor is invalid.');
+} else {
+    try {
+        page = await loadAdminComponentClassification(env.DB, after, (env as unknown as Record<string, unknown>).PHYSICAL_COMPONENT_SIGNING_KEY);
+    } catch {
+        Astro.response.status = 503;
+        error = t('無法讀取組件定義。請稍後再試。', 'Component definitions could not be loaded. Try again later.');
+    }
+}
+---
+
+<AdminLayout lang={lang} title={title}>
+  <main id="editor-content" class="classification-view" tabindex="-1">
+    <header>
+      <a href={'/admin/collection' + (en ? '?lang=en' : '')}>{t('← 收藏管理', '← Collection management')}</a>
+      <h1>{title}</h1>
+      <a href={'/admin/collection/components/manage' + (en ? '?lang=en' : '')}>{t('管理實體組件', 'Manage physical components')}</a>
+    </header>
+
+    {error && <p class="classification-alert" role="alert">{error}</p>}
+    {page?.evidenceUnavailable && (
+      <p class="classification-alert" role="alert">
+        {t('部分或全部分類證據無法驗證。證據讀取可能失敗、不完整或超過上限。',
+            'Some or all classification evidence could not be verified. The read may have failed, been incomplete, or exceeded the limit.')}
+      </p>
+    )}
+    {page?.rows.length === 0 && <p>{t('此頁沒有組件定義。', 'There are no component definitions on this page.')}</p>}
+    {page && page.rows.length > 0 && (
+      <div class="classification-table" role="region" aria-label={title} tabindex="0">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">{t('定義 ID', 'Definition ID')}</th>
+              <th scope="col">{t('所屬收藏', 'Collection')}</th>
+              <th scope="col">{t('組件名稱', 'Component name')}</th>
+              <th scope="col">component_type</th>
+              <th scope="col">{t('分類結果', 'Classification')}</th>
+              <th scope="col">{t('分類原因', 'Reason')}</th>
+              <th scope="col">{t('證據狀態', 'Evidence')}</th>
+              <th scope="col">{t('衝突資訊', 'Conflicts')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {page.rows.map(({ result, ...row }) => (
+              <tr>
+                <th scope="row">{row.id}</th>
+                <td><a href={'/admin/collection/components/manage?collection=' + row.collection_item_id + (en ? '&lang=en' : '')}>{row.collection_name ? `${row.collection_name} (#${row.collection_item_id})` : `#${row.collection_item_id}`}</a></td>
+                <td>{row.component_name}</td>
+                <td><code>{row.component_type}</code></td>
+                <td><span class="status-badge" data-classification={result?.classification ?? 'UNKNOWN'}>{labels[result?.classification ?? 'UNKNOWN']}</span></td>
+                <td>{reasons[result?.reason ?? 'EVIDENCE_UNAVAILABLE']}</td>
+                <td>{!result || result.reason === 'EVIDENCE_UNAVAILABLE'
+                    ? t('無法驗證', 'Unavailable')
+                    : result.classification === 'UNKNOWN'
+                        ? t('不足以確認', 'Insufficient to confirm')
+                        : t('完整', 'Complete')}</td>
+                <td>{result?.conflicts.length
+                    ? result.conflicts.map(conflict => reasons[conflict]).join(t('、', '; '))
+                    : !result || result.reason === 'EVIDENCE_UNAVAILABLE'
+                        ? t('無法驗證', 'Unavailable')
+                        : t('未回報', 'None reported')}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+    {(cursor !== null || page?.nextCursor != null) && (
+      <nav class="classification-pagination" aria-label={t('分頁', 'Pagination')}>
+        {cursor !== null && <a class="admin-button" href={pageUrl()}>{t('第一頁', 'First page')}</a>}
+        {page?.nextCursor != null && <a class="admin-button" href={pageUrl(page.nextCursor)}>{t('下一頁', 'Next page')}</a>}
+      </nav>
+    )}
+  </main>
+</AdminLayout>
+
+<style>
+  .classification-view { max-width: 1200px; margin: auto; padding: 32px 16px 64px; }
+  .classification-view h1 { margin: 12px 0 20px; }
+  .classification-alert { padding: 14px; border: 1px solid #e8bab3; border-radius: 8px; background: #fff0ed; color: #8d251c; }
+  .classification-table { overflow-x: auto; border: 1px solid #dad8d0; border-radius: 8px; background: #fff; }
+  table { width: 100%; min-width: 800px; border-collapse: collapse; text-align: start; }
+  th, td { padding: 12px; border-bottom: 1px solid #dad8d0; vertical-align: top; overflow-wrap: anywhere; }
+  thead { background: #f3f6f2; }
+  tr:last-child > :is(th, td) { border-bottom: 0; }
+  .classification-pagination { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+</style>

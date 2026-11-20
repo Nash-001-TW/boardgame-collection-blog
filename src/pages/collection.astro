@@ -1,28 +1,5 @@
-
 ---
-import { env } from "cloudflare:workers";
-
-import Layout from "../layouts/Layout.astro";
-import CollectionPage from "../components/CollectionPage.astro";
-
-import { CollectionV2Repository } from "../lib/collection-v2-repository";
-import { adaptCollectionV2Rows } from "../lib/collection-v2-adapter";
-
-export const prerender = false;
-
-let collectionGames:ReturnType<typeof adaptCollectionV2Rows>=[],unavailable=false;
-try{if(!env.DB)throw new Error('Unavailable');const repository=new CollectionV2Repository(env.DB);collectionGames=adaptCollectionV2Rows(await repository.getProductionItems(),'zh-TW');}catch{unavailable=true;Astro.response.status=503;}
-Astro.response.headers.set('Cache-Control','no-store');
+import Page from '../components/PublicBrowse.astro';
+export const prerender=false;
 ---
-
-<Layout
-    title="我的收藏 | Soma's Board Game Collection Blog"
-    lang="zh-TW"
->
-    {unavailable&&<p role="status">收藏資料暫時無法載入</p>}
-    <p><a href="/admin/collection">管理收藏</a></p>
-    <CollectionPage
-        lang="zh-TW"
-        collectionGames={collectionGames}
-    />
-</Layout>
+<Page lang='zh-TW' collection/>

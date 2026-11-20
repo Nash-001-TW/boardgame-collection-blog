@@ -67,6 +67,7 @@ export type BggComplexity =
 // ============================================================
 
 export interface BggGameData {
+    alternativeNames?: string[];
 
     // ========================================================
     // 1. 基本資訊

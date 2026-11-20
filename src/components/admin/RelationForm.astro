@@ -1,0 +1,17 @@
+---
+import {gameRelationTypes,collectionRelationTypes} from '../../lib/relation-admin';
+import type {readRelationAdmin} from '../../lib/relation-admin';
+interface Props{data:Awaited<ReturnType<typeof readRelationAdmin>>;row?:Record<string,unknown>;source?:number;lang:'en'|'zh-TW'}
+const{data,row,source=0,lang}=Astro.props,t=(zh:string,en:string)=>lang==='en'?en:zh,game=data.domain==='game';
+const choices=game?data.identities:data.collections;
+const types=game?gameRelationTypes:collectionRelationTypes;
+const labels:Record<string,string>={requires_base:t('擴充 → 必要主遊戲','Expansion → required base'),expansion_of:t('擴充 → 主遊戲','Expansion → base'),accessory_for:t('配件 → 適用遊戲','Accessory → game'),compilation_of:t('合輯 → 內容遊戲','Compilation → included game'),bundle_contains:t('組合包 → 收藏內容','Bundle → collection member'),standalone_related:t('獨立遊戲相關','Standalone related'),same_series:t('同系列','Same series'),integrates_with:t('可整合遊玩','Integrates with'),other:t('其他（不推估細分類）','Other (no inferred subtype)')};
+---
+<form data-bgg-action="relation" class="fields">
+ <input name="domain" type="hidden" value={data.domain}/><input name="id" type="hidden" value={String(row?.id??0)}/><input name="revision" type="hidden" value={String(row?.admin_revision??0)}/>
+ {(['sourceId','targetId']as const).map((name,index)=><label>{index?t('目標','Target'):t('來源','Source')}<select name={name} required>{choices.map(c=><option value={String(c.id)} selected={c.id===(row?.[game?(index?'target_game_id':'source_game_id'):(index?'target_item_id':'source_item_id')]??(!index?source:0))}>#{String(c.id)} {String(c.primary_name??c.display_name)} {game?c.bgg_id?'BGG:'+c.bgg_id:'NotBGG:'+String(c.seq).padStart(6,'0'):String(c.record_scope)}</option>)}</select></label>)}
+ <label>{t('關聯類型','Relation type')}<select name="type">{types.map(type=><option value={type} selected={type===(row?.relation_type??'other')}>{labels[type]}</option>)}</select></label>
+ {game&&<label><input name="confirmed" type="checkbox" checked={row?.admin_confirmed===1}/>{t('確認此手動關聯（公開頁才會顯示）','Confirm this manual relation for public display')}</label>}
+ <label>{t('私人關聯備註','Private relation notes')}<textarea name="notes" maxlength="3000">{String(row?.notes??'')}</textarea></label>
+ <button class="admin-button">{t('儲存關聯','Save relation')}</button>
+</form>

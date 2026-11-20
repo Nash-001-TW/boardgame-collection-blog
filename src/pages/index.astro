@@ -1,11 +1,5 @@
 ---
-import Layout from "../layouts/Layout.astro";
-import HomePage from "../components/HomePage.astro";
+import Page from '../components/PublicHome.astro';
+export const prerender=false;
 ---
-
-<Layout
-    title="首頁 | Soma's Board Game Collection Blog"
-    lang="zh-TW"
->
-    <HomePage lang="zh-TW" />
-</Layout>
+<Page lang='zh-TW'/>

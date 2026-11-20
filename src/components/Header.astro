@@ -21,8 +21,8 @@ function getEnglishUrl(path: string): string {
 function getLocalizedUrl(path: string): string {
     return lang === "zh-TW" ? path : (path === "/" ? "/en" : `/en${path}`);
 }
-const chineseUrl = getChineseUrl(pathname);
-const englishUrl = getEnglishUrl(pathname);
+const chineseUrl = getChineseUrl(pathname)+Astro.url.search;
+const englishUrl = getEnglishUrl(pathname)+Astro.url.search;
 const navItems = [
     { key: "nav.home", path: "/", icon: "⌂" },
     { key: "nav.games", path: "/games", icon: "⚄" },
@@ -84,7 +84,6 @@ function isActive(path: string): boolean {
 </header>
 <script>
     function syncLanguageLinks() {
-        if (!/^\/(en\/)?games\/?$/.test(location.pathname)) return;
         document.querySelectorAll<HTMLAnchorElement>("[data-language-switch]").forEach(link => {
             const target = new URL(link.href);
             target.search = location.search;

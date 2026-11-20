@@ -470,6 +470,7 @@ export function parseBggGameXml(
             ),
 
         gameType,
+        alternativeNames: names.filter(name=>name.type==='alternate').map(name=>String(name.value??'')),
 
         name:
             String(

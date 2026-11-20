@@ -4,9 +4,10 @@ import { translateGameName } from '../i18n/utils';
 export interface PublicIdentityLink {notBggId:NotBggId;bggId:number;primarySource:'notbgg'|'bgg';name:string;image:string|null}
 export interface IdentityIndex {byNotBgg:Map<string,PublicIdentityLink>;byBgg:Map<number,PublicIdentityLink>}
 /** Public whitelist only. No candidates, actors, notes, history or internal game IDs. */
-export async function publicIdentityIndex(db:D1Database,games:readonly Game[]):Promise<IdentityIndex>{
- const valid=new Set(games.filter(g=>g.bgg).map(g=>g.bggId));
+export async function publicIdentityIndex(db:D1Database,games:readonly Game[],additionalPublicIds:readonly number[]=[]):Promise<IdentityIndex>{
+ const valid=new Set([...games.filter(g=>g.bgg).map(g=>g.bggId),...additionalPublicIds]);
  const rows=await db.prepare(`SELECT n.seq,l.candidate_bgg_id,l.primary_source,n.name,COALESCE(n.thumbnail_url,n.image_url) image FROM notbgg_bgg_links l JOIN notbgg_games n ON n.seq=l.seq WHERE l.status='linked' AND n.archived_at IS NULL`).all<{seq:number;candidate_bgg_id:number;primary_source:'notbgg'|'bgg';name:string;image:string|null}>();
+ if(!rows.success||!Array.isArray(rows.results))throw new Error('Public identity data unavailable');
  const byNotBgg=new Map<string,PublicIdentityLink>(),byBgg=new Map<number,PublicIdentityLink>();
  for(const row of rows.results){if(!valid.has(row.candidate_bgg_id))continue;const link={notBggId:formatNotBggId(row.seq),bggId:row.candidate_bgg_id,primarySource:row.primary_source,name:row.name,image:row.image};byNotBgg.set(link.notBggId,link);byBgg.set(link.bggId,link);}
  return {byNotBgg,byBgg};

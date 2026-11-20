@@ -1,0 +1,75 @@
+---
+import {env} from 'cloudflare:workers';
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import PurchaseLine from '../../../components/admin/PurchaseLine.astro';
+import {readPurchases,readPurchase} from '../../../lib/purchase-admin';
+const params=Astro.url.searchParams,lang=params.get('lang')==='en'?'en':'zh-TW',t=(zh:string,en:string)=>lang==='en'?en:zh;
+export const prerender=false;
+const id=Number(params.get('id')||0),creating=params.get('new')==='1';
+let data:Awaited<ReturnType<typeof readPurchases>>|undefined,detail:Awaited<ReturnType<typeof readPurchase>>|undefined,error='';
+try{data=await readPurchases(env.DB,params);if(id)detail=await readPurchase(env.DB,id);}catch{Astro.response.status=503;error=t('無法載入採購資料。請檢查篩選條件或稍後重試。','Could not load purchases. Check filters or retry later.');}
+const editable=creating||detail?.order.admin_managed===1&&!detail.locked;
+const order=detail?.order;
+const fields=[['merchant','商店或來源','Merchant / source','merchant_name',200],['reference','訂單編號','Order reference','order_reference',200],['currency','幣別代碼','Currency code','currency_code',3]] as const;
+const money=[['shipping','運費','Shipping','shipping_minor'],['tax','稅費','Tax','tax_minor'],['fee','其他費用','Other fees','fee_minor'],['discount','訂單折扣','Order discount','discount_minor'],['refunded','累計退款','Cumulative refund','refunded_minor']] as const;
+const statuses=['open','paid','partially_received','completed','cancelled'] as const;
+const statusNames=[t('未付款／待處理','Open / pending'),t('已付款','Paid'),t('部分收貨','Partially received'),t('完成','Completed'),t('取消','Cancelled')];
+const link=(changes:Record<string,string|null>)=>{const p=new URLSearchParams(params);for(const[k,v]of Object.entries(changes))v===null?p.delete(k):p.set(k,v);return '?'+p;};
+---
+<AdminLayout lang={lang} title={t('採購與已記錄成本','Purchases & recorded costs')}>
+<main id="editor-content" class="admin-page" data-purchase-admin data-lang={lang}>
+ <h1>{t('採購與已記錄成本','Purchases & recorded costs')}</h1>
+ <p>{t('所有金額使用整數最小貨幣單位（例如 TWD 分）。不換匯、不加總不同幣別、不匯入歷史價格。以下不是完整收藏總價。','All amounts are integer minor units (e.g. TWD cents). No currency conversion, mixed-currency sums or legacy price imports. These are not complete collection valuations.')}</p>
+ <nav><a class="admin-button primary" href={link({new:'1',id:null,after:null})}>{t('新增採購','New purchase')}</a> <a href={link({new:null,id:null})}>{t('採購清單','Purchase list')}</a></nav>
+ <p role="status" aria-live="polite" tabindex="-1" data-purchase-status></p>
+ {error&&<p role="alert">{error}</p>}
+ {(creating||detail)&&!error&&<section class="purchase-panel">
+  <h2>{creating?t('新增採購','New purchase'):'#'+id}</h2>
+  {!editable&&<p>{t('歷史採購或已有外部引用：保留原有資料，本頁僅供查詢。','Historical purchase or externally referenced order: preserved as read only.')}</p>}
+  {editable?<form data-purchase-form>
+   <input name="id" type="hidden" value={creating?0:id}/><input name="revision" type="hidden" value={creating?0:Number(order?.admin_revision)}/>
+   <div class="fields">
+    <label>{t('採購日期','Purchase date')}<input name="date" type="date" value={String(order?.ordered_at??'').slice(0,10)}/></label>
+    {fields.map(([name,zh,en,column,max])=><label>{t(zh,en)}<input name={name} maxlength={max} required={name==='currency'} value={String(order?.[column]??(name==='currency'?'TWD':''))}/></label>)}
+    <label>{t('採購狀態','Purchase status')}<select name="status">{statuses.map((s,i)=><option value={s} selected={s===(order?.status??'open')}>{statusNames[i]}</option>)}</select></label>
+    {money.map(([name,zh,en,column])=><label>{t(zh,en)}<input name={name} type="number" min="0" max="1000000000000" step="1" required value={Number(order?.[column]??0)}/></label>)}
+    <label>{t('分攤方式','Allocation method')}<select name="method"><option value="manual">{t('手動分攤（可保留未分攤額）','Manual (may remain incomplete)')}</option><option value="direct">{t('直接指定成本','Direct cost')}</option><option value="weighted">{t('按明細淨額比例分攤全部淨額','Allocate total proportionally to net line values')}</option></select></label>
+    <label>{t('私人備註','Private notes')}<textarea name="notes" maxlength="3000">{String(order?.notes??'')}</textarea></label>
+   </div>
+   <p>{t('商品金額為各明細「數量 × 單價 − 本項折扣」合計；淨支付額再加運費、稅費與費用，扣訂單折扣及退款。比例分攤以最大餘數法分配最後的最小貨幣單位。','Item subtotal is quantity × price − line discount. Net payment adds shipping, tax and fees, then subtracts order discount and refunds. Proportional allocation uses largest remainders for the final minor units.')}</p>
+   <div data-purchase-lines>{creating?<PurchaseLine lang={lang} collectionId={Number(params.get('collection'))||undefined}/>:detail!.lines.map(line=><PurchaseLine lang={lang} row={line} existing allocated={detail!.allocations.filter(a=>a.purchase_order_line_id===line.id).reduce((sum,a)=>sum+Number(a.allocated_minor),0)}/>)}</div>
+   <template data-line-template><PurchaseLine lang={lang}/></template>
+   <button type="button" class="admin-button" data-add-line>{t('增加明細','Add line')}</button>
+   <p data-money-preview aria-live="polite"></p>
+   <button class="admin-button primary">{t('儲存採購與分攤（不建立副本）','Save purchase & allocations (no copy creation)')}</button>
+  </form>:<>
+   <p>{String(order?.ordered_at??'')} · {String(order?.merchant_name??'')} · {String(order?.order_reference??'')} · {String(order?.currency_code)} · {String(order?.status)}</p>
+   <p>{t('淨額／已分攤／尚未分攤','Net / allocated / unallocated')}: {String(order?.paid_minor)} / {String(order?.allocated_minor)} / {String(order?.unallocated_minor)}</p>
+   <ul>{detail!.lines.map(line=><li>#{String(line.collection_item_id??'—')} {String(line.description)} · {String(line.quantity)} × {String(line.unit_price_minor)}</li>)}</ul>
+   <p>{String(order?.notes??'')}</p>
+  </>}
+ </section>}
+ <form method="get" class="fields">
+  <input name="lang" type="hidden" value={lang}/>
+  <label>{t('年份','Year')}<input name="year" pattern="[0-9]{4}" value={params.get('year')??''}/></label>
+  <label>{t('商店','Merchant')}<input name="merchant" maxlength="200" value={params.get('merchant')??''}/></label>
+  <label>{t('收藏 ID','Collection ID')}<input name="collection" type="number" min="1" value={params.get('collection')??''}/></label>
+  <button class="admin-button">{t('篩選','Filter')}</button>
+ </form>
+ {data&&<>
+  <section class="purchase-panel"><h2>{t('已記錄訂單金額（各幣別／狀態分列）','Recorded order amounts by currency and status')}</h2>
+   <p>{t('待處理與取消訂單不列入已付款收藏成本。收藏篩選下的訂單支出仍是整筆訂單金額；成本區只列該收藏的分攤。','Pending and cancelled orders are excluded from paid collection costs. Filtered order spending is the whole order; collection costs include only that item’s allocations.')}</p>
+   <ul>{data.totals.map(row=><li>{String(row.currency_code)} · {statusNames[statuses.indexOf(row.status as typeof statuses[number])]??String(row.status)}: {String(row.net_minor)}</li>)}</ul>
+  </section>
+  <section class="purchase-panel"><h2>{t('已付款訂單的收藏分攤（資料可能不完整）','Collection allocations from paid orders (may be incomplete)')}</h2>
+   <p>{t('只計採購分攤，不另加明細、舊價格提示或維修費。','Allocations only; line prices, legacy price hints and repair costs are not added.')}</p>
+   <ul>{data.costs.map(row=><li><a href={'/admin/collection/'+row.collection_item_id+'?lang='+lang}>#{String(row.collection_item_id)}</a> · {String(row.currency_code)}: {String(row.allocated_minor)}</li>)}</ul>
+  </section>
+  {data.orders.length===0&&<p>{t('沒有符合條件的採購。','No matching purchases.')}</p>}
+  {data.orders.map(row=><article class="purchase-panel"><h3><a href={link({id:String(row.id),new:null})}>#{String(row.id)} {String(row.merchant_name??'')}</a></h3><p>{String(row.ordered_at??'')} · {String(row.currency_code)} · {String(row.status)}</p><p>{t('淨額／已分攤／尚未分攤','Net / allocated / unallocated')}: {String(row.paid_minor)} / {String(row.allocated_minor)} / {String(row.unallocated_minor)}</p>{Number(row.unallocated_minor)!==0&&<strong>{t('分攤尚未完成','Allocation incomplete')}</strong>}</article>)}
+  <nav><a class="admin-button" href={link({after:null,id:null,new:null})}>{t('第一頁','First page')}</a>{data.nextCursor!==null&&<a class="admin-button" href={link({after:String(data.nextCursor),id:null,new:null})}>{t('下一頁','Next page')}</a>}</nav>
+ </>}
+</main>
+</AdminLayout>
+<script>import '../../../lib/purchase-admin-controller';</script>
+<style>.purchase-panel{padding:20px;border:1px solid var(--admin-border);border-radius:10px;background:var(--admin-surface);margin:20px 0;min-width:0;overflow-wrap:anywhere}.purchase-panel :global(fieldset){border:1px solid var(--admin-border);border-radius:8px;padding:16px;margin:16px 0;min-width:0}.purchase-panel :global(legend){padding:0 6px}.purchase-panel :global([data-remove-line]){margin-top:12px}</style>

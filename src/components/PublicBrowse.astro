@@ -1,0 +1,53 @@
+---
+import {env} from 'cloudflare:workers';
+import Layout from '../layouts/Layout.astro';
+import {readPublicBrowse} from '../lib/public-site-data';
+import {HttpError} from '../lib/notbgg-admin-api';
+import {publicAccessoryLabels} from '../i18n/accessory-categories';
+import '../styles/public-ui.css';
+interface Props{lang:'en'|'zh-TW';collection?:boolean}
+const{lang,collection=false}=Astro.props,en=lang==='en',t=(zh:string,english:string)=>en?english:zh;
+const title=collection?t('我的收藏','My collection'):t('遊戲資料庫','Game catalog');
+let data:Awaited<ReturnType<typeof readPublicBrowse>>|undefined,error='';
+try{data=await readPublicBrowse(env.DB,Astro.url.searchParams,lang,collection);}catch(failure){Astro.response.status=failure instanceof HttpError?failure.status:503;error=t('資料暫時無法載入，請檢查篩選條件或重試。','Data could not be loaded. Check the filters or retry.');}
+Astro.response.headers.set('Cache-Control','no-store');
+const params=Astro.url.searchParams,prefix=en?'/en':'',page=(p:number)=>{const q=new URLSearchParams(params);q.set('page',String(p));return '?'+q;};
+const returnTo=Astro.url.pathname+Astro.url.search;
+const range=(min:number|null,max:number|null)=>min===null&&max===null?'—':min===max?String(min):[min??'?',max??'?'].join('–');
+---
+<Layout lang={lang} catalogPage title={title+" | Soma's Collection"} description={t('瀏覽公開遊戲與收藏，查看卡套需求、版本及相關遊戲。','Browse public games and collections, sleeve needs, editions and related games.')} noindex={!!error||params.size>0}>
+<main class="public-page" data-public-browse data-lang={lang}>
+ <header class="public-heading"><p class="public-eyebrow">SOMA'S COLLECTION</p><h1>{title}</h1><p>{collection?t('每張卡片是一筆公開收藏紀錄，並非副本或零件總數。','Each card is a public collection record, not a count of copies or parts.'):t('以最新成功的 D1 資料為優先，保留既有公開建置資料。','Latest successful D1 metadata takes priority; established public static records remain available.')}</p></header>
+ <form method="get" class="public-filters" aria-label={t('搜尋與篩選','Search and filter')}>
+  <label>{t('搜尋名稱或身份 ID','Search name or identity ID')}<input name="q" type="search" maxlength="100" value={params.get('q')??''}/></label>
+  <label>{t('來源','Source')}<select name="source">{['all','bgg','notbgg'].map((value,i)=><option value={value} selected={value===(params.get('source')??'all')}>{[t('全部','All'),'BGG','NotBGG'][i]}</option>)}</select></label>
+  <label>{t('類型','Type')}<select name="type">{['all','boardgame','expansion','accessory'].map((value,i)=><option value={value} selected={value===(params.get('type')??params.get('filter')??'all')}>{[t('全部','All'),t('主遊戲','Base game'),t('擴充','Expansion'),t('配件','Accessory')][i]}</option>)}</select></label>
+  <label>{t('收藏狀態','Collection filter')}<select name="status">{['all','owned','wishlist','preordered'].map((value,i)=><option value={value} selected={value===(params.get('status')??'all')}>{[t('全部','All'),t('已收藏','Owned'),t('願望清單','Wishlist'),t('預購','Preordered')][i]}</option>)}</select></label>
+  <label>{t('玩家人數','Player count')}<select name="players">{['','1','2','3','4','5','6','6plus'].map(value=><option value={value} selected={value===(params.get('players')??'')}>{value==='6plus'?'6+':value||t('不限','Any')}</option>)}</select></label>
+  <label>{t('排序','Sort')}<select name="sort">{['name','name-desc','year','year-asc','rating','weight'].map((value,i)=><option value={value} selected={value===(({'name-asc':'name','year-desc':'year','bgg-rating-desc':'rating','weight-desc':'weight'} as Record<string,string>)[params.get('sort')??'']??params.get('sort')??'name')}>{[t('名稱：升冪','Name: ascending'),t('名稱：降冪','Name: descending'),t('年份：新到舊','Year: newest'),t('年份：舊到新','Year: oldest'),t('BGG 評分：高到低','BGG rating: highest'),t('複雜度：高到低','Complexity: highest')][i]}</option>)}</select></label>
+  <details class="public-advanced" open={['time','weight','mechanic','accessory','view'].some(key=>params.has(key))}><summary>{t('進階篩選與檢視','Advanced filters and view')}</summary><div class="public-advanced-fields">
+   <label>{t('遊戲時間','Playing time')}<select name="time">{['','30','31-60','61-120','over120','60','90','120'].map((value,i)=><option value={value} selected={value===(params.get('time')??'')}>{[t('不限','Any'),'≤ 30 min','31–60 min','61–120 min','> 120 min','≤ 60 min','≤ 90 min','≤ 120 min'][i]}</option>)}</select></label>
+   <label>{t('複雜度區間','Complexity range')}<select name="weight">{['','1-2','2-3','3-4','4-5'].map(value=><option value={value} selected={value===(params.get('weight')??'')}>{value||t('不限','Any')}</option>)}</select></label>
+   <label>{t('機制名稱或 BGG 機制 ID','Mechanic name or BGG mechanic ID')}<input name="mechanic" maxlength="120" value={params.get('mechanic')??''}/></label>
+   <label>{t('配件分類','Accessory category')}<select name="accessory"><option value="">{t('不限','Any')}</option>{Object.entries(publicAccessoryLabels).map(([key,label])=><option value={key} selected={key===params.get('accessory')}>{label[en?1:0]}</option>)}</select></label>
+   <label>{t('檢視方式','View')}<select name="view"><option value="grid" selected={params.get('view')!=='list'}>{t('卡片','Cards')}</option><option value="list" selected={params.get('view')==='list'}>{t('清單','List')}</option></select></label>
+  </div></details>
+  <div class="public-actions"><button class="public-button primary">{t('套用篩選','Apply filters')}</button><a class="public-button" href={Astro.url.pathname}>{t('重設','Reset')}</a></div>
+ </form>
+ {error?<section class="public-notice error" role="alert"><h2>{t('無法載入資料','Data unavailable')}</h2><p>{error}</p><a class="public-button" href={Astro.url.pathname+Astro.url.search}>{t('重試','Retry')}</a></section>:data&&<>
+  <p role="status">{t('符合條件','Matches')}: {data.total} · {t('第','Page')} {data.page} · {t('每頁最多 20 筆','Up to 20 records per page')}</p>
+  {!data.cards.length&&<section class="public-notice"><h2>{t('沒有符合條件的資料','No matching records')}</h2><p>{t('試著減少篩選條件。','Try fewer filters.')}</p></section>}
+  <div class="public-card-grid" data-view={params.get('view')==='list'?'list':'grid'}>{data.cards.map(card=><article class="public-game-card" data-public-card data-key={card.key}>
+   <div class="public-cover">{card.image?<img src={card.image} alt={card.name} width="300" height="360" loading="lazy" decoding="async" data-public-image/>:<span>{t('暫無封面','No cover')}</span>}</div>
+   <div class="public-card-body"><p class="public-meta">{card.source==='bgg'?'BGG':card.source==='notbgg'?'NotBGG':t('來源未建立','Source not established')} · {card.year??'—'}{card.collectionId?' · #'+card.collectionId:''}</p>
+    <h2>{card.href?<a href={card.href+'?'+new URLSearchParams({returnTo})} data-public-detail-link>{card.name}</a>:card.name}</h2>
+    <p class="public-badges">{card.owned&&<span>{t('已收藏','Owned')}</span>}{card.wishlist&&<span>{t('願望清單','Wishlist')}</span>}{card.preordered&&<span>{t('預購','Preordered')}</span>}{card.status&&!['owned','preordered'].includes(card.status)&&<span>{({not_owned:t('未持有','Not owned'),sold:t('已出售','Sold'),gifted_away:t('已送出','Gifted away'),unknown:t('未知狀態','Unknown status')} as Record<string,string>)[card.status]??t('其他收藏狀態','Other collection status')}</span>}</p>
+    <dl><div><dt>{t('玩家','Players')}</dt><dd>{range(card.minPlayers,card.maxPlayers)}</dd></div><div><dt>{t('分鐘','Minutes')}</dt><dd>{range(card.minTime,card.maxTime)}</dd></div><div><dt>{t('BGG 評分','BGG rating')}</dt><dd>{card.rating?.toFixed(1)??'—'}</dd></div><div><dt>{t('複雜度','Complexity')}</dt><dd>{card.weight?.toFixed(2)??'—'}</dd></div></dl>
+   </div>
+  </article>)}</div>
+  <nav class="public-pagination" aria-label={t('分頁','Pagination')}>{data.page>1&&<a class="public-button" href={page(data.page-1)} rel="prev">{t('上一頁','Previous')}</a>}<span aria-current="page">{data.page}</span>{data.page*20<data.total&&data.page<1000&&<a class="public-button" href={page(data.page+1)} rel="next">{t('下一頁','Next')}</a>}</nav>
+ </>}
+ <p><a href={prefix+(collection?'/games':'/collection')}>{collection?t('瀏覽全部遊戲','Browse all games'):t('查看我的收藏','View my collection')}</a></p>
+</main>
+</Layout>
+<script>import '../lib/public-ui-controller';</script>

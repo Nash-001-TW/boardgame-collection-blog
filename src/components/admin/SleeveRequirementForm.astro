@@ -1,0 +1,14 @@
+---
+import type { readSleeveWorkflow } from '../../lib/sleeve-workflow';
+interface Props {data:Awaited<ReturnType<typeof readSleeveWorkflow>>;row?:Record<string,unknown>;collectionId:number;lang:'en'|'zh-TW'}
+const {data,row,collectionId,lang}=Astro.props,t=(zh:string,en:string)=>lang==='en'?en:zh;
+---
+<form data-workflow-action="requirement" class="fields">
+ <input name="id" type="hidden" value={String(row?.id??0)}/><input name="revision" type="hidden" value={String(row?.assignment_revision??0)}/><input name="collectionId" type="hidden" value={collectionId}/>
+ <label>{t('尺寸','Size')}<select name="sizeId" required>{data.sizes.map(s=><option value={String(s.id)} selected={s.id===row?.size_id}>{Number(s.width_tenth_mm)/10} × {Number(s.height_tenth_mm)/10} mm</option>)}</select></label>
+ <label>{t('需求張數','Required sleeves')}<input name="quantity" type="number" min="0" max="1000000" step="1" required value={Number(row?.quantity_sheets??0)}/></label>
+ <label>{t('名稱或說明（管理員）','Name or description (admin)')}<textarea name="notes" maxlength="1000">{String(row?.notes??'')}</textarea></label>
+ <label>{t('適用副本','Copy scope')}<select name="copyId"><option value="">{t('收藏層級（各副本獨立套用）','Collection level (each copy applied independently)')}</option>{data.copies.map(c=><option value={String(c.id)} selected={c.id===row?.owned_copy_id}>#{String(c.id)} {String(c.copy_label??'')}</option>)}</select></label>
+ <label>{t('卡牌組件','Card component')}<select name="componentId"><option value="">{t('未指派','Unassigned')}</option>{data.components.filter(c=>data.eligible.includes(Number(c.id))||c.id===row?.component_definition_id).map(c=><option value={String(c.id)} selected={c.id===row?.component_definition_id}>#{String(c.id)} {String(c.component_name)} {data.eligible.includes(Number(c.id))?'':t('（保留歷史引用）','(retained existing reference)')}</option>)}</select></label>
+ <button class="admin-button">{t('儲存需求（不扣庫存）','Save requirement (no stock deduction)')}</button>
+</form>

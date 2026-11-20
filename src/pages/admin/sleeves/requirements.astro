@@ -1,0 +1,63 @@
+---
+import { env } from 'cloudflare:workers';
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { readSleeveWorkflow } from '../../../lib/sleeve-workflow';
+import SleeveRequirementForm from '../../../components/admin/SleeveRequirementForm.astro';
+const lang=Astro.url.searchParams.get('lang')==='en'?'en':'zh-TW',en=lang==='en',t=(zh:string,english:string)=>en?english:zh;
+export const prerender=false;
+const collectionId=Number(Astro.url.searchParams.get('collection'));
+let data:Awaited<ReturnType<typeof readSleeveWorkflow>>|undefined,error='';
+if(collectionId)try{data=await readSleeveWorkflow(env.DB,collectionId,(env as unknown as Record<string,unknown>).PHYSICAL_COMPONENT_SIGNING_KEY);}catch{Astro.response.status=503;error=t('無法載入收藏卡套資料。','Collection sleeve data could not be loaded.');}
+const title=t('卡套需求與逐副本套用','Sleeve requirements & copy applications');
+---
+<AdminLayout lang={lang} title={title}>
+<main class="admin-page" data-sleeve-workflow data-lang={lang}>
+ <nav><a href={'/admin/sleeves?lang='+lang}>{t('卡套管理','Sleeve management')}</a> · <a href={'/admin/collection?lang='+lang}>{t('收藏清單','Collection list')}</a></nav>
+ <h1>{title}</h1>
+ <form method="get" class="fields"><input type="hidden" name="lang" value={lang}/><label>{t('收藏 ID','Collection ID')}<input name="collection" type="number" min="1" required value={collectionId||undefined}/></label><button class="admin-button">{t('開啟收藏','Open collection')}</button></form>
+ <p role="status" tabindex="-1" data-workflow-status aria-live="polite"></p>
+ {error&&<p role="alert">{error}</p>}
+ {data&&<>
+  <h2>{String(data.collection.display_name)} · #{collectionId}</h2>
+  <p><a href={'/admin/collection/'+collectionId+'?lang='+lang}>{t('返回編輯收藏','Edit collection')}</a> · <a href={'/admin/collection/components/manage?collection='+collectionId+'&lang='+lang}>{t('實體組件與副本清點','Physical components & copy inspection')}</a></p>
+  <p>{t('建立需求與關聯不扣庫存。套用需要已確認卡牌及已清點的在藏、未封膜副本。已有套用的需求鎖定；變更需求請新增另一筆。','Requirements and assignments do not reduce stock. Applying needs confirmed cards and an inspected, unsealed copy in collection. Used requirements are locked; add another requirement for changes.')}</p>
+  <details class="workflow-panel"><summary>{t('新增卡套需求','Add sleeve requirement')}</summary><SleeveRequirementForm data={data} collectionId={collectionId} lang={lang}/></details>
+  <label>{t('需求篩選','Requirement filter')}<select data-assignment-filter><option value="all">{t('全部','All')}</option><option value="unassigned">{t('未指派','Unassigned')}</option><option value="assigned">{t('已關聯','Assigned')}</option></select></label>
+  {data.requirements.length===0&&<p>{t('尚無卡套需求。','No sleeve requirements.')}</p>}
+  {data.requirements.map(r=>{
+   const applications=data!.applications.filter(a=>a.requirement_id===r.id);
+   const locked=applications.length>0||data!.applications.some(a=>a.requirement_id===null);
+   const eligible=data!.eligible.includes(Number(r.component_definition_id));
+   return <article class="workflow-panel" data-requirement={String(r.id)} data-assigned={r.component_definition_id===null?'unassigned':'assigned'}>
+    <h3>#{String(r.id)} · {Number(r.width_tenth_mm)/10} × {Number(r.height_tenth_mm)/10} mm · {String(r.quantity_sheets)} {t('張','sleeves')}</h3>
+    <p>{r.component_definition_id===null?t('未指派','Unassigned'):eligible?t('已確認實體卡牌','Confirmed physical card'):t('歷史／待確認引用（不可套用）','Legacy / unverified reference (cannot apply)')}</p>
+    {locked?<p>{t('已有套用紀錄，需求已鎖定。','Requirement locked by recorded applications.')}</p>:<details><summary>{t('編輯需求','Edit requirement')}</summary><SleeveRequirementForm data={data!} row={r} collectionId={collectionId} lang={lang}/></details>}
+    {data!.copies.filter(c=>r.owned_copy_id===null||r.owned_copy_id===c.id).map(c=>{
+     const rows=applications.filter(a=>a.owned_copy_id===c.id),used=rows.reduce((sum,a)=>sum+Number(a.quantity_sheets),0);
+     const legacy=data!.applications.some(a=>a.owned_copy_id===c.id&&a.requirement_id===null);
+     const inspected=data!.counts.some(cc=>cc.owned_copy_id===c.id&&cc.component_definition_id===r.component_definition_id);
+     const canApply=!legacy&&eligible&&inspected&&c.inventory_status==='in_collection'&&c.seal_status!=='sealed'&&used<Number(r.quantity_sheets);
+     return <section class="copy-application" data-copy={String(c.id)}>
+      <h4>{t('副本','Copy')} #{String(c.id)} {String(c.copy_label??'')}</h4>
+      <p>{legacy?t('存在未對應需求的歷史套用，以下進度僅計算已對應紀錄。','Unmapped historical applications exist; progress below includes mapped records only.'):''}</p>
+      <p>{used} / {String(r.quantity_sheets)} · {legacy?t('進度無法判定（歷史套用未對應）','Progress unavailable (unmapped historical use)'):used===0&&Number(r.quantity_sheets)>0?t('尚未套用','Not applied'):used<Number(r.quantity_sheets)?t('部分套用','Partially applied'):t('已完成','Complete')}</p>
+      <ul>{rows.map(a=><li>{String(a.brand??'')} {String(a.product_name)} · {String(a.quantity_sheets)} · {String(a.applied_at)}</li>)}</ul>
+      {canApply&&<form data-workflow-action="apply" class="fields">
+       <input type="hidden" name="id" value={String(r.id)}/><input type="hidden" name="revision" value={String(r.assignment_revision)}/><input type="hidden" name="copyId" value={String(c.id)}/>
+       <input type="hidden" name="lastApplicationId" value={String(rows.length?rows[rows.length-1].id:0)}/>
+       <label>{t('實際使用產品','Actual product')}<select name="productId" required>{data!.products.filter(p=>p.size_id===r.size_id).map(p=><option value={String(p.id)} data-revision={String(p.admin_revision)} data-last={String(p.last_transaction_id)}>{String(p.brand??'')} {String(p.product_name)} · {t('帳面餘額','Ledger balance')}: {p.balance===null?t('尚未建立','Not established'):String(p.balance)}</option>)}</select></label>
+       <label>{t('本次實際套用張數','Sleeves applied now')}<input name="quantity" required type="number" min="1" max={Number(r.quantity_sheets)-used} step="1"/></label>
+       <label>{t('套用日期','Application date')}<input name="date" type="date" required/></label>
+       <label><input name="notPreviouslyRecorded" type="checkbox" required/>{t('確認本次使用尚未透過手動庫存交易記錄；不可用此功能補登已扣帳歷史。','This use has not already been recorded in the stock ledger. Do not re-enter previously deducted history.')}</label>
+       <button class="admin-button primary">{t('確認套用並扣庫存','Apply and deduct stock')}</button>
+      </form>}
+     </section>;
+    })}
+   </article>;
+  })}
+  {data.applications.some(a=>a.requirement_id===null)&&<section class="workflow-panel"><h3>{t('未對應需求的歷史套用（不重扣庫存）','Historical applications without requirement mapping (no additional deduction)')}</h3><ul>{data.applications.filter(a=>a.requirement_id===null).map(a=><li>#{String(a.id)} · {t('副本','Copy')} #{String(a.owned_copy_id)} · {String(a.product_name)} · {String(a.quantity_sheets)}</li>)}</ul></section>}
+ </>}
+</main>
+</AdminLayout>
+<script>import '../../../lib/sleeve-workflow-controller';</script>
+<style>.workflow-panel{border:1px solid var(--admin-border);background:var(--admin-surface);padding:20px;border-radius:10px;margin:20px 0;min-width:0;overflow-wrap:anywhere}.copy-application{border-top:1px solid var(--admin-border);margin-top:20px;padding-top:10px}.workflow-panel summary{cursor:pointer;padding:10px 0}.workflow-panel li{overflow-wrap:anywhere}</style>

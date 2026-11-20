@@ -2,6 +2,7 @@ import {translateGameName} from "../i18n/utils";
 import { formatNotBggId } from "./game-identity";
 import { getCollectionV2GameUrl } from "./collection-v2-links";
 import { safeImage } from "./notbgg-public";
+import { collectionOwned } from './collection-ownership';
 
 import bggCache from "../data/bgg-cache.json" with { type: "json" };
 
@@ -80,20 +81,6 @@ function nullableString(value: unknown): string | null {
         : null;
 }
 
-function parseBoolean(value: unknown): boolean | null {
-    if (typeof value === "boolean") return value;
-
-    if (value === 1 || value === "1" || value === "true") {
-        return true;
-    }
-
-    if (value === 0 || value === "0" || value === "false") {
-        return false;
-    }
-
-    return null;
-}
-
 // ============================================================
 // 單筆 D1 收藏轉換
 // ============================================================
@@ -105,10 +92,7 @@ export function adaptCollectionV2Row(
     const notes = parseNotes(row.notes);
 
     // notes.owned 若有有效值，優先於 acquisition_status。
-    const ownedFromNotes = parseBoolean(notes.owned);
-
-    const owned = ownedFromNotes ??
-        row.acquisition_status === "owned";
+    const owned = collectionOwned(row.acquisition_status, notes.owned);
 
     const bggId =
         typeof row.bgg_id === "number" &&

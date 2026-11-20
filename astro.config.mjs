@@ -5,7 +5,8 @@ import cloudflare from '@astrojs/cloudflare';
 
 export default defineConfig({
   output: 'static',
-  adapter: cloudflare(),
+  // Local build/dev must not open remote binding proxy sessions.
+  adapter: cloudflare({ remoteBindings: false }),
   // Only explicitly marked catalog links are warmed; do not crawl every detail page.
   prefetch: { prefetchAll: false },
 
