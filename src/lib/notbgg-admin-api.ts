@@ -66,7 +66,7 @@ export async function readJson(request: Request): Promise<Record<string, unknown
     try {
         const bytes = new Uint8Array(length); let offset = 0;
         for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
-        parsed = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
+        parsed = JSON.parse(new TextDecoder('utf-8', { fatal: true, ignoreBOM: false }).decode(bytes));
     } catch { throw new HttpError(400, 'INVALID_JSON'); }
     let nodes = 0;
     function inspect(value: unknown, depth: number) {

@@ -1,0 +1,94 @@
+[
+  {
+    "file": "0001_sleeve_management.sql",
+    "sha256": "76ee9d30733beaf2dfc6fb6dcbc8eb8d3d8d967a2a9edb66aaa617ce8f670b33"
+  },
+  {
+    "file": "0002_normalize_sleeve_sizes.sql",
+    "sha256": "22e666c4118111ed5e346ddf86f08c0b98ed4371b3bf9ac0f94ae764123cd80b"
+  },
+  {
+    "file": "0003_sleeve_size_validation.sql",
+    "sha256": "211ed3bb90dc24e5be0e39dc6b7b6662967b3b9863099f582ab020835b8f11f0"
+  },
+  {
+    "file": "0004_collection_management_upgrade.sql",
+    "sha256": "2a32aab85d9905ee80da23bf4a794d1f55dde99826ce3da356e8dae8e89ff4a8"
+  },
+  {
+    "file": "0005_collection_item_metadata.sql",
+    "sha256": "99d9f6a26701b7be522e246d38235e60eb49c6d148668d0588df140f3119643c"
+  },
+  {
+    "file": "0006_collection_component_quantity.sql",
+    "sha256": "36fe6e4e1ea605a1253225cd01a2899833bd99990cdc0085cefe4cc0b8bb3ccc"
+  },
+  {
+    "file": "0007_v2_core_schema.sql",
+    "sha256": "f79b35760c365625c6f301e0f930bf7b6faafc8bfbfbca9d43aa43a3952ce8b0"
+  },
+  {
+    "file": "0008_v2_purchase_costs.sql",
+    "sha256": "c14ee579a5b6e6800229e17db0e0f8f41d60227acdd75e394bc8e1848ebfecdb"
+  },
+  {
+    "file": "0009_v2_purchase_integrity.sql",
+    "sha256": "2a3ed0a951e2df431ada1c8365653d5108cf6f67e7977e7e221adedec1423c0f"
+  },
+  {
+    "file": "0010_v2_copy_conditions.sql",
+    "sha256": "abc043fe6d320b7b015f7dd87acd2fd9770112692a16f6744b5415288c228d61"
+  },
+  {
+    "file": "0011_v2_sleeve_management.sql",
+    "sha256": "af8465012fbcebe10c36f9ddc3d4c2bd26c6902bd7c8099d0807be61cf5dbfc7"
+  },
+  {
+    "file": "0012_v1_to_v2_migration.sql",
+    "sha256": "4b7ab5decdc6a6a0cc6967d1ae910feb76b1973094773b233582af2c9ab1a7e8"
+  },
+  {
+    "file": "0013_v2_record_scope.sql",
+    "sha256": "3b2beba002b15ed6b8847936c0da2fbbf8b0a07b892292cc3f2eb7f20daccfec"
+  },
+  {
+    "file": "0014_notbgg.sql",
+    "sha256": "d2c7a0efabec9fb7c1d3440f09744448c9610341c0ce99e8c693b9665bf7a0c6"
+  },
+  {
+    "file": "0015_notbgg_collection.sql",
+    "sha256": "b6ead70bf65a496c68dddece26d5704e115ece6d320ced93f52aa9669cdb9760"
+  },
+  {
+    "file": "0016_notbgg_link_commands.sql",
+    "sha256": "cf85894f8414da3b0edd79188d02cea871d743416a8ee777c3c413a2902757a5"
+  },
+  {
+    "file": "0017_physical_components.sql",
+    "sha256": "aa4f6e0be85e773d2f1c61202527c0940c0c8d344f80c4d8259f8cf511e9ac4e"
+  },
+  {
+    "file": "0018_sleeve_admin.sql",
+    "sha256": "994a9f43f6853a97d8a70e07686621310991078aa9a5b61be967c4aa39d137b6"
+  },
+  {
+    "file": "0019_collection_copy_commands.sql",
+    "sha256": "b85a883cf97386d2a0ac4c48712915d45f24db02bd3c72eb6a35eb34fe323fbf"
+  },
+  {
+    "file": "0020_sleeve_requirement_applications.sql",
+    "sha256": "cfe1990222159420df3778407af498cfaf16e0a9d5c3a106a5c485dc66fad907"
+  },
+  {
+    "file": "0021_purchase_and_copy_admin.sql",
+    "sha256": "c2f6c39bc7f8e3cdd2927f2b67c76df68bbb3019e27d5597b9d7e59f482f45ec"
+  },
+  {
+    "file": "0022_bgg_sync_and_relations.sql",
+    "sha256": "1474d3e7a019b80de60f7e638454bcf46ae88949b2b3e944ebd57ab6fced4ceb"
+  },
+  {
+    "file": "0023_shared_quantity_commit.sql",
+    "sha256": "901ee9cbacc76f06a7fde38ebeb812c90cd97db963bf24ea4edd8bc63128f831"
+  }
+]

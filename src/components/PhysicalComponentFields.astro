@@ -27,5 +27,5 @@ const units = {
     </select>
 </label>
 <label>{t('預期數量（可留空）', 'Expected quantity (optional)')}
-    <input name="expected" type="number" min="1" max={maxComponentQuantity} step="1" value={component?.expected_quantity ?? undefined} />
+    <input name="expected" type="number" min={component ? 0 : 1} max={maxComponentQuantity} step="1" value={component?.expected_quantity ?? undefined} />
 </label>

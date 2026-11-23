@@ -1,0 +1,10 @@
+{
+  "status": "AWAITING_USER_APPROVAL",
+  "accountId": null,
+  "databaseName": null,
+  "databaseId": null,
+  "creationReference": null,
+  "approvalReference": null,
+  "allowedActions": [],
+  "migrationManifestSha256": null
+}

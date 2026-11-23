@@ -1,0 +1,1118 @@
+{
+  "source": "Local original Astro UI + synthetic read-only fixtures, NOT production screenshots",
+  "captureMethod": "1440x900 and 375x900 fixed viewports, fullPage=false. Expanded and bottom supplements included; long forms require scrolling.",
+  "formalRequests": 0,
+  "migrations": 0,
+  "writes": 0,
+  "cases": [
+    [
+      "01-dashboard",
+      "管理首頁",
+      "/admin"
+    ],
+    [
+      "02-collection-list",
+      "收藏清單",
+      "/admin/collection"
+    ],
+    [
+      "03-collection-new",
+      "新增收藏",
+      "/admin/collection/new"
+    ],
+    [
+      "04-collection-edit",
+      "編輯收藏",
+      "/admin/collection/1?scope=test"
+    ],
+    [
+      "05-copies",
+      "收藏副本與狀況",
+      "/admin/collection/1/copies?scope=test"
+    ],
+    [
+      "06-physical",
+      "實體組件與清點",
+      "/admin/collection/components/manage?collection=1"
+    ],
+    [
+      "07-classification",
+      "組件分類",
+      "/admin/collection/components/classification"
+    ],
+    [
+      "08-sleeve-products",
+      "卡套產品與庫存",
+      "/admin/sleeves"
+    ],
+    [
+      "09-sleeve-sizes",
+      "卡套尺寸",
+      "/admin/sleeves?view=sizes"
+    ],
+    [
+      "10-sleeve-references",
+      "卡套需求查詢",
+      "/admin/sleeves?view=requirements"
+    ],
+    [
+      "11-sleeve-transactions",
+      "卡套庫存交易",
+      "/admin/sleeves?view=transactions"
+    ],
+    [
+      "12-sleeve-workflow",
+      "卡套需求與逐副本套用",
+      "/admin/sleeves/requirements?collection=1"
+    ],
+    [
+      "13-purchases",
+      "採購清單與成本",
+      "/admin/purchases"
+    ],
+    [
+      "14-purchase-new",
+      "新增採購與分攤",
+      "/admin/purchases?new=1"
+    ],
+    [
+      "15-purchase-edit",
+      "編輯採購與分攤",
+      "/admin/purchases?id=1"
+    ],
+    [
+      "16-bgg-cache",
+      "BGG同步",
+      "/admin/bgg"
+    ],
+    [
+      "17-game-relations",
+      "遊戲關聯",
+      "/admin/bgg?view=relations&domain=game"
+    ],
+    [
+      "18-collection-relations",
+      "收藏組合",
+      "/admin/bgg?view=relations&domain=collection"
+    ],
+    [
+      "19-notbgg-list",
+      "NotBGG清單",
+      "/admin/notbgg"
+    ],
+    [
+      "20-notbgg-new",
+      "新增NotBGG",
+      "/admin/notbgg/new"
+    ],
+    [
+      "21-notbgg-edit",
+      "編輯NotBGG",
+      "/admin/notbgg/000001"
+    ],
+    [
+      "22-notbgg-link",
+      "NotBGG身份對應",
+      "/admin/notbgg/000001/link"
+    ],
+    [
+      "23-notbgg-relations",
+      "NotBGG配件關聯",
+      "/admin/notbgg/000001/relations"
+    ]
+  ],
+  "captures": [
+    {
+      "id": "01-dashboard",
+      "name": "管理首頁",
+      "route": "/admin",
+      "file": "01-dashboard-1440.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 1101,
+      "scrollWidth": 1425,
+      "title": "管理首頁",
+      "viewportHeight": 900,
+      "width": 1440,
+      "raster": {
+        "width": 1425,
+        "height": 891
+      },
+      "sha256": "0c6b13bd3f630f60c6e5bc66dd18e020af1cea9f1f35fc565788ce05e6a58be9"
+    },
+    {
+      "id": "02-collection-list",
+      "name": "收藏清單",
+      "route": "/admin/collection",
+      "file": "02-collection-list-1440.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 900,
+      "scrollWidth": 1440,
+      "title": "收藏管理",
+      "viewportHeight": 900,
+      "width": 1440,
+      "raster": {
+        "width": 1440,
+        "height": 900
+      },
+      "sha256": "cb0249ca2cc939da11d1a4f4b28f86bb44aa4fe943065d45f64c7e9a805033c4"
+    },
+    {
+      "id": "03-collection-new",
+      "name": "新增收藏",
+      "route": "/admin/collection/new",
+      "file": "03-collection-new-1440.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 1623,
+      "scrollWidth": 1425,
+      "title": "新增收藏",
+      "viewportHeight": 900,
+      "width": 1440,
+      "raster": {
+        "width": 1425,
+        "height": 891
+      },
+      "sha256": "b0a44fa9716e9cdfdd1d16fb982c861da83bafaa2b838fb0d09e05978b848209"
+    },
+    {
+      "id": "04-collection-edit",
+      "name": "編輯收藏",
+      "route": "/admin/collection/1?scope=test",
+      "file": "04-collection-edit-1440.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 1709,
+      "scrollWidth": 1425,
+      "title": "編輯收藏",
+      "viewportHeight": 900,
+      "width": 1440,
+      "raster": {
+        "width": 1425,
+        "height": 891
+      },
+      "sha256": "bf611d13fbe9eb1da1d8d2ed322390c56c26eb64f6027f0afed6f5a6d64b930b"
+    },
+    {
+      "id": "05-copies",
+      "name": "收藏副本與狀況",
+      "route": "/admin/collection/1/copies?scope=test",
+      "file": "05-copies-1440.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 909,
+      "scrollWidth": 1425,
+      "title": "收藏副本、語言與版本",
+      "viewportHeight": 900,
+      "width": 1440,
+      "raster": {
+        "width": 1425,
+        "height": 891
+      },
+      "sha256": "cf2132028aa99feb72ad2b8385c50e0addee5bc31bef26ec0c9e35d22236dbd7"
+    },
+    {
+      "id": "06-physical",
+      "name": "實體組件與清點",
+      "route": "/admin/collection/components/manage?collection=1",
+      "file": "06-physical-1440.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 1269,
+      "scrollWidth": 1425,
+      "title": "管理實體組件",
+      "viewportHeight": 900,
+      "width": 1440,
+      "raster": {
+        "width": 1425,
+        "height": 891
+      },
+      "sha256": "8a6f221fa7504cd220d33c2cd09644eb345d28fa1f94c499e2d09936374c2466"
+    },
+    {
+      "id": "07-classification",
+      "name": "組件分類",
+      "route": "/admin/collection/components/classification",
+      "file": "07-classification-1440.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 900,
+      "scrollWidth": 1440,
+      "title": "組件分類",
+      "viewportHeight": 900,
+      "width": 1440,
+      "raster": {
+        "width": 1440,
+        "height": 900
+      },
+      "sha256": "d88743a79d2426f83bb2a530b7630df02131d8f33bd035a63d37ee27494cd1ef"
+    },
+    {
+      "id": "08-sleeve-products",
+      "name": "卡套產品與庫存",
+      "route": "/admin/sleeves",
+      "file": "08-sleeve-products-1440.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 1254,
+      "scrollWidth": 1425,
+      "title": "卡套管理",
+      "viewportHeight": 900,
+      "width": 1440,
+      "raster": {
+        "width": 1425,
+        "height": 891
+      },
+      "sha256": "1ca18615ae5e16bfdeb5d14baecc79b4fed3507945e0c595331cc70b5cc91129"
+    },
+    {
+      "id": "09-sleeve-sizes",
+      "name": "卡套尺寸",
+      "route": "/admin/sleeves?view=sizes",
+      "file": "09-sleeve-sizes-1440.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 900,
+      "scrollWidth": 1440,
+      "title": "卡套管理",
+      "viewportHeight": 900,
+      "width": 1440,
+      "raster": {
+        "width": 1440,
+        "height": 900
+      },
+      "sha256": "36e6c9a5b8d8adc61f8f660f0fd13d94c2b5b081aca94e4b3f5cce8a8a223927"
+    },
+    {
+      "id": "10-sleeve-references",
+      "name": "卡套需求查詢",
+      "route": "/admin/sleeves?view=requirements",
+      "file": "10-sleeve-references-1440.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 900,
+      "scrollWidth": 1440,
+      "title": "卡套管理",
+      "viewportHeight": 900,
+      "width": 1440,
+      "raster": {
+        "width": 1440,
+        "height": 900
+      },
+      "sha256": "1d7b16939cde632a479bfb196985eecb8e8e84ce6ecd0b477f973096e67a7901"
+    },
+    {
+      "id": "11-sleeve-transactions",
+      "name": "卡套庫存交易",
+      "route": "/admin/sleeves?view=transactions",
+      "file": "11-sleeve-transactions-1440.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 900,
+      "scrollWidth": 1440,
+      "title": "卡套管理",
+      "viewportHeight": 900,
+      "width": 1440,
+      "raster": {
+        "width": 1440,
+        "height": 900
+      },
+      "sha256": "41d58e46b341e211050a84538a2d9be966654fd4f0acbcfa32fcd53f9ad4ff28"
+    },
+    {
+      "id": "12-sleeve-workflow",
+      "name": "卡套需求與逐副本套用",
+      "route": "/admin/sleeves/requirements?collection=1",
+      "file": "12-sleeve-workflow-1440.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 1303,
+      "scrollWidth": 1425,
+      "title": "卡套需求與逐副本套用",
+      "viewportHeight": 900,
+      "width": 1440,
+      "raster": {
+        "width": 1425,
+        "height": 891
+      },
+      "sha256": "934d6b858af5cd0394bdd0c36f746112f3851ace8a8bb7b4f7068448c6c04624"
+    },
+    {
+      "id": "13-purchases",
+      "name": "採購清單與成本",
+      "route": "/admin/purchases",
+      "file": "13-purchases-1440.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 967,
+      "scrollWidth": 1425,
+      "title": "採購與已記錄成本",
+      "viewportHeight": 900,
+      "width": 1440,
+      "raster": {
+        "width": 1425,
+        "height": 891
+      },
+      "sha256": "180efe1688272e1663478dfd1d390cc9a1d998b792f42586da3134cc8aa708bf"
+    },
+    {
+      "id": "14-purchase-new",
+      "name": "新增採購與分攤",
+      "route": "/admin/purchases?new=1",
+      "file": "14-purchase-new-1440.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 2277,
+      "scrollWidth": 1425,
+      "title": "採購與已記錄成本",
+      "viewportHeight": 900,
+      "width": 1440,
+      "raster": {
+        "width": 1425,
+        "height": 891
+      },
+      "sha256": "d25760b66980b8a5862fc8590346a337bc687be0a6d4fbbf27a30e3c79f3d575"
+    },
+    {
+      "id": "15-purchase-edit",
+      "name": "編輯採購與分攤",
+      "route": "/admin/purchases?id=1",
+      "file": "15-purchase-edit-1440.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 1872,
+      "scrollWidth": 1425,
+      "title": "採購與已記錄成本",
+      "viewportHeight": 900,
+      "width": 1440,
+      "raster": {
+        "width": 1425,
+        "height": 891
+      },
+      "sha256": "673610c1fb4d957832967fd7e69a9505859a719e380a45c9440838df367222fa"
+    },
+    {
+      "id": "16-bgg-cache",
+      "name": "BGG同步",
+      "route": "/admin/bgg",
+      "file": "16-bgg-cache-1440.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 990,
+      "scrollWidth": 1425,
+      "title": "BGG 同步與關聯管理",
+      "viewportHeight": 900,
+      "width": 1440,
+      "raster": {
+        "width": 1425,
+        "height": 891
+      },
+      "sha256": "6ffacc907746d062eb8986dedf5c49cf60ce9d3dfcd7a807613c4e1a95fac35f"
+    },
+    {
+      "id": "17-game-relations",
+      "name": "遊戲關聯",
+      "route": "/admin/bgg?view=relations&domain=game",
+      "file": "17-game-relations-1440.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 900,
+      "scrollWidth": 1440,
+      "title": "BGG 同步與關聯管理",
+      "viewportHeight": 900,
+      "width": 1440,
+      "raster": {
+        "width": 1440,
+        "height": 900
+      },
+      "sha256": "96c67b59b0471b071873a040858c660ab08032ad982fc04e177f2f849cc1d09f"
+    },
+    {
+      "id": "18-collection-relations",
+      "name": "收藏組合",
+      "route": "/admin/bgg?view=relations&domain=collection",
+      "file": "18-collection-relations-1440.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 900,
+      "scrollWidth": 1440,
+      "title": "BGG 同步與關聯管理",
+      "viewportHeight": 900,
+      "width": 1440,
+      "raster": {
+        "width": 1440,
+        "height": 900
+      },
+      "sha256": "96c67b59b0471b071873a040858c660ab08032ad982fc04e177f2f849cc1d09f"
+    },
+    {
+      "id": "19-notbgg-list",
+      "name": "NotBGG清單",
+      "route": "/admin/notbgg",
+      "file": "19-notbgg-list-1440.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 949,
+      "scrollWidth": 1425,
+      "title": "NotBGG 遊戲管理",
+      "viewportHeight": 900,
+      "width": 1440,
+      "raster": {
+        "width": 1425,
+        "height": 891
+      },
+      "sha256": "7252a22012af31aad010bc02a819de6872c7f43c73983b03496d1a1bed6f4d16"
+    },
+    {
+      "id": "20-notbgg-new",
+      "name": "新增NotBGG",
+      "route": "/admin/notbgg/new",
+      "file": "20-notbgg-new-1440.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 2805,
+      "scrollWidth": 1425,
+      "title": "新增 NotBGG 遊戲",
+      "viewportHeight": 900,
+      "width": 1440,
+      "raster": {
+        "width": 1425,
+        "height": 891
+      },
+      "sha256": "98e165c8778e60eed3da99010fbf8ba2d9bed8c267c7f4e6cf9c7ebf14a5a18b"
+    },
+    {
+      "id": "21-notbgg-edit",
+      "name": "編輯NotBGG",
+      "route": "/admin/notbgg/000001",
+      "file": "21-notbgg-edit-1440.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 2840,
+      "scrollWidth": 1425,
+      "title": "審核示例 NotBGG（合成）",
+      "viewportHeight": 900,
+      "width": 1440,
+      "raster": {
+        "width": 1425,
+        "height": 891
+      },
+      "sha256": "56b6c5134eb28050fa91eef9c5c691be2bedf98e5eb9297cb4d322a7a4a0348f"
+    },
+    {
+      "id": "22-notbgg-link",
+      "name": "NotBGG身份對應",
+      "route": "/admin/notbgg/000001/link",
+      "file": "22-notbgg-link-1440.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 900,
+      "scrollWidth": 1440,
+      "title": "NotBGG 身份對應",
+      "viewportHeight": 900,
+      "width": 1440,
+      "raster": {
+        "width": 1440,
+        "height": 900
+      },
+      "sha256": "3fafc4d01cd756ef44cf1e5e951e6b183a2261a824e40dab0d617a2044d47c8f"
+    },
+    {
+      "id": "23-notbgg-relations",
+      "name": "NotBGG配件關聯",
+      "route": "/admin/notbgg/000001/relations",
+      "file": "23-notbgg-relations-1440.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 900,
+      "scrollWidth": 1440,
+      "title": "配件關聯",
+      "viewportHeight": 900,
+      "width": 1440,
+      "raster": {
+        "width": 1440,
+        "height": 900
+      },
+      "sha256": "0bd104f06b77387acaebd5b0c1064dc37261c606b0670706f163e094fe725a42"
+    },
+    {
+      "id": "01-dashboard",
+      "name": "管理首頁",
+      "route": "/admin",
+      "file": "01-dashboard-375.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 1705,
+      "scrollWidth": 360,
+      "title": "管理首頁",
+      "viewportHeight": 900,
+      "width": 375,
+      "raster": {
+        "width": 360,
+        "height": 864
+      },
+      "sha256": "3a5647573d2dd27ab6bb3acd11023097ccbceffb574adbade2b3cadf351321b1"
+    },
+    {
+      "id": "02-collection-list",
+      "name": "收藏清單",
+      "route": "/admin/collection",
+      "file": "02-collection-list-375.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 1189,
+      "scrollWidth": 360,
+      "title": "收藏管理",
+      "viewportHeight": 900,
+      "width": 375,
+      "raster": {
+        "width": 360,
+        "height": 864
+      },
+      "sha256": "8a0d7d09feef76e5d80af692ab04b6614caf3171f116769b7d88ab3e7a9e02fe"
+    },
+    {
+      "id": "03-collection-new",
+      "name": "新增收藏",
+      "route": "/admin/collection/new",
+      "file": "03-collection-new-375.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 2264,
+      "scrollWidth": 360,
+      "title": "新增收藏",
+      "viewportHeight": 900,
+      "width": 375,
+      "raster": {
+        "width": 360,
+        "height": 864
+      },
+      "sha256": "c76368356ad7af6b6ec6331fe2f96dde8f10cb15a11c2ef7e2b2a30b675d5e94"
+    },
+    {
+      "id": "04-collection-edit",
+      "name": "編輯收藏",
+      "route": "/admin/collection/1?scope=test",
+      "file": "04-collection-edit-375.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 2371,
+      "scrollWidth": 360,
+      "title": "編輯收藏",
+      "viewportHeight": 900,
+      "width": 375,
+      "raster": {
+        "width": 360,
+        "height": 864
+      },
+      "sha256": "9a26264d5de37da0057a0cac06fd0b04ea7454e1d209815b87ef9d0a81e0ce98"
+    },
+    {
+      "id": "05-copies",
+      "name": "收藏副本與狀況",
+      "route": "/admin/collection/1/copies?scope=test",
+      "file": "05-copies-375.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 1177,
+      "scrollWidth": 360,
+      "title": "收藏副本、語言與版本",
+      "viewportHeight": 900,
+      "width": 375,
+      "raster": {
+        "width": 360,
+        "height": 864
+      },
+      "sha256": "3459ba4ecab8a8b5132b1eda086894d02e785371b2b0add9d167247b9ee668c1"
+    },
+    {
+      "id": "06-physical",
+      "name": "實體組件與清點",
+      "route": "/admin/collection/components/manage?collection=1",
+      "file": "06-physical-375.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 1726,
+      "scrollWidth": 360,
+      "title": "管理實體組件",
+      "viewportHeight": 900,
+      "width": 375,
+      "raster": {
+        "width": 360,
+        "height": 864
+      },
+      "sha256": "484a7f0ccea6cc5f6f8ce18c19759c30bf41e8b1bc27c6f985628ff219a8fb68"
+    },
+    {
+      "id": "07-classification",
+      "name": "組件分類",
+      "route": "/admin/collection/components/classification",
+      "file": "07-classification-375.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 934,
+      "scrollWidth": 360,
+      "title": "組件分類",
+      "viewportHeight": 900,
+      "width": 375,
+      "raster": {
+        "width": 360,
+        "height": 864
+      },
+      "sha256": "878076f88869b3afda612e7db12c7749405c9c9549a44f799ed6e23d013a448f"
+    },
+    {
+      "id": "08-sleeve-products",
+      "name": "卡套產品與庫存",
+      "route": "/admin/sleeves",
+      "file": "08-sleeve-products-375.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 1686,
+      "scrollWidth": 360,
+      "title": "卡套管理",
+      "viewportHeight": 900,
+      "width": 375,
+      "raster": {
+        "width": 360,
+        "height": 864
+      },
+      "sha256": "c37a50b0e8ba774779d24df8556eb4114bcfa14d07bae50c580b9d5ef2f884ed"
+    },
+    {
+      "id": "09-sleeve-sizes",
+      "name": "卡套尺寸",
+      "route": "/admin/sleeves?view=sizes",
+      "file": "09-sleeve-sizes-375.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 934,
+      "scrollWidth": 360,
+      "title": "卡套管理",
+      "viewportHeight": 900,
+      "width": 375,
+      "raster": {
+        "width": 360,
+        "height": 864
+      },
+      "sha256": "3117e62128af5194c72c6e9e8ca0c0b3de90927144c53772b047b89e929f2057"
+    },
+    {
+      "id": "10-sleeve-references",
+      "name": "卡套需求查詢",
+      "route": "/admin/sleeves?view=requirements",
+      "file": "10-sleeve-references-375.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 949,
+      "scrollWidth": 360,
+      "title": "卡套管理",
+      "viewportHeight": 900,
+      "width": 375,
+      "raster": {
+        "width": 360,
+        "height": 864
+      },
+      "sha256": "8988a999c185065708f24fd82509955a7c734c0c3e8b8681abcb2d707b90619c"
+    },
+    {
+      "id": "11-sleeve-transactions",
+      "name": "卡套庫存交易",
+      "route": "/admin/sleeves?view=transactions",
+      "file": "11-sleeve-transactions-375.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 950,
+      "scrollWidth": 360,
+      "title": "卡套管理",
+      "viewportHeight": 900,
+      "width": 375,
+      "raster": {
+        "width": 360,
+        "height": 864
+      },
+      "sha256": "72df50081ae1a20bc38deaf95f820ee4561838faeca35b5179cc7e4f416e543e"
+    },
+    {
+      "id": "12-sleeve-workflow",
+      "name": "卡套需求與逐副本套用",
+      "route": "/admin/sleeves/requirements?collection=1",
+      "file": "12-sleeve-workflow-375.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 1643,
+      "scrollWidth": 360,
+      "title": "卡套需求與逐副本套用",
+      "viewportHeight": 900,
+      "width": 375,
+      "raster": {
+        "width": 360,
+        "height": 864
+      },
+      "sha256": "f826c7a6e107ecdbcf7fbae0771a0ec8d26875428ce67d8e28ef47b4d771fcbf"
+    },
+    {
+      "id": "13-purchases",
+      "name": "採購清單與成本",
+      "route": "/admin/purchases",
+      "file": "13-purchases-375.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 1373,
+      "scrollWidth": 360,
+      "title": "採購與已記錄成本",
+      "viewportHeight": 900,
+      "width": 375,
+      "raster": {
+        "width": 360,
+        "height": 864
+      },
+      "sha256": "fef5db48f508982a144964520cc6dd727bb8e918cf8ab1cf3e07dbd96a3b843d"
+    },
+    {
+      "id": "14-purchase-new",
+      "name": "新增採購與分攤",
+      "route": "/admin/purchases?new=1",
+      "file": "14-purchase-new-375.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 3598,
+      "scrollWidth": 360,
+      "title": "採購與已記錄成本",
+      "viewportHeight": 900,
+      "width": 375,
+      "raster": {
+        "width": 360,
+        "height": 864
+      },
+      "sha256": "f5a9436a0b06f053f9c2c600875963df9b5798fa838b1d346b8fdd52a0b61c0d"
+    },
+    {
+      "id": "15-purchase-edit",
+      "name": "編輯採購與分攤",
+      "route": "/admin/purchases?id=1",
+      "file": "15-purchase-edit-375.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 2917,
+      "scrollWidth": 360,
+      "title": "採購與已記錄成本",
+      "viewportHeight": 900,
+      "width": 375,
+      "raster": {
+        "width": 360,
+        "height": 864
+      },
+      "sha256": "d271fcd7b6bb0d985aeb2c3af3fc509bbabd1c4c98316771cc6cb25fe56161fa"
+    },
+    {
+      "id": "16-bgg-cache",
+      "name": "BGG同步",
+      "route": "/admin/bgg",
+      "file": "16-bgg-cache-375.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 1265,
+      "scrollWidth": 360,
+      "title": "BGG 同步與關聯管理",
+      "viewportHeight": 900,
+      "width": 375,
+      "raster": {
+        "width": 360,
+        "height": 864
+      },
+      "sha256": "6947bcba72ec7f716f19356985d4ea9f645c3211404a061c7d36fa1dc5797da5"
+    },
+    {
+      "id": "17-game-relations",
+      "name": "遊戲關聯",
+      "route": "/admin/bgg?view=relations&domain=game",
+      "file": "17-game-relations-375.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 939,
+      "scrollWidth": 360,
+      "title": "BGG 同步與關聯管理",
+      "viewportHeight": 900,
+      "width": 375,
+      "raster": {
+        "width": 360,
+        "height": 864
+      },
+      "sha256": "dd3d791a8cd7fb2a68fc9a409a2d0796f956da1fb47597b08bc320bf3c84ed86"
+    },
+    {
+      "id": "18-collection-relations",
+      "name": "收藏組合",
+      "route": "/admin/bgg?view=relations&domain=collection",
+      "file": "18-collection-relations-375.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 939,
+      "scrollWidth": 360,
+      "title": "BGG 同步與關聯管理",
+      "viewportHeight": 900,
+      "width": 375,
+      "raster": {
+        "width": 360,
+        "height": 864
+      },
+      "sha256": "dd3d791a8cd7fb2a68fc9a409a2d0796f956da1fb47597b08bc320bf3c84ed86"
+    },
+    {
+      "id": "19-notbgg-list",
+      "name": "NotBGG清單",
+      "route": "/admin/notbgg",
+      "file": "19-notbgg-list-375.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 1367,
+      "scrollWidth": 360,
+      "title": "NotBGG 遊戲管理",
+      "viewportHeight": 900,
+      "width": 375,
+      "raster": {
+        "width": 360,
+        "height": 864
+      },
+      "sha256": "7271f4c2612c67104dba46eaebfb52bdd1fb02bb21be75a133af5ff797087979"
+    },
+    {
+      "id": "20-notbgg-new",
+      "name": "新增NotBGG",
+      "route": "/admin/notbgg/new",
+      "file": "20-notbgg-new-375.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 4015,
+      "scrollWidth": 360,
+      "title": "新增 NotBGG 遊戲",
+      "viewportHeight": 900,
+      "width": 375,
+      "raster": {
+        "width": 360,
+        "height": 864
+      },
+      "sha256": "6967cf23340ead0ed167f4a9a5d8f0f25206c58347c8be7a71710d620580780e"
+    },
+    {
+      "id": "21-notbgg-edit",
+      "name": "編輯NotBGG",
+      "route": "/admin/notbgg/000001",
+      "file": "21-notbgg-edit-375.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 4522,
+      "scrollWidth": 360,
+      "title": "審核示例 NotBGG（合成）",
+      "viewportHeight": 900,
+      "width": 375,
+      "raster": {
+        "width": 360,
+        "height": 864
+      },
+      "sha256": "867db47101d3c48d8deb32b84d97d0ad3c3e74d64072602eb6305daad15229a9"
+    },
+    {
+      "id": "22-notbgg-link",
+      "name": "NotBGG身份對應",
+      "route": "/admin/notbgg/000001/link",
+      "file": "22-notbgg-link-375.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 1136,
+      "scrollWidth": 360,
+      "title": "NotBGG 身份對應",
+      "viewportHeight": 900,
+      "width": 375,
+      "raster": {
+        "width": 360,
+        "height": 864
+      },
+      "sha256": "ee107e850f0f111c7b8c171bcb2c3a5561814ca255153ed8a5f84caf7184cb5d"
+    },
+    {
+      "id": "23-notbgg-relations",
+      "name": "NotBGG配件關聯",
+      "route": "/admin/notbgg/000001/relations",
+      "file": "23-notbgg-relations-375.jpg",
+      "state": "Top viewport; scroll the live preview for the rest of long forms",
+      "alerts": [],
+      "height": 934,
+      "scrollWidth": 360,
+      "title": "配件關聯",
+      "viewportHeight": 900,
+      "width": 375,
+      "raster": {
+        "width": 360,
+        "height": 864
+      },
+      "sha256": "d321566da42b50cd7d31d2640ed5379083a4e388ecf160985b80853b2bbfe697"
+    },
+    {
+      "id": "05-copies-expanded",
+      "name": "收藏副本與狀況（表單展開、向下捲動）",
+      "route": "/admin/collection/1/copies?scope=test",
+      "file": "05-copies-expanded-1440.jpg",
+      "height": 1605,
+      "scrollY": 705,
+      "viewportHeight": 900,
+      "width": 1440,
+      "raster": {
+        "width": 1425,
+        "height": 891
+      },
+      "sha256": "7a9cbb3d9419bfe5ee1df274d965703fdb466051e67ceed72e89812def80d615"
+    },
+    {
+      "id": "06-physical-expanded",
+      "name": "實體組件與清點（表單展開、向下捲動）",
+      "route": "/admin/collection/components/manage?collection=1",
+      "file": "06-physical-expanded-1440.jpg",
+      "height": 1493,
+      "scrollY": 593,
+      "viewportHeight": 900,
+      "width": 1440,
+      "raster": {
+        "width": 1425,
+        "height": 891
+      },
+      "sha256": "e70a4cbc360267b834eea91863bdea8a868ae20a3226cabadc99571b024a0db3"
+    },
+    {
+      "id": "08-sleeve-products-expanded",
+      "name": "卡套產品與庫存（表單展開、向下捲動）",
+      "route": "/admin/sleeves",
+      "file": "08-sleeve-products-expanded-1440.jpg",
+      "height": 2382,
+      "scrollY": 1482,
+      "viewportHeight": 900,
+      "width": 1440,
+      "raster": {
+        "width": 1425,
+        "height": 891
+      },
+      "sha256": "bff650ccd8108bf20072b0660e6256ed63dda346561244cb48d892aca56cb4f4"
+    },
+    {
+      "id": "12-sleeve-workflow-expanded",
+      "name": "卡套需求與逐副本套用（表單展開、向下捲動）",
+      "route": "/admin/sleeves/requirements?collection=1",
+      "file": "12-sleeve-workflow-expanded-1440.jpg",
+      "height": 1909,
+      "scrollY": 1009,
+      "viewportHeight": 900,
+      "width": 1440,
+      "raster": {
+        "width": 1425,
+        "height": 891
+      },
+      "sha256": "9cd78b330d5205244e68a2fc6187e85c6201f4086d893fd057ba9bb318975f04"
+    },
+    {
+      "id": "17-game-relations-expanded",
+      "name": "遊戲關聯（表單展開、向下捲動）",
+      "route": "/admin/bgg?view=relations&domain=game",
+      "file": "17-game-relations-expanded-1440.jpg",
+      "height": 999,
+      "scrollY": 99,
+      "viewportHeight": 900,
+      "width": 1440,
+      "raster": {
+        "width": 1425,
+        "height": 891
+      },
+      "sha256": "6c8e674f7d890f0a0c41a8b31c2dae682e621331ce831c7f65f84c86484e207d"
+    },
+    {
+      "id": "05-copies-expanded",
+      "name": "收藏副本與狀況（表單展開、向下捲動）",
+      "route": "/admin/collection/1/copies?scope=test",
+      "file": "05-copies-expanded-375.jpg",
+      "height": 2350,
+      "scrollY": 1398,
+      "viewportHeight": 900,
+      "width": 375,
+      "raster": {
+        "width": 360,
+        "height": 864
+      },
+      "sha256": "4adde949316e74be3ec5ef783915010dcb3ef120139bb0efc60822af1a9a663c"
+    },
+    {
+      "id": "06-physical-expanded",
+      "name": "實體組件與清點（表單展開、向下捲動）",
+      "route": "/admin/collection/components/manage?collection=1",
+      "file": "06-physical-expanded-375.jpg",
+      "height": 2106,
+      "scrollY": 1206,
+      "viewportHeight": 900,
+      "width": 375,
+      "raster": {
+        "width": 360,
+        "height": 864
+      },
+      "sha256": "9ff22bbd696f667f91fd7407ceac70f7a0e9d0c5c57bda2811826ca950e4c67f"
+    },
+    {
+      "id": "08-sleeve-products-expanded",
+      "name": "卡套產品與庫存（表單展開、向下捲動）",
+      "route": "/admin/sleeves",
+      "file": "08-sleeve-products-expanded-375.jpg",
+      "height": 3660,
+      "scrollY": 2760,
+      "viewportHeight": 900,
+      "width": 375,
+      "raster": {
+        "width": 360,
+        "height": 864
+      },
+      "sha256": "925634122f038fb5fec282d6722a76ba7b0c244b90d7847c5a0e7d10eb04aaa0"
+    },
+    {
+      "id": "12-sleeve-workflow-expanded",
+      "name": "卡套需求與逐副本套用（表單展開、向下捲動）",
+      "route": "/admin/sleeves/requirements?collection=1",
+      "file": "12-sleeve-workflow-expanded-375.jpg",
+      "height": 2703,
+      "scrollY": 1803,
+      "viewportHeight": 900,
+      "width": 375,
+      "raster": {
+        "width": 360,
+        "height": 864
+      },
+      "sha256": "04f9d6b8eec4928506297c918957e3dc7696fb82db16ed8b61cc0b630cf49811"
+    },
+    {
+      "id": "17-game-relations-expanded",
+      "name": "遊戲關聯（表單展開、向下捲動）",
+      "route": "/admin/bgg?view=relations&domain=game",
+      "file": "17-game-relations-expanded-375.jpg",
+      "height": 1429,
+      "scrollY": 529,
+      "viewportHeight": 900,
+      "width": 375,
+      "raster": {
+        "width": 360,
+        "height": 864
+      },
+      "sha256": "72cd5474487dbf58f86fcf505d3349afc16b35482340dde9c079047d9256b99d"
+    },
+    {
+      "id": "21-notbgg-edit-bottom",
+      "name": "NotBGG編輯底部",
+      "route": "/admin/notbgg/000001",
+      "file": "21-notbgg-edit-375-bottom.jpg",
+      "width": 375,
+      "viewportHeight": 900,
+      "state": "Bottom viewport",
+      "raster": {
+        "width": 360,
+        "height": 864
+      },
+      "sha256": "1260c38514bb62edb560403144db58b41635b46ca7065df0ee967b791297deca"
+    }
+  ]
+}

@@ -69,6 +69,7 @@ test('physical component workflow through Admin API, real SQLite and Astro rende
         `).get();
         assert.ok(legacyBefore);
         sqlite.exec(read(migration));
+        sqlite.exec(read('0023_shared_quantity_commit.sql'));
         assert.equal(sqlite.prepare('SELECT COUNT(*) n FROM v2_physical_component_sources').get()?.n, 0);
         assert.equal(sqlite.prepare('SELECT component_definition_id FROM v2_sleeve_requirements WHERE source_key=?')
             .get('historical')?.component_definition_id, legacyBefore.definition);
@@ -136,14 +137,16 @@ test('physical component workflow through Admin API, real SQLite and Astro rende
             assert.equal((await classifyStoredComponents(db, [110], { secret }))[0].reason, 'PHYSICAL_SOURCE_INVALID');
             assert.throws(() => sqlite.prepare('UPDATE v2_physical_component_sources SET signature=? WHERE definition_id=?').run('0'.repeat(64), cardId), /IMMUTABLE/);
             assert.throws(() => sqlite.prepare('UPDATE v2_component_definitions SET collection_item_id=90 WHERE id=?').run(cardId), /IDENTITY/);
-            const edit = { action: 'edit', definitionId: cardId, definitionRevision: 1, name: 'Renamed cards', type: 'card', unit: 'card', expected: 21 };
+            const edit = { action: 'edit', definitionId: cardId, definitionRevision: 1, name: 'Renamed cards', type: 'card', unit: 'card', previousExpected: 20, expected: 21, reason: 'Correct the test quantity' };
             assert.equal((await send({ ...edit, definitionId: legacyId })).status, 409);
             assert.equal((await send({ ...edit, definitionId: 99 })).status, 409);
             assert.equal((await send(edit)).status, 200);
-            assert.equal((await send(edit)).status, 409);
+            const replay = await send(edit);
+            assert.equal(replay.status, 200);
+            assert.equal((await replay.json() as { data: { replayed: boolean } }).data.replayed, true);
             sqlite.prepare("INSERT INTO v2_legacy_id_map(legacy_table,legacy_id,target_table,target_id) VALUES ('collection_components','900','v2_component_definitions',?)").run(cardId);
             assert.equal((await classify())[2].reason, 'PHYSICAL_SOURCE_CONFLICT');
-            assert.equal((await send({ ...edit, definitionRevision: 2 })).status, 409);
+            assert.equal((await send({ ...edit, definitionRevision: 2 }, 'test-conflicted-source')).status, 409);
             sqlite.prepare("DELETE FROM v2_legacy_id_map WHERE legacy_id='900' AND target_id=?").run(cardId);
         });
 
@@ -160,7 +163,7 @@ test('physical component workflow through Admin API, real SQLite and Astro rende
             assert.equal((await send({ ...count, revision: 1, actual: 20 })).status, 200);
             assert.equal(sqlite.prepare('SELECT actual_quantity FROM v2_copy_components').get()?.actual_quantity, 20);
             assert.equal((await send({ action: 'edit', definitionId: cardId, definitionRevision: 2, name: 'Not cards',
-                type: 'token', unit: 'piece', expected: 20 })).status, 409);
+                type: 'token', unit: 'piece', previousExpected: 21, expected: 20, reason: 'Check existing type guard' }, 'test-locked-type')).status, 409);
         });
 
         await t.test('assignment is card-only and preserves quantities, old assignments and stock', async () => {
@@ -191,7 +194,23 @@ test('physical component workflow through Admin API, real SQLite and Astro rende
             assert.match(html, /Confirmed physical component/);
             assert.match(html, /data-physical-action="create"/);
             assert.match(html, /data-physical-action="count"/);
+            assert.match(html, /name="previousExpected"/);
+            assert.match(html, /name="reason"/);
+            assert.match(html, /data-quantity-action="retry"/);
             assert.match(await (await request('classification', jwt)).text(), /已確認實體組件/);
+        });
+
+        await t.test('ordinary maintenance preserves omitted and equal quantities without quantity history', async () => {
+            const initial = sqlite.prepare('SELECT physical_revision AS revision, expected_quantity AS expected FROM v2_component_definitions WHERE id=?').get(cardId);
+            const edit = { action: 'edit', definitionId: cardId, definitionRevision: Number(initial?.revision),
+                name: 'Ordinary rename', type: 'card', unit: 'card' };
+            const history = sqlite.prepare('SELECT COUNT(*) n FROM d1_quantity_history').get();
+            assert.equal((await send(edit, 'test-maintenance-omit')).status, 200);
+            assert.equal((await send({ ...edit, definitionRevision: edit.definitionRevision + 1,
+                name: 'Another ordinary rename', expected: initial?.expected, previousExpected: initial?.expected },
+            'test-maintenance-equal')).status, 200);
+            assert.equal(sqlite.prepare('SELECT expected_quantity AS expected FROM v2_component_definitions WHERE id=?').get(cardId)?.expected, initial?.expected);
+            assert.deepEqual(sqlite.prepare('SELECT COUNT(*) n FROM d1_quantity_history').get(), history);
         });
 
         await t.test('the full evidence limit blocks existing writes and new definitions', async () => {

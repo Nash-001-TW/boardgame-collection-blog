@@ -136,8 +136,18 @@ const unassigned = requirements.filter(row => row.component_definition_id === nu
                                 <form method="post" data-physical-action="edit" class="fields">
                                     <input type="hidden" name="definitionId" value={component.id} />
                                     <input type="hidden" name="definitionRevision" value={component.physical_revision} />
+                                    <input type="hidden" name="previousExpected" value={component.expected_quantity ?? ''} />
                                     <PhysicalComponentFields en={en} component={component} />
+                                    <label>{t('更正理由（變更預期數量時必填）', 'Reason (required when changing expected quantity)')}
+                                        <textarea name="reason" maxlength="1000" rows="2"></textarea>
+                                    </label>
                                     <button class="admin-button">{t('儲存組件', 'Save component')}</button>
+                                    <div data-quantity-recovery hidden>
+                                        <p>{t('待確認的操作識別', 'Pending operation ID')} <code data-quantity-operation-id></code></p>
+                                        <button type="button" class="admin-button" data-quantity-action="status">{t('查詢結果', 'Check result')}</button>
+                                        <button type="button" class="admin-button" data-quantity-action="retry">{t('重送原操作', 'Retry original operation')}</button>
+                                        <button type="button" class="admin-button" data-quantity-action="retire">{t('安全封閉原操作', 'Safely close original operation')}</button>
+                                    </div>
                                 </form>
                             </details>
                             {copies.length ? <form method="post" data-physical-action="count" class="fields">

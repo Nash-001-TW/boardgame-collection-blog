@@ -1,6 +1,7 @@
 import { classifyStoredComponents, maxEvidenceRows } from './component-classifier-adapter';
 import { physicalSigningKey, physicalSourceMessage, signPhysicalValue } from './physical-component-proof';
 import { HttpError } from './notbgg-admin-api';
+import { quantityOperationStatus } from './shared-quantity-commit';
 
 import { componentTypes, componentUnits, maxComponentQuantity } from './physical-component-values';
 
@@ -25,14 +26,32 @@ function fields(body: Record<string, unknown>, allowed: string[]) {
     if (Object.keys(body).some(key => !allowed.includes(key))) throw new HttpError(400, 'UNKNOWN_FIELD');
 }
 
-function attributes(body: Record<string, unknown>) {
+function editAttributes(body: Record<string, unknown>) {
     const name = typeof body.name === 'string' ? body.name.trim() : '';
     const type = body.type as typeof componentTypes[number];
     const unit = body.unit as typeof componentUnits[number];
     if (!name || name.length > 160 || !componentTypes.includes(type) || !componentUnits.includes(unit)
         || (type === 'card') !== (unit === 'card')) throw new HttpError(400, 'INVALID_COMPONENT_INPUT');
+    return { name, type, unit };
+}
+
+function attributes(body: Record<string, unknown>) {
     const expected = body.expected === null ? null : integer(body.expected, 1, maxComponentQuantity);
-    return { name, type, unit, expected };
+    return { ...editAttributes(body), expected };
+}
+
+function editQuantity(value: unknown) {
+    return value === null ? null : integer(value, 0, maxComponentQuantity);
+}
+
+async function verifiedPhysicalProof(db: D1Database, definitionId: number, secret: unknown, assigning: boolean) {
+    const [classification] = await classifyStoredComponents(db, [definitionId], { secret });
+    if (classification.reason === 'EVIDENCE_UNAVAILABLE') throw new HttpError(503, 'EVIDENCE_UNAVAILABLE');
+    const signature = classification.evidence.physicalSignature;
+    if (!signature || !classification.canUseForInventory || (assigning && !classification.canAssignToSleeves)) {
+        throw new HttpError(409, 'COMPONENT_INELIGIBLE');
+    }
+    return { signature };
 }
 
 async function writeOne(db: D1Database, statement: D1PreparedStatement) {
@@ -114,33 +133,52 @@ export async function writePhysicalComponent(
 ) {
     if (body.action === 'create') return create(db, secret, actor, key, body);
     const action = body.action;
+    if (action === 'quantity-status') {
+        fields(body, ['action']);
+        return quantityOperationStatus(db, actor, key);
+    }
     if (action !== 'edit' && action !== 'count' && action !== 'assign') throw new HttpError(400, 'INVALID_COMPONENT_ACTION');
     const common = ['action', 'definitionId', 'definitionRevision'];
-    fields(body, [...common, ...(action === 'edit' ? ['name', 'type', 'unit', 'expected']
+    fields(body, [...common, ...(action === 'edit' ? ['name', 'type', 'unit', 'expected', 'previousExpected', 'reason']
         : action === 'count' ? ['copyId', 'revision', 'actual'] : ['requirementId', 'revision'])]);
     const definitionId = integer(body.definitionId, 1);
     const definitionRevision = integer(body.definitionRevision, 1);
-    const [classification] = await classifyStoredComponents(db, [definitionId], { secret });
-    if (classification.reason === 'EVIDENCE_UNAVAILABLE') throw new HttpError(503, 'EVIDENCE_UNAVAILABLE');
-    const signature = classification.evidence.physicalSignature;
-    if (!signature || !classification.canUseForInventory || (action === 'assign' && !classification.canAssignToSleeves)) {
-        throw new HttpError(409, 'COMPONENT_INELIGIBLE');
+    const edit = action === 'edit' ? editAttributes(body) : null;
+    const hasExpected = edit !== null && Object.hasOwn(body, 'expected');
+    const hasPrior = edit !== null && Object.hasOwn(body, 'previousExpected');
+    const expected = hasExpected ? editQuantity(body.expected) : null;
+    const prior = hasPrior ? editQuantity(body.previousExpected) : null;
+    if (hasPrior && !hasExpected) throw new HttpError(400, 'INVALID_COMPONENT_INPUT');
+
+    if (edit && hasPrior && expected !== prior) {
+        // Only an authenticated R12 confirmation may open quantity writes.
+        throw new HttpError(409, 'D1_QUANTITY_PREVIEW_REQUIRED');
     }
+    if (edit && key?.startsWith('q1.')) throw new HttpError(409, 'IDEMPOTENCY_CONFLICT');
+
+    const { signature } = await verifiedPhysicalProof(db, definitionId, secret, action === 'assign');
 
     // Pin the verified proof and definition revision, and recheck structural eligibility and the global
     // evidence limit inside the mutation. Source and token are immutable; concurrent archive or map wins.
     const candidate = `SELECT p.* FROM v2_physical_component_candidates p
         WHERE p.id = ? AND p.physical_revision = ? AND p.signature = ? AND ${evidenceSize} <= ?`;
     const proof = [definitionId, definitionRevision, signature, maxEvidenceRows];
-    if (action === 'edit') {
-        const data = attributes(body);
+    if (edit) {
+        const current = await db.prepare(`
+            SELECT d.expected_quantity AS expected FROM v2_component_definitions d
+            WHERE d.id IN (SELECT id FROM (${candidate}))
+        `).bind(...proof).first<{ expected: number | null }>();
+        if (!current) throw new HttpError(409, 'COMPONENT_STATE_CHANGED');
+        if (hasExpected && expected !== current.expected) {
+            throw new HttpError(hasPrior ? 409 : 400, hasPrior ? 'COMPONENT_STATE_CHANGED' : 'D1_PREVIOUS_QUANTITY_REQUIRED');
+        }
         return writeOne(db, db.prepare(`
             UPDATE v2_component_definitions
-            SET component_name = ?, component_type = ?, expected_quantity = ?, quantity_unit = ?,
+            SET component_name = ?, component_type = ?, quantity_unit = ?,
                 physical_revision = physical_revision + 1, updated_at = CURRENT_TIMESTAMP
-            WHERE id IN (SELECT id FROM (${candidate}))
+            WHERE id IN (SELECT id FROM (${candidate})) AND expected_quantity IS ?
             RETURNING id
-        `).bind(data.name, data.type, data.expected, data.unit, ...proof));
+        `).bind(edit.name, edit.type, edit.unit, ...proof, current.expected));
     }
 
     const revision = integer(body.revision, 0);

@@ -1,0 +1,15 @@
+{
+  "databaseIds": [
+    "59e9a17a-ff0f-494e-aab9-dd903a14e395",
+    "1b7cd021-a655-451d-a4b5-5fd7bb5b8e72"
+  ],
+  "databaseNames": [
+    "boardgame-collection-db",
+    "notbgg-major03-local"
+  ],
+  "stage1NamePrefixes": [
+    "p3-stage1-synthetic-"
+  ],
+  "stage1DatabaseIds": [],
+  "stage1Note": "Stage1 used local Miniflare identifiers, with no remote UUID recorded."
+}
