@@ -10,17 +10,18 @@ const { lang } = Astro.props;
 const labels = lang === "zh-TW"
     ? {
         title: "👤 關於這個網站",
-        welcome: "歡迎來到 Nash's Board Game Blog。",
+        welcome: "歡迎來到 Soma's Board Game Collection。",
         description: "這裡主要分享我的桌遊收藏、遊玩心得、開箱以及桌遊相關資訊。"
     }
     : {
         title: "👤 About This Website",
-        welcome: "Welcome to Nash's Board Game Blog.",
+        welcome: "Welcome to Soma's Board Game Collection.",
         description: "This website is where I share my board game collection, gameplay experiences, unboxings, and other board game information."
     };
 ---
 
-<section class="about-page">
+<!-- Layout 的 #content 是 div，主要內容區由頁面自行提供 main（與 PublicHome／PublicBrowse 一致） -->
+<main class="about-page">
 
     <h1>{labels.title}</h1>
 
@@ -28,7 +29,7 @@ const labels = lang === "zh-TW"
 
     <p>{labels.description}</p>
 
-</section>
+</main>
 
 <style>
     .about-page {
