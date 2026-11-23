@@ -48,7 +48,8 @@ function isActive(path: string): boolean {
         </a>
 
         <details class="cat-mobile-menu">
-            <summary aria-label={lang === "en" ? "Open navigation" : "展開導覽選單"}>
+            <!-- 不另設 aria-label：可見文字「選單／Menu」即為無障礙名稱，避免語音名稱與畫面文字不一致 -->
+            <summary>
                 <span aria-hidden="true">☰</span>
                 <span>{lang === "en" ? "Menu" : "選單"}</span>
             </summary>
@@ -75,7 +76,7 @@ function isActive(path: string): boolean {
             ))}
         </nav>
 
-        <div class="cat-language-switcher" aria-label={lang === "en" ? "Language" : "語言切換"}>
+        <div class="cat-language-switcher" role="group" aria-label={lang === "en" ? "Language" : "語言切換"}>
             <a href={chineseUrl} data-language-switch class:list={["cat-language-link", { active: lang === "zh-TW" }]} lang="zh-TW" aria-current={lang === "zh-TW" ? "page" : undefined}>中文</a>
             <span aria-hidden="true">/</span>
             <a href={englishUrl} data-language-switch class:list={["cat-language-link", { active: lang === "en" }]} lang="en" aria-current={lang === "en" ? "page" : undefined}>EN</a>
@@ -98,6 +99,19 @@ function isActive(path: string): boolean {
     document.addEventListener("click", event => {
         if ((event.target as Element).closest("[data-language-switch]")) syncLanguageLinks();
     }, true);
+    // 手機選單（details）原生不會因 Esc 或點擊外部而收合；補上這兩種常見的關閉方式。
+    document.addEventListener("keydown", event => {
+        if (event.key !== "Escape") return;
+        document.querySelectorAll<HTMLDetailsElement>(".cat-mobile-menu[open]").forEach(menu => {
+            menu.open = false;
+            menu.querySelector("summary")?.focus();
+        });
+    });
+    document.addEventListener("click", event => {
+        document.querySelectorAll<HTMLDetailsElement>(".cat-mobile-menu[open]").forEach(menu => {
+            if (!menu.contains(event.target as Node)) menu.open = false;
+        });
+    });
 </script>
 
 <style>

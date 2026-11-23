@@ -26,8 +26,8 @@ export const prerender = false;
     <span class="tab disabled">庫存管理（開發中）</span>
     </nav>
 
-    <div id="loading">正在讀取牌套統計資料...</div>
-    <div id="error" hidden></div>
+    <div id="loading" role="status">正在讀取牌套統計資料…</div>
+    <div id="error" role="alert" hidden></div>
 
     <section id="dashboard" hidden>
       <div class="stats">
@@ -58,8 +58,11 @@ export const prerender = false;
             搜尋尺寸
             <input
             id="size-search"
+            name="size"
             type="search"
-            placeholder="例如：63、63x88"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="例如：63、63x88…"
             />
         </label>
 
@@ -83,7 +86,8 @@ export const prerender = false;
       </div>
 
       <p id="size-result-count" aria-live="polite"></p>
-      <div class="table-scroll">
+      <!-- 窄螢幕時表格可橫向捲動；tabindex 讓鍵盤使用者也能聚焦後用方向鍵捲動 -->
+      <div class="table-scroll" role="region" aria-label="各尺寸牌套需求表" tabindex="0">
         <table>
           <thead>
             <tr>
@@ -111,8 +115,11 @@ export const prerender = false;
     <div class="game-search">
         <input
         id="game-search-input"
+        name="q"
         type="search"
-        placeholder="例如：寒霜迷城、91872"
+        autocomplete="off"
+        spellcheck="false"
+        placeholder="例如：寒霜迷城、91872…"
         aria-label="搜尋遊戲名稱或 BGG ID"
         />
         <button type="button" id="game-search-button">搜尋</button>
@@ -122,11 +129,11 @@ export const prerender = false;
 
     <div id="game-results" class="game-results"></div>
 
-    <section id="game-detail" class="game-detail" hidden>
+    <section id="game-detail" class="game-detail" aria-live="polite" hidden>
         <h3 id="game-detail-name"></h3>
         <p id="game-detail-info"></p>
 
-        <div class="table-scroll">
+        <div class="table-scroll" role="region" aria-label="遊戲牌套需求表" tabindex="0">
         <table class="game-detail-table">
             <thead>
             <tr>
@@ -300,7 +307,7 @@ export const prerender = false;
     } catch (err) {
       if (error) {
         error.textContent =
-          `無法載入牌套資料：${err instanceof Error ? err.message : '未知錯誤'}`;
+          `無法載入牌套資料：${err instanceof Error ? err.message : '未知錯誤'}。請稍後重新整理頁面再試。`;
         error.hidden = false;
       }
     } finally {
@@ -356,6 +363,14 @@ function switchSleeveTab(tab: 'summary' | 'games') {
 
   summaryTab?.setAttribute('aria-pressed', String(tab === 'summary'));
   gamesTab?.setAttribute('aria-pressed', String(tab === 'games'));
+
+  // 目前分頁寫入網址（?tab=games），重新整理或分享連結時保留所在分頁；預設分頁不帶參數。
+  try {
+    const url = new URL(location.href);
+    if (tab === 'games') url.searchParams.set('tab', 'games');
+    else url.searchParams.delete('tab');
+    history.replaceState(history.state, '', url);
+  } catch { /* 無法更新網址時仍可正常切換分頁 */ }
   if (tab === 'games') {
   const results = document.querySelector('#game-results');
 
@@ -380,7 +395,7 @@ async function searchSleeveGames() {
 
   results.replaceChildren();
   if (detail) detail.hidden = true;
-  status.textContent = '正在搜尋遊戲...';
+  status.textContent = '正在搜尋遊戲…';
 
   try {
     const response = await fetch(
@@ -441,7 +456,7 @@ async function searchSleeveGames() {
   } catch (error) {
     if (version !== gameSearchVersion) return;
     status.textContent =
-      `搜尋失敗：${error instanceof Error ? error.message : '未知錯誤'}`;
+      `搜尋失敗：${error instanceof Error ? error.message : '未知錯誤'}。請稍後再按一次「搜尋」。`;
   }
 }
 
@@ -457,7 +472,7 @@ async function loadSleeveGameDetail(id: number) {
   const version = ++gameDetailVersion;
 
   detail.hidden = false;
-  name.textContent = '正在讀取遊戲資料...';
+  name.textContent = '正在讀取遊戲資料…';
   info.textContent = '';
   total.textContent = '';
   tbody.replaceChildren();
@@ -505,7 +520,7 @@ async function loadSleeveGameDetail(id: number) {
     if (version !== gameDetailVersion) return;
     name.textContent = '讀取失敗';
     info.textContent =
-      error instanceof Error ? error.message : '未知錯誤';
+      `${error instanceof Error ? error.message : '未知錯誤'}。請稍後再點一次該遊戲。`;
   }
 }
 
@@ -536,6 +551,7 @@ document.querySelector('#game-search-input')
     if (event instanceof KeyboardEvent && event.key === 'Enter') searchSleeveGames();
   });
 
+  if (new URL(location.href).searchParams.get('tab') === 'games') switchSleeveTab('games');
   loadSleeves();
 </script>
 
@@ -754,6 +770,19 @@ document.querySelector('#game-search-input')
     border: none;
     font: inherit;
     cursor: pointer;
+    }
+
+    .tabs button:not(.active):hover {
+    background: #e2d6c6;
+    }
+
+    .game-search button:hover {
+    background: #54412f;
+    }
+
+    .table-scroll:focus-visible {
+    outline: 2px solid #a88763;
+    outline-offset: 2px;
     }
 
     .tabs button:focus-visible {

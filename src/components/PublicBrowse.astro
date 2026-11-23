@@ -19,7 +19,7 @@ const range=(min:number|null,max:number|null)=>min===null&&max===null?'—':min=
 <main class="public-page" data-public-browse data-lang={lang}>
  <header class="public-heading"><p class="public-eyebrow">SOMA'S COLLECTION</p><h1>{title}</h1><p>{collection?t('每張卡片是一筆公開收藏紀錄，並非副本或零件總數。','Each card is a public collection record, not a count of copies or parts.'):t('以最新成功的 D1 資料為優先，保留既有公開建置資料。','Latest successful D1 metadata takes priority; established public static records remain available.')}</p></header>
  <form method="get" class="public-filters" aria-label={t('搜尋與篩選','Search and filter')}>
-  <label>{t('搜尋名稱或身份 ID','Search name or identity ID')}<input name="q" type="search" maxlength="100" value={params.get('q')??''}/></label>
+  <label>{t('搜尋名稱或身份 ID','Search name or identity ID')}<input name="q" type="search" maxlength="100" autocomplete="off" spellcheck="false" value={params.get('q')??''}/></label>
   <label>{t('來源','Source')}<select name="source">{['all','bgg','notbgg'].map((value,i)=><option value={value} selected={value===(params.get('source')??'all')}>{[t('全部','All'),'BGG','NotBGG'][i]}</option>)}</select></label>
   <label>{t('類型','Type')}<select name="type">{['all','boardgame','expansion','accessory'].map((value,i)=><option value={value} selected={value===(params.get('type')??params.get('filter')??'all')}>{[t('全部','All'),t('主遊戲','Base game'),t('擴充','Expansion'),t('配件','Accessory')][i]}</option>)}</select></label>
   <label>{t('收藏狀態','Collection filter')}<select name="status">{['all','owned','wishlist','preordered'].map((value,i)=><option value={value} selected={value===(params.get('status')??'all')}>{[t('全部','All'),t('已收藏','Owned'),t('願望清單','Wishlist'),t('預購','Preordered')][i]}</option>)}</select></label>
@@ -28,7 +28,7 @@ const range=(min:number|null,max:number|null)=>min===null&&max===null?'—':min=
   <details class="public-advanced" open={['time','weight','mechanic','accessory','view'].some(key=>params.has(key))}><summary>{t('進階篩選與檢視','Advanced filters and view')}</summary><div class="public-advanced-fields">
    <label>{t('遊戲時間','Playing time')}<select name="time">{['','30','31-60','61-120','over120','60','90','120'].map((value,i)=><option value={value} selected={value===(params.get('time')??'')}>{[t('不限','Any'),'≤ 30 min','31–60 min','61–120 min','> 120 min','≤ 60 min','≤ 90 min','≤ 120 min'][i]}</option>)}</select></label>
    <label>{t('複雜度區間','Complexity range')}<select name="weight">{['','1-2','2-3','3-4','4-5'].map(value=><option value={value} selected={value===(params.get('weight')??'')}>{value||t('不限','Any')}</option>)}</select></label>
-   <label>{t('機制名稱或 BGG 機制 ID','Mechanic name or BGG mechanic ID')}<input name="mechanic" maxlength="120" value={params.get('mechanic')??''}/></label>
+   <label>{t('機制名稱或 BGG 機制 ID','Mechanic name or BGG mechanic ID')}<input name="mechanic" maxlength="120" autocomplete="off" spellcheck="false" value={params.get('mechanic')??''}/></label>
    <label>{t('配件分類','Accessory category')}<select name="accessory"><option value="">{t('不限','Any')}</option>{Object.entries(publicAccessoryLabels).map(([key,label])=><option value={key} selected={key===params.get('accessory')}>{label[en?1:0]}</option>)}</select></label>
    <label>{t('檢視方式','View')}<select name="view"><option value="grid" selected={params.get('view')!=='list'}>{t('卡片','Cards')}</option><option value="list" selected={params.get('view')==='list'}>{t('清單','List')}</option></select></label>
   </div></details>
@@ -37,8 +37,9 @@ const range=(min:number|null,max:number|null)=>min===null&&max===null?'—':min=
  {error?<section class="public-notice error" role="alert"><h2>{t('無法載入資料','Data unavailable')}</h2><p>{error}</p><a class="public-button" href={Astro.url.pathname+Astro.url.search}>{t('重試','Retry')}</a></section>:data&&<>
   <p role="status">{t('符合條件','Matches')}: {data.total} · {t('第','Page')} {data.page} · {t('每頁最多 20 筆','Up to 20 records per page')}</p>
   {!data.cards.length&&<section class="public-notice"><h2>{t('沒有符合條件的資料','No matching records')}</h2><p>{t('試著減少篩選條件。','Try fewer filters.')}</p></section>}
-  <div class="public-card-grid" data-view={params.get('view')==='list'?'list':'grid'}>{data.cards.map(card=><article class="public-game-card" data-public-card data-key={card.key}>
-   <div class="public-cover">{card.image?<img src={card.image} alt={card.name} width="300" height="360" loading="lazy" decoding="async" data-public-image/>:<span>{t('暫無封面','No cover')}</span>}</div>
+  <div class="public-card-grid" data-view={params.get('view')==='list'?'list':'grid'}>{data.cards.map((card,index)=><article class="public-game-card" data-public-card data-key={card.key}>
+   {/* 前 4 張約為首屏第一排，立即載入以免拖慢 LCP；其餘延遲載入 */}
+   <div class="public-cover">{card.image?<img src={card.image} alt={card.name} width="300" height="360" loading={index<4?'eager':'lazy'} fetchpriority={index<4?'high':'auto'} decoding="async" data-public-image/>:<span>{t('暫無封面','No cover')}</span>}</div>
    <div class="public-card-body"><p class="public-meta">{card.source==='bgg'?'BGG':card.source==='notbgg'?'NotBGG':t('來源未建立','Source not established')} · {card.year??'—'}{card.collectionId?' · #'+card.collectionId:''}</p>
     <h2>{card.href?<a href={card.href+'?'+new URLSearchParams({returnTo})} data-public-detail-link>{card.name}</a>:card.name}</h2>
     <p class="public-badges">{card.owned&&<span>{t('已收藏','Owned')}</span>}{card.wishlist&&<span>{t('願望清單','Wishlist')}</span>}{card.preordered&&<span>{t('預購','Preordered')}</span>}{card.status&&!['owned','preordered'].includes(card.status)&&<span>{({not_owned:t('未持有','Not owned'),sold:t('已出售','Sold'),gifted_away:t('已送出','Gifted away'),unknown:t('未知狀態','Unknown status')} as Record<string,string>)[card.status]??t('其他收藏狀態','Other collection status')}</span>}</p>

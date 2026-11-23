@@ -28,6 +28,7 @@ const {gameKey,lang}=Astro.props,en=lang==='en';
 .public-game-collection :global(summary){cursor:pointer;color:#244e73;padding:6px 0}
 .public-game-collection [role=alert]{padding:14px;background:#fff0ed;border:1px solid #e8bab3;border-radius:8px;color:#8d251c}
 .public-game-collection button{justify-self:start;min-height:44px;border:1px solid #ccd5de;border-radius:8px;background:#fff;padding:10px 14px;color:#244e73;cursor:pointer;font:inherit}
+.public-game-collection button:hover{background:#eef4f9;border-color:#8fb0c9}
 .public-game-collection button:focus-visible,.public-game-collection :global(summary:focus-visible){outline:3px solid #427ba5;outline-offset:3px}
 @media(max-width:680px){.public-data-panel{padding:17px}.public-game-collection{gap:14px}}
 </style>

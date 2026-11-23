@@ -18,13 +18,15 @@ const { title, lang = "zh-TW", catalogPage = false, detailPage = false } = Astro
 const isZh = lang === "zh-TW";
 const canonical=Astro.props.canonical??new URL(Astro.url.pathname,Astro.url.origin).href;
 const description=Astro.props.description??(isZh?'Soma 的桌遊收藏、遊戲資訊與心得分享。':"Soma's board game collection, game information and stories.");
+// theme-color 需與實際 body 背景一致（見下方 body／catalog-layout／detail-layout 規則），否則行動瀏覽器網址列會出現色差。
+const themeColor=detailPage?'#f6f4ef':catalogPage?'#f7f9fb':'#fbf5e9';
 ---
 <!doctype html>
 <html lang={lang}>
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="theme-color" content="#fbf5e9" />
+        <meta name="theme-color" content={themeColor} />
         <title>{title}</title>
         <meta name="description" content={description}/>
         <link rel="canonical" href={canonical}/>
@@ -51,8 +53,9 @@ const description=Astro.props.description??(isZh?'Soma 的桌遊收藏、遊戲�
             </div>
             )}
 
-            <!-- 使用 div 而不是 main，避免詳細頁元件內的 main 重複巢狀 -->
-            <div class="site-content" id="content">
+            <!-- 使用 div 而不是 main，避免詳細頁元件內的 main 重複巢狀。
+                 tabindex="-1" 讓「跳至主要內容」連結能把鍵盤焦點真正移到內容區。 -->
+            <div class="site-content" id="content" tabindex="-1">
                 <slot />
             </div>
 
@@ -66,7 +69,10 @@ const description=Astro.props.description??(isZh?'Soma 的桌遊收藏、遊戲�
 
 <style is:global>
     *, *::before, *::after { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
+    /* 平滑捲動只給未要求減少動態效果的使用者 */
+    @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+    /* 內容區只是程式化焦點目標，不需要顯示焦點框 */
+    #content:focus { outline: none; }
     body {
         margin: 0;
         min-width: 0;
