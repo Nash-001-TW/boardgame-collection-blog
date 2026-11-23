@@ -71,8 +71,11 @@ const themeColor=detailPage?'#f6f4ef':catalogPage?'#f7f9fb':'#fbf5e9';
     *, *::before, *::after { box-sizing: border-box; }
     /* 平滑捲動只給未要求減少動態效果的使用者 */
     @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
-    /* 內容區只是程式化焦點目標，不需要顯示焦點框 */
-    #content:focus { outline: none; }
+    /* 讓鍵盤使用者看見跳至內容後的焦點，並將外框內縮以避免全寬區域溢出。 */
+    #content:focus-visible {
+        outline: 3px solid var(--cat-orange);
+        outline-offset: -3px;
+    }
     body {
         margin: 0;
         min-width: 0;

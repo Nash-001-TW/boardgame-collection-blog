@@ -370,7 +370,9 @@ function switchSleeveTab(tab: 'summary' | 'games') {
     if (tab === 'games') url.searchParams.set('tab', 'games');
     else url.searchParams.delete('tab');
     history.replaceState(history.state, '', url);
-  } catch { /* 無法更新網址時仍可正常切換分頁 */ }
+  } catch (error) {
+    console.warn('[sleeves] tab URL sync failed:', error instanceof Error ? error.name : typeof error);
+  }
   if (tab === 'games') {
   const results = document.querySelector('#game-results');
 
