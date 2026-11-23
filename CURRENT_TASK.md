@@ -21,8 +21,8 @@
 
 | # | 類型 | 項目 | 負責 | 前置 |
 | --- | --- | --- | --- | --- |
-| 4 | 設計決策 | **UI-DS-01**：設計規範第 12 節 D1～D8（見下方詳細） | 使用者決策 | 使用者審閱設計規範 |
-| 5 | 設計決策 | **R06-UI-01**：R06 頁面四項決策（見下方詳細），與 D8 一併決定 | 使用者決策 | #4 |
+| 4 | 設計決策 | ✅ **已完成（2026-11-23）**：D1～D8 已決定（UI-D1～UI-D8），設計規範整體已採納（UI-02） | 使用者決策 | — |
+| 5 | 設計決策 | ✅ **R06-UI-01 已決定（2026-11-23，UI-D8）** | 使用者決策 | — |
 | 6 | 開發環境 | 專案路徑含空格，本機 dev 頁面腳本 404；不解決則 Codex 無法提供 UI 截圖驗收 | 使用者決定做法，Codex 執行 | — |
 | 7 | 安全 | `/dev/collection-v2-test` 公開可存取並讀取 D1 統計；確認正式建置是否包含、是否封鎖 | 使用者決策，Codex 處理 | — |
 | 8 | 版本管理 | `main` 有 3 個提交（`d025959`、`c8c56be`、`66f798d`）未推送 | 使用者授權 | — |
@@ -48,7 +48,7 @@
 | 18 | 清理 | 11 個未被引用的元件（HomePage、GameList、CatalogBrowserControls、CatalogCard、GameBrowserControls、CollectionPage、CollectionFilter、CollectionCard、GameSummary、GameRelations、GameSleeves）是否刪除 | 使用者決策，Codex 處理 |
 | 19 | 清理 | 測試暫存資料夾 `.bgg-b2-test-*` | 使用者決策 |
 | 20 | 文件 | `docs/current-progress.md` 停在 2026-11-18，含「移交 ChatGPT」等失效安排 | Claude |
-| 21 | 文件 | `docs/UI/` 9 張設計圖、設計規範及本次更新的流程文件尚未提交 | 使用者授權後 Claude 提交 |
+| 21 | 文件 | ✅ **已提交（2026-11-23）**：`docs/UI/` 9 張設計圖、設計規範與流程文件 | Claude |
 
 ### 暫緩（已決定延後）
 
@@ -58,14 +58,14 @@ P3 R2-D／L3、Major03 Launcher、Gate L2、D0、V1 退役與表名正規化。
 
 ## UI-DS-01：V2 UI／UX 設計規範（2026-11-23 新增）
 
-- **狀態**：設計規範草稿完成，等待使用者審閱（候選，未採納）
+- **狀態**：✅ 2026-11-23 已採納（DECISION_LOG UI-02、UI-D1～UI-D8）。下一步：Claude 依第 13 節產出階段 0 起的工作命令
 - **負責**：Claude 設計 → 使用者決策 D1～D8 → Claude 產出分階段工作命令 → Codex 實作並提供截圖 → Claude 審查
 - **文件**：[docs/UI/V2-UI-Design-System.md](docs/UI/V2-UI-Design-System.md)；依據 DECISION_LOG UI-01、TEAM-03
 - **關聯**：D8 會回答下方 R06-UI-01 的四項決策
 
 ## R06-UI-01：R06 實體組件與清點頁的單頁決策
 
-- **狀態**：等待使用者決策（候選，未採納）
+- **狀態**：✅ 四項已於 2026-11-23 決定（DECISION_LOG UI-D8／R06-UI-01，已採納）：入口為收藏詳細頁分頁（過渡期維持跳轉）、整頁共用副本選擇、手機清點優先、原地顯示儲存結果
 - **負責**：使用者決策 → Claude 產出工作命令 → Codex 實作
 - **目標**：取得 R06 頁面的四項布局決策，之後以「一個收藏、一個副本、小組件集合」完成最小讀寫流程。
 - **參考圖**：[桌面](docs/V2-UI-Review-01-screenshots/06-physical-1440.jpg)、[手機](docs/V2-UI-Review-01-screenshots/06-physical-375.jpg)、[桌面展開](docs/V2-UI-Review-01-screenshots/06-physical-expanded-1440.jpg)、[手機展開](docs/V2-UI-Review-01-screenshots/06-physical-expanded-375.jpg)。這些是合成唯讀畫面，比目前工作樹的表單變更舊。

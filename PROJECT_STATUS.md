@@ -31,7 +31,9 @@
 | --- | --- |
 | 公開網站 UI 修正（web-design-guidelines 審查後三個提交 `d025959`、`c8c56be`、`66f798d`） | 已實作；`astro check` 無新增錯誤；本機僅部分頁面驗證；未建置、未部署、未推送 |
 | Admin 視覺基準（UI-01）與 UI 分工（TEAM-03） | 已採納 |
-| [V2 UI／UX 設計規範](docs/UI/V2-UI-Design-System.md)（UI-02，D1～D8 待決） | 候選 |
+| [V2 UI／UX 設計規範](docs/UI/V2-UI-Design-System.md)（UI-02，D1～D8 已決定） | 已採納 |
+| R06-UI-01 四項頁面決策（UI-D8） | 已採納 |
+| F1／F2 過渡修正（`32d81f2`） | 已實作；Node 測試 67 項通過；瀏覽器未驗證 |
 | 全部待辦的優先順序 | 見 [CURRENT_TASK.md](CURRENT_TASK.md)「全部待辦」 |
 
 ## 暫緩
