@@ -25,6 +25,15 @@
 - Migration 0023（共用預期量更正）、0024（組件適用性）：存在於工作樹，未審查、未授權。
 - `shared-quantity-commit.ts`、`physical-quantity-impact.ts`、`component-applicability.ts`：已實作，未驗證。
 
+## 2026-11-23 新增
+
+| 項目 | 狀態 |
+| --- | --- |
+| 公開網站 UI 修正（web-design-guidelines 審查後三個提交 `d025959`、`c8c56be`、`66f798d`） | 已實作；`astro check` 無新增錯誤；本機僅部分頁面驗證；未建置、未部署、未推送 |
+| Admin 視覺基準（UI-01）與 UI 分工（TEAM-03） | 已採納 |
+| [V2 UI／UX 設計規範](docs/UI/V2-UI-Design-System.md)（UI-02，D1～D8 待決） | 候選 |
+| 全部待辦的優先順序 | 見 [CURRENT_TASK.md](CURRENT_TASK.md)「全部待辦」 |
+
 ## 暫緩
 
 P3 R2-D／L3、Major03 Launcher／Gate L2／D0、V1 退役與表名正規化。

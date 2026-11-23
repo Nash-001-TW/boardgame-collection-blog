@@ -11,7 +11,13 @@ if (manager) {
             status.textContent = t('已儲存，畫面已更新。', 'Saved. The page is up to date.');
             status.dataset.tone = 'success';
         }
-    } catch { /* The ordinary save path also works without browser storage. */ }
+    } catch (error) { logErrorType(error); }
+
+    function logErrorType(error: unknown) {
+        const type = error instanceof DOMException ? 'DOMException' : error instanceof SyntaxError ? 'SyntaxError'
+            : error instanceof TypeError ? 'TypeError' : error instanceof Error ? 'Error' : 'UnknownError';
+        console.warn('Physical component admin operation failed', type);
+    }
 
     type RequestState = { body: string; key: string };
     type Payload = { success?: boolean; data?: { outcome?: string }; error?: { code?: string } };
@@ -24,12 +30,16 @@ if (manager) {
         INVALID_COMPONENT_INPUT: t('請檢查名稱、數量及類型與單位。卡牌必須使用張。', 'Check the name, quantities, type, and unit. Cards require the card unit.'),
         EVIDENCE_UNAVAILABLE: t('無法驗證完整的分類證據。', 'Complete classification evidence could not be verified.'),
         D1_QUANTITY_REASON_REQUIRED: t('請填寫更正理由。', 'Enter a reason for this correction.'),
+        D1_QUANTITY_PREVIEW_REQUIRED: t(
+            '變更預期數量須先預覽並確認，該流程仍在開發中。請將預期數量改回原值，即可另外儲存名稱、類型等欄位。',
+            'Changing the expected quantity requires a preview and confirmation flow that is still in development. Restore the original expected quantity to save other fields such as name and type separately.',
+        ),
         D1_EVIDENCE_CAPACITY_EXCEEDED: t('歷史證據超過本次更正上限。', 'The history evidence exceeds the correction limit.'),
         IDEMPOTENCY_CONFLICT: t('此操作識別不符合目前身分或內容。', 'This operation ID does not match the current identity or payload.'),
     };
     const fallback = t('無法儲存，請確認權限或稍後再試。', 'Could not save. Check your access or try again.');
-    const unknown = t('尚未確認結果。請查詢、重送原操作，或安全封閉後再另起更正。',
-        'The result is unknown. Check or retry the original operation, or close it safely before starting another correction.');
+    const unknown = t('尚未確認結果。請查詢或重送原操作。',
+        'The result is unknown. Check or retry the original operation.');
     const storageError = t('無法安全保存原操作識別。未送出新的更正。', 'The original operation ID could not be stored safely. No new correction was sent.');
 
     function notify(message: string, tone = 'error') {
@@ -42,11 +52,17 @@ if (manager) {
         const id = new FormData(form).get('definitionId');
         return 'physical-quantity-pending:v1:' + location.pathname + ':' + id;
     }
-    function readPending(form: HTMLFormElement): RequestState | null {
+    function readPending(form: HTMLFormElement, onPageLoad = false): RequestState | null {
         const raw = sessionStorage.getItem(storageKey(form));
         if (!raw) return null;
         const record = JSON.parse(raw) as Partial<RequestState>;
-        if (typeof record.key !== 'string' || !/^[A-Za-z0-9_-]{8,128}$/.test(record.key) ||
+        if (typeof record.key !== 'string') throw new Error('Invalid pending operation ID');
+        // Legacy quantity edits were rejected before any write, so their records can be discarded.
+        if (onPageLoad && !/^q1\.[0-9a-f]{32}\.[0-9a-f]{64}$/.test(record.key)) {
+            clearPending(form);
+            return null;
+        }
+        if (!/^[A-Za-z0-9_.-]{8,128}$/.test(record.key) ||
             typeof record.body !== 'string') throw new Error('Invalid pending operation');
         const body = JSON.parse(record.body) as { action?: unknown; definitionId?: unknown };
         if (body.action !== 'edit' || String(body.definitionId) !== new FormData(form).get('definitionId')) {
@@ -59,6 +75,14 @@ if (manager) {
         const id = form.querySelector<HTMLElement>('[data-quantity-operation-id]');
         if (panel) panel.hidden = !pending;
         if (id) id.textContent = pending?.key ?? '';
+    }
+    function clearPending(form: HTMLFormElement) {
+        showPending(form, null);
+        try {
+            sessionStorage.removeItem(storageKey(form));
+        } catch (error) {
+            logErrorType(error);
+        }
     }
     function restorePending(form: HTMLFormElement, pending: RequestState) {
         const body = JSON.parse(pending.body) as Record<string, unknown>;
@@ -77,10 +101,10 @@ if (manager) {
             headers: { 'Content-Type': 'application/json', 'X-NotBGG-Request': '1', 'Idempotency-Key': state.key },
             body: action ? JSON.stringify({ action }) : state.body,
         });
-        return { ok: response.ok, payload: await response.json() as Payload | null };
+        return { ok: response.ok, status: response.status, payload: await response.json() as Payload | null };
     }
     function saved(action: string) {
-        try { sessionStorage.setItem(noticeKey, action); } catch { /* Optional success notice. */ }
+        try { sessionStorage.setItem(noticeKey, action); } catch (error) { logErrorType(error); }
         location.reload();
     }
     async function runQuantity(form: HTMLFormElement, pending: RequestState, action?: string) {
@@ -89,20 +113,26 @@ if (manager) {
         showPending(form, pending);
         notify(t('正在核對操作結果…', 'Checking the operation result…'), 'pending');
         try {
-            const { ok, payload } = await send(pending, action);
+            const { ok, status: httpStatus, payload } = await send(pending, action);
+            const code = payload?.error?.code ?? '';
             const outcome = payload?.data?.outcome;
             if (outcome === 'COMMITTED' && ok && payload?.success === true) {
-                sessionStorage.removeItem(storageKey(form));
+                clearPending(form);
                 saved('edit');
             } else if (outcome === 'RETIRED' && (action ? ok : payload?.error?.code === 'D1_OPERATION_RETIRED')) {
-                sessionStorage.removeItem(storageKey(form));
-                showPending(form, null);
+                clearPending(form);
                 notify(t('原操作已安全封閉。可重新核對資料後再提交。', 'The original operation is safely closed. Review the data before submitting again.'), 'success');
+            } else if (httpStatus >= 400 && httpStatus < 500) {
+                clearPending(form);
+                notify(errors[code] ?? fallback);
+            } else if (httpStatus >= 500 || !ok || outcome !== 'UNKNOWN') {
+                notify(unknown);
             } else {
-                const code = payload?.error?.code ?? '';
-                notify((errors[code] ? errors[code] + ' ' : '') + unknown);
+                // A status query without a receipt cannot establish that the original edit was rejected.
+                notify(t('查詢未找到操作收據。請重送原操作。', 'The status check found no receipt. Retry the original operation.'));
             }
-        } catch {
+        } catch (error) {
+            logErrorType(error);
             notify(unknown);
         } finally {
             busy.delete(form);
@@ -111,10 +141,13 @@ if (manager) {
 
     for (const form of manager.querySelectorAll<HTMLFormElement>('form[data-physical-action="edit"]')) {
         try {
-            const pending = readPending(form);
+            const pending = readPending(form, true);
             showPending(form, pending);
             if (pending) restorePending(form, pending);
-        } catch { /* A submit will fail closed if its stored operation cannot be read. */ }
+        } catch (error) {
+            logErrorType(error);
+            clearPending(form);
+        }
     }
 
     manager.addEventListener('click', event => {
@@ -123,15 +156,22 @@ if (manager) {
         const form = button?.form;
         if (!button || !form) return;
         event.preventDefault();
+        if (button.dataset.quantityAction === 'retire') {
+            notify(t('安全封閉操作仍在開發中。目前可查詢或重送原操作。',
+                'Safely closing an operation is still in development. You can check or retry the original operation.'));
+            return;
+        }
         try {
             const pending = readPending(form);
             if (pending) {
                 let action: string | undefined;
                 if (button.dataset.quantityAction === 'status') action = 'quantity-status';
-                if (button.dataset.quantityAction === 'retire') action = 'quantity-retire';
                 void runQuantity(form, pending, action);
             }
-        } catch { notify(storageError); }
+        } catch (error) {
+            logErrorType(error);
+            notify(storageError);
+        }
     });
 
     manager.addEventListener('submit', async event => {
@@ -161,7 +201,8 @@ if (manager) {
             let pending: RequestState | null = null;
             try {
                 pending = readPending(form);
-            } catch {
+            } catch (error) {
+                logErrorType(error);
                 if (changesQuantity) { notify(storageError); return; }
             }
             try {
@@ -184,7 +225,8 @@ if (manager) {
                     await runQuantity(form, request);
                     return;
                 }
-            } catch {
+            } catch (error) {
+                logErrorType(error);
                 notify(storageError);
                 return;
             }
@@ -208,7 +250,8 @@ if (manager) {
                 return;
             }
             saved(action);
-        } catch {
+        } catch (error) {
+            logErrorType(error);
             notify(t('無法確認儲存結果。請重試或重新載入。', 'Could not confirm the save. Retry or reload.'));
         } finally {
             busy.delete(form);

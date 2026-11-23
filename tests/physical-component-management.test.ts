@@ -137,13 +137,22 @@ test('physical component workflow through Admin API, real SQLite and Astro rende
             assert.equal((await classifyStoredComponents(db, [110], { secret }))[0].reason, 'PHYSICAL_SOURCE_INVALID');
             assert.throws(() => sqlite.prepare('UPDATE v2_physical_component_sources SET signature=? WHERE definition_id=?').run('0'.repeat(64), cardId), /IMMUTABLE/);
             assert.throws(() => sqlite.prepare('UPDATE v2_component_definitions SET collection_item_id=90 WHERE id=?').run(cardId), /IDENTITY/);
-            const edit = { action: 'edit', definitionId: cardId, definitionRevision: 1, name: 'Renamed cards', type: 'card', unit: 'card', previousExpected: 20, expected: 21, reason: 'Correct the test quantity' };
+            const edit = { action: 'edit', definitionId: cardId, definitionRevision: 1, name: 'Renamed cards', type: 'card', unit: 'card' };
+            const definition = sqlite.prepare('SELECT * FROM v2_component_definitions WHERE id=?');
+            const before = definition.get(cardId);
+            const changes = sqlite.prepare('SELECT total_changes() AS writes');
+            const writesBefore = changes.get();
+            const rejected = await send({ ...edit, previousExpected: 20, expected: 21, reason: 'Correct the test quantity' });
+            assert.equal(rejected.status, 409);
+            assert.equal((await rejected.json() as { error: { code: string } }).error.code, 'D1_QUANTITY_PREVIEW_REQUIRED');
+            assert.deepEqual(definition.get(cardId), before);
+            assert.deepEqual(changes.get(), writesBefore);
             assert.equal((await send({ ...edit, definitionId: legacyId })).status, 409);
             assert.equal((await send({ ...edit, definitionId: 99 })).status, 409);
             assert.equal((await send(edit)).status, 200);
-            const replay = await send(edit);
-            assert.equal(replay.status, 200);
-            assert.equal((await replay.json() as { data: { replayed: boolean } }).data.replayed, true);
+            const staleEdit = await send(edit);
+            assert.equal(staleEdit.status, 409);
+            assert.equal((await staleEdit.json() as { error: { code: string } }).error.code, 'COMPONENT_STATE_CHANGED');
             sqlite.prepare("INSERT INTO v2_legacy_id_map(legacy_table,legacy_id,target_table,target_id) VALUES ('collection_components','900','v2_component_definitions',?)").run(cardId);
             assert.equal((await classify())[2].reason, 'PHYSICAL_SOURCE_CONFLICT');
             assert.equal((await send({ ...edit, definitionRevision: 2 }, 'test-conflicted-source')).status, 409);
@@ -162,8 +171,10 @@ test('physical component workflow through Admin API, real SQLite and Astro rende
             assert.equal((await send({ ...count, actual: 10 })).status, 409);
             assert.equal((await send({ ...count, revision: 1, actual: 20 })).status, 200);
             assert.equal(sqlite.prepare('SELECT actual_quantity FROM v2_copy_components').get()?.actual_quantity, 20);
-            assert.equal((await send({ action: 'edit', definitionId: cardId, definitionRevision: 2, name: 'Not cards',
-                type: 'token', unit: 'piece', previousExpected: 21, expected: 20, reason: 'Check existing type guard' }, 'test-locked-type')).status, 409);
+            const locked = await send({ action: 'edit', definitionId: cardId, definitionRevision: 2, name: 'Renamed cards',
+                type: 'token', unit: 'piece', expected: 20 }, 'test-locked-type');
+            assert.equal(locked.status, 409);
+            assert.equal((await locked.json() as { error: { code: string } }).error.code, 'PHYSICAL_TYPE_IN_USE');
         });
 
         await t.test('assignment is card-only and preserves quantities, old assignments and stock', async () => {

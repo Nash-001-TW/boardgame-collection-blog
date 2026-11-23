@@ -16,3 +16,7 @@
 | --- | --- | --- | --- | --- | --- |
 | 2026-11-23 | TEAM-01 | 採雙 AI 協作：Claude 為技術主管與架構師，Codex 為工程師與 QA，ChatGPT 不參與正式流程 | 使用者 | Claude Code 對話中貼上的角色定義；見 [AI_TEAM_CHARTER.md](AI_TEAM_CHARTER.md) | 已採納 |
 | 2026-11-23 | TEAM-02 | 建立精簡版角色、流程、任務、狀態、決策檔案 | 使用者 | Claude Code 對話「建立精簡版檔案」 | 已採納，已實作 |
+| 2026-11-23 | UI-01 | Admin 視覺基準：`docs/UI/Dashboard-V2-Approved-Concept.png` 為主要核准設計參考，其餘 `docs/UI/` 圖片為延伸布局與風格參考；延續冒險貓咪奇幻桌遊主題（羊皮紙米白、暖棕木質、深紫），貓咪插畫為主要視覺識別；效率與資訊清楚優先；設計圖示意數據不是產品規格，功能規則以既有正式決策與使用者確認為準 | 使用者 | Claude Code 對話「BoardGame Dashboard V2 — UI／UX 視覺設計基準」 | 已採納 |
+| 2026-11-23 | TEAM-03 | UI 工作分工：Claude 負責視覺規劃、UI／UX 與流程設計、共用元件與設計規範、產出可交 Codex 實作的規格並審查；Codex 負責依核准設計實作前端元件與 CSS、響應式、功能測試與畫面驗證，並提供實際網站截圖供驗收；使用者保留最終設計決策與執行授權 | 使用者 | 同上 | 已採納 |
+| 2026-11-23 | D1-AUTH-01 | 追認 `dd133d3` 中 D1 共用預期數量更正的既有程式（伺服器 409 守衛、`shared-quantity-commit.ts`、`physical-quantity-impact.ts`、`component-applicability.ts`、前端改量復原流程、相關測試）為**授權中的實作工作**，保留並繼續完成 D1-17／D1-18 與第一版方案 A。**不含**：Migration 0023／0024 的套用、正式 D1 寫入、部署；這些仍須各自的工作命令與使用者授權。後續每一步依 WORKFLOW 產出工作命令並經使用者批准。 | 使用者 | Claude Code 對話選擇「A 保留並追認」（回應 F3） | 已採納 |
+| 2026-11-23 | UI-02 | [V2 UI／UX 設計規範](docs/UI/V2-UI-Design-System.md)（含 D1～D8 待決事項） | — | Claude 起草 | 候選 |
