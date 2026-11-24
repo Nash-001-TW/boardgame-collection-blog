@@ -4,6 +4,7 @@ import AdminLayout from '../../../../layouts/AdminLayout.astro';
 import PhysicalComponentFields from '../../../../components/PhysicalComponentFields.astro';
 import D1QuantityPreviewDialog from '../../../../components/admin/D1QuantityPreviewDialog.astro';
 import D1QuantityHistory from '../../../../components/admin/D1QuantityHistory.astro';
+import CollectionPicker from '../../../../components/admin/CollectionPicker.astro';
 import { readQuantityHistory, type QuantityHistory } from '../../../../lib/d1-quantity-history';
 import { classifyStoredComponents } from '../../../../lib/component-classifier-adapter';
 import { maxComponentQuantity } from '../../../../lib/physical-component-values';
@@ -100,12 +101,13 @@ const unassigned = requirements.filter(row => row.component_definition_id === nu
             <a href={'/admin/collection/components/classification' + (en ? '?lang=en' : '')}>{t('組件分類', 'Component classification')}</a>
         </nav>
         <h1>{title}</h1>
-        <form method="get" class="fields">
+        {(collection || Astro.response.status === 503) && <form method="get" class="fields">
             {en && <input type="hidden" name="lang" value="en" />}
             <label>{t('收藏 ID', 'Collection ID')} <input name="collection" type="number" min="1" required value={rawId ?? undefined} /></label>
             <button class="admin-button">{t('開啟收藏', 'Open collection')}</button>
-        </form>
+        </form>}
         {error && <p role="alert">{error}</p>}
+        {!collection && Astro.response.status !== 503 && <CollectionPicker en={en} />}
         {collection && !error && <>
             <h2>{collection.display_name} (#{collectionId}, {collection.record_scope})</h2>
             <p data-physical-status role="status" aria-live="polite" tabindex="-1"></p>

@@ -52,3 +52,6 @@
 | 2026-11-24 | D1-A5-G56-AUTH | 授權執行工作命令 `D1-A5-G56-20261124-01`（G5 正式套用 0023，僅 1 次正式寫入；G6 套用後唯讀對帳），範圍以 [規劃 §15](docs/D1-completion-plan-20261123.md) 為準，執行者 Claude（TEAM-04）。退場用 0025 候選檔未採用，維持原流程 | 使用者 | Claude Code 對話「回到剛才的步驟，核准」 | 已授權 |
 | 2026-11-24 | D1-A5-G6A-AUTH | 依 DEPLOY-01 授權 G6a：提交並推送 A5-PRE（`/dev/collection-v2-test` 404 加 `no-store`、`wrangler.json` 開啟 observability）與 A5 相關文件，推送即自動部署正式環境；部署後由 Claude 唯讀確認 | 使用者 | Claude Code 對話「授權推送部署」 | 已授權 |
 | 2026-11-24 | D1-A5-CLOSE | A5 以「G7 無組件可驗收」結案：0023 已正式套用並對帳通過，A2～A4 與 A5-PRE 已部署；正式環境 0 個受控組件，D1 預覽與歷史待使用者日後實際建立組件時順便確認（歷史顯示「尚無更正紀錄」、預覽可開啟後取消）。D1 階段 A（A1～A5）完成 | 使用者 | Claude Code 對話「照此收尾」 | 已採納 |
+| 2026-11-24 | R06-PICK-Q27～Q29 | #22 R06 收藏選擇器全採 A（[設計](docs/R06-collection-picker-20261124.md)）：Q27 在 R06 頁加收藏搜尋並沿用既有 `/api/admin/collection` 搜尋；Q28 純數字同時以收藏 ID 與 BGG ID 搜尋、結果標示依據（前端合併，不改共用 API）；Q29 全部收藏列出並以狀態標示。同時採納設計 §3 固定規則 | 使用者 | Claude Code 對話「全選 A」（看過比較頁 docs/UI/R06-collection-picker-options.html） | 已採納 |
+| 2026-11-24 | R06-PICK-AUTH | 授權執行工作命令 `R06-PICK-20261124-01`（#22 R06 收藏選擇器，本機實作與測試），範圍以 [設計 §5](docs/R06-collection-picker-20261124.md) 為準；推送與部署另依 DEPLOY-01 授權 | 使用者 | Claude Code 對話「批准並交 Codex」 | 已授權 |
+| 2026-11-24 | R06-PICK-DEPLOY | 依 DEPLOY-01 授權提交並推送 #22 R06 收藏選擇器（連同本機已提交的 CURRENT_TASK 更新 `6c827a2`），推送即自動部署；部署後由 Claude 唯讀確認，使用者登入人工確認搜尋 | 使用者 | Claude Code 對話「授權推送部署」 | 已授權 |

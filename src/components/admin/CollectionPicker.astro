@@ -1,0 +1,62 @@
+---
+interface Props { en: boolean }
+const { en } = Astro.props;
+const t = (zh: string, english: string) => en ? english : zh;
+const lang = en ? 'en' : 'zh-TW';
+const hint = t('名稱、BGG ID、NotBGG:ID 或收藏 ID', 'Name, BGG ID, NotBGG:ID, or collection ID');
+---
+<section class="picker" data-collection-picker data-lang={lang}
+    data-loading={t('搜尋中…', 'Searching…')}
+    data-empty={t('找不到符合的收藏', 'No matching collections')}
+    data-unavailable={t('暫時無法搜尋，請稍後再試', 'Search is temporarily unavailable. Please try again later.')}
+    data-by-collection={t('依收藏 ID', 'By collection ID')}
+    data-by-bgg={t('依 BGG ID', 'By BGG ID')}
+    data-no-source={t('無來源 ID', 'No source ID')}>
+    <form method="get">
+        {en && <input type="hidden" name="lang" value="en" />}
+        <label for="collection-picker-query">{t('搜尋收藏', 'Search collections')}</label>
+        <div class="search-controls">
+            <input id="collection-picker-query" name="q" type="search" autocomplete="off" maxlength="200"
+                aria-describedby="collection-picker-hint" value={Astro.url.searchParams.get('q') ?? ''} />
+            <button class="admin-button primary">{t('搜尋', 'Search')}</button>
+        </div>
+        <p id="collection-picker-hint">{hint}</p>
+    </form>
+    <p data-picker-status role="status" aria-live="polite"></p>
+    <ul class="results" data-picker-results></ul>
+    <nav aria-label={t('搜尋結果分頁', 'Search result pages')} data-picker-pagination hidden>
+        <button class="admin-button" type="button" data-picker-previous>{t('上一頁', 'Previous page')}</button>
+        <button class="admin-button" type="button" data-picker-next>{t('下一頁', 'Next page')}</button>
+    </nav>
+</section>
+
+<script>
+    import '../../lib/collection-picker-controller';
+</script>
+
+<style>
+    section.picker[data-collection-picker] { max-width: 720px; padding: 16px; border: 1px solid #EADACD; border-radius: 12px; background: #FFFBF5; color: #4A3B33; }
+    label { display: block; font-weight: 700; color: #2B1914; }
+    .search-controls { display: flex; gap: 8px; margin-top: 4px; }
+    .picker .search-controls input[type="search"] { flex: 1; min-width: 0; min-height: 44px; padding: 8px 12px; border: 1px solid #D9C3A5; border-radius: 8px; color: #2B1914; background: #fff; }
+    button { min-height: 44px; }
+    .picker .search-controls .admin-button.primary { color: #fff; background: #674080; border-color: #674080; }
+    #collection-picker-hint, .picker :global(.picker-meta) { color: #6E5B4C; font-size: .875rem; }
+    #collection-picker-hint { margin: 6px 0 0; }
+    [data-picker-status]:empty, .results:empty { display: none; }
+    .results { list-style: none; margin: 12px 0 0; padding: 0; }
+    .picker :global(.picker-row) {
+        display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px;
+        min-height: 44px; padding: 8px 10px; border-top: 1px solid #EADACD;
+        color: #4F2F66; text-decoration: none; overflow-wrap: anywhere;
+    }
+    .picker :global(.picker-row:hover) { background: #EDE4F2; }
+    .picker :global(.picker-meta) { display: block; }
+    .picker :global(.picker-badge) { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: .8125rem; font-weight: 700; color: #6B6460; background: #EEE9E6; }
+    .picker :global(.picker-badge[data-status="owned"]) { color: #1E5233; background: #E8F3E3; }
+    .picker :global(.picker-badge[data-status="preordered"]) { color: #6B3F05; background: #FEF2DD; }
+    .picker :global(.picker-badge[data-status="wishlist"]) { color: #28355C; background: #E7ECF7; }
+    .picker :global(:focus-visible) { outline: 2px solid #674080; outline-offset: 2px; }
+    nav { margin-top: 12px; }
+    nav[hidden] { display: none; }
+</style>

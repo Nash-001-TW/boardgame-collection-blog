@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>R06 收藏選擇器比較</title>
+<style>
+:root{
+  --bg-app:#FDF4E7;--bg-surface:#FFFBF5;--bg-sunken:#F7DFC2;--border-soft:#EADACD;--border-strong:#D9C3A5;
+  --ink:#2B1914;--ink-body:#4A3B33;--ink-muted:#6E5B4C;
+  --purple:#674080;--purple-strong:#4F2F66;--purple-soft:#EDE4F2;
+  --success:#2F7D4F;--success-soft:#E8F3E3;--warning:#A8650A;--warning-soft:#FEF2DD;
+  --danger:#B42318;--danger-soft:#FFE8E4;--info:#3D4F86;--info-soft:#E7ECF7;--neutral:#6B6460;--neutral-soft:#EEE9E6;
+  --shadow-card:0 2px 6px rgb(91 58 35 / .08);--shadow-raised:0 8px 24px rgb(58 40 25 / .14);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg-app);color:var(--ink-body);font:15px/1.6 "Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif}
+main{max-width:1280px;margin:0 auto;padding:24px 16px 64px}
+h1{color:var(--ink);font-size:28px;line-height:1.3;margin:0 0 8px}
+h2{color:var(--ink);font-size:20px;margin:40px 0 4px;padding-top:16px;border-top:2px solid var(--border-strong)}
+h3{color:var(--ink);font-size:16px;margin:0 0 8px}
+p{margin:0 0 8px}
+.lead{max-width:860px}
+.muted{color:var(--ink-muted);font-size:13px}
+.tag{display:inline-block;font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px;background:var(--purple-soft);color:var(--purple-strong);margin-right:6px}
+.tag.rec{background:var(--success-soft);color:var(--success)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:24px;margin-top:16px}
+.option{background:var(--bg-surface);border:1px solid var(--border-soft);border-radius:16px;padding:20px;box-shadow:var(--shadow-card)}
+.option.rec{border:2px solid var(--success)}
+.pros{margin:8px 0 16px;padding-left:20px;font-size:14px}
+.pros li{margin:2px 0}
+.stage{background:#E9DCCB;border-radius:12px;padding:16px;position:relative}
+.stage.dim::before{content:"";position:absolute;inset:0;background:rgb(43 25 20 / .38);border-radius:12px}
+.card{background:var(--bg-surface);border:1px solid var(--border-soft);border-radius:12px;padding:16px}
+.dialog{position:relative;background:var(--bg-surface);border-radius:16px;box-shadow:var(--shadow-raised);padding:20px;max-width:560px;margin:0 auto}
+.field{display:block;font-size:14px;font-weight:700;color:var(--ink);margin:10px 0 4px}
+.input{border:1px solid var(--border-soft);border-radius:8px;background:#fff;padding:9px 12px;min-height:44px;font-size:15px;color:var(--ink)}
+.input.changed{border-color:var(--purple);box-shadow:0 0 0 2px var(--purple-soft)}
+.textarea{min-height:64px}
+.row{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;justify-content:flex-end}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border-radius:12px;font-weight:700;font-size:15px;border:1px solid var(--border-strong);background:var(--bg-app);color:var(--ink)}
+.btn.primary{background:var(--purple);border-color:var(--purple);color:#fff}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--purple)}
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.stat{background:var(--bg-app);border:1px solid var(--border-soft);border-radius:10px;padding:8px 10px}
+.stat b{display:block;font-size:22px;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1.3}
+.stat span{font-size:12px;color:var(--ink-muted)}
+.arrow{color:var(--purple);font-weight:800}
+table{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+th{background:var(--bg-sunken);color:var(--ink);text-align:left;font-weight:700;padding:6px 8px}
+td{border-top:1px solid var(--border-soft);padding:8px}
+td.num{text-align:right}
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;padding:1px 8px;border-radius:999px;white-space:nowrap}
+.pill.d{background:var(--danger-soft);color:var(--danger)}
+.pill.w{background:var(--warning-soft);color:var(--warning)}
+.pill.i{background:var(--info-soft);color:var(--info)}
+.pill.s{background:var(--success-soft);color:var(--success)}
+.pill.n{background:var(--neutral-soft);color:var(--neutral)}
+details{border:1px solid var(--border-soft);border-radius:10px;margin-top:8px;background:#fff}
+summary{cursor:pointer;padding:8px 12px;font-weight:700;color:var(--ink);min-height:40px;display:flex;align-items:center;gap:8px}
+details>div{padding:0 12px 10px}
+.banner{border-radius:12px;padding:12px 14px;margin-top:12px;font-size:14px;display:flex;gap:10px}
+.banner .ic{font-weight:800}
+.banner.w{background:var(--warning-soft);color:#6B3F05}
+.banner.d{background:var(--danger-soft);color:#7A1810}
+.banner.s{background:var(--success-soft);color:#1E5233}
+.banner.i{background:var(--info-soft);color:#28355C}
+.phone{width:375px;max-width:100%;margin:16px auto 0;border:10px solid #2B1914;border-radius:28px;background:#E9DCCB;overflow:hidden}
+.phone .sheet{background:var(--bg-surface);border-radius:16px 16px 0 0;padding:16px;margin-top:56px;box-shadow:var(--shadow-raised)}
+.flow{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}
+.flow div{flex:1 1 180px;background:var(--bg-surface);border:1px solid var(--border-soft);border-radius:12px;padding:10px 12px;font-size:14px}
+.flow b{display:block;color:var(--purple-strong)}
+.decide{background:var(--purple-soft);border-radius:12px;padding:12px 16px;margin-top:8px}
+.mono{font-family:ui-monospace,Consolas,monospace;font-size:12px}
+.small{font-size:13px}
+@media (max-width:520px){.grid2{grid-template-columns:1fr}.summary{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main>
+<h1>#22｜R06 收藏選擇器</h1>
+<p class="lead">2026-11-24（Asia/Taipei）Claude 起草，<b>候選</b>。合成資料示意。對應 <span class="mono">docs/R06-collection-picker-20261124.md</span>。請看 Q27～Q29。</p>
+
+<div class="banner w"><span class="ic">!</span><div><b>現況問題</b>：直接打開「實體組件」頁只有「收藏 ID」輸入框；收藏 ID 是系統內部編號，不是 BGG ID，不記得就無法使用。目前只能從收藏編輯頁的「實體組件」連結進入。</div></div>
+
+<h2>Q27. 解法方向</h2>
+<div class="grid2">
+  <section class="option rec">
+    <span class="tag rec">A　建議</span><h3>在 R06 頁加收藏搜尋</h3>
+    <ul class="pros">
+      <li>沒帶收藏時，頁面顯示搜尋框＋結果清單，點一筆就進入。</li>
+      <li>沿用收藏管理既有的搜尋 API（名稱、BGG:ID、NotBGG:ID、收藏 ID），不新增 API、不改資料庫。</li>
+      <li>工作量小，可在 UI 改版（#10、#11）前先解決操作問題；改版做「收藏詳細頁分頁」後，這個搜尋仍可當直接入口。</li>
+    </ul>
+    <div class="card">
+      <h3>管理實體組件</h3>
+      <span class="field">搜尋收藏</span>
+      <div class="row"><div class="input" style="flex:1">百戰</div><span class="btn primary">搜尋</span></div>
+      <p class="muted" style="margin-top:6px">可輸入名稱、BGG ID、NotBGG:ID 或收藏 ID</p>
+      <table style="margin-top:10px"><thead><tr><th>收藏</th><th>來源</th><th>狀態</th><th></th></tr></thead><tbody>
+        <tr><td>百戰天蟲 <span class="muted">#137</span></td><td>BGG 12345</td><td><span class="pill s">已收藏</span></td><td><span class="btn" style="min-height:36px">開啟</span></td></tr>
+        <tr><td>百戰天蟲：擴充 <span class="muted">#141</span></td><td>BGG 23456</td><td><span class="pill n">願望清單</span></td><td><span class="btn" style="min-height:36px">開啟</span></td></tr>
+      </tbody></table>
+    </div>
+  </section>
+  <section class="option">
+    <span class="tag">B</span><h3>把入口改到收藏管理清單</h3>
+    <ul class="pros">
+      <li>側欄「實體組件」改連到收藏管理清單，每列加「實體組件」按鈕。</li>
+      <li>不改 R06 頁，但會改收藏管理清單（R02），而 R02 即將在 #11 改版，等於做兩次。</li>
+      <li>直接打開 R06 網址仍然只有 ID 輸入框。</li>
+    </ul>
+    <div class="card">
+      <h3>收藏管理</h3>
+      <table><tbody>
+        <tr><td>百戰天蟲 #137</td><td><span class="btn" style="min-height:36px">編輯</span> <span class="btn" style="min-height:36px">實體組件</span></td></tr>
+      </tbody></table>
+    </div>
+  </section>
+</div>
+<div class="decide"><b>Q27 建議 A</b>。C 案「提前做收藏詳細頁分頁」需要先完成 #10、#11，工作量大，不列入比較。</div>
+
+<h2>Q28. 輸入純數字時怎麼解讀？</h2>
+<p class="lead">你這次輸入的是 BGG ID。現有搜尋把純數字當成「收藏 ID」，要輸入 <span class="mono">BGG:12345</span> 才會找 BGG。</p>
+<div class="grid2">
+  <section class="option rec">
+    <span class="tag rec">A　建議</span><h3>同時找收藏 ID 與 BGG ID，結果標示來源</h3>
+    <ul class="pros">
+      <li>輸入 12345：同時列出「收藏 #12345」（若有）與「BGG 12345 的收藏」。</li>
+      <li>由 R06 前端各送一次既有搜尋再合併，<b>不改</b>收藏管理 API 與 R02 行為。</li>
+    </ul>
+    <div class="card small">搜尋「12345」→ 依 BGG ID：百戰天蟲 #137　・　依收藏 ID：找不到 #12345</div>
+  </section>
+  <section class="option">
+    <span class="tag">B</span><h3>沿用現狀，只加提示</h3>
+    <ul class="pros">
+      <li>提示「BGG ID 請輸入 BGG:12345」。</li>
+      <li>缺點：和你這次遇到的狀況一樣，容易打錯。</li>
+    </ul>
+  </section>
+</div>
+<div class="decide"><b>Q28 建議 A</b>。</div>
+
+<h2>Q29. 要列出哪些收藏？</h2>
+<div class="grid2">
+  <section class="option rec">
+    <span class="tag rec">A　建議</span><h3>全部列出，以狀態膠囊標示</h3>
+    <ul class="pros">
+      <li>願望清單、預購中、已出售也列出，但標示狀態；R06 頁本身已只讓「在藏未封膜」副本可清點。</li>
+      <li>避免找不到預購中但想先建組件的收藏。</li>
+    </ul>
+  </section>
+  <section class="option">
+    <span class="tag">B</span><h3>只列「已收藏」</h3>
+    <ul class="pros">
+      <li>清單較短。</li>
+      <li>缺點：預購、願望清單的收藏要另外處理。</li>
+    </ul>
+  </section>
+</div>
+<div class="decide"><b>Q29 建議 A</b>。</div>
+
+<h2>4. 固定規則（不需選）</h2>
+<ul class="pros">
+  <li>只在網址沒有 <span class="mono">collection</span> 參數、或參數找不到收藏時顯示搜尋；帶參數進入的行為不變。</li>
+  <li>只顯示正式範圍（production）的收藏；測試範圍沿用收藏管理的 scope 參數，不在此頁切換。</li>
+  <li>每頁最多 20 筆，沿用既有分頁游標；搜尋條件寫入網址（重新整理不遺失）。</li>
+  <li>結果每列顯示名稱、收藏 ID、BGG／NotBGG 來源、狀態；整列可點，鍵盤可操作。</li>
+  <li>原本的「收藏 ID」直接輸入保留在搜尋框（純數字依 Q28 處理），不另留兩個輸入框。</li>
+  <li>查詢失敗顯示「暫時無法搜尋」，不顯示成「找不到」。</li>
+</ul>
+</main>
+</body>
+</html>
