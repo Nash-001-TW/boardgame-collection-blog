@@ -436,3 +436,106 @@ Codex 首輪在唯讀檢查時發現成功紀錄有一條路徑不經提交引�
 未執行：Claude 未重跑 Edge 腳本；未做真實 Miniflare／正式 D1、建置、部署。
 
 **小修完成（2026-11-24，Claude 直接修改，屬 §11 已授權檔案）**：(1) `d1-quantity-preview-view.ts` 無法判讀時依 `judge()` 原因顯示文字（尚未清點／需要複查／清點證據不可用／實點不明／預期量未設定），單元測試同步更新；(2) `manage.astro` 重送鈕加 `primary`（目前 Admin 主要按鈕為既有綠色，設計規範階段 0 改紫色 token 時一併套用）；(3) controller 受影響副本顯示「N 盒」。驗證：六檔 76／76 通過；Edge 腳本 **Claude 親自重跑 11／11 通過**，14 張截圖已覆寫更新；`astro check` 10 個錯誤（無新增）；`git diff --check` 通過。
+
+## 12. A4 設計：更正歷史檢視（2026-11-24 已採納，DECISION_LOG D1-A4-Q9～Q11）
+
+本機比較頁：[docs/UI/D1-A4-history-options.html](UI/D1-A4-history-options.html)（合成資料示意）。依據：D1-05、D1-16、D1-17、D1-18；0023 的 `d1_quantity_changes`／`d1_quantity_history`。
+
+### 12.1 盤點（2026-11-24 靜態閱讀）
+
+- 回執欄位：`operation_id`、`actor`（Access JWT `sub`，不是 email）、`definition_id`、`collection_id`、`record_scope`、`before_quantity`／`after_quantity`、`name`、`component_type`、`unit`、`reason`、`evidence_json`（版本 1，最多 200 盒，每盒含版本、語言、封膜、庫存、實點、清點狀態、`lastSavedAt`；`countDate` 為 NULL、完成狀態為 `UNKNOWN`）、`before_generation`、`after_revision`、`committed_at`（unix 秒）。回執不可修改、不可刪除。
+- 預覽的「快照 → 判讀列」轉換寫在 [shared-quantity-preview.ts](../src/lib/shared-quantity-preview.ts) 第 90～103 行，尚未抽成共用函式。
+- 正式環境尚未套用 0023（屬 A5），頁面讀歷史會失敗，必須只影響歷史區。
+
+### 12.2 固定規則（不需選）
+
+1. 頁面伺服器端唯讀查詢，不新增 API、不寫入。
+2. 每盒判讀以回執快照、**與預覽相同的函式**重算：把 12.1 的轉換抽成共用函式，預覽與歷史共用（預覽行為不得改變，既有測試須維持通過）。
+3. 時間以 Asia/Taipei 顯示，`<time datetime>` 保留完整時間。
+4. 操作者：一律顯示「管理員（識別碼末 6 碼）」，不顯示完整識別碼。（2026-11-24 修訂，DECISION_LOG D1-A4-ACTOR-01。原採納規則為「與目前登入者相同顯示『你』，否則『其他管理員（末 6 碼）』」；因 R06 頁面拿不到登入者身分，辨識需改 middleware／auth。目前只有單一管理員，將來新增管理員時再考慮。回執仍存完整識別碼，影響僅畫面文字。）
+5. 副本名稱：副本仍存在用目前名稱並附快照版本／語言；已不存在顯示「副本 #id（已移除）」。快照缺欄位顯示 `UNKNOWN`／「—」，不讀現值補。
+6. 每張卡固定註明「0023 套用前的預期量修改沒有紀錄（UNKNOWN）」。
+7. 讀取失敗只在歷史區顯示「更正歷史暫時無法取得」，頁面其他部分照常；不以空清單掩蓋失敗。
+
+### 12.3 待使用者決策
+
+| # | 問題 | A | B | 建議 |
+| --- | --- | --- | --- | --- |
+| Q9 | 歷史放在哪裡 | 每張組件卡內摺疊區「更正歷史（N）」 | 頁面底部整個收藏的獨立區 | **A**：就近查看，R06 改版後位置不變 |
+| Q10 | 每筆顯示多少 | 摘要一行，點開看當時每盒判讀 | 全部展開 | **A**：平常簡潔，需要時可追溯 |
+| Q11 | 是否並列目前判讀 | 只顯示當時快照並標明「當時」 | 當時與目前並列 | **A**：符合 D1-16 不得以現值倒填 |
+
+決定後產出 A4 工作命令。
+
+## 13. 工作命令 A4（2026-11-24 已授權，DECISION_LOG D1-A4-AUTH）
+
+```text
+工作命令 ID：D1-HIST-20261124-01
+工作目標：在 R06 每張組件卡顯示該組件的共用預期數量更正歷史（唯讀）。
+
+已批准規格：docs/D1-completion-plan-20261123.md §12（DECISION_LOG D1-A4-Q9～Q11、D1-A4-ACTOR-01）；
+  比較頁 docs/UI/D1-A4-history-options.html 的 A 案與第 4 節；D1-05、D1-16、D1-18。
+
+行為要求：
+  1. 每張組件卡在「編輯組件」之後加摺疊區「更正歷史（N）」；N 為 0 時不顯示數量，內文「尚無更正紀錄」。
+  2. 每筆摘要一行：時間（Asia/Taipei 月日時分，<time datetime> 保留完整 ISO 時間）、前值 → 後值＋單位、理由。
+     依 committed_at 新到舊排序。
+  3. 點開一筆：操作者「管理員（識別碼末 6 碼）」；當時受影響盒數與缺件張數前 → 後；
+     提示「以下為 <時間> 更正當下的實點與判讀，不是目前值」；每盒表格（副本、當時實點、更正前、更正後）。
+     判讀文字與 A3 預覽一致（含「不缺（多 N 張）」與無法判讀原因）。
+  4. 每盒判讀以回執 evidence_json、before_quantity、after_quantity 重算，與預覽共用同一函式：
+     把 shared-quantity-preview.ts 中「快照 → QuantityImpactRow[] → projectQuantityImpact」的轉換抽成共用函式，
+     預覽改為呼叫它，行為不得改變。快照無法解析或 projectQuantityImpact 非 READY 時，該筆只顯示摘要並註明
+     「當時判讀無法還原（UNKNOWN）」，不得用現值補。
+  5. 副本名稱：副本仍存在用目前名稱並附快照的版本／語言；不存在顯示「副本 #id（已移除）」。
+  6. 每張卡歷史區底部固定註明「0023 套用前的預期量修改沒有紀錄（UNKNOWN）」。
+  7. 讀取失敗（含資料表不存在）：只在各卡歷史區顯示「更正歷史暫時無法取得」，頁面其他部分照常；
+     記一筆不含使用者輸入的錯誤紀錄；不得顯示成「尚無更正紀錄」。
+  8. 整頁只查一次（依收藏 ID 讀取 d1_quantity_history，伺服器端分組到各組件），不新增 API、不寫入。
+  9. 中英文字齊全（沿用頁面 t() 模式）。
+
+允許修改範圍：
+  - 新增 src/lib/d1-quantity-history.ts（唯讀查詢、失敗隔離、顯示模型）
+  - 新增 src/components/admin/D1QuantityHistory.astro（摺疊區與樣式，元件內 <style> 使用設計規範 §3 色值）
+  - src/lib/shared-quantity-preview.ts（只限抽出共用轉換函式並改為呼叫它）
+  - src/lib/d1-quantity-preview-view.ts（只限必要時匯出可重用的判讀文字函式；不改既有輸出）
+  - src/pages/admin/collection/components/manage.astro（只限呼叫歷史查詢與在組件卡掛載元件）
+  - 新增 tests/d1-quantity-history.test.ts；修改 tests/physical-quantity-browser.mjs（只限新增歷史驗收與截圖）
+
+禁止事項：不改 migrations、wrangler.json、package.json、astro.config.mjs、middleware 與 src/lib/auth；
+  不改 API 與提交引擎；不改 A3 流程；不做 R06 版面改版；不連遠端、不建置、不部署；不讀機密與備份；
+  不 git commit。發現需要超出範圍的修改時停下回報。
+
+允許執行的驗證：
+  1. node --import tsx --test tests/d1-quantity-history.test.ts tests/d1-quantity-preview-view.test.ts tests/d1-quantity-api.test.ts tests/shared-quantity-commit.test.ts tests/physical-component-management.test.ts tests/physical-quantity-impact.test.ts tests/d1-0023-review.test.ts
+  2. node tests/physical-quantity-browser.mjs <暫存目錄>（本機 Edge＋拋棄式 SQLite）
+  3. npm run astro -- check（基準 10 個錯誤，不得新增）
+  4. git diff --check
+
+單元測試必須涵蓋：
+  - D1-05：103／99 → 少 4，更正為 100 後 → 少 1；之後重新清點為 100，歷史仍顯示當時 99 與少 4 → 少 1
+  - 兩筆以上依時間新到舊；只列該組件、該收藏
+  - 快照判讀與同一份快照的預覽結果一致
+  - 快照損壞或無法判讀 → 摘要＋UNKNOWN 註明
+  - 副本已移除 → 「（已移除）」
+  - 資料表不存在或查詢拋錯 → 狀態為無法取得，不是空清單
+  - 操作者只顯示「管理員（識別碼末 6 碼）」，不顯示完整識別碼
+  - 預覽既有測試全數維持通過（抽函式不改行為）
+
+瀏覽器腳本新增：
+  - 確認更正成功並重新載入後，該組件卡「更正歷史（1）」，展開可見前後值、理由與每盒判讀
+  - 截圖（桌面 1440、手機 375，存 docs/D1-A4-screenshots/，只用合成資料）：歷史收合、歷史展開
+
+完成條件與交付：列出新增／修改檔案與摘要；各驗證指令與結果數字；瀏覽器新增項目結果；截圖清單；
+  astro check 錯誤數；未執行項目明列；更新 HANDOFF.md 帶日期條目。
+```
+
+### 13.1 A4 審查（2026-11-24）：通過，附一項修正
+
+- **範圍**：變更皆在 §13 允許範圍內（新增 `d1-quantity-history.ts`、`D1QuantityHistory.astro`、`tests/d1-quantity-history.test.ts`；修改 `shared-quantity-preview.ts` 只抽出 `projectQuantitySnapshot` 並由預覽呼叫、`manage.astro` 只掛載、`physical-quantity-browser.mjs` 只新增歷史驗收與截圖）。migrations、middleware、auth、API、提交引擎未動。
+- **符合**：整頁依收藏一次唯讀查詢（含 5 秒逾時）；讀取失敗回 `unavailable`，只在歷史區顯示「暫時無法取得」，頁面其他部分照常；快照驗證不通過或判讀非 READY 時只顯示摘要＋「當時判讀無法還原（UNKNOWN）」，不讀現值；歷史與預覽共用 `projectQuantitySnapshot` 與 `quantityPreviewView`；操作者只取識別碼末 6 碼；副本已移除標「（已移除）」；固定註明 0023 前無紀錄。
+- **Claude 修正（§13 已授權檔案內）**：(1) 歷史摘要與每盒判讀的單位原本直接顯示回執的單位代碼（中文頁出現「30 → 31 card」「缺 2 card」），改為與 R06 表單相同的中英標籤（張、件…）；(2) 歷史讀取失敗的錯誤紀錄補上錯誤類型（只記類型，不記訊息內容）。對應測試期望值同步更新（瀏覽器腳本改為「缺 2 張」，單元測試確認紀錄不含拋錯訊息）。
+- **驗證（Claude 親自重跑，修正後）**：七檔 Node 測試 **82／82 通過**；Edge 腳本 **12／12 通過**，4 張 A4 截圖已更新；`astro check` **10 個錯誤**（無新增）；`git diff --check` 通過。
+- **既有、非 A4**：組件卡標題列「預期數量 31 (card)」顯示單位代碼，是 R06 既有寫法，留給 R06 改版處理。
+
+未執行：真實 Miniflare／正式 D1、建置、部署（0023 正式套用屬 A5）。

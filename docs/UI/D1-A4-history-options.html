@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>D1 A4 更正歷史比較</title>
+<style>
+:root{
+  --bg-app:#FDF4E7;--bg-surface:#FFFBF5;--bg-sunken:#F7DFC2;--border-soft:#EADACD;--border-strong:#D9C3A5;
+  --ink:#2B1914;--ink-body:#4A3B33;--ink-muted:#6E5B4C;
+  --purple:#674080;--purple-strong:#4F2F66;--purple-soft:#EDE4F2;
+  --success:#2F7D4F;--success-soft:#E8F3E3;--warning:#A8650A;--warning-soft:#FEF2DD;
+  --danger:#B42318;--danger-soft:#FFE8E4;--info:#3D4F86;--info-soft:#E7ECF7;--neutral:#6B6460;--neutral-soft:#EEE9E6;
+  --shadow-card:0 2px 6px rgb(91 58 35 / .08);--shadow-raised:0 8px 24px rgb(58 40 25 / .14);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg-app);color:var(--ink-body);font:15px/1.6 "Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif}
+main{max-width:1280px;margin:0 auto;padding:24px 16px 64px}
+h1{color:var(--ink);font-size:28px;line-height:1.3;margin:0 0 8px}
+h2{color:var(--ink);font-size:20px;margin:40px 0 4px;padding-top:16px;border-top:2px solid var(--border-strong)}
+h3{color:var(--ink);font-size:16px;margin:0 0 8px}
+p{margin:0 0 8px}
+.lead{max-width:860px}
+.muted{color:var(--ink-muted);font-size:13px}
+.tag{display:inline-block;font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px;background:var(--purple-soft);color:var(--purple-strong);margin-right:6px}
+.tag.rec{background:var(--success-soft);color:var(--success)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:24px;margin-top:16px}
+.option{background:var(--bg-surface);border:1px solid var(--border-soft);border-radius:16px;padding:20px;box-shadow:var(--shadow-card)}
+.option.rec{border:2px solid var(--success)}
+.pros{margin:8px 0 16px;padding-left:20px;font-size:14px}
+.pros li{margin:2px 0}
+.stage{background:#E9DCCB;border-radius:12px;padding:16px;position:relative}
+.stage.dim::before{content:"";position:absolute;inset:0;background:rgb(43 25 20 / .38);border-radius:12px}
+.card{background:var(--bg-surface);border:1px solid var(--border-soft);border-radius:12px;padding:16px}
+.dialog{position:relative;background:var(--bg-surface);border-radius:16px;box-shadow:var(--shadow-raised);padding:20px;max-width:560px;margin:0 auto}
+.field{display:block;font-size:14px;font-weight:700;color:var(--ink);margin:10px 0 4px}
+.input{border:1px solid var(--border-soft);border-radius:8px;background:#fff;padding:9px 12px;min-height:44px;font-size:15px;color:var(--ink)}
+.input.changed{border-color:var(--purple);box-shadow:0 0 0 2px var(--purple-soft)}
+.textarea{min-height:64px}
+.row{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;justify-content:flex-end}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border-radius:12px;font-weight:700;font-size:15px;border:1px solid var(--border-strong);background:var(--bg-app);color:var(--ink)}
+.btn.primary{background:var(--purple);border-color:var(--purple);color:#fff}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--purple)}
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.stat{background:var(--bg-app);border:1px solid var(--border-soft);border-radius:10px;padding:8px 10px}
+.stat b{display:block;font-size:22px;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1.3}
+.stat span{font-size:12px;color:var(--ink-muted)}
+.arrow{color:var(--purple);font-weight:800}
+table{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+th{background:var(--bg-sunken);color:var(--ink);text-align:left;font-weight:700;padding:6px 8px}
+td{border-top:1px solid var(--border-soft);padding:8px}
+td.num{text-align:right}
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;padding:1px 8px;border-radius:999px;white-space:nowrap}
+.pill.d{background:var(--danger-soft);color:var(--danger)}
+.pill.w{background:var(--warning-soft);color:var(--warning)}
+.pill.i{background:var(--info-soft);color:var(--info)}
+.pill.s{background:var(--success-soft);color:var(--success)}
+.pill.n{background:var(--neutral-soft);color:var(--neutral)}
+details{border:1px solid var(--border-soft);border-radius:10px;margin-top:8px;background:#fff}
+summary{cursor:pointer;padding:8px 12px;font-weight:700;color:var(--ink);min-height:40px;display:flex;align-items:center;gap:8px}
+details>div{padding:0 12px 10px}
+.banner{border-radius:12px;padding:12px 14px;margin-top:12px;font-size:14px;display:flex;gap:10px}
+.banner .ic{font-weight:800}
+.banner.w{background:var(--warning-soft);color:#6B3F05}
+.banner.d{background:var(--danger-soft);color:#7A1810}
+.banner.s{background:var(--success-soft);color:#1E5233}
+.banner.i{background:var(--info-soft);color:#28355C}
+.phone{width:375px;max-width:100%;margin:16px auto 0;border:10px solid #2B1914;border-radius:28px;background:#E9DCCB;overflow:hidden}
+.phone .sheet{background:var(--bg-surface);border-radius:16px 16px 0 0;padding:16px;margin-top:56px;box-shadow:var(--shadow-raised)}
+.flow{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}
+.flow div{flex:1 1 180px;background:var(--bg-surface);border:1px solid var(--border-soft);border-radius:12px;padding:10px 12px;font-size:14px}
+.flow b{display:block;color:var(--purple-strong)}
+.decide{background:var(--purple-soft);border-radius:12px;padding:12px 16px;margin-top:8px}
+.mono{font-family:ui-monospace,Consolas,monospace;font-size:12px}
+.small{font-size:13px}
+@media (max-width:520px){.grid2{grid-template-columns:1fr}.summary{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main>
+<h1>D1 A4｜共用預期數量更正歷史</h1>
+<p class="lead">2026-11-24（Asia/Taipei）Claude 起草，<b>候選</b>。合成資料示意。對應 <span class="mono">docs/D1-completion-plan-20261123.md §12</span>。請看 Q9～Q11，每題選 A 或 B；第 4 節為固定規則。</p>
+
+<p class="small">示意資料：組件「基本卡牌」有兩筆更正。① 2026-11-24 14:05　103 → 100，理由「官方勘誤：實際為 100 張」。② 2026-11-20 09:30　100 → 103，理由「誤植，原盒標示 103」。另外 0023 套用前曾直接修改預期量，那段沒有紀錄。</p>
+
+<h2>Q9. 歷史放在哪裡？</h2>
+<div class="grid2">
+  <section class="option rec">
+    <span class="tag rec">A　建議</span><h3>每張組件卡內的摺疊區「更正歷史（N）」</h3>
+    <ul class="pros">
+      <li>看組件時就近查到，不必在整頁找。</li>
+      <li>R06 改版（UI-D8）後仍位於組件管理區，位置不變。</li>
+      <li>沒有紀錄時不顯示數量徽章，只顯示「尚無更正紀錄」。</li>
+    </ul>
+    <div class="card">
+      <h3>基本卡牌　<span class="muted">預期 100 張</span></h3>
+      <details><summary>▸ 編輯組件</summary></details>
+      <details open><summary>更正歷史 <span class="pill n">2</span></summary><div>
+        <table><thead><tr><th>時間</th><th>變更</th><th>理由</th></tr></thead><tbody>
+          <tr><td>11/24 14:05</td><td>103 → 100</td><td>官方勘誤：實際為 100 張</td></tr>
+          <tr><td>11/20 09:30</td><td>100 → 103</td><td>誤植，原盒標示 103</td></tr>
+        </tbody></table>
+      </div></details>
+    </div>
+  </section>
+  <section class="option">
+    <span class="tag">B</span><h3>頁面底部獨立「更正歷史」區（整個收藏）</h3>
+    <ul class="pros">
+      <li>一次看到整個收藏的所有更正。</li>
+      <li>缺點：組件多時要對照名稱；R06 改版後位置需重新安排。</li>
+    </ul>
+    <div class="card">
+      <h3>更正歷史（本收藏）</h3>
+      <table><thead><tr><th>時間</th><th>組件</th><th>變更</th><th>理由</th></tr></thead><tbody>
+        <tr><td>11/24 14:05</td><td>基本卡牌</td><td>103 → 100</td><td>官方勘誤：實際為 100 張</td></tr>
+        <tr><td>11/22 18:10</td><td>金幣代幣</td><td>40 → 45</td><td>擴充後補件</td></tr>
+        <tr><td>11/20 09:30</td><td>基本卡牌</td><td>100 → 103</td><td>誤植，原盒標示 103</td></tr>
+      </tbody></table>
+    </div>
+  </section>
+</div>
+<div class="decide"><b>Q9 建議 A</b>。</div>
+
+<h2>Q10. 每筆紀錄顯示多少？</h2>
+<div class="grid2">
+  <section class="option rec">
+    <span class="tag rec">A　建議</span><h3>摘要一行，點開看當時每盒判讀</h3>
+    <ul class="pros">
+      <li>平常一眼看完時間、前後值、理由。</li>
+      <li>需要追查時再展開，符合 D1-05「能還原少 4 → 少 1」。</li>
+    </ul>
+    <div class="card">
+      <details open><summary>11/24 14:05　103 → 100　<span class="muted">官方勘誤：實際為 100 張</span></summary><div>
+        <p class="small">操作者：你（nash…@…）　・　當時受影響 3 盒，缺件 4 → 1 張</p>
+        <table><thead><tr><th>副本</th><th class="num">當時實點</th><th>更正前</th><th>更正後</th></tr></thead><tbody>
+          <tr><td>#1 英文初版</td><td class="num">99</td><td>缺 4 張</td><td>缺 1 張</td></tr>
+          <tr><td>#2 中文版</td><td class="num">103</td><td>不缺</td><td>不缺（多 3 張）</td></tr>
+          <tr><td>#3 德文版</td><td class="num">—</td><td>尚未清點</td><td>尚未清點</td></tr>
+        </tbody></table>
+      </div></details>
+      <details><summary>11/20 09:30　100 → 103　<span class="muted">誤植，原盒標示 103</span></summary></details>
+    </div>
+  </section>
+  <section class="option">
+    <span class="tag">B</span><h3>全部展開</h3>
+    <ul class="pros">
+      <li>不用點擊。</li>
+      <li>缺點：每筆都帶每盒表格，兩三筆就很長，手機尤其明顯。</li>
+    </ul>
+    <div class="card">
+      <h3 class="small">11/24 14:05　103 → 100</h3>
+      <table><tbody>
+        <tr><td>#1 英文初版</td><td class="num">99</td><td>缺 4</td><td>缺 1</td></tr>
+        <tr><td>#2 中文版</td><td class="num">103</td><td>不缺</td><td>不缺（多 3）</td></tr>
+        <tr><td>#3 德文版</td><td class="num">—</td><td>尚未清點</td><td>尚未清點</td></tr>
+      </tbody></table>
+      <h3 class="small" style="margin-top:12px">11/20 09:30　100 → 103</h3>
+      <table><tbody>
+        <tr><td>#1 英文初版</td><td class="num">99</td><td>缺 1</td><td>缺 4</td></tr>
+        <tr><td>#2 中文版</td><td class="num">—</td><td>尚未清點</td><td>尚未清點</td></tr>
+      </tbody></table>
+    </div>
+  </section>
+</div>
+<div class="decide"><b>Q10 建議 A</b>。</div>
+
+<h2>Q11. 要不要並列「目前」判讀？</h2>
+<p class="lead">歷史保存的是更正當下的快照（D1-18）。之後重新清點，現在的實點可能不同。</p>
+<div class="grid2">
+  <section class="option rec">
+    <span class="tag rec">A　建議</span><h3>只顯示當時快照，並標明「當時」</h3>
+    <ul class="pros">
+      <li>歷史就是歷史，不會被現在的數字混淆（D1-16：不得讀現值倒填）。</li>
+      <li>目前狀態在同一張組件卡的清點區已經看得到。</li>
+    </ul>
+    <div class="banner i"><span class="ic">i</span><div>以下為 2026-11-24 14:05 更正當下的實點與判讀，不是目前值。</div></div>
+  </section>
+  <section class="option">
+    <span class="tag">B</span><h3>當時與目前並列</h3>
+    <ul class="pros">
+      <li>可以直接看出之後有沒有重新清點。</li>
+      <li>缺點：表格多兩欄；目前值讀取失敗時要另外處理；容易被誤讀成歷史的一部分。</li>
+    </ul>
+    <div class="card"><table><thead><tr><th>副本</th><th class="num">當時實點</th><th>當時更正後</th><th class="num">目前實點</th><th>目前判讀</th></tr></thead>
+      <tbody><tr><td>#1 英文初版</td><td class="num">99</td><td>缺 1 張</td><td class="num">100</td><td>不缺</td></tr></tbody></table></div>
+  </section>
+</div>
+<div class="decide"><b>Q11 建議 A</b>。</div>
+
+<h2>4. 固定規則（不需選）</h2>
+<div class="grid2">
+  <section class="option">
+    <h3>資料來源與判讀</h3>
+    <p class="small">只讀 <span class="mono">d1_quantity_history</span>（0023 不可修改的回執），頁面伺服器端讀取，不新增 API、不寫入。每盒判讀用回執內的 <span class="mono">evidence_json</span> 快照，<b>以和預覽相同的程式</b>重算（把預覽裡「快照 → 判讀」的段落抽成共用函式），確保歷史和當時預覽的數字一致。</p>
+    <h3 style="margin-top:12px">時間與操作者</h3>
+    <p class="small">時間以 Asia/Taipei 顯示月日時分，<span class="mono">&lt;time datetime&gt;</span> 保留完整時間。回執只存 Access 的帳號識別碼（不是 email）：與目前登入者相同顯示「你」，否則顯示「其他管理員（識別碼末 6 碼）」。（已修訂，DECISION_LOG D1-A4-ACTOR-01：一律顯示「管理員（識別碼末 6 碼）」）</p>
+  </section>
+  <section class="option">
+    <h3>缺資料與失敗</h3>
+    <ul class="pros">
+      <li>快照中缺的欄位顯示「UNKNOWN」或「—」，不讀現值補。</li>
+      <li>副本名稱：副本仍存在用目前名稱，並附快照的版本／語言；已不存在顯示「副本 #id（已移除）」。</li>
+      <li>每張卡底部固定一行：「0023 套用前的預期量修改沒有紀錄（UNKNOWN）。」</li>
+      <li>讀取失敗（例如正式環境尚未套用 0023）：只在歷史區顯示「更正歷史暫時無法取得」，<b>不影響頁面其他部分</b>。</li>
+      <li>依收藏 ID 與組件 ID 讀取；回執的 <span class="mono">record_scope</span> 跟隨收藏本身，不另外篩選。</li>
+    </ul>
+  </section>
+</div>
+</main>
+</body>
+</html>

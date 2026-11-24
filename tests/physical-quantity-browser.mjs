@@ -8,7 +8,9 @@ import { join } from 'node:path';
 import { build } from 'esbuild';
 const output = process.argv[2];
 if (!output) throw new Error('A disposable artifact directory is required');
-const screenshots = 'docs/D1-A3-screenshots';
+// A4 validation leaves the reviewed A3 screenshots intact.
+const screenshots = join(output, 'D1-A3-screenshots');
+const historyScreenshots = 'docs/D1-A4-screenshots';
 await mkdir(output, { recursive: true });
 
 // Resolve the fixture's extensionless TypeScript imports without changing the authorized Node command.
@@ -227,8 +229,8 @@ try {
     async function viewport(width, height) {
         await cdp('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: width < 768 });
     }
-    async function capture(name, target) {
-        await mkdir(screenshots, { recursive: true });
+    async function capture(name, target, destination = screenshots) {
+        await mkdir(destination, { recursive: true });
         for (const [layout, width, height] of [['desktop', 1440, 1000], ['mobile', 375, 900]]) {
             await viewport(width, height);
             await evaluate(async target => {
@@ -246,7 +248,7 @@ try {
                 assert.deepEqual(geometry, [width, height, height]);
             }
             const { data } = await cdp('Page.captureScreenshot', { format: 'png', fromSurface: true });
-            await writeFile(join(screenshots, layout + '-' + name + '.png'), Buffer.from(data, 'base64'));
+            await writeFile(join(destination, layout + '-' + name + '.png'), Buffer.from(data, 'base64'));
         }
         await viewport(1440, 1000);
     }
@@ -311,6 +313,24 @@ try {
     assert.equal(await pending(), null);
     await capture('success', '[data-physical-status]');
     pass('successful commit reloads with new value and one receipt');
+
+    const historyPanel = 'article:has(input[name="definitionId"][value="' + fixture.cardId + '"]) [data-d1-history]';
+    const historyEntry = historyPanel + ' [data-d1-history-entry]';
+    const historyDetail = historyEntry + ' [data-d1-history-detail]';
+    assert.equal(await text(historyPanel + ' > summary'), '更正歷史（1）');
+    assert.equal(await evaluate(selector => document.querySelector(selector).open, historyPanel), false);
+    await capture('history-collapsed', historyPanel, historyScreenshots);
+    await click(historyPanel + ' > summary');
+    assert.match(await text(historyEntry + ' > summary'), /30 → 31 張.*Synthetic browser correction/s);
+    await click(historyEntry + ' > summary');
+    assert.equal(await visible(historyDetail), true);
+    const openBox = await evaluate(selector => {
+        const row = [...document.querySelectorAll(selector + ' tbody tr')].find(row => row.cells[0].textContent.includes('Open box'));
+        return row && [...row.cells].slice(1).map(cell => cell.textContent.trim());
+    }, historyDetail);
+    assert.deepEqual(openBox, ['28', '缺 2 張', '缺 3 張']);
+    await capture('history-expanded', historyPanel, historyScreenshots);
+    pass('history after reload shows one receipt, its reason and frozen per-copy assessment');
 
     await preview(32);
     nextCommit = 'lost-reply';
@@ -413,7 +433,7 @@ try {
     await until(async () => await field('name') === 'Ordinary browser rename' && (await status()).includes('已儲存'), 'ordinary edit');
     assert.equal(history(), 4);
     pass('ordinary edit saves without a quantity receipt');
-    console.log('11 browser checks passed; 14 screenshots saved.');
+    console.log('12 browser checks passed; 4 A4 screenshots and 14 temporary A3 screenshots saved.');
 } finally {
     releaseCommit?.();
     ws?.close();

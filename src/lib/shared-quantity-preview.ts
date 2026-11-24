@@ -53,6 +53,23 @@ type SnapshotRow = {
     evidenceStatus: string;
 };
 
+export function projectQuantitySnapshot(snapshot: { items: SnapshotRow[] },
+    baseline: Pick<QuantityBaseline, 'collectionId' | 'generation'>,
+    edit: Pick<QuantityEdit, 'definitionId' | 'beforeQuantity' | 'afterQuantity'>) {
+    const rows: QuantityImpactRow[] = snapshot.items.map(item => ({
+        applicability: { status: 'applicable', revision: 0, generation: baseline.generation,
+            collectionId: baseline.collectionId, copyId: item.copyId, definitionId: item.definitionId },
+        inventory: item.inventory, inspection: item.inspection ?? 'unchecked', actual: item.actual,
+        evidence: item.evidenceStatus === 'OBSERVED_CURRENT_COUNT'
+            ? { kind: 'frozen', version: 1, id: `${item.countId}:${item.countRevision}` }
+            : { kind: 'unavailable' },
+        beforeExpected: edit.beforeQuantity, afterExpected: edit.afterQuantity,
+    }));
+    return projectQuantityImpact({ status: 'candidate', collectionId: baseline.collectionId,
+        generation: baseline.generation, copyIds: snapshot.items.map(item => item.copyId),
+        definitionIds: [edit.definitionId], rows }, edit.definitionId);
+}
+
 export async function previewSharedQuantity(db: D1Database, secret: unknown, actor: string,
     edit: QuantityEdit, sourceSignature: string) {
     const key = await physicalSigningKey(secret);
@@ -88,18 +105,7 @@ export async function previewSharedQuantity(db: D1Database, secret: unknown, act
         generation: row.generation, evidenceVersion: 1, evidenceDigest: await quantitySha256(row.evidence), sourceSignature,
     };
     const snapshot: { items: SnapshotRow[] } = JSON.parse(row.evidence);
-    const rows: QuantityImpactRow[] = snapshot.items.map(item => ({
-        applicability: { status: 'applicable', revision: 0, generation: baseline.generation,
-            collectionId: baseline.collectionId, copyId: item.copyId, definitionId: item.definitionId },
-        inventory: item.inventory, inspection: item.inspection ?? 'unchecked', actual: item.actual,
-        evidence: item.evidenceStatus === 'OBSERVED_CURRENT_COUNT'
-            ? { kind: 'frozen', version: 1, id: `${item.countId}:${item.countRevision}` }
-            : { kind: 'unavailable' },
-        beforeExpected: edit.beforeQuantity, afterExpected: edit.afterQuantity,
-    }));
-    const impact = projectQuantityImpact({ status: 'candidate', collectionId: baseline.collectionId,
-        generation: baseline.generation, copyIds: snapshot.items.map(item => item.copyId),
-        definitionIds: [edit.definitionId], rows }, edit.definitionId);
+    const impact = projectQuantitySnapshot(snapshot, baseline, edit);
     if (impact.status !== 'READY') throw new HttpError(503, 'EVIDENCE_UNAVAILABLE');
     const operationId = await createQuantityOperationId(actor, edit, baseline);
     const previewToken = await signPhysicalValue(key, previewMessage(actor, operationId, edit, baseline));

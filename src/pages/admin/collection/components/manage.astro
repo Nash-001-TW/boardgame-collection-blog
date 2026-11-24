@@ -3,6 +3,8 @@ import { env } from 'cloudflare:workers';
 import AdminLayout from '../../../../layouts/AdminLayout.astro';
 import PhysicalComponentFields from '../../../../components/PhysicalComponentFields.astro';
 import D1QuantityPreviewDialog from '../../../../components/admin/D1QuantityPreviewDialog.astro';
+import D1QuantityHistory from '../../../../components/admin/D1QuantityHistory.astro';
+import { readQuantityHistory, type QuantityHistory } from '../../../../lib/d1-quantity-history';
 import { classifyStoredComponents } from '../../../../lib/component-classifier-adapter';
 import { maxComponentQuantity } from '../../../../lib/physical-component-values';
 
@@ -33,6 +35,7 @@ let requirements: Requirement[] = [];
 let counts: Count[] = [];
 let classifications = new Map<number, Awaited<ReturnType<typeof classifyStoredComponents>>[number]>();
 let error = '';
+let history: QuantityHistory = { status: 'unavailable' };
 if (rawId !== null) {
     if (!/^[1-9][0-9]*$/.test(rawId) || !Number.isSafeInteger(collectionId)) {
         Astro.response.status = 400;
@@ -71,6 +74,7 @@ if (rawId !== null) {
                 counts = countList.results;
                 classifications = new Map((await classifyStoredComponents(db, definitions.map(row => row.id), { secret }))
                     .map(result => [result.definitionId, result]));
+                history = await readQuantityHistory(db, collectionId, en);
             }
         } catch {
             Astro.response.status = 503;
@@ -155,6 +159,9 @@ const unassigned = requirements.filter(row => row.component_definition_id === nu
                                     </div>
                                 </form>
                             </details>
+                        </>}
+                        <D1QuantityHistory en={en} history={history} definitionId={component.id} />
+                        {canWrite && verified && <>
                             {copies.length ? <form method="post" data-physical-action="count" class="fields">
                                 <input type="hidden" name="definitionId" value={component.id} />
                                 <input type="hidden" name="definitionRevision" value={component.physical_revision} />

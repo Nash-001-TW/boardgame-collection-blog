@@ -1,0 +1,91 @@
+---
+import type { QuantityHistory } from '../../lib/d1-quantity-history';
+
+interface Props {
+    en: boolean;
+    history: QuantityHistory;
+    definitionId: number;
+}
+const { en, history, definitionId } = Astro.props;
+const t = (zh: string, english: string) => en ? english : zh;
+const entries = history.status === 'ready' ? history.byDefinition.get(definitionId) ?? [] : [];
+---
+
+<details class="quantity-history" data-d1-history>
+    <summary>
+        {t('更正歷史', 'Correction history')}{entries.length ? t(`（${entries.length}）`, ` (${entries.length})`) : ''}
+    </summary>
+    <div class="history-content">
+        {history.status === 'unavailable' ? (
+            <p>{t('更正歷史暫時無法取得', 'Correction history is temporarily unavailable')}</p>
+        ) : entries.length === 0 ? (
+            <p>{t('尚無更正紀錄', 'No corrections yet')}</p>
+        ) : entries.map(entry => entry.detail ? (
+            <details class="history-entry" data-d1-history-entry>
+                <summary>
+                    <time datetime={entry.isoTime}>{entry.time}</time>
+                    <strong>{entry.change}</strong>
+                    <span>{entry.reason}</span>
+                </summary>
+                <div class="entry-content" data-d1-history-detail>
+                    <p>{entry.detail.actor}</p>
+                    <p>
+                        {t(`當時受影響副本 ${entry.detail.affected} 盒`, `Affected copies at the time: ${entry.detail.affected}`)}
+                        {' · '}
+                        {t(`缺件 ${entry.detail.missing} ${entry.detail.unit}`, `Missing units: ${entry.detail.missing}`)}
+                    </p>
+                    <p class="history-note">
+                        {t('以下為 ', 'Counts and assessments captured at ')}
+                        <time datetime={entry.isoTime}>{entry.time}</time>
+                        {t(' 更正當下的實點與判讀，不是目前值', ' when the correction was made.')}
+                    </p>
+                    <table>
+                        <thead><tr>
+                            <th scope="col">{t('副本', 'Copy')}</th>
+                            <th scope="col">{t('當時實點', 'Count at the time')}</th>
+                            <th scope="col">{t('更正前', 'Before')}</th>
+                            <th scope="col">{t('更正後', 'After')}</th>
+                        </tr></thead>
+                        <tbody>
+                            {entry.detail.rows.map(row => <tr>
+                                <th scope="row">{row.name}</th><td>{row.actual}</td><td>{row.before}</td><td>{row.after}</td>
+                            </tr>)}
+                        </tbody>
+                    </table>
+                </div>
+            </details>
+        ) : (
+            <p class="history-entry">
+                <time datetime={entry.isoTime}>{entry.time}</time>{' '}
+                <strong>{entry.change}</strong>{' '}
+                <span>{entry.reason}</span>{' '}
+                <span>{t('當時判讀無法還原（UNKNOWN）', 'Assessment could not be restored (UNKNOWN)')}</span>
+            </p>
+        ))}
+        <p class="history-note">{t('0023 套用前的預期量修改沒有紀錄（UNKNOWN）', 'Expected quantity changes before migration 0023 were not recorded (UNKNOWN)')}</p>
+    </div>
+</details>
+
+<style>
+    .quantity-history {
+        min-width: 0;
+        padding: .65rem .75rem;
+        border: 1px solid #D9C3A5;
+        border-radius: .5rem;
+        background: #FFFBF5;
+        color: #4A3B33;
+        overflow-wrap: anywhere;
+    }
+    summary { cursor: pointer; color: #4F2F66; }
+    summary:focus-visible { outline: 2px solid #674080; outline-offset: 2px; }
+    .quantity-history > summary { font-weight: 700; }
+    .history-content { margin-block-start: .5rem; }
+    .history-entry { border-block-start: 1px solid #EADACD; padding-block: .5rem; }
+    .history-entry summary > :not(:last-child) { margin-inline-end: .4rem; }
+    .entry-content p, .history-content > p { margin: .45rem 0; }
+    .history-note { color: #7A6656; font-size: .875rem; }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: .875rem; }
+    th, td { padding: .4rem .3rem; border-block-end: 1px solid #EADACD; text-align: start; vertical-align: top; }
+    thead { background: #F7DFC2; color: #2B1914; }
+    th:first-child { width: 34%; }
+</style>
