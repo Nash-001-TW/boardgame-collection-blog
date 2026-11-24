@@ -68,6 +68,10 @@ export function logQuantityError(stage: string, operationId: string | undefined,
         ? operationId : undefined, kind });
 }
 
+export function logQuantitySuccess(operationId: string, replayed: boolean) {
+    console.info('D1 quantity operation succeeded', { stage: 'commit', operationId, outcome: 'COMMITTED', replayed });
+}
+
 function rejected(operationId: string, code: string) {
     return { operationId, outcome: 'NOT_COMMITTED' as const, code };
 }

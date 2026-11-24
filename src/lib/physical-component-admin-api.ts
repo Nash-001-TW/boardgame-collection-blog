@@ -1,6 +1,6 @@
 import { authorizeAdminRequest } from './auth/admin-request';
 import { HttpError, readJson, requireAdminWriteLimit, response, type NotBggAdminBindings } from './notbgg-admin-api';
-import { logQuantityError } from './shared-quantity-commit';
+import { logQuantityError, logQuantitySuccess } from './shared-quantity-commit';
 import { writePhysicalComponent } from './physical-component-management';
 
 export async function handlePhysicalComponentRequest(request: Request, bindings: NotBggAdminBindings) {
@@ -23,7 +23,10 @@ export async function handlePhysicalComponentRequest(request: Request, bindings:
         const data = await writePhysicalComponent(bindings.DB, bindings.PHYSICAL_COMPONENT_SIGNING_KEY,
             auth.admin.subject, request.headers.get('Idempotency-Key'), body);
         if ((body.action === 'quantity-commit' || body.action === 'quantity-status') && 'outcome' in data && data.outcome !== undefined) {
-            if (data.outcome === 'COMMITTED') return response(200, { success: true, data });
+            if (data.outcome === 'COMMITTED') {
+                if (body.action === 'quantity-commit') logQuantitySuccess(data.operationId, data.replayed);
+                return response(200, { success: true, data });
+            }
             const result = data.outcome === 'UNKNOWN' ? { ...data, code: 'D1_RESULT_UNKNOWN' }
                 : { operationId: data.operationId, outcome: 'NOT_COMMITTED' as const, code: data.code };
             const status = body.action === 'quantity-status' ? 200

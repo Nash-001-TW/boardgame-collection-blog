@@ -212,6 +212,7 @@ test('A2 authorized quantity API with 0023 only', async t => {
 
     await t.test('epoch read failure preserves UNKNOWN for commit and status unless a receipt resolves it', async t => {
         const f = await fixture(t, auth);
+        const succeeded = t.mock.method(console, 'info', () => {});
         const p = await f.preview();
         const statusBody = { ...p.body, action: 'quantity-status' };
         const epochQuery = 'SELECT epoch FROM d1_quantity_epoch';
@@ -223,6 +224,15 @@ test('A2 authorized quantity API with 0023 only', async t => {
         expectOutcome(await f.send(p.body, p.operationId), 200, 'COMMITTED');
         f.failedReads.add(epochQuery);
         expectOutcome(await f.send(statusBody, p.operationId), 200, 'COMMITTED');
+        assert.deepEqual(succeeded.mock.calls.map(call => call.arguments), [
+            ['D1 quantity operation succeeded', { stage: 'commit', operationId: p.operationId, outcome: 'COMMITTED', replayed: false }],
+        ]);
+        const recovered = await f.send(p.body, p.operationId);
+        assert.deepEqual([recovered.data?.outcome, recovered.data?.replayed], ['COMMITTED', true]);
+        assert.deepEqual(succeeded.mock.calls[1]?.arguments, [
+            'D1 quantity operation succeeded', { stage: 'commit', operationId: p.operationId, outcome: 'COMMITTED', replayed: true },
+        ]);
+        assert.equal(succeeded.mock.callCount(), 2);
         assert.equal(f.inserts(), 1);
     });
 

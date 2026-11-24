@@ -37,3 +37,6 @@
 | 2026-11-23 | D1-PLAN-Q5 | `databaseEpoch` 採方案 A：在候選 0023 新增單列表 `d1_quantity_epoch`，Migration 執行時以隨機值產生，作為預覽憑證的資料庫標記；不改 `wrangler.json`。此為修改候選 0023 的同意，不含正式套用 | 使用者 | Claude Code 對話「建議A」（回應 [規劃 §7.5](docs/D1-completion-plan-20261123.md)） | 已採納 |
 | 2026-11-23 | D1-A2-AUTH | 授權執行工作命令 `D1-API-20261123-01`（A2：預覽與確認 API），範圍以 [規劃 §8](docs/D1-completion-plan-20261123.md) 為準；同時採納 §7 的 A2 設計 | 使用者 | Claude Code 對話「批准並交給 Codex」 | 已授權 |
 | 2026-11-23 | D1-A2-FIX-AUTH | 授權執行修正工作命令 `D1-API-FIX-20261123-01`，範圍以 [規劃 §9.2](docs/D1-completion-plan-20261123.md) 為準 | 使用者 | Claude Code 對話「批准」（聽完缺陷說明後） | 已授權 |
+| 2026-11-24 | D1-A3-Q6～Q8 | A3 預覽確認畫面全採 A：Q6 預覽用原生 `<dialog>`（手機為全高底部面板），做成獨立元件供 R06 改版沿用；Q7 每盒明細分「變動／不變／無法判讀」三組，只展開變動；Q8 結果不明時鎖住該組件數量編輯，先查詢、仍不明可用同一識別重送，直到得到確定結果。同時採納 [規劃 §10](docs/D1-completion-plan-20261123.md) 的固定流程（含 20 秒逾時、頁面載入自動查詢一次）與 §10.3 的歸屬安排 | 使用者 | Claude Code 對話「全選 A」（看過比較頁 docs/UI/D1-A3-preview-options.html） | 已採納 |
+| 2026-11-24 | D1-A3-AUTH | 授權執行工作命令 `D1-UI-20261124-01`（A3：預覽確認畫面與前端流程），範圍以 [規劃 §11](docs/D1-completion-plan-20261123.md) 為準 | 使用者 | Claude Code 對話「批准並交 Codex」 | 已授權 |
+| 2026-11-24 | D1-A3-AUTH-02 | 擴大 `D1-UI-20261124-01` 範圍：允許在 `src/lib/physical-component-admin-api.ts` 的 COMMITTED 分支（僅 `quantity-commit`）呼叫成功紀錄；`shared-quantity-commit.ts` 只放紀錄函式。理由：epoch 讀取失敗的回執回復路徑不經提交引擎（Codex 唯讀檢查發現，Claude 核對屬實） | 使用者 | Claude Code 對話「授權並續跑」 | 已授權 |

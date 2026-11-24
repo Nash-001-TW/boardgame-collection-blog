@@ -306,3 +306,133 @@ D1-01（103 → 100、實點 99、checked 與日期保留）、D1-04（超量保
 Codex 完成 `D1-API-FIX-20261123-01`。變更只在 §9.2 允許範圍內，0023 本次無變更。基礎設施錯誤一律先以回執判定（`recoverQuantityResult`），讀不到回執就回 `UNKNOWN`；`NOT_COMMITTED` 只剩業務條件確定的情況（憑證驗證結果為 false、內容不符、世代前進、封存、epoch 不符、寫入前超限、類型使用中）。非預期例外的回應也帶 `outcome: UNKNOWN`。Claude 本機重跑 5 支測試 **74／74 通過**（新增 6 項故障測試）；`astro check` **10 個錯誤**（12 → 10，消除 A1 測試檔 2 個），無新增；`git diff --check` 通過。
 
 **A2 判定完成。** 下一步 A3（預覽確認畫面），先依使用者偏好製作本機比較頁給使用者看過再定案。
+
+## 10. A3 設計：預覽確認畫面（2026-11-24 已採納，DECISION_LOG D1-A3-Q6～Q8）
+
+本機比較頁：[docs/UI/D1-A3-preview-options.html](UI/D1-A3-preview-options.html)（合成資料示意）。依據：§7 API 契約、設計規範 §6（確認彈窗、數量步進器、通知訊息）、UI-D8。
+
+### 10.1 固定流程（不需選）
+
+1. 組件編輯表單的預期量與原值不同時，出現必填「更正理由」，儲存鈕改為「預覽更正」；只改名稱、類型、單位維持「儲存」。
+2. 送 `quantity-preview`；失敗時訊息顯示在表單上方，不產生待處理操作。
+3. 預覽內容：前後值與理由、三個摘要數字（受影響副本、缺件張數前→後、無法判讀盒數）、每盒明細、不列入盒數（已出售等）、「實點、清點日期與完成狀態不會被改動」。副本名稱由頁面既有副本資料以 `copyId` 對照。多於預期顯示「不缺（多 N 張）」（D1-04），實點不明顯示「—」。
+4. 確認鈕寫出數量：「確認更正（影響 N 盒）」。送出前存待處理操作，送出中兩鈕停用、Esc 不關閉。
+5. 結果只看 `outcome`：`COMMITTED` 重新載入並顯示成功訊息（R06 改版時改原地更新）；`NOT_COMMITTED` 依 `code` 顯示原因並提供「重新預覽」，清除待處理；`UNKNOWN` 保留待處理並進入第 7 點的處理流程。查詢請求的 4xx 不清除待處理操作。
+6. **前端逾時（2026-11-24 補）**：`quantity-commit` 與 `quantity-status` 的 `fetch` 以 `AbortController` 設 20 秒上限。逾時、斷線或回應無法解析，一律視為 `UNKNOWN`（待處理操作在送出前已存好）。`quantity-preview` 逾時只顯示「預覽逾時，請再試一次」，不產生待處理操作。
+7. **結果不明的處理流程（2026-11-24 補）**：只靠查詢無法收斂——原請求若根本沒到伺服器，資料庫沒有回執、世代也沒前進，`quantity-status` 會一直回 `UNKNOWN`。因操作識別與內容綁定、提交冪等，以**同一識別、同一內容**重送 `quantity-commit` 是安全的：已寫入就取回原結果，沒寫入就寫入一次，期間資料有變動就回 `NOT_COMMITTED`。流程：
+   1. 畫面顯示「查詢結果」（`quantity-status`）。
+   2. 查詢仍為 `UNKNOWN` 時，再顯示「重新送出同一次更正（不會重複寫入）」，送出同一個 `operationId`、`baseline`、`previewToken` 與內容；不得重新預覽或換識別。
+   3. 頁面載入時讀到待處理操作，自動查詢一次（查詢只讀不寫）；結果仍不明才停在第 1 步的畫面。
+   4. 重送或查詢期間按鈕停用，同一時間只允許一個請求。
+8. 訊息文字對照見比較頁第 4 節。
+
+### 10.2 待使用者決策
+
+| # | 問題 | A | B | 建議 |
+| --- | --- | --- | --- | --- |
+| Q6 | 預覽放哪裡 | 原生 `<dialog>`，手機為全高底部面板 | 表單下方展開 | **A**：符合設計規範 §6，元件可沿用到 R06 改版 |
+| Q7 | 每盒明細 | 分「變動／不變／無法判讀」三組，只展開變動 | 單一表格全列 | **A**：直接用 A2 回傳分組，手機不需橫捲 |
+| Q8 | 結果不明時 | 鎖住該組件數量編輯，直到查詢或同識別重送得到確定結果（§10.1 第 7 點） | 只提醒，仍可編輯 | **A**：避免在值不確定時再次更正；有同識別重送，不會永久卡住 |
+
+決定後產出 A3 工作命令（Codex 實作並提供桌面／手機截圖，Claude 審查）。
+
+### 10.3 相關但不屬於 A3 畫面的項目（2026-11-24 補，依 2026-11-24 對話中逾時與重送機制的檢討）
+
+| 項目 | 內容 | 歸屬 | 授權 |
+| --- | --- | --- | --- |
+| 成功紀錄 | `quantity-commit` 成功（含 `replayed`）時記一筆只含操作識別、`outcome`、階段的紀錄，與既有 F5 錯誤紀錄同格式，不含理由等使用者輸入。用來比對「收到請求、寫入成功、回應送出」 | 併入 A3 工作命令（伺服器端小幅修改，只限記錄） | 隨 A3 批准 |
+| 保存紀錄 | `wrangler.json` 目前沒有 `observability`，正式環境的 `console.error` 只能用 `wrangler tail` 即時查看，事後查不到。建議開啟 Workers Logs | A5 | 高敏感設定，需另行授權 |
+| 套用前對帳 | 唯讀檢查：每筆回執的更正後值與 revision，要能對上目前預期量或其後的一般編輯紀錄 | A5 套用前與驗收後各跑一次 | 隨 A5 授權 |
+| 不採用 | 202 Accepted＋輪詢：寫入為毫秒級（A1 量測），非同步只增加狀態管理；定時對帳：個人收藏量小、回執不可變，以 A5 唯讀檢查取代 | — | — |
+
+已確認無需再處理：查詢只在「世代已前進且無回執」或「已封存」時回 `NOT_COMMITTED`（[shared-quantity-commit.ts](../src/lib/shared-quantity-commit.ts) `outcome()`），這兩種情況下仍在途的原請求也必然被擋，不會出現「說沒寫入、其實寫了」。
+
+## 11. 工作命令 A3（2026-11-24 已授權，DECISION_LOG D1-A3-AUTH）
+
+盤點（2026-11-24 靜態閱讀）：R06 [manage.astro](../src/pages/admin/collection/components/manage.astro) 已有一直顯示的理由欄（第 141 行）與待處理面板，面板內有「查詢結果」「重送原操作」「安全封閉原操作」三鈕（第 145～149 行）。伺服器沒有 `quantity-retire` 動作，§10 也不含此流程，A3 移除該鈕。[controller](../src/lib/physical-component-admin-controller.ts) 的 `fetch` 沒有逾時。既有瀏覽器腳本 [physical-quantity-browser.mjs](../tests/physical-quantity-browser.mjs) 以本機 Edge＋拋棄式 SQLite 驅動真實 controller 與 API，A3 沿用它驗收與截圖。
+
+```text
+工作命令 ID：D1-UI-20261124-01
+工作目標：完成 D1 階段 A 的預覽確認畫面與前端流程，取代「預覽確認開發中」的過渡提示。
+
+已批准規格：docs/D1-completion-plan-20261123.md §7.2～7.3、§10（DECISION_LOG D1-A3-Q6～Q8）；
+  比較頁 docs/UI/D1-A3-preview-options.html 的 A 案與第 4 節文字；設計規範 §6（確認彈窗、通知訊息）、§9（無障礙）。
+
+行為要求：
+  1. 預期量與原值不同時才顯示必填理由欄，儲存鈕改為「預覽更正」；改回原值則隱藏理由並恢復「儲存」。
+     理由空白時前端擋下，不送預覽。
+  2. 預覽成功開原生 <dialog>（aria-labelledby；開啟時焦點在標題；關閉後焦點回「預覽更正」）；
+     手機（< 768px）為全高底部面板。內容依 §10.1 第 3 點；明細分三組，只展開「變動」。
+     副本名稱以頁面既有副本資料用 copyId 對照，查不到顯示「副本 #<id>」。
+  3. 取消或 Esc（送出前）關閉彈窗，不寫入、不留待處理操作。
+  4. 確認：先存待處理操作再送 quantity-commit；送出中兩鈕停用、Esc 不關閉、確認鈕顯示轉圈並保留寬度。
+  5. 結果只看 outcome（§7.3）；NOT_COMMITTED 依 code 顯示比較頁第 4 節文字並提供「重新預覽」。
+  6. 逾時：commit／status 的 fetch 上限 20 秒（AbortController）；逾時、斷線、回應無法解析 → UNKNOWN。
+     逾時值集中為單一常數；測試可注入較短值，但不得改變正式值。
+  7. UNKNOWN 流程（§10.1 第 7 點）：鎖住該組件的預期量欄與「預覽更正」；第 1 步「查詢結果」；
+     查詢仍 UNKNOWN → 第 2 步「重新送出同一次更正」（同 operationId、baseline、previewToken 與內容）＋「再查詢一次」。
+     頁面載入讀到待處理操作時自動查詢一次。同一時間只允許一個請求。
+  8. 查詢請求的 4xx 不清除待處理操作，只顯示錯誤。移除「安全封閉原操作」鈕與相關程式。
+  9. 成功紀錄（§10.3）：quantity-commit 得到 COMMITTED（含 replayed）時，伺服器記一筆與 F5 錯誤紀錄同格式的
+     紀錄，只含階段、操作識別、outcome、replayed；不含理由、名稱等使用者輸入。
+  10. 中英文字齊全（沿用頁面 t() 模式）。
+
+允許修改範圍：
+  - 新增 src/components/admin/D1QuantityPreviewDialog.astro（彈窗外殼與樣式；樣式以元件內 <style> 使用設計規範 §3 色值，
+    待設計規範階段 0 建立共用 token 後再搬移）
+  - 新增 src/lib/d1-quantity-preview-view.ts（純函式：impact → 顯示模型，含分組、標籤、「不缺（多 N 張）」、「—」）
+  - src/lib/physical-component-admin-controller.ts（只限數量更正流程）
+  - src/pages/admin/collection/components/manage.astro（只限理由欄顯示條件、待處理面板、掛載彈窗、提供 copyId 對照資料）
+  - src/lib/shared-quantity-commit.ts（只限新增成功紀錄函式；不在提交引擎內呼叫）
+  - src/lib/physical-component-admin-api.ts（只限在 COMMITTED 分支、action 為 quantity-commit 時呼叫成功紀錄；
+    回應格式不變。2026-11-24 擴大，DECISION_LOG D1-A3-AUTH-02：epoch 讀取失敗時以回執回復結果的路徑不經提交引擎，
+    只有此處同時有原始動作與結果，能涵蓋一般提交、重送與回執回復，且不把 quantity-status 記成提交）
+  - 新增 tests/d1-quantity-preview-view.test.ts；修改 tests/physical-quantity-browser.mjs；
+    tests/d1-quantity-api.test.ts（只限新增成功紀錄的斷言）
+
+禁止事項：不改 0023／0024 與其他 migrations、wrangler.json、package.json、astro.config.mjs；不改 R06 其他版面
+  （整頁共用副本選擇等 UI-D8 改版不在本單）；不做 A4 歷史檢視；不改 API 回應格式；不連遠端、不建置、不部署；
+  不讀機密與備份。發現需要超出範圍的修改時停下回報。
+
+允許執行的驗證：
+  1. node --import tsx --test tests/d1-quantity-preview-view.test.ts tests/d1-quantity-api.test.ts tests/shared-quantity-commit.test.ts tests/physical-component-management.test.ts tests/physical-quantity-impact.test.ts tests/d1-0023-review.test.ts
+  2. node tests/physical-quantity-browser.mjs <暫存目錄>（本機 Edge＋拋棄式 SQLite）
+  3. npm run astro -- check（基準 10 個錯誤，不得新增）
+  4. git diff --check
+
+瀏覽器腳本必須涵蓋：
+  - 理由欄顯示／隱藏與按鈕文字切換；理由空白被擋
+  - 預覽後取消：資料庫無回執、無待處理操作
+  - 確認成功：重新載入後顯示成功訊息與新值；回執恰好一筆
+  - 回應遺失（已寫入）→ UNKNOWN → 查詢 → COMMITTED
+  - 請求未送達（未寫入）→ UNKNOWN → 查詢仍 UNKNOWN → 同識別重送 → COMMITTED；回執恰好一筆
+  - 逾時（測試注入短逾時）→ UNKNOWN，欄位鎖住
+  - 查詢回 4xx：待處理操作仍在
+  - 預覽後另有清點寫入 → 確認得到 NOT_COMMITTED（D1_CONFIRMATION_SUPERSEDED），待處理清除、鎖定解除
+  - 帶待處理操作重新載入：自動查詢一次
+  - Esc：送出前關閉並還原焦點；送出中不關閉
+
+截圖（桌面 1440、手機 375，存 docs/D1-A3-screenshots/，只用合成資料）：
+  表單（理由出現）、預覽彈窗、送出中、成功訊息、NOT_COMMITTED、UNKNOWN 第 1 步、UNKNOWN 第 2 步。
+
+完成條件與交付：列出新增／修改檔案與摘要；各驗證指令與結果數字；瀏覽器腳本逐項結果；截圖清單；
+  astro check 錯誤數；未執行項目明列；更新 HANDOFF.md 帶日期條目。
+```
+
+### 11.1 A3 審查（2026-11-24）：通過，附三項小修
+
+Codex 首輪在唯讀檢查時發現成功紀錄有一條路徑不經提交引擎而停下（D1-A3-AUTH-02 擴大範圍後續跑）。完成後 Claude 審查：
+
+- **範圍**：變更檔案皆在 §11（含 AUTH-02）允許範圍內；migrations、wrangler.json、package.json 未動。
+- **重跑**：六檔 Node 測試 **76／76 通過**；`astro check` **10 個錯誤**（與基準相同）；`git diff --check` 通過。Edge 腳本未由 Claude 重跑，引用 Codex 結果 11／11 與 14 張截圖（`docs/D1-A3-screenshots/`），已抽看桌面預覽、手機預覽、手機 UNKNOWN 第 2 步。
+- **符合**：結果只看 `outcome`；查詢 4xx 不清除待處理；commit／status 20 秒逾時與無法解析一律走 UNKNOWN；頁面載入自動查詢一次；同識別同內容重送；全頁同時只允許一個請求；送出中 Esc 不關閉；「安全封閉原操作」已移除；成功紀錄只在 `quantity-commit` 的 COMMITTED 分支、只含識別／結果／replayed。測試用短逾時以打包時替換原始碼注入，不影響正式值；`--no-sandbox` 只在測試環境變數開啟時加在拋棄式 Edge。
+- **觀察**：Codex 驗收時重現 Edge 會自動重送中斷的 POST。提交冪等，這種自動重送安全，也印證同識別設計的必要。
+
+**小修（不擋 A3 完成，建議併入 A4 或另開小工作命令）**：
+1. 無法判讀的盒子前後都只顯示「—」，沒有原因。比較頁示意為「尚未清點」；`judge()` 已有原因（UNCHECKED／NEEDS_REVIEW／EVIDENCE_UNAVAILABLE／ACTUAL_UNKNOWN／EXPECTED_UNKNOWN），應轉成文字顯示（`d1-quantity-preview-view.ts`）。
+2. 「重新送出同一次更正」使用次要按鈕樣式；比較頁為主要按鈕。
+3. 摘要「受影響副本」數字缺單位「盒」。
+
+未執行：Claude 未重跑 Edge 腳本；未做真實 Miniflare／正式 D1、建置、部署。
+
+**小修完成（2026-11-24，Claude 直接修改，屬 §11 已授權檔案）**：(1) `d1-quantity-preview-view.ts` 無法判讀時依 `judge()` 原因顯示文字（尚未清點／需要複查／清點證據不可用／實點不明／預期量未設定），單元測試同步更新；(2) `manage.astro` 重送鈕加 `primary`（目前 Admin 主要按鈕為既有綠色，設計規範階段 0 改紫色 token 時一併套用）；(3) controller 受影響副本顯示「N 盒」。驗證：六檔 76／76 通過；Edge 腳本 **Claude 親自重跑 11／11 通過**，14 張截圖已覆寫更新；`astro check` 10 個錯誤（無新增）；`git diff --check` 通過。

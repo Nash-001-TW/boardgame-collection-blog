@@ -1,0 +1,84 @@
+---
+interface Props { en: boolean; copies: { id: number; copy_label: string | null }[] }
+const { en, copies } = Astro.props;
+const t = (zh: string, english: string) => en ? english : zh;
+---
+<dialog data-d1-preview aria-labelledby="d1-preview-title" data-copies={JSON.stringify(copies.map(copy => [copy.id, copy.copy_label ?? '']))}>
+    <div class="preview-shell">
+        <header>
+            <h2 id="d1-preview-title" tabindex="-1" data-d1-title></h2>
+            <p data-d1-change></p>
+            <p class="reason" data-d1-reason></p>
+        </header>
+        <dl class="preview-stats">
+            <div><dt>{t('受影響副本', 'Affected copies')}</dt><dd data-d1-affected></dd></div>
+            <div><dt data-d1-missing-label></dt><dd data-d1-missing></dd></div>
+            <div><dt>{t('無法判讀盒數', 'Copies unable to assess')}</dt><dd data-d1-unreadable></dd></div>
+        </dl>
+        <div data-d1-details></div>
+        <template data-d1-group>
+            <details class="preview-group"><summary></summary><ul></ul></details>
+        </template>
+        <template data-d1-row>
+            <li class="preview-row">
+                <strong></strong>
+                <dl>
+                    <div><dt>{t('實點', 'Actual')}</dt><dd data-d1-actual></dd></div>
+                    <div><dt>{t('更正前', 'Before')}</dt><dd data-d1-before></dd></div>
+                    <div><dt>{t('更正後', 'After')}</dt><dd data-d1-after></dd></div>
+                </dl>
+            </li>
+        </template>
+        <p data-d1-excluded></p>
+        <p class="preview-note">{t('實點、清點日期與完成狀態不會被改動。', 'Actual counts, count dates and completion status will stay the same.')}</p>
+        <footer>
+            <button type="button" data-d1-cancel>{t('取消', 'Cancel')}</button>
+            <button type="button" data-d1-confirm>
+                <span data-d1-confirm-label></span>
+                <span class="sending" aria-hidden="true"><i></i>{t('正在更正…', 'Applying correction…')}</span>
+            </button>
+            <span class="screen-reader" role="status" data-d1-progress></span>
+        </footer>
+    </div>
+</dialog>
+
+<style>
+    dialog {
+        box-sizing: border-box; width: min(46rem, calc(100% - 2rem)); max-height: calc(100dvh - 2rem);
+        padding: 0; border: 1px solid #D9C3A5; border-radius: 16px; background: #FFFBF5; color: #4A3B33;
+        box-shadow: 0 20px 55px #2B19144D; overflow: auto;
+    }
+    dialog::backdrop { background: #2B191499; }
+    .preview-shell { display: grid; gap: 14px; padding: 24px; overflow-wrap: anywhere; }
+    h2, p, dl, dd { margin: 0; }
+    h2 { color: #2B1914; line-height: 1.25; margin-bottom: 10px; }
+    .reason { white-space: pre-wrap; margin-top: 6px; }
+    .preview-stats, .preview-row dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    .preview-stats div { background: #FDF4E7; border: 1px solid #EADACD; padding: 8px; border-radius: 8px; }
+    dt { font-size: .875rem; }
+    dd { font-weight: 650; font-variant-numeric: tabular-nums; }
+    .preview-group { border: 1px solid #EADACD; border-radius: 8px; margin-bottom: 8px; padding: 0 10px; }
+    summary { padding-block: 10px; min-height: 44px; box-sizing: border-box; cursor: pointer; color: #4F2F66; }
+    ul { padding: 0; margin: 0; list-style: none; }
+    .preview-row { border-top: 1px solid #EADACD; padding: 8px 0; }
+    .preview-note { background: #E7ECF7; color: #3D4F86; padding: 10px; border-radius: 8px; }
+    footer { display: flex; justify-content: flex-end; gap: 8px; }
+    button { min-height: 44px; padding: 8px 14px; border: 1px solid #D9C3A5; border-radius: 12px; background: #FDF4E7; color: #2B1914; cursor: pointer; font: inherit; }
+    [data-d1-confirm] { display: grid; align-items: center; justify-items: center; background: #674080; color: #fff; }
+    [data-d1-confirm]:hover:not(:disabled) { background: #4F2F66; }
+    button:disabled { opacity: .65; cursor: not-allowed; }
+    :is(button, summary, h2):focus-visible { outline: 3px solid #E78B40; outline-offset: 3px; }
+    [data-d1-confirm] > span { grid-area: 1 / 1; }
+    .sending { visibility: hidden; display: flex; align-items: center; gap: 8px; }
+    [data-d1-confirm]:disabled .sending { visibility: visible; }
+    [data-d1-confirm]:disabled [data-d1-confirm-label] { visibility: hidden; }
+    i { width: 1em; height: 1em; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { i { animation: none; } }
+    .screen-reader { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+    @media (max-width: 767px) {
+        dialog { inset: auto 0 0; margin: 0; width: 100%; max-width: none; height: 100dvh; max-height: none; border-radius: 16px 16px 0 0; }
+        .preview-shell { min-height: 100%; box-sizing: border-box; align-content: start; padding: 16px; }
+        footer { flex-direction: column-reverse; }
+    }
+</style>

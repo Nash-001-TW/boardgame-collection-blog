@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>D1 A3 預覽確認畫面比較</title>
+<style>
+:root{
+  --bg-app:#FDF4E7;--bg-surface:#FFFBF5;--bg-sunken:#F7DFC2;--border-soft:#EADACD;--border-strong:#D9C3A5;
+  --ink:#2B1914;--ink-body:#4A3B33;--ink-muted:#6E5B4C;
+  --purple:#674080;--purple-strong:#4F2F66;--purple-soft:#EDE4F2;
+  --success:#2F7D4F;--success-soft:#E8F3E3;--warning:#A8650A;--warning-soft:#FEF2DD;
+  --danger:#B42318;--danger-soft:#FFE8E4;--info:#3D4F86;--info-soft:#E7ECF7;--neutral:#6B6460;--neutral-soft:#EEE9E6;
+  --shadow-card:0 2px 6px rgb(91 58 35 / .08);--shadow-raised:0 8px 24px rgb(58 40 25 / .14);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg-app);color:var(--ink-body);font:15px/1.6 "Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif}
+main{max-width:1280px;margin:0 auto;padding:24px 16px 64px}
+h1{color:var(--ink);font-size:28px;line-height:1.3;margin:0 0 8px}
+h2{color:var(--ink);font-size:20px;margin:40px 0 4px;padding-top:16px;border-top:2px solid var(--border-strong)}
+h3{color:var(--ink);font-size:16px;margin:0 0 8px}
+p{margin:0 0 8px}
+.lead{max-width:860px}
+.muted{color:var(--ink-muted);font-size:13px}
+.tag{display:inline-block;font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px;background:var(--purple-soft);color:var(--purple-strong);margin-right:6px}
+.tag.rec{background:var(--success-soft);color:var(--success)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:24px;margin-top:16px}
+.option{background:var(--bg-surface);border:1px solid var(--border-soft);border-radius:16px;padding:20px;box-shadow:var(--shadow-card)}
+.option.rec{border:2px solid var(--success)}
+.pros{margin:8px 0 16px;padding-left:20px;font-size:14px}
+.pros li{margin:2px 0}
+.stage{background:#E9DCCB;border-radius:12px;padding:16px;position:relative}
+.stage.dim::before{content:"";position:absolute;inset:0;background:rgb(43 25 20 / .38);border-radius:12px}
+.card{background:var(--bg-surface);border:1px solid var(--border-soft);border-radius:12px;padding:16px}
+.dialog{position:relative;background:var(--bg-surface);border-radius:16px;box-shadow:var(--shadow-raised);padding:20px;max-width:560px;margin:0 auto}
+.field{display:block;font-size:14px;font-weight:700;color:var(--ink);margin:10px 0 4px}
+.input{border:1px solid var(--border-soft);border-radius:8px;background:#fff;padding:9px 12px;min-height:44px;font-size:15px;color:var(--ink)}
+.input.changed{border-color:var(--purple);box-shadow:0 0 0 2px var(--purple-soft)}
+.textarea{min-height:64px}
+.row{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;justify-content:flex-end}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border-radius:12px;font-weight:700;font-size:15px;border:1px solid var(--border-strong);background:var(--bg-app);color:var(--ink)}
+.btn.primary{background:var(--purple);border-color:var(--purple);color:#fff}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--purple)}
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.stat{background:var(--bg-app);border:1px solid var(--border-soft);border-radius:10px;padding:8px 10px}
+.stat b{display:block;font-size:22px;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1.3}
+.stat span{font-size:12px;color:var(--ink-muted)}
+.arrow{color:var(--purple);font-weight:800}
+table{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+th{background:var(--bg-sunken);color:var(--ink);text-align:left;font-weight:700;padding:6px 8px}
+td{border-top:1px solid var(--border-soft);padding:8px}
+td.num{text-align:right}
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;padding:1px 8px;border-radius:999px;white-space:nowrap}
+.pill.d{background:var(--danger-soft);color:var(--danger)}
+.pill.w{background:var(--warning-soft);color:var(--warning)}
+.pill.i{background:var(--info-soft);color:var(--info)}
+.pill.s{background:var(--success-soft);color:var(--success)}
+.pill.n{background:var(--neutral-soft);color:var(--neutral)}
+details{border:1px solid var(--border-soft);border-radius:10px;margin-top:8px;background:#fff}
+summary{cursor:pointer;padding:8px 12px;font-weight:700;color:var(--ink);min-height:40px;display:flex;align-items:center;gap:8px}
+details>div{padding:0 12px 10px}
+.banner{border-radius:12px;padding:12px 14px;margin-top:12px;font-size:14px;display:flex;gap:10px}
+.banner .ic{font-weight:800}
+.banner.w{background:var(--warning-soft);color:#6B3F05}
+.banner.d{background:var(--danger-soft);color:#7A1810}
+.banner.s{background:var(--success-soft);color:#1E5233}
+.banner.i{background:var(--info-soft);color:#28355C}
+.phone{width:375px;max-width:100%;margin:16px auto 0;border:10px solid #2B1914;border-radius:28px;background:#E9DCCB;overflow:hidden}
+.phone .sheet{background:var(--bg-surface);border-radius:16px 16px 0 0;padding:16px;margin-top:56px;box-shadow:var(--shadow-raised)}
+.flow{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}
+.flow div{flex:1 1 180px;background:var(--bg-surface);border:1px solid var(--border-soft);border-radius:12px;padding:10px 12px;font-size:14px}
+.flow b{display:block;color:var(--purple-strong)}
+.decide{background:var(--purple-soft);border-radius:12px;padding:12px 16px;margin-top:8px}
+.mono{font-family:ui-monospace,Consolas,monospace;font-size:12px}
+.small{font-size:13px}
+@media (max-width:520px){.grid2{grid-template-columns:1fr}.summary{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main>
+<h1>D1 A3｜共用預期數量更正：預覽確認畫面</h1>
+<p class="lead">2026-11-24（Asia/Taipei）Claude 起草，<b>候選</b>；同日補入前端逾時與同識別重送。用合成資料示意，不是正式畫面。對應 <span class="mono">docs/D1-completion-plan-20261123.md §10</span>。請看三個比較（Q6～Q8），每題選 A 或 B；第 4 節是不需要選的固定狀態，供確認文字與流程。</p>
+
+<div class="flow">
+  <div><b>1. 改數量＋寫理由</b>在組件編輯表單把預期量 103 改成 100；預期量一改就出現必填「更正理由」，儲存鈕變成「預覽更正」。</div>
+  <div><b>2. 預覽（不寫入）</b>伺服器算出每盒更正前後少幾張，畫面列出影響。</div>
+  <div><b>3. 確認</b>按「確認更正（影響 3 盒）」才送出；取消不留任何紀錄。</div>
+  <div><b>4. 結果</b>只依 <span class="mono">outcome</span> 判斷：已提交／確定沒寫入／結果不明（可查詢）。</div>
+</div>
+
+<p class="small">示意資料：收藏「寶石商人」，組件「基本卡牌」共用預期 103 → 100，理由「官方勘誤：實際為 100 張」。副本：#1 英文初版實點 99（已清點）、#2 中文版實點 103（已清點）、#3 德文版尚未清點、#4 已出售（不列入）。</p>
+
+<!-- ========== 步驟 1：表單 ========== -->
+<h2>0. 步驟 1 的表單變化（固定，不需選）</h2>
+<p class="muted">理由必須在預覽前填好，因為它是操作內容的一部分（A2 契約 §7.1）。只改名稱、類型、單位時維持原本的「儲存」。</p>
+<div class="card" style="max-width:620px;margin-top:12px">
+  <h3>編輯組件：基本卡牌</h3>
+  <div class="row">
+    <div><span class="field">預期數量</span><div class="input changed" style="width:120px">100</div></div>
+    <p class="muted" style="margin:0 0 10px">原本 103。改預期量會影響這個收藏的所有副本。</p>
+  </div>
+  <span class="field">更正理由（必填）</span>
+  <div class="input textarea">官方勘誤：實際為 100 張</div>
+  <div class="btns"><span class="btn">取消</span><span class="btn primary">預覽更正</span></div>
+</div>
+
+<!-- ========== Q6 ========== -->
+<h2>Q6. 預覽要放在哪裡？</h2>
+<p class="lead">設計規範 §6 規定「破壞性或不可逆動作一律經確認彈窗」。共用預期量更正會寫入不可修改的回執，屬於不可逆。</p>
+<div class="grid2">
+  <section class="option rec">
+    <span class="tag rec">A　建議</span><h3>原生彈窗（&lt;dialog&gt;）</h3>
+    <ul class="pros">
+      <li>符合設計規範 §6，焦點鎖在彈窗內，Esc／取消回到表單。</li>
+      <li>手機改為由下往上的全高面板，明細可捲動。</li>
+      <li>做成獨立元件，R06 改版（UI-D8）直接沿用。</li>
+      <li>缺點：看預覽時看不到後方卡片其他欄位。</li>
+    </ul>
+    <div class="stage dim">
+      <div class="dialog">
+        <h3>確認更正「基本卡牌」的預期數量</h3>
+        <p class="small"><b>103 → 100</b>　理由：官方勘誤：實際為 100 張</p>
+        <div class="summary">
+          <div class="stat"><span>受影響副本</span><b>3 盒</b></div>
+          <div class="stat"><span>缺件張數</span><b>4 <span class="arrow">→</span> 1</b></div>
+          <div class="stat"><span>無法判讀</span><b>1 盒</b></div>
+        </div>
+        <details open><summary><span class="pill d">變動</span>1 盒</summary><div>副本 #1 英文初版：實點 99，少 4 張 → 少 1 張</div></details>
+        <details><summary><span class="pill s">不變</span>1 盒</summary><div>副本 #2 中文版：實點 103，不缺 → 不缺（多 3 張）</div></details>
+        <details><summary><span class="pill i">無法判讀</span>1 盒</summary><div>副本 #3 德文版：尚未清點</div></details>
+        <p class="muted" style="margin-top:8px">不列入：已出售 1 盒。實點、清點日期與完成狀態都不會被改動。</p>
+        <div class="btns"><span class="btn">取消</span><span class="btn primary">確認更正（影響 3 盒）</span></div>
+      </div>
+    </div>
+    <div class="phone"><div class="sheet">
+      <h3>確認更正「基本卡牌」</h3>
+      <p class="small"><b>103 → 100</b>・官方勘誤：實際為 100 張</p>
+      <div class="summary" style="grid-template-columns:repeat(3,1fr)">
+        <div class="stat"><span>受影響</span><b>3</b></div>
+        <div class="stat"><span>缺件</span><b>4→1</b></div>
+        <div class="stat"><span>無法判讀</span><b>1</b></div>
+      </div>
+      <details open><summary><span class="pill d">變動</span>1 盒</summary><div class="small">#1 英文初版：少 4 → 少 1</div></details>
+      <details><summary><span class="pill s">不變</span>1 盒</summary></details>
+      <details><summary><span class="pill i">無法判讀</span>1 盒</summary></details>
+      <div class="btns" style="flex-direction:column"><span class="btn primary">確認更正（影響 3 盒）</span><span class="btn">取消</span></div>
+    </div></div>
+  </section>
+
+  <section class="option">
+    <span class="tag">B</span><h3>表單下方展開面板</h3>
+    <ul class="pros">
+      <li>預覽與表單同時可見，改理由後可直接重新預覽。</li>
+      <li>缺點：與設計規範 §6 不一致，需要記為例外。</li>
+      <li>缺點：卡片高度暴增，R06 改版的「原地顯示」列表會被撐開。</li>
+      <li>缺點：使用者捲走後再回來，預覽可能已過時卻仍可按確認（伺服器會擋，但體驗差）。</li>
+    </ul>
+    <div class="stage">
+      <div class="card">
+        <h3>編輯組件：基本卡牌</h3>
+        <div class="row"><div><span class="field">預期數量</span><div class="input changed" style="width:120px">100</div></div></div>
+        <span class="field">更正理由（必填）</span><div class="input textarea">官方勘誤：實際為 100 張</div>
+        <div style="margin-top:12px;border-top:2px dashed var(--border-strong);padding-top:12px">
+          <h3>預覽：103 → 100</h3>
+          <div class="summary">
+            <div class="stat"><span>受影響副本</span><b>3 盒</b></div>
+            <div class="stat"><span>缺件張數</span><b>4 <span class="arrow">→</span> 1</b></div>
+            <div class="stat"><span>無法判讀</span><b>1 盒</b></div>
+          </div>
+          <details open><summary><span class="pill d">變動</span>1 盒</summary><div>副本 #1 英文初版：少 4 → 少 1</div></details>
+          <details><summary><span class="pill s">不變</span>1 盒</summary></details>
+          <details><summary><span class="pill i">無法判讀</span>1 盒</summary></details>
+        </div>
+        <div class="btns"><span class="btn">取消</span><span class="btn">重新預覽</span><span class="btn primary">確認更正（影響 3 盒）</span></div>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="decide"><b>Q6 建議 A</b>：符合既有規範，且元件可直接搬進 R06 改版。</div>
+
+<!-- ========== Q7 ========== -->
+<h2>Q7. 每盒明細怎麼呈現？</h2>
+<p class="lead">一個定義最多 200 盒（A2 上限）。個人收藏通常只有 1～3 盒，但要能處理多盒。</p>
+<div class="grid2">
+  <section class="option rec">
+    <span class="tag rec">A　建議</span><h3>分三組，只展開「變動」</h3>
+    <ul class="pros">
+      <li>先看到真正會改變判讀的盒子；不變、無法判讀收起並顯示數量。</li>
+      <li>手機上不需橫向捲動。</li>
+      <li>與 A2 回傳的分組（changed／unchanged／unreadable）一致，前端不重算。</li>
+    </ul>
+    <div class="card">
+      <details open><summary><span class="pill d">變動</span>1 盒</summary><div>
+        <table><thead><tr><th>副本</th><th class="num">實點</th><th>更正前</th><th>更正後</th></tr></thead>
+        <tbody><tr><td>#1 英文初版</td><td class="num">99</td><td>少 4 張</td><td>少 1 張</td></tr></tbody></table>
+      </div></details>
+      <details><summary><span class="pill s">不變</span>1 盒</summary><div>
+        <table><tbody><tr><td>#2 中文版</td><td class="num">103</td><td>不缺</td><td>不缺（多 3 張）</td></tr></tbody></table>
+      </div></details>
+      <details><summary><span class="pill i">無法判讀</span>1 盒</summary><div>
+        <table><tbody><tr><td>#3 德文版</td><td colspan="3">尚未清點，更正後仍需清點才能判讀</td></tr></tbody></table>
+      </div></details>
+    </div>
+  </section>
+  <section class="option">
+    <span class="tag">B</span><h3>單一表格全部列出</h3>
+    <ul class="pros">
+      <li>一眼看全部，不用點開。</li>
+      <li>缺點：盒數多時很長；手機需改卡片樣式，兩套版面。</li>
+    </ul>
+    <div class="card">
+      <table><thead><tr><th>副本</th><th class="num">實點</th><th>更正前</th><th>更正後</th><th>狀態</th></tr></thead>
+      <tbody>
+        <tr><td>#1 英文初版</td><td class="num">99</td><td>少 4 張</td><td>少 1 張</td><td><span class="pill d">變動</span></td></tr>
+        <tr><td>#2 中文版</td><td class="num">103</td><td>不缺</td><td>不缺（多 3）</td><td><span class="pill s">不變</span></td></tr>
+        <tr><td>#3 德文版</td><td class="num">—</td><td>—</td><td>—</td><td><span class="pill i">尚未清點</span></td></tr>
+        <tr><td>#4 已出售</td><td class="num">—</td><td colspan="2">不列入</td><td><span class="pill n">不列入</span></td></tr>
+      </tbody></table>
+    </div>
+  </section>
+</div>
+<div class="decide"><b>Q7 建議 A</b>。兩案都把「多於預期」顯示為「不缺（多 N 張）」（D1-04），實點不明一律顯示「—」，不顯示 0。</div>
+
+<!-- ========== Q8 ========== -->
+<h2>Q8. 結果不明（UNKNOWN）時，這個組件還能再編輯嗎？</h2>
+<p class="lead">結果不明代表可能已寫入、也可能沒有。系統會保留操作識別，讓你用同一個識別查詢，不會換新識別重做。</p>
+<div class="grid2">
+  <section class="option rec">
+    <span class="tag rec">A　建議</span><h3>鎖住這個組件的數量編輯，直到得到確定結果</h3>
+    <ul class="pros">
+      <li>避免在不知道 103 還是 100 的情況下又改一次。</li>
+      <li>其他組件、清點照常可用。</li>
+      <li>重新整理頁面後仍會顯示，並自動查詢一次。</li>
+      <li>不會永久卡住：查詢仍不明時，可用同一個識別重新送出，冪等保證不會重複寫入。</li>
+    </ul>
+    <div class="card">
+      <h3>基本卡牌</h3>
+      <p class="muted">第 1 步：剛發生時</p>
+      <div class="banner w" role="status"><span class="ic">⚠</span><div><b>無法確認更正是否完成</b><br>連線中斷、逾時或伺服器暫時無法回覆。資料可能已改為 100，也可能仍是 103。請先查詢結果。<br><span class="muted mono">操作識別 q1.7f3c…a91e</span>
+      <div class="btns" style="justify-content:flex-start"><span class="btn primary">查詢結果</span></div></div></div>
+      <p class="muted" style="margin-top:12px">第 2 步：查詢後仍不明</p>
+      <div class="banner w" role="status"><span class="ic">⚠</span><div><b>仍無法確認</b><br>伺服器沒有這次更正的紀錄，可能原請求沒有送達。可以重新送出<b>同一次</b>更正：已完成的話只會取回原結果，不會改兩次。<br><span class="muted mono">操作識別 q1.7f3c…a91e</span>
+      <div class="btns" style="justify-content:flex-start"><span class="btn primary">重新送出同一次更正</span><span class="btn">再查詢一次</span></div></div></div>
+      <p class="muted" style="margin-top:8px">預期數量欄位暫時停用：得到「已更正」或「沒有更正」前不能再更正。</p>
+    </div>
+  </section>
+  <section class="option">
+    <span class="tag">B</span><h3>只顯示提醒，仍可編輯</h3>
+    <ul class="pros">
+      <li>不擋操作。</li>
+      <li>缺點：新的預覽會用到不確定的目前值；若前一次其實已寫入，新預覽的「更正前」數字可能和使用者以為的不同。伺服器會擋過時預覽，但使用者容易混淆。</li>
+    </ul>
+    <div class="card">
+      <h3>基本卡牌</h3>
+      <div class="banner w"><span class="ic">⚠</span><div><b>上一次更正結果不明</b>　<span class="btn ghost" style="min-height:32px;padding:0 6px">查詢結果</span></div></div>
+      <div class="row"><div><span class="field">預期數量</span><div class="input" style="width:120px">103</div></div></div>
+    </div>
+  </section>
+</div>
+<div class="decide"><b>Q8 建議 A</b>。</div>
+
+<!-- ========== 固定狀態 ========== -->
+<h2>4. 其他狀態與文字（固定，不需選；有意見可直接改）</h2>
+<div class="grid2">
+  <section class="option">
+    <h3>送出中</h3>
+    <p class="small">確認鈕顯示轉圈並保留寬度，文字「正在更正…」；彈窗內兩顆按鈕都停用，Esc 不關閉（避免使用者以為取消了）。</p>
+    <p class="small"><b>逾時：</b>確認、查詢、重新送出最多等 20 秒。逾時或斷線一律當成「結果不明」，進入 Q8 的流程；預覽逾時只提示「預覽逾時，請再試一次」。</p>
+    <h3 style="margin-top:16px">已提交（COMMITTED）</h3>
+    <div class="banner s" role="status"><span class="ic">✓</span><div><b>已更正「基本卡牌」預期數量：103 → 100</b><br>3 盒的實點與清點日期未改動。</div></div>
+    <p class="muted" style="margin-top:6px">A3 先沿用目前做法：重新載入頁面後顯示這則訊息。R06 改版時改為原地更新（UI-D8）。重送取得原結果（replayed）顯示同一訊息。</p>
+  </section>
+  <section class="option">
+    <h3>確定沒寫入（NOT_COMMITTED）</h3>
+    <div class="banner d" role="alert"><span class="ic">✕</span><div><b>沒有更正，資料維持 103</b><br>預覽之後這個收藏的資料有變動（例如剛清點過）。請重新預覽。<div class="btns" style="justify-content:flex-start"><span class="btn primary">重新預覽</span></div></div></div>
+    <table style="margin-top:10px"><thead><tr><th>code</th><th>顯示的原因（標題皆為「沒有更正，資料維持原值」）</th></tr></thead><tbody>
+      <tr><td class="mono">D1_CONFIRMATION_SUPERSEDED</td><td>預覽之後資料有變動，請重新預覽。</td></tr>
+      <tr><td class="mono">COLLECTION_ARCHIVED</td><td>這個收藏已封存，不能更正。</td></tr>
+      <tr><td class="mono">D1_PREVIEW_INVALID</td><td>預覽已失效，請重新預覽。</td></tr>
+      <tr><td class="mono">IDEMPOTENCY_CONFLICT</td><td>這次確認與原本的預覽內容不同，請重新預覽。</td></tr>
+      <tr><td class="mono">EVIDENCE_UNAVAILABLE</td><td>分類資料暫時無法使用（可能超過容量），請稍後再試。</td></tr>
+      <tr><td class="mono">其他</td><td>無法更正，請重新預覽；若持續發生請記下操作識別。</td></tr>
+    </tbody></table>
+  </section>
+  <section class="option">
+    <h3>預覽本身失敗（不寫入）</h3>
+    <table><tbody>
+      <tr><td class="mono">COMPONENT_STATE_CHANGED</td><td>這個組件剛被修改過，頁面將重新載入。</td></tr>
+      <tr><td class="mono">COMPONENT_INELIGIBLE</td><td>這個組件目前不能用於清點，無法更正預期量。</td></tr>
+      <tr><td class="mono">D1_EVIDENCE_TOO_LARGE</td><td>副本超過 200 盒或資料過大，無法一次預覽。</td></tr>
+      <tr><td class="mono">EVIDENCE_UNAVAILABLE</td><td>分類資料暫時無法使用，請稍後再試。</td></tr>
+    </tbody></table>
+    <p class="muted" style="margin-top:6px">預覽失敗不產生待處理操作，彈窗不開啟，訊息顯示在表單上方。</p>
+  </section>
+  <section class="option">
+    <h3>查詢結果（quantity-status）</h3>
+    <p class="small">依回應的 <span class="mono">outcome</span> 走上面同一套顯示；查詢仍是 UNKNOWN 時維持鎖定，並出現「重新送出同一次更正」（見 Q8 A 第 2 步）。<b>查詢請求的 4xx（授權、格式）不清除待處理操作</b>，只顯示錯誤（HANDOFF 必修項）。同一時間只送一個請求。</p>
+    <h3 style="margin-top:16px">無障礙</h3>
+    <p class="small">彈窗用原生 &lt;dialog&gt;＋<span class="mono">aria-labelledby</span>；開啟時焦點在標題、關閉後回到「預覽更正」鈕；結果訊息用 <span class="mono">role=status</span>／錯誤用 <span class="mono">role=alert</span>；狀態膠囊皆有文字，不只靠顏色。</p>
+  </section>
+</div>
+</main>
+</body>
+</html>

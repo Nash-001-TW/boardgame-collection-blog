@@ -2,6 +2,7 @@
 import { env } from 'cloudflare:workers';
 import AdminLayout from '../../../../layouts/AdminLayout.astro';
 import PhysicalComponentFields from '../../../../components/PhysicalComponentFields.astro';
+import D1QuantityPreviewDialog from '../../../../components/admin/D1QuantityPreviewDialog.astro';
 import { classifyStoredComponents } from '../../../../lib/component-classifier-adapter';
 import { maxComponentQuantity } from '../../../../lib/physical-component-values';
 
@@ -134,19 +135,23 @@ const unassigned = requirements.filter(row => row.component_definition_id === nu
                             <details>
                                 <summary>{t('編輯組件', 'Edit component')}</summary>
                                 <form method="post" data-physical-action="edit" class="fields">
+                                    <div class="quantity-notice" data-quantity-notice hidden>
+                                        <p role="alert" tabindex="-1" data-quantity-message></p>
+                                        <button type="button" class="admin-button" data-quantity-action="preview" hidden>{t('重新預覽', 'Preview again')}</button>
+                                    </div>
                                     <input type="hidden" name="definitionId" value={component.id} />
                                     <input type="hidden" name="definitionRevision" value={component.physical_revision} />
                                     <input type="hidden" name="previousExpected" value={component.expected_quantity ?? ''} />
                                     <PhysicalComponentFields en={en} component={component} />
-                                    <label>{t('更正理由（變更預期數量時必填）', 'Reason (required when changing expected quantity)')}
+                                    <label data-quantity-reason hidden>{t('更正理由（必填）', 'Correction reason (required)')}
                                         <textarea name="reason" maxlength="1000" rows="2"></textarea>
                                     </label>
-                                    <button class="admin-button">{t('儲存組件', 'Save component')}</button>
-                                    <div data-quantity-recovery hidden>
+                                    <button type="submit" class="admin-button" data-quantity-submit>{t('儲存', 'Save')}</button>
+                                    <div class="quantity-recovery" data-quantity-recovery hidden>
+                                        <p role="status" tabindex="-1" data-quantity-recovery-message></p>
                                         <p>{t('待確認的操作識別', 'Pending operation ID')} <code data-quantity-operation-id></code></p>
                                         <button type="button" class="admin-button" data-quantity-action="status">{t('查詢結果', 'Check result')}</button>
-                                        <button type="button" class="admin-button" data-quantity-action="retry">{t('重送原操作', 'Retry original operation')}</button>
-                                        <button type="button" class="admin-button" data-quantity-action="retire">{t('安全封閉原操作', 'Safely close original operation')}</button>
+                                        <button type="button" class="admin-button primary" data-quantity-action="retry" hidden>{t('重新送出同一次更正（不會重複寫入）', 'Resend the same correction (no duplicate write)')}</button>
                                     </div>
                                 </form>
                             </details>
@@ -185,6 +190,7 @@ const unassigned = requirements.filter(row => row.component_definition_id === nu
                 })}
             </section>
         </>}
+        <D1QuantityPreviewDialog en={en} copies={copies} />
     </main>
 </AdminLayout>
 
@@ -197,6 +203,12 @@ const unassigned = requirements.filter(row => row.component_definition_id === nu
     nav, .fields { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; }
     .fields { margin: 12px 0; }
     .fields label { display: grid; gap: 4px; }
+    .fields [data-quantity-reason][hidden], .fields [data-quantity-action][hidden] { display: none; }
+    .quantity-notice, .quantity-recovery { flex-basis: 100%; padding: 12px; border-radius: 8px; overflow-wrap: anywhere; }
+    .quantity-notice { background: #FFE8E4; color: #B42318; }
+    .quantity-recovery { background: #FEF2DD; color: #4A3B33; }
+    [data-quantity-action], [data-quantity-submit] { min-height: 44px; }
+    [data-quantity-notice][data-tone="success"] { padding: 12px; border-radius: 8px; background: #E8F3E3; color: #2B1914; }
     article, section { border-top: 1px solid #dad8d0; margin-top: 20px; padding-top: 12px; }
     summary { cursor: pointer; }
 </style>
