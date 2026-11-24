@@ -539,3 +539,190 @@ Codex 首輪在唯讀檢查時發現成功紀錄有一條路徑不經提交引�
 - **既有、非 A4**：組件卡標題列「預期數量 31 (card)」顯示單位代碼，是 R06 既有寫法，留給 R06 改版處理。
 
 未執行：真實 Miniflare／正式 D1、建置、部署（0023 正式套用屬 A5）。
+
+## 14. A5 規劃：正式套用 0023 與部署（2026-11-24 規劃已採納，DECISION_LOG D1-A5-Q12～Q16；各段執行另需授權）
+
+依據：Release-03 程序（[V2-Release-03-summary.md §2、§10](V2-Release-03-summary.md)）、§10.3 歸屬、D1-A1-PASS（正式分類列數須於套用前唯讀確認）。本節只是規劃；**任何正式操作都須使用者逐項授權**（AGENTS.md 第 5 節）。
+
+### 14.1 盤點（2026-11-24 靜態閱讀，未連遠端）
+
+| 項目 | 現況 | 對 A5 的意義 |
+| --- | --- | --- |
+| 正式版本 | Release-03 version 19（2026-11-12），D1 已套 0001～0022 | v19 部署時沒有對應的 Git 提交，無法精確 diff；這次部署內容是 `main` HEAD |
+| 這次會一起上線的變更 | 2026-11-20 起 12 個提交：公開網站 UI 修正（`d025959`、`c8c56be`、`66f798d`）、Admin 修正與素材（`32d81f2`、`a5e3ce3`）、D1 A2～A4 等 | 不只 D1；部署後的公開與 Admin 檢查要涵蓋 |
+| 0023 相依 | 只有 D1 的預覽／確認／查詢／歷史讀寫 0023 物件；一般編輯、清點、卡套指派不依賴 0023 | 新程式在 0023 套用前可正常運作，D1 功能會顯示「暫時無法使用／無法取得」 |
+| 0023 對舊程式的影響 | 0023 trigger 禁止不經回執直接改 `expected_quantity` | 若先套 0023、v19 仍在線，v19 改預期量會被擋（失敗關閉，不會寫壞資料） |
+| `migrations/` 目錄 | 含候選 **0024**（不在 A5 範圍） | **不得使用 `wrangler d1 migrations apply`**（會連 0024 一起套）；比照 Release-03 逐檔執行 0023 並寫 ledger |
+| 簽章金鑰 | `PHYSICAL_COMPONENT_SIGNING_KEY` 已在 v19 | 預覽憑證沿用，不需新 Secret |
+| Workers Logs | `wrangler.json` 沒有 `observability` | 不開則正式錯誤／成功紀錄事後查不到（§10.3） |
+| `/dev/collection-v2-test` | 不在 Admin 路由，middleware 不檢查 Access；`prerender = false`，會讀 D1 回傳收藏總數、願望清單／預購數與前五筆名稱 | CURRENT_TASK #7。重新部署會繼續公開，需決定是否先處理 |
+| 回滾 | Worker 可退回 v19；Migration 只能前向 | 0023 套用後無法撤銷，只能另寫 0025 並另行授權；退回 v19 時預期量修改會被 trigger 擋 |
+
+### 14.2 建議流程與關卡
+
+| 關卡 | 內容 | 正式寫入 | 停止條件 |
+| --- | --- | --- | --- |
+| G0 唯讀預檢 | 確認 Account、Worker、D1 ID（遮蔽）、目前版本為 v19 且 100%、ledger 為 0001～0022、無 0023 同名物件；**分類列數**（`d1_quantity_admission` 相同口徑，0023 前以等價查詢）與 10,000 上限的距離；收藏數（0023 會為每個收藏建世代列） | 無 | 任何一項不符、分類列數 ≥ 8,000（80%）、使用者回報有其他人／流程在改 |
+| G1 備份 | D1 官方 Export、本機還原、`integrity_check`、`foreign_key_check`、ledger 比對、SHA-256；存專案外私人目錄 | 無（Export） | 任一檢查失敗 |
+| G2 建置 | 專案外副本、真實綁定、`npm run build`；產物掃描無 Token／AUD／Email／金鑰；確認 `migrations/` 不進產物 | 無 | 建置失敗或掃描命中 |
+| G3 上傳與切換 | `wrangler versions upload`（不切流量）→ 核對綁定與 5 項 Secret 名稱 → `versions deploy` 100% | Worker 版本 | 核對不符 |
+| G4 部署後檢查 | 沿用 Release-03 §10.5 公開路由清單＋Admin 302；使用者人工開 R06：歷史區應顯示「暫時無法取得」（0023 尚未套用，屬預期） | 無 | 任一路由異常 → 退回 v19 並停止 |
+| G5 套用 0023 | 只執行 0023 原檔 SQL＋ledger INSERT（單一 batch）；完成後核對 ledger、3 表 4 view、trigger 數、`d1_quantity_epoch` 1 列、世代列數 = 收藏數 | Schema＋ledger＋初始化列 | 失敗即停，不重試、不補 ledger |
+| G6 套用後對帳 | 唯讀：回執數 0、世代列數、epoch 存在；一般清點／編輯不受影響（使用者人工確認一次清點儲存可選） | 無 | 不符即停並回報 |
+| G7 使用者驗收 | R06 歷史區顯示「尚無更正紀錄」；依 Q14 做預覽 | 依 Q14 | — |
+
+### 14.3 待使用者決策
+
+| # | 問題 | A | B | 建議 |
+| --- | --- | --- | --- | --- |
+| Q12 | 部署與 0023 的順序 | 先部署程式（G2～G4），再套 0023（G5） | 先套 0023，再部署 | **A**：新程式不依賴 0023 也能運作；反過來 v19 會短暫無法改預期量 |
+| Q13 | 這次是否開啟 Workers Logs | 是：`wrangler.json` 加 `"observability": { "enabled": true }`，隨 G2 建置 | 否，維持現狀 | **A**：D1 的錯誤／成功紀錄才能事後追查；改的是高敏感設定，需你明確同意 |
+| Q14 | 正式驗收要不要寫入 | 只做「預覽後取消」，不寫正式資料 | 做一筆真實更正（須是你實際需要的更正，由你指定組件與數值） | **A**：預覽已涵蓋讀取、憑證、epoch；寫入路徑已有本機 82 項與 Edge 12 項驗證 |
+| Q15 | `/dev/collection-v2-test` | 部署前先另開小工作命令，讓它在正式環境回 404（只限 `import.meta.env.DEV` 才可用） | 本次不處理，維持 v19 現狀 | **A**：重新部署是封閉的好時機；改動小，但需另一張工作命令與你批准 |
+| Q16 | 授權方式 | 分兩段：先授權 G0～G1（唯讀＋備份），看過預檢結果再授權 G2～G7 | 一次授權 G0～G7，遇停止條件即停 | **A**：分類列數與收藏數要先看到實際值 |
+
+### 14.4 執行者與登入
+
+~~比照 Release-03：由 Codex 執行遠端操作，Claude 審查每段結果。~~ **2026-11-24 修訂（DECISION_LOG TEAM-04）**：Claude 呼叫的 Codex 沙箱無法連外網，遠端操作改由 Claude 在對話中直接執行，結果回饋 Codex；Codex 負責本機修改與本機測試。Wrangler／Cloudflare 登入由使用者親自完成；若 OAuth 過期，提供 `npx wrangler login` 與成功條件，不在對話中貼任何認證值。不讀 `.env`／`.dev.vars` 內容；建置副本不複製這兩個檔。
+
+### 14.5 工作命令 A5-PRE：部署前本機修改（2026-11-24 已授權，DECISION_LOG D1-A5-PRE-AUTH）
+
+```text
+工作命令 ID：D1-A5-PRE-20261124-01
+工作目標：依 Q13、Q15 完成 A5 建置前需要的兩項本機修改；不連遠端。
+
+已批准規格：docs/D1-completion-plan-20261123.md §14.3 Q13、Q15（DECISION_LOG D1-A5-Q12～Q16）。
+
+修改內容：
+  1. src/pages/dev/collection-v2-test.astro：非開發模式（!import.meta.env.DEV）時，在讀取任何 D1 資料前
+     回 404（Cache-Control: no-store），本機 astro dev 行為不變。
+  2. wrangler.json：只新增頂層 "observability": { "enabled": true }，其他鍵值一字不改。
+
+允許修改範圍：上述兩個檔案；可新增 tests/dev-page-production-guard.test.ts（以建置或渲染方式確認非 DEV 回 404 且不觸碰 DB，
+  方式由執行者決定，不得連遠端）。
+
+禁止事項：不改其他程式、migrations、package.json、astro.config.mjs、middleware；不建置、不部署、不連遠端；
+  不讀 .env／.dev.vars；不 git commit。
+
+允許執行的驗證：
+  1. 新增測試（若有）
+  2. node --import tsx --test tests/d1-quantity-history.test.ts tests/d1-quantity-preview-view.test.ts tests/d1-quantity-api.test.ts tests/shared-quantity-commit.test.ts tests/physical-component-management.test.ts tests/physical-quantity-impact.test.ts tests/d1-0023-review.test.ts
+  3. npm run astro -- check（基準 10 個錯誤）
+  4. git diff --check
+
+交付：修改摘要、wrangler.json 的完整 diff（只應有新增的 observability）、驗證結果、未執行項目；更新 HANDOFF.md。
+```
+
+#### 14.5.1 A5-PRE 審查（2026-11-24）：通過
+
+- `wrangler.json` diff 只新增頂層 `observability.enabled: true`，其他鍵值未動。
+- **更正 §14.1 與 CURRENT_TASK #7**：`/dev/collection-v2-test` 自 `469866d`（2026-10-21）起就已有 `!import.meta.env.DEV` → 404 的守衛，且位於讀 D1 之前；§14.1「會讀 D1 回傳收藏統計」是 Claude 盤點時只看了檔頭的錯誤判斷。v19（2026-11-12）應已含此守衛，但 v19 沒有對應提交，未實測正式回應。本單實際變更為 404 加上 `Cache-Control: no-store`，並新增測試確認非 DEV 時回 404、不觸碰 D1 binding。
+- Claude 重跑：八檔 Node 測試 **83／83 通過**；`astro check` **10 個錯誤**（無新增）；`git diff --check` 通過。未建置、未連遠端。
+
+### 14.6 工作命令 A5-G01：唯讀預檢與備份（2026-11-24 已授權，DECISION_LOG D1-A5-G01-AUTH）
+
+```text
+工作命令 ID：D1-A5-G01-20261124-01
+工作目標：執行 §14.2 的 G0（唯讀預檢）與 G1（正式 D1 備份），回報實際數值供使用者決定是否授權 G2～G7。
+
+正式環境操作授權範圍（僅此）：
+  - Cloudflare 帳號、Worker、D1 的 Metadata 讀取（GET）
+  - 正式 D1 的唯讀 SELECT（下列查詢，不得有任何寫入語句）
+  - 正式 D1 官方 Export（含啟動、輪詢、下載各 1 次；失敗不自動重試）
+
+G0 必須回報（ID 一律遮蔽）：
+  1. Account、Worker 名稱、D1 名稱與遮蔽 ID 與 Release-03 一致
+  2. 目前流量版本與比例（預期 version 19、100%）
+  3. d1_migrations ledger 筆數與檔名（預期 0001～0022 共 22 筆）；不存在 d1_quantity_* 同名物件
+  4. 分類列數：以 src/lib/physical-component-management.ts 的 evidenceSize 運算式同口徑 SELECT；
+     回報數值、與 10,000 上限的比例；≥ 8,000 即停止
+  5. v2_collection_items 筆數（0023 將建立的世代列數）
+  6. 使用者確認期間沒有其他人或自動流程更新此 Worker／D1（由使用者在對話中回答）
+
+G1 必須完成：
+  - 官方 Export → 專案外、僅目前使用者可存取的私人目錄；回報檔案大小與 SHA-256
+  - 本機還原（載入時關閉外鍵、載入後開啟）→ PRAGMA integrity_check = ok、foreign_key_check = 0、ledger 與 G0 相符
+  - 不把匯出內容、私人資料、簽名 URL、認證輸出到對話或報告
+
+停止條件：任一 G0 項目不符、分類列數 ≥ 8,000、Export 或還原檢查失敗、需要登入但未登入（提供 npx wrangler login
+  與成功條件，由使用者親自完成）。停止後不重試、不改用其他方法。
+
+禁止事項：任何正式寫入（Migration、Worker 上傳或部署、Secret、Access、DNS、資料 DML）；Preview D1 或其他資源；
+  讀取 .env／.dev.vars 內容；git commit。
+
+交付：G0 六項數值、G1 備份證據、實際遠端操作次數（GET／SELECT／Export 分列）、未執行項目；
+  新增 docs/V2-Release-04-preflight.md（去敏）並在 HANDOFF.md 追加條目。
+```
+
+兩張工作命令可並行準備；A5-PRE 不碰遠端，G01 不改程式。G2～G7 的工作命令待 G01 結果出來後起草。
+
+### 14.7 A5 修訂流程（2026-11-24 已採納，DECISION_LOG D1-A5-REV-01）
+
+背景：已證實推送 `main` 會自動部署（DEPLOY-01 保留此機制）；正式環境已是 A4 程式（`eff80d59`），D1 未套 0023。已採納的 §14.2 G2～G4 與 Q12「先部署程式再套 0023」需配合調整，下列修訂在使用者批准前不生效。
+
+| 原關卡 | 修訂 |
+| --- | --- |
+| G0 | 不變，但第 2 項基準改為 `eff80d59`（A4）；續查第 3～5 項 |
+| G1 | 不變（正式 D1 備份） |
+| G2～G4（自行建置、上傳、切換、部署後檢查） | **取消**。Q12 的目的（程式先上線、確認不依賴 0023）已由 A4 自動部署達成；改為 G0 時對正式網站做唯讀抽查（Release-03 §10.5 公開路由＋Admin 302；R06 由使用者人工確認一般清點可用、D1 歷史顯示「暫時無法取得」） |
+| G5 套用 0023 | 不變（逐檔＋ledger，禁止 `migrations apply`） |
+| G6 套用後對帳 | 不變 |
+| 新增 G6a 推送 A5-PRE | 提交 A5-PRE（dev 頁 `no-store`、`wrangler.json` observability）並推送＝部署；推送前依 DEPLOY-01 取得部署授權；部署後唯讀確認新版本 100%、`/dev/collection-v2-test` 回 404 |
+| G7 使用者驗收 | 不變（預覽後取消，不寫正式資料） |
+
+執行者依 TEAM-04：遠端與正式操作由 Claude 執行。
+
+## 15. 工作命令 A5-G56：正式套用 0023 與套用後對帳（2026-11-24 已授權，DECISION_LOG D1-A5-G56-AUTH）
+
+執行者：Claude（TEAM-04）。前置：G0、G1 通過（[Release-04 預檢](V2-Release-04-preflight.md) 第四輪）。
+
+### 15.1 0023 盤點（2026-11-24）
+
+- 檔案 `migrations/0023_shared_quantity_commit.sql`，450 行，最後修改提交 `7a460fd`，SHA-256 `8f2c8daa…b892d3`。
+- 建立：3 表（`d1_quantity_collection_generation`、`d1_quantity_changes`、`d1_quantity_epoch`）、3 view（`d1_quantity_copy_evidence`、`d1_quantity_admission`、`d1_quantity_history`）、52 個 trigger（名稱皆以 `d1_` 開頭：`d1_generation_*` 43、`d1_quantity_*` 9）。
+- 修改既有表：`ALTER TABLE v2_component_definitions ADD COLUMN last_quantity_operation_id TEXT`。
+- 初始化資料：為每筆 `v2_collection_items` 建世代列（正式 256 筆）；`d1_quantity_epoch` 1 列（隨機值）。
+- 與正式備份比對：52 個 trigger 名稱無衝突；`last_quantity_operation_id` 欄位不存在。
+- ledger 表 `d1_migrations(id, name, applied_at)`。
+
+```text
+工作命令 ID：D1-A5-G56-20261124-01
+工作目標：在正式 D1 套用 Migration 0023，並完成套用後唯讀對帳（§14.2 G5、G6）。
+
+步驟與授權範圍：
+  G5-R 本機預演（不連遠端）：
+    以 G1 備份還原的記憶體 SQLite 執行「0023 原檔＋ledger INSERT」，確認無錯誤，並跑下列 G6 核對查詢得到預期值。
+    不通過即停止，不進入 G5。
+  G5-0 套用前唯讀複查（正式 D1 唯讀 SELECT 1 次）：
+    ledger 仍為 22 筆且最後為 0022；d1_ 開頭物件 0；流量版本仍為 eff80d59（Metadata 讀取 1 次）。不符即停止。
+  G5 套用（正式寫入，僅此 1 次）：
+    以 npx wrangler d1 execute boardgame-collection-db --remote --file <組合檔> 執行。
+    組合檔 = 0023 原檔內容（SHA-256 須與上方相同）＋ INSERT INTO d1_migrations(name) VALUES ('0023_shared_quantity_commit.sql');
+    組合檔放在 Claude scratchpad，不加入 repo。
+    **禁止** wrangler d1 migrations apply（migrations/ 內含候選 0024）。
+  G6 套用後唯讀對帳（正式 D1 唯讀 SELECT，最多 2 次）：
+    1. ledger 23 筆，最後一筆為 0023_shared_quantity_commit.sql
+    2. sqlite_master 中 d1_ 開頭：table 3、view 3、trigger 52
+    3. v2_component_definitions 含 last_quantity_operation_id 欄位
+    4. d1_quantity_epoch 1 列；d1_quantity_collection_generation 筆數 = v2_collection_items 筆數（預期 256）
+    5. d1_quantity_changes 0 列
+    6. 分類列數（evidenceSize 同口徑）與 G0 相同（1,302）
+  G6 正式網站唯讀抽查：Release-03 §10.5 清單（同 G0），確認套用後公開與 Admin 302 行為不變。
+  G6 使用者人工確認（需登入）：R06 組件卡「更正歷史」改顯示「尚無更正紀錄」；一般清點可儲存（若使用者願意做一次真實清點）。
+
+停止條件：G5-R 失敗；G5-0 任一項不符；G5 指令非 0 結束或回報錯誤；G6 任一項不符。
+  停止後：不重試、不補 ledger、不手動補建物件、不執行任何修復 SQL；回報實際狀態。
+  若懷疑部分套用（物件存在但 ledger 無 0023，或反之），立即停止並回報；修復需另行授權（可用 G1 備份，但正式還原屬高風險，須另擬計畫）。
+
+風險與已知限制：
+  - 0023 套用後不可撤銷（Migration 只能前向）。
+  - wrangler --remote --file 在失敗時是否完全回滾，Claude 無法事先證實；以 G5-R 預演降低語法與資料面失敗機率，並以 G6 核對結果。
+  - 套用後 52 個 trigger 會加在收藏、副本、組件、清點等寫入上（A1 量測一般寫入成本約 1.2～2 倍，皆在微秒級）。
+  - 正式環境已是 A4 程式，套用後 D1 預覽、確認、歷史即開始可用。
+
+禁止事項：除 G5 那 1 次外的任何正式寫入；DML 修資料；部署、推送、Secret、Access、DNS；Preview D1；
+  讀取 .env／.dev.vars；git commit。
+
+交付：G5-R 結果、G5-0 複查、G5 指令結果與時間、G6 六項數值、抽查結果、遠端操作次數（Metadata／SELECT／寫入分列）；
+  追加至 docs/V2-Release-04-preflight.md（或新增 docs/V2-Release-04-summary.md），並在 HANDOFF.md 追加條目。
+```

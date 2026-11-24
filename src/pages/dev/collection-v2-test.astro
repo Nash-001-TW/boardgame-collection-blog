@@ -34,7 +34,10 @@ let errorMessage = "";
 // 此頁面僅允許本機開發模式執行。
 // 正式環境一律回傳 404。
 if (!import.meta.env.DEV) {
-    return new Response("Not Found", { status: 404 });
+    return new Response("Not Found", {
+        status: 404,
+        headers: { "Cache-Control": "no-store" }
+    });
 }
 
 try {
