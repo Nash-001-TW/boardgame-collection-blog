@@ -1,12 +1,14 @@
 # 目前工作
 
-更新日期：2026-11-23（Asia/Taipei）。
+更新日期：2026-11-24（Asia/Taipei）。
 
-## 全部待辦（依優先順序，2026-11-23 整理）
+## 全部待辦（依優先順序，2026-11-23 整理，2026-11-24 更新）
 
 排序原則：先處理會擋住後續工作的缺陷與授權；需要使用者決策、可立即推進的提前；成本低但風險高的提前。級別名稱用「第 N 級」，避免與 R06-P0-A～C 等工作 ID 混淆。狀態用語依 AGENTS.md 6.2。來源：本檔、[PROJECT_STATUS.md](PROJECT_STATUS.md)、[專案整體檢查報告](docs/Project-Review-20261123.md)（F1～F9）、[V2 UI／UX 設計規範](docs/UI/V2-UI-Design-System.md)。
 
-> 已解決：F4（成果未提交）已由 `dd133d3` 提交並推送。F1／F2 的缺陷程式仍在 `main`（已推送），正式環境仍為 2026-11-12 Release-03 version 19，不受影響。
+> **正式環境現況（2026-11-24）**：Worker 版本 `dc3a1ec4`（提交 `dbcc925`，推送 `main` 即自動部署，見 #8、DECISION_LOG DEPLOY-01）；D1 已套用 0001～0023（0024 仍為候選）；Workers Logs 已在設定中開啟。紀錄見 [Release-04](docs/V2-Release-04-preflight.md)。
+>
+> 已解決：F4（成果未提交）已由 `dd133d3` 提交並推送。F1／F2 已修正並部署。
 
 ### 第 1 級：缺陷與授權（會擋住後續工作）
 
@@ -24,7 +26,7 @@
 | 4 | 設計決策 | ✅ **已完成（2026-11-23）**：D1～D8 已決定（UI-D1～UI-D8），設計規範整體已採納（UI-02） | 使用者決策 | — |
 | 5 | 設計決策 | ✅ **R06-UI-01 已決定（2026-11-23，UI-D8）** | 使用者決策 | — |
 | 6 | 開發環境 | ✅ **已驗證（2026-11-23）**：改名後新路徑 `D:\WebProject\2026-0923-TableGameInformation`，`/about` 的 `Header.astro?astro&type=script` 回 200；`D:\bgc-copy` 已刪除。注意：首次啟動 Vite 重建依賴約 18 秒，`astro dev --background` 的 30 秒上限可能逾時，改用前景 `npx astro dev` 即可。原紀錄：專案路徑含空格，本機 dev 頁面腳本 404；不解決則 Codex 無法提供 UI 截圖驗收。**2026-11-23 已確診**：同一專案複製到無空格路徑 `D:\bgc-copy` 後腳本回 200，原路徑 404；與 Git Bash／PowerShell 無關，目錄連結（junction）無效（Node 會還原成真實路徑）。**已決定（DEV-01）**：使用者改資料夾名稱。新對話接手後先驗證：`npm run astro -- dev --background` → 開 `/about` → `Header.astro?...type=script` 回 200，再標記完成 | 使用者改名，新對話驗證 | — |
-| 7 | 安全 | ✅ **已釐清（2026-11-24）**：頁面自 2026-10-21 起已有非 DEV 回 404 的守衛（先於 D1 讀取）；A5-PRE 再加 `no-store` 與測試，待 A5 部署後實測。原紀錄「公開可存取並讀取 D1 統計」不正確 | 使用者決策，Codex 處理 | — |
+| 7 | 安全 | ✅ **已釐清（2026-11-24）**：頁面自 2026-10-21 起已有非 DEV 回 404 的守衛（先於 D1 讀取）；A5-PRE 再加 `no-store` 與測試；2026-11-24 部署後實測正式回 404＋`no-store`。原紀錄「公開可存取並讀取 D1 統計」不正確 | 使用者決策，Codex 處理 | — |
 | 8 | 版本管理 | ✅ 已推送（2026-11-23）。⚠️ **更正（2026-11-24）**：原註「repo 無 CI workflow，推送不觸發部署」不正確。Cloudflare Workers Builds 連結 `main`，**推送即自動部署正式環境**（使用者 Dashboard 確認 A2～A4 已部署） | 使用者授權 | — |
 
 ### 第 3 級：實作與品質（決策完成後依序）
@@ -35,11 +37,16 @@
 | 10 | UI 實作 | 設計規範階段 0～2：token、App Shell（側欄、頁首、手機抽屜）、共用元件 | Codex 實作並截圖，Claude 審查 | #4、#6 |
 | 11 | UI 實作 | 設計規範階段 3～5：R01 管理工作台（含採購成本三卡、分類容量 x／10,000 與 80% 警示〔D1-A1-PASS〕）、R02 收藏清單、收藏詳細頁分頁 | 同上 | #10 |
 | 12 | 主線功能 | R06 最小讀寫流程（一個收藏、一個副本、小組件集合） | 同上 | #2、#5 |
-| 13 | Schema 審查 | Migration 0023（約 45 個 trigger，F6）、0024，皆為候選 | Claude 審查，使用者授權 | #1 |
+| 13 | Schema 審查 | ✅ 0023 已審查（D1-A1-PASS）並正式套用（2026-11-24）。**剩 0024**（逐副本適用性）仍為候選，待審查 | Claude 審查，使用者授權 | — |
 | 14 | 主線功能 | R06-P0-A 逐副本適用性、R06-P0-B 使用者清點日期、R06-P0-C 整盒進度（見下方後續佇列） | 同上 | #13 及各自設計審查 |
-| 15 | 程式品質 | `astro check` 14 個既有錯誤（tests 12 個、兩個 controller 的 `root` 重複宣告） | Codex | — |
-| 16 | 程式品質 | F5 D1 錯誤被吞、F7 `cache_json` 解析失敗被吞、F8 撤回無作用的 `ignoreBOM`、F9 兩個僅測試使用的檔案 | Codex | — |
+| 15 | 程式品質 | `astro check` 既有錯誤：2026-11-24 為 **10 個**（原 14 個，A1／A2 期間已減少；剩 tests 與兩個 controller 的 `root` 重複宣告等） | Codex | — |
+| 16 | 程式品質 | F5 的 D1 部分已在 A2 補可追溯紀錄（其餘 F5 位置待查）；F7 `cache_json` 解析失敗被吞、F8 撤回無作用的 `ignoreBOM`、F9 兩個僅測試使用的檔案 | Codex | — |
 | 17 | UI 審查 | Admin 的 web-design-guidelines 審查項目 | 併入 #10～#11 | — |
+| 22 | 操作缺口 | **R06 沒有收藏選擇器**（使用者 2026-11-24 實際遇到）：只能從收藏編輯頁「實體組件」連結或分類頁進入。解法二擇一：提前做 UI-D8 的收藏詳細頁分頁入口（與 #11 合併），或在 R06 加收藏搜尋；新 UI 工作，需設計與授權 | Claude 設計，使用者確認，Codex 實作 | — |
+| 23 | 驗收補做 | D1 正式驗收 G7 未實測（正式環境 0 個受控組件）。首次以 R06 建立組件時，確認「更正歷史」顯示「尚無更正紀錄」，並做一次「預覽更正」後取消 | 使用者 | 首次建立組件 |
+| 24 | 維運確認 | Dashboard → Observability 確認 Workers Logs 已開始收紀錄（2026-11-24 已部署設定） | 使用者 | — |
+| 25 | 主線功能 | D1 階段 B：勘誤公告與逐目標審查（需新 Migration），尚未設計（規劃 §2、§16） | Claude 規劃，使用者批准 | — |
+| 26 | 風險預備（可選） | 0023 退場用 0025（只拆 52 個 trigger 與 3 個 view，保留資料），需要時另行授權 | Claude／Codex | — |
 
 ### 第 4 級：整理與文件
 
@@ -47,7 +54,7 @@
 | --- | --- | --- | --- |
 | 18 | 清理 | 11 個未被引用的元件（HomePage、GameList、CatalogBrowserControls、CatalogCard、GameBrowserControls、CollectionPage、CollectionFilter、CollectionCard、GameSummary、GameRelations、GameSleeves）是否刪除 | 使用者決策，Codex 處理 |
 | 19 | 清理 | 測試暫存資料夾 `.bgg-b2-test-*` | 使用者決策 |
-| 20 | 文件 | `docs/current-progress.md` 停在 2026-11-18，含「移交 ChatGPT」等失效安排 | Claude |
+| 20 | 文件 | `docs/current-progress.md` 停在 2026-11-18，含「移交 ChatGPT」等失效安排；應改為指向 HANDOFF.md、CURRENT_TASK.md 與 Release-04 | Claude |
 | 21 | 文件 | ✅ **已提交（2026-11-23）**：`docs/UI/` 9 張設計圖、設計規範與流程文件 | Claude |
 
 ### 暫緩（已決定延後）
