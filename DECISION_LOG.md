@@ -56,3 +56,7 @@
 | 2026-11-24 | R06-PICK-AUTH | 授權執行工作命令 `R06-PICK-20261124-01`（#22 R06 收藏選擇器，本機實作與測試），範圍以 [設計 §5](docs/R06-collection-picker-20261124.md) 為準；推送與部署另依 DEPLOY-01 授權 | 使用者 | Claude Code 對話「批准並交 Codex」 | 已授權 |
 | 2026-11-24 | R06-PICK-DEPLOY | 依 DEPLOY-01 授權提交並推送 #22 R06 收藏選擇器（連同本機已提交的 CURRENT_TASK 更新 `6c827a2`），推送即自動部署；部署後由 Claude 唯讀確認，使用者登入人工確認搜尋 | 使用者 | Claude Code 對話「授權推送部署」 | 已授權 |
 | 2026-11-24 | UI-ART-01 | 採用使用者提供的插畫（第二版處理：顏色取自 1024 原圖、透明度取自使用者去背的 500px PNG）。13 張放入 `public/images/admin/`（設計規範 §7.1 檔名）；標示重複的「5.fn-purchases」第二張（5b）不用；`empty-no-count` 採 11b（躺著、打勾卷軸）。PNG 原檔與來源圖放 `docs/UI/illustrations/`，不進 public | 使用者 | Claude Code 對話「可以，5b 不用、11b」 | 已採納 |
+| 2026-11-24 | UI-S1-Q30～Q32 | #10 規劃全採 A（[規劃 §3](docs/UI/UI-stage1-2-plan-20261124.md)）：Q30 過渡期「實體組件」保留於側欄「收藏」群組，階段 5 後移除；Q31 階段 1、2 分兩張工作命令，階段 1 上線後再發階段 2；Q32 以 admin-dashboard-preview 拋棄式 SQLite＋本機 Edge 截圖驗收 | 使用者 | Claude Code 對話「全選 A 並批准」 | 已採納 |
+| 2026-11-24 | UI-S1-AUTH | 授權執行工作命令 `UI-S1-20261124-01`（設計規範階段 1：token＋App Shell，本機實作與驗證），範圍以 [規劃 §4](docs/UI/UI-stage1-2-plan-20261124.md) 為準；推送部署另依 DEPLOY-01 授權 | 使用者 | 同上 | 已授權 |
+| 2026-11-24 | UI-S1-AUTH-02 | 擴大 `UI-S1-20261124-01` 範圍：允許修改 `tests/collection-picker-browser.mjs`（只限截圖輸出改用暫存目錄參數）與 `tests/helpers/admin-dashboard-preview.ts`（只限補上 6 個 Admin 頁的路由與動態參數）。理由：原腳本截圖路徑寫死會覆寫已提交截圖；預覽工具只涵蓋 16 頁中的 10 頁（Codex 唯讀檢查發現，Claude 核對屬實） | 使用者 | Claude Code 對話「批准並續跑」 | 已授權 |
+| 2026-11-24 | UI-S1-DEPLOY | 使用者看過階段 1 截圖後同意外觀（含焦點環外加深紫外緣、部分語意文字色加深），依 DEPLOY-01 授權提交並推送（連同本機已提交的 `7bf3657`、`e06e004`），推送即部署；部署後由 Claude 唯讀確認 | 使用者 | Claude Code 對話「可以，推送部署」 | 已授權 |

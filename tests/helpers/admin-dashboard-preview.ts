@@ -39,16 +39,29 @@ export async function dashboardPreview(bindings: Record<string, unknown>) {
   ['/admin/collection/copies','src/pages/admin/collection/[id]/copies.astro'],
   ['/admin/collection/components/classification','src/pages/admin/collection/components/classification.astro'],
   ['/admin/collection/components/manage','src/pages/admin/collection/components/manage.astro'],
-  ['/admin/notbgg','src/pages/admin/notbgg/index.astro']
+  ['/admin/collection/new','src/pages/admin/collection/new.astro'],
+  ['/admin/collection/[id]','src/pages/admin/collection/[id].astro'],
+  ['/admin/notbgg','src/pages/admin/notbgg/index.astro'],
+  ['/admin/notbgg/new','src/pages/admin/notbgg/new.astro'],
+  ['/admin/notbgg/[id]','src/pages/admin/notbgg/[id].astro'],
+  ['/admin/notbgg/[id]/link','src/pages/admin/notbgg/[id]/link.astro'],
+  ['/admin/notbgg/[id]/relations','src/pages/admin/notbgg/[id]/relations.astro']
  ]) views.set(route,await compile(entry));
  const middleware=await compile('src/middleware.ts');
  const container=await experimental_AstroContainer.create();
  return async (request:Request):Promise<Response> => {
   const url=new URL(request.url),copyRoute=url.pathname.match(/^\/admin\/collection\/([1-9][0-9]*)\/copies\/?$/);
-  const view=views.get(copyRoute?'/admin/collection/copies':url.pathname);
+  const collectionRoute=url.pathname.match(/^\/admin\/collection\/([1-9][0-9]*)\/?$/);
+  const notBggRoute=url.pathname.match(/^\/admin\/notbgg\/([0-9]{6,})(?:\/(link|relations))?\/?$/);
+  const id=copyRoute?.[1] ?? collectionRoute?.[1] ?? notBggRoute?.[1];
+  let route=url.pathname;
+  if(copyRoute) route='/admin/collection/copies';
+  if(collectionRoute) route='/admin/collection/[id]';
+  if(notBggRoute) route='/admin/notbgg/[id]' + (notBggRoute[2] ? '/' + notBggRoute[2] : '');
+  const view=views.get(route);
   if(!view)return new Response('Not found',{status:404});
   return (middleware.exports as any).onRequest({request,url},async()=>{
-   const response=await container.renderToResponse(view.component,{request,params:copyRoute?{id:copyRoute[1]}:{}});
+   const response=await container.renderToResponse(view.component,{request,params:id?{id}:{}});
    const html=await response.text();
    return new Response(html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/g,'').replace('</head>',`<style>${view.css}</style></head>`),{status:response.status,headers:response.headers});
   });

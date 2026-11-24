@@ -1,9 +1,9 @@
 /* Shared administration layout and controls. */
 .admin-workspace{display:grid;grid-template-columns:190px minmax(0,1fr);min-height:calc(100vh - 72px)}
-.admin-main{min-width:0}.admin-sidebar{padding:24px 12px;border-right:1px solid var(--admin-border);background:#eeeee8}
+.admin-main{min-width:0}.admin-sidebar{padding:24px 12px;border-right:1px solid var(--admin-border);background:var(--bg-sidebar)}
 .admin-sidebar nav{display:grid;gap:6px;position:sticky;top:20px}
 .admin-sidebar a{display:block;padding:10px 12px;border-radius:6px;text-decoration:none;overflow-wrap:anywhere}
-.admin-sidebar a:hover,.admin-sidebar a[aria-current=page]{background:#dceee5;color:#075342;font-weight:650}
+.admin-sidebar a:hover,.admin-sidebar a[aria-current=page]{background:var(--brand-purple-soft);color:var(--brand-purple-strong);font-weight:650}
 .admin-page{max-width:1120px;margin:auto;padding:32px 24px 64px;min-width:0}
 .admin-page h1,.physical-manager h1,.classification-view h1{font-size:clamp(24px,3vw,30px);line-height:1.3;margin:12px 0 24px;overflow-wrap:anywhere}
 .admin-page h2{font-size:20px}.admin-page h3{font-size:17px}
@@ -12,12 +12,12 @@
 .admin-page label{display:grid;gap:5px;min-width:0;margin:10px 0}
 .admin-page label:has(>input[type=checkbox]){display:flex;align-items:center;gap:8px}
 .admin-page input[type=checkbox],.physical-manager input[type=checkbox]{width:18px;height:18px;flex-shrink:0;accent-color:var(--admin-accent)}
-.admin-page button{min-height:44px;max-width:100%;padding:10px 16px;border:1px solid #aeb9b0;border-radius:6px;background:white;color:var(--admin-ink);font:inherit;cursor:pointer;white-space:normal}
+.admin-page button{min-height:44px;max-width:100%;padding:10px 16px;border:1px solid var(--border-strong);border-radius:6px;background:var(--bg-surface);color:var(--admin-ink);font:inherit;cursor:pointer;white-space:normal}
 .admin-page button:hover:not(:disabled){background:var(--admin-soft)}.admin-page button:disabled{opacity:.5;cursor:default}
-.admin-page [data-save],.admin-page button[type=submit]{background:var(--admin-accent);color:#fff;border-color:var(--admin-accent)}
-.admin-app [data-archive],.admin-app [data-command=revoke]{color:#a32d26;border-color:#cf817a;background:#fff7f5}
+.admin-page [data-save],.admin-page button[type=submit]{background:var(--admin-accent);color:var(--bg-surface);border-color:var(--admin-accent)}
+.admin-app [data-archive],.admin-app [data-command=revoke]{color:var(--danger);border-color:#cf817a;background:var(--danger-soft)}
 .admin-page .fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 20px}
-.admin-page .record,.admin-page .panel,.physical-manager article,.physical-manager section{min-width:0;border:1px solid var(--admin-border);border-radius:10px;background:#fff;padding:20px;margin:20px 0;overflow-wrap:anywhere}
+.admin-page .record,.admin-page .panel,.physical-manager article,.physical-manager section{min-width:0;border:1px solid var(--admin-border);border-radius:10px;background:var(--bg-surface);padding:20px;margin:20px 0;overflow-wrap:anywhere}
 .admin-page .record summary{cursor:pointer;padding:4px 0;font-weight:600}
 .admin-page .record [data-collection-id]{display:flex;flex-wrap:wrap;gap:8px;padding:12px 0;border-top:1px solid var(--admin-border)}
 .admin-page .record a{min-height:32px;display:inline-flex;align-items:center}
@@ -27,7 +27,7 @@
 .admin-page dt{font-size:12px;color:var(--admin-muted)}.admin-app pre{white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%}
 .admin-page [role=status],.physical-manager [role=status]{white-space:pre-wrap;overflow-wrap:anywhere}
 .admin-page [role=status]:not(:empty),.physical-manager [role=status]:not(:empty){padding:12px 16px;background:var(--admin-soft);border-radius:6px;margin:16px 0}
-.admin-app [role=alert]{padding:14px 16px;background:#fff0ed;color:#8d251c;border:1px solid #e8bab3;border-radius:6px;overflow-wrap:anywhere}
+.admin-app [role=alert]{padding:14px 16px;background:var(--danger-soft);color:var(--danger);border:1px solid #e8bab3;border-radius:6px;overflow-wrap:anywhere}
 .admin-page .notice{color:var(--admin-muted)}.admin-page .error{color:var(--admin-danger)}
 .admin-page .comparison{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.admin-page .comparison section{min-width:0;overflow-wrap:anywhere}
 .admin-page img{max-width:100%;height:auto}.admin-page fieldset{min-width:0}
@@ -38,9 +38,9 @@
 .admin-page [data-system]{overflow-wrap:anywhere}.admin-page :is(p,summary,legend),.physical-manager p{overflow-wrap:anywhere}
 @media(max-width:1100px){.admin-workspace{display:block}.admin-sidebar{padding:8px 16px;border-right:0;border-bottom:1px solid var(--admin-border)}.admin-sidebar nav{position:static;display:flex;flex-wrap:wrap;gap:4px}.admin-sidebar a{padding:8px 10px;font-size:13px}}
 @media(max-width:600px){.admin-page{padding:24px 16px 48px}.admin-page .fields,.admin-page .records,.admin-page dl,.admin-page .comparison,.physical-manager .fields{grid-template-columns:minmax(0,1fr)}.admin-page .record,.admin-page .panel,.physical-manager article,.physical-manager section{padding:16px}.admin-page .toolbar{align-items:stretch}.admin-page .toolbar>label{flex-basis:100%}.admin-sidebar{padding:8px}.admin-sidebar a{font-size:12px}.admin-page .actions{display:grid;grid-template-columns:minmax(0,1fr)}}
-.admin-app [role=status][data-tone=error]{color:#8d251c;background:#fff0ed;border:1px solid #e8bab3}
-.admin-app [role=status][data-tone=success]{color:#075342;background:#e3f0ed}
+.admin-app [role=status][data-tone=error]{color:var(--danger);background:var(--danger-soft);border:1px solid #e8bab3}
+.admin-app [role=status][data-tone=success]{color:var(--success);background:var(--success-soft)}
 .admin-page [role=status]:empty{display:none}
-.admin-app .status-badge[data-classification]{display:inline-flex;padding:3px 9px;border-radius:20px;font-size:12px;white-space:normal;line-height:1.5;background:#e3f0ed;color:#075342}
-.admin-app .status-badge[data-classification=UNKNOWN]{background:#fff0d6;color:#785013}
-.admin-app .status-badge[data-classification=LEGACY_PRODUCT]{background:#edeae2;color:#5c594f}
+.admin-app .status-badge[data-classification]{display:inline-flex;padding:3px 9px;border-radius:20px;font-size:12px;white-space:normal;line-height:1.5;background:var(--success-soft);color:var(--success)}
+.admin-app .status-badge[data-classification=UNKNOWN]{background:var(--warning-soft);color:var(--warning)}
+.admin-app .status-badge[data-classification=LEGACY_PRODUCT]{background:var(--neutral-soft);color:var(--neutral)}

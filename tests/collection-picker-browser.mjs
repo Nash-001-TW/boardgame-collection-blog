@@ -8,7 +8,7 @@ import { build } from 'esbuild';
 
 const output = process.argv[2];
 if (!output) throw new Error('A disposable artifact directory is required');
-const screenshots = 'docs/R06-picker-screenshots';
+const screenshots = join(output, 'R06-picker-screenshots');
 const route = '/admin/collection/components/manage';
 await mkdir(output, { recursive: true });
 await mkdir(screenshots, { recursive: true });
