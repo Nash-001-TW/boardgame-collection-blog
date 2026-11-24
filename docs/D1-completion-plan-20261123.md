@@ -726,3 +726,14 @@ G1 必須完成：
 交付：G5-R 結果、G5-0 複查、G5 指令結果與時間、G6 六項數值、抽查結果、遠端操作次數（Metadata／SELECT／寫入分列）；
   追加至 docs/V2-Release-04-preflight.md（或新增 docs/V2-Release-04-summary.md），並在 HANDOFF.md 追加條目。
 ```
+
+## 16. 階段 A 結案（2026-11-24，DECISION_LOG D1-A5-CLOSE）
+
+A1～A5 完成。正式環境：Migration 0001～0023、Worker 版本 `a086a00c`（提交 `9768f7d`），Workers Logs 已在設定中開啟。紀錄見 [Release-04 預檢與套用紀錄](V2-Release-04-preflight.md)。
+
+**未完成與後續**：
+1. G7 未實測：正式環境 0 個受控組件。使用者首次以 R06 建立組件時，順便確認「更正歷史」顯示「尚無更正紀錄」與「預覽更正」可開啟後取消。
+2. R06 沒有收藏選擇器（使用者實際遇到）：需從收藏編輯頁「實體組件」連結進入。可提前做 UI-D8 的收藏詳細頁分頁入口，或在 R06 加收藏搜尋；屬新 UI 工作，需另行設計與授權。
+3. Workers Logs 是否開始收紀錄，待使用者在 Dashboard 的 Observability 確認。
+4. 0023 退場用 0025（只拆 trigger 與 view）未準備；需要時另行授權。
+5. 階段 B（勘誤公告，需新 Migration）尚未設計。
