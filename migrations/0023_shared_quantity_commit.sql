@@ -431,3 +431,20 @@ BEGIN
 END;
 
 CREATE VIEW d1_quantity_history AS SELECT * FROM d1_quantity_changes;
+
+CREATE TABLE d1_quantity_epoch (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    epoch TEXT NOT NULL CHECK (length(epoch) = 32 AND epoch NOT GLOB '*[^0-9a-f]*')
+);
+
+INSERT INTO d1_quantity_epoch(id, epoch) VALUES (1, lower(hex(randomblob(16))));
+
+CREATE TRIGGER d1_quantity_epoch_no_replace BEFORE INSERT ON d1_quantity_epoch
+WHEN EXISTS (SELECT 1 FROM d1_quantity_epoch WHERE id = 1)
+BEGIN SELECT RAISE(ABORT, 'D1_EPOCH_IMMUTABLE'); END;
+
+CREATE TRIGGER d1_quantity_epoch_no_update BEFORE UPDATE ON d1_quantity_epoch
+BEGIN SELECT RAISE(ABORT, 'D1_EPOCH_IMMUTABLE'); END;
+
+CREATE TRIGGER d1_quantity_epoch_no_delete BEFORE DELETE ON d1_quantity_epoch
+BEGIN SELECT RAISE(ABORT, 'D1_EPOCH_IMMUTABLE'); END;

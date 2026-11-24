@@ -1,7 +1,9 @@
 import { classifyStoredComponents, maxEvidenceRows } from './component-classifier-adapter';
 import { physicalSigningKey, physicalSourceMessage, signPhysicalValue } from './physical-component-proof';
 import { HttpError } from './notbgg-admin-api';
-import { quantityOperationStatus } from './shared-quantity-commit';
+import { commitSharedQuantity, confirmedQuantityOperationStatus, logQuantityError, quantityFingerprint,
+    recoverQuantityResult } from './shared-quantity-commit';
+import { currentQuantityEpoch, parseQuantityBaseline, previewSharedQuantity, verifyQuantityPreview } from './shared-quantity-preview';
 
 import { componentTypes, componentUnits, maxComponentQuantity } from './physical-component-values';
 
@@ -128,14 +130,53 @@ async function create(db: D1Database, secret: unknown, actor: string, keyValue: 
     }
 }
 
+type StandardComponentWrite = (Awaited<ReturnType<typeof create>> | Awaited<ReturnType<typeof writeOne>>)
+    & { outcome?: never };
+type QuantityComponentWrite = Awaited<ReturnType<typeof previewSharedQuantity>>
+    | Awaited<ReturnType<typeof commitSharedQuantity>>;
+
+export function writePhysicalComponent(
+    db: D1Database, secret: unknown, actor: string, key: string | null,
+    body: Record<string, unknown> & { action: 'create' | 'edit' | 'count' | 'assign' },
+): Promise<StandardComponentWrite>;
+export function writePhysicalComponent(
+    db: D1Database, secret: unknown, actor: string, key: string | null, body: Record<string, unknown>,
+): Promise<StandardComponentWrite | QuantityComponentWrite>;
 export async function writePhysicalComponent(
     db: D1Database, secret: unknown, actor: string, key: string | null, body: Record<string, unknown>,
 ) {
     if (body.action === 'create') return create(db, secret, actor, key, body);
     const action = body.action;
-    if (action === 'quantity-status') {
-        fields(body, ['action']);
-        return quantityOperationStatus(db, actor, key);
+    if (action === 'quantity-preview' || action === 'quantity-commit' || action === 'quantity-status') {
+        const preview = action === 'quantity-preview';
+        fields(body, ['action', 'definitionId', 'definitionRevision', 'previousExpected', 'expected', 'name', 'type', 'unit', 'reason',
+            ...(preview ? [] : ['baseline', 'previewToken'])]);
+        const reason = typeof body.reason === 'string' ? body.reason.trim() : '';
+        const edit = { ...editAttributes(body), reason, definitionId: integer(body.definitionId, 1),
+            beforeRevision: integer(body.definitionRevision, 1, Number.MAX_SAFE_INTEGER - 1),
+            beforeQuantity: editQuantity(body.previousExpected), afterQuantity: editQuantity(body.expected) };
+        if (!reason || reason.length > 1000 || edit.beforeQuantity === edit.afterQuantity) {
+            throw new HttpError(400, 'D1_INVALID_QUANTITY_EDIT');
+        }
+        if (preview) {
+            if (key !== null) throw new HttpError(400, 'INVALID_COMPONENT_INPUT');
+            const { signature } = await verifiedPhysicalProof(db, edit.definitionId, secret, false);
+            return previewSharedQuantity(db, secret, actor, edit, signature);
+        }
+        if (!key || !/^q1\.[0-9a-f]{32}\.[0-9a-f]{64}$/.test(key)) throw new HttpError(400, 'D1_OPERATION_ID_REQUIRED');
+        if (typeof body.previewToken !== 'string') throw new HttpError(400, 'D1_PREVIEW_TOKEN_REQUIRED');
+        const baseline = parseQuantityBaseline(body.baseline);
+        try {
+            if (await currentQuantityEpoch(db) !== baseline.databaseEpoch) {
+                return { operationId: key, outcome: 'NOT_COMMITTED' as const, code: 'D1_PREVIEW_INVALID' };
+            }
+        } catch (error) {
+            logQuantityError('epoch', key, error);
+            return recoverQuantityResult(db, actor, key, await quantityFingerprint(actor, edit, baseline));
+        }
+        const execute = action === 'quantity-commit' ? commitSharedQuantity : confirmedQuantityOperationStatus;
+        return execute(db, actor, key, edit, baseline,
+            () => verifyQuantityPreview(secret, actor, key, edit, baseline, body.previewToken));
     }
     if (action !== 'edit' && action !== 'count' && action !== 'assign') throw new HttpError(400, 'INVALID_COMPONENT_ACTION');
     const common = ['action', 'definitionId', 'definitionRevision'];

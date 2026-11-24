@@ -70,6 +70,21 @@ function loseWriteResponse(db: D1Database): D1Database {
     } } as D1Database;
 }
 
+test('confirmation verifier exception preserves a durable receipt even after the collection is archived', async t => {
+    const f = scenario();
+    t.after(() => f.sql.close());
+    const r = await f.request();
+    const first = await f.commit(r);
+    assert.equal(first.outcome, 'COMMITTED');
+    f.sql.exec("INSERT INTO v2_collection_management(collection_item_id, archived_at) VALUES (1, '2026-11-23')");
+    const unavailableVerifier = () => { throw new Error('Synthetic synchronous verifier failure'); };
+    assert.deepEqual(await commitSharedQuantity(f.db, actor, r.id, r.edit, r.baseline, unavailableVerifier),
+        { ...first, replayed: true });
+    assert.deepEqual(await confirmedQuantityOperationStatus(f.db, actor, r.id, r.edit, r.baseline, unavailableVerifier),
+        { ...first, replayed: true });
+    assert.equal(f.history().length, 1);
+});
+
 test('generation covers edition and seal ABA, repeat count, UPSERT and cascade delete/recreate', () => {
     const f = scenario();
     try {
@@ -125,7 +140,8 @@ test('D1-10/12 same operation commits once under competing calls and replays aft
         assert.equal(f.history().length, 1);
         assert.equal(f.current()?.expected_quantity, 100);
         assert.deepEqual(f.sql.prepare('SELECT * FROM v2_copy_components').get(), count);
-        await assert.rejects(f.commit({ ...r, edit: { ...r.edit, afterQuantity: 0 } }), /IDEMPOTENCY_CONFLICT/);
+        assert.deepEqual(await f.commit({ ...r, edit: { ...r.edit, afterQuantity: 0 } }),
+            { operationId: r.id, outcome: 'NOT_COMMITTED', code: 'IDEMPOTENCY_CONFLICT' });
         await assert.rejects(quantityOperationStatus(f.db, 'another-admin', r.id), /IDEMPOTENCY_CONFLICT/);
         assert.equal((await f.commit(r)).outcome, 'COMMITTED');
     } finally { f.sql.close(); }
@@ -216,7 +232,7 @@ test('D1-16 capacity admits 200 evidence rows and leaves no writes at 201', asyn
         try {
             const add = f.sql.prepare('INSERT INTO v2_owned_copies(collection_item_id) VALUES(1)');
             for (let i = 1; i < total; i++) add.run();
-            assert.equal((await f.commit(await f.request())).outcome, total === 200 ? 'COMMITTED' : 'UNKNOWN');
+            assert.equal((await f.commit(await f.request())).outcome, total === 200 ? 'COMMITTED' : 'NOT_COMMITTED');
             assert.equal(f.history().length, Number(total === 200));
         } finally { f.sql.close(); }
     });
@@ -234,7 +250,7 @@ test('D1-16 exact UTF-8 envelope limit and oversized fields leave no partial suc
             `).get();
             f.sql.prepare('UPDATE v2_owned_copies SET edition=? WHERE id=1')
                 .run('版' + 'x'.repeat(bytes - Number(empty?.bytes) - 3));
-            assert.equal((await f.commit(await f.request())).outcome, bytes === 262144 ? 'COMMITTED' : 'UNKNOWN');
+            assert.equal((await f.commit(await f.request())).outcome, bytes === 262144 ? 'COMMITTED' : 'NOT_COMMITTED');
             assert.equal(f.history().length, Number(bytes === 262144));
             assert.equal(f.current()?.expected_quantity, bytes === 262144 ? 100 : 103);
         } finally { f.sql.close(); }
@@ -251,8 +267,8 @@ test('unpreviewed edit and legacy retirement are closed while status remains rea
         await assert.rejects(writePhysicalComponent(f.db, null, actor, 'legacy-operation', {
             action: 'quantity-retire',
         }), /INVALID_COMPONENT_ACTION/);
-        const status = await writePhysicalComponent(f.db, null, actor, 'legacy-operation', { action: 'quantity-status' });
-        assert.equal('outcome' in status && status.outcome, 'UNKNOWN');
+        await assert.rejects(writePhysicalComponent(f.db, null, actor, 'legacy-operation', { action: 'quantity-status' }),
+            /INVALID_COMPONENT_INPUT/);
         assert.equal(f.history().length, 0);
         assert.equal(f.current()?.expected_quantity, 103);
     } finally { f.sql.close(); }
