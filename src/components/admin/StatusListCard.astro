@@ -1,0 +1,25 @@
+---
+import AdminIcon from './AdminIcon.astro';
+import CountBadge from './CountBadge.astro';
+interface Props {
+  title: string; locale: string; unavailableLabel: string; icon: Parameters<typeof AdminIcon>[0]['name'];
+  illustration?: string;
+  rows: { label: string; count: number | null; tone?: 'neutral' | 'warning' | 'danger' }[];
+}
+const { title, locale, unavailableLabel, icon, rows, illustration } = Astro.props;
+---
+<article class:list={['admin-kit-panel', { illustrated: illustration }]}>
+  <h3 class="admin-kit-row"><AdminIcon name={icon} />{title}</h3>
+  <dl class="admin-kit-list">
+    {rows.map(({ label, count, tone }) => <div><dt>{label}</dt><dd>{count === null
+      ? <><span aria-hidden="true">—</span><span class="admin-kit-sr">{unavailableLabel}</span></>
+      : tone ? <CountBadge label={label} count={count} locale={locale} tone={tone} /> : new Intl.NumberFormat(locale).format(count)}</dd></div>)}
+  </dl>
+  {illustration && <img class="admin-kit-watermark" src={illustration} width="96" height="96" alt="" aria-hidden="true" loading="lazy" />}
+</article>
+<style>
+  .illustrated { isolation: isolate; }
+  .illustrated :is(h3, dl) { position: relative; z-index: 1; }
+  .illustrated dl { padding-inline-end: min(25%, 72px); }
+  .illustrated .admin-kit-watermark { width: min(30%, 80px); pointer-events: none; }
+</style>

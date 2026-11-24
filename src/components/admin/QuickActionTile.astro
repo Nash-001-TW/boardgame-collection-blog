@@ -1,0 +1,9 @@
+---
+import AdminIcon from './AdminIcon.astro';
+interface Props { href: string; label: string; icon: Parameters<typeof AdminIcon>[0]['name']; tone?: string }
+const { href, label, icon, tone = 'brand' } = Astro.props;
+---
+<a class="admin-kit-tile" data-tone={tone} href={href}>
+  <AdminIcon name={icon} size={24} /><span>{label}</span>
+  <span class="admin-kit-paw"><AdminIcon name="paw" size={26} /></span>
+</a>

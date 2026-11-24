@@ -1,0 +1,19 @@
+---
+import AdminIcon from './AdminIcon.astro';
+interface Props {
+  label: string; value?: number | null; detail?: string; locale: string; unavailableLabel: string;
+  icon: Parameters<typeof AdminIcon>[0]['name']; illustration: string; tone?: string;
+}
+const { label, value, detail, locale, unavailableLabel, icon, illustration, tone = 'brand' } = Astro.props;
+---
+<article class="admin-kit-stat" data-tone={tone}>
+  <span class="admin-kit-stat-icon"><AdminIcon name={icon} size={23} /></span>
+  <div class="admin-kit-stat-content">
+    <h3>{label}</h3>
+    {Astro.slots.has('default') ? <slot /> : <p class="admin-kit-number">{value == null
+      ? <><span aria-hidden="true">—</span><span class="admin-kit-sr">{unavailableLabel}</span></>
+      : new Intl.NumberFormat(locale).format(value)}</p>}
+    {detail && <p>{detail}</p>}
+  </div>
+  <img class="admin-kit-watermark" src={illustration} width="96" height="96" alt="" aria-hidden="true" loading="lazy" />
+</article>

@@ -1,190 +1,184 @@
 ---
 import { env } from 'cloudflare:workers';
 import AdminLayout from '../../layouts/AdminLayout.astro';
-
-const lang = Astro.url.searchParams.get('lang') === 'en' ? 'en' : 'zh-TW';
-const en = lang === 'en';
-const t = (zh: string, english: string) => en ? english : zh;
-const suffix = en ? '?lang=en' : '';
+import AdminIcon from '../../components/admin/AdminIcon.astro';
+import PageHeader from '../../components/admin/PageHeader.astro';
+import QuickActionTile from '../../components/admin/QuickActionTile.astro';
+import AlertBanner from '../../components/admin/AlertBanner.astro';
+import StatCard from '../../components/admin/StatCard.astro';
+import StatusListCard from '../../components/admin/StatusListCard.astro';
+import PendingList from '../../components/admin/PendingList.astro';
+import EmptyState from '../../components/admin/EmptyState.astro';
+import { readAdminDashboardSummary } from '../../lib/admin-dashboard-summary';
 
 export const prerender = false;
-
-interface AdminSummary {
-  collection_count: number;
-  owned_count: number;
-  wishlist_count: number;
-  preorder_count: number;
-  notbgg_count: number;
-  notbgg_archived_count: number;
-  bgg_count: number;
-  component_count: number;
-  sleeve_size_count: number;
-  sleeve_requirement_count: number;
-}
-
-let summary: AdminSummary | null = null;
-let errorMessage = '';
-
-try {
-  const db = env.DB;
-
-  if (!db) {
-    errorMessage = t('Cloudflare D1 Binding DB 無法使用', 'Cloudflare D1 binding DB is unavailable');
-  } else {
-
-    const result = await db.prepare(`
-    WITH imported AS (
-        SELECT
-        id,
-        wishlist,
-        acquisition_status,
-        CASE
-            WHEN json_valid(notes) = 1 THEN
-            CASE
-                WHEN json_type(notes, '$.owned') IS NOT NULL
-                THEN CAST(json_extract(notes, '$.owned') AS INTEGER)
-                WHEN acquisition_status = 'owned' THEN 1
-                ELSE 0
-            END
-            WHEN acquisition_status = 'owned' THEN 1
-            ELSE 0
-        END AS owned
-        FROM v2_collection_items
-        WHERE record_scope = 'production'
-    )
-    SELECT
-        (SELECT COUNT(*)
-        FROM imported) AS collection_count,
-
-        (SELECT COUNT(*)
-        FROM imported
-        WHERE owned = 1) AS owned_count,
-
-        (SELECT COUNT(*)
-        FROM imported
-        WHERE wishlist = 1) AS wishlist_count,
-
-        (SELECT COUNT(*) FROM imported
-        WHERE acquisition_status = 'preordered') AS preorder_count,
-
-        (SELECT COUNT(*) FROM notbgg_games) AS notbgg_count,
-
-        (SELECT COUNT(*) FROM notbgg_games
-        WHERE archived_at IS NOT NULL) AS notbgg_archived_count,
-
-        (SELECT COUNT(*)
-        FROM v2_games g
-        JOIN v2_legacy_id_map m
-        ON m.target_table = 'v2_games'
-        AND m.target_id = g.id
-        AND m.legacy_table = 'bgg_games'
-        ) AS bgg_count,
-
-        (SELECT COUNT(*)
-        FROM v2_component_definitions d
-        JOIN imported c
-        ON c.id = d.collection_item_id
-        ) AS component_count,
-
-        (SELECT COUNT(*)
-        FROM v2_sleeve_sizes) AS sleeve_size_count,
-
-        (SELECT COUNT(*)
-        FROM v2_sleeve_requirements r
-        JOIN imported c
-        ON c.id = r.collection_item_id
-        ) AS sleeve_requirement_count
-    `).first<AdminSummary>();
-
-
-    if (result) {
-      summary = result;
-    } else {
-      errorMessage = t('無法取得收藏統計資料', 'Unable to retrieve collection statistics');
-    }
-  }
-} catch (error) {
-  console.error('Admin dashboard error:', error);
-  errorMessage = t('讀取 D1 資料庫時發生錯誤', 'An error occurred while reading the D1 database');
-}
-
-const cards = [
-  { title: t('收藏', 'Collection'), stats: [
-    { label: t('收藏項目', 'Collection items'), value: summary?.collection_count },
-    { label: t('已收藏', 'Owned'), value: summary?.owned_count },
-    { label: t('願望清單', 'Wishlist'), value: summary?.wishlist_count },
-    { label: t('預購', 'Preordered'), value: summary?.preorder_count }
-  ], actions: [{ label: t('收藏管理', 'Manage collection'), href: '/admin/collection' + suffix }] },
-  { title: t('卡套', 'Sleeves'), stats: [
-    { label: t('卡套尺寸', 'Sleeve sizes'), value: summary?.sleeve_size_count },
-    { label: t('卡套需求紀錄', 'Sleeve requirements'), value: summary?.sleeve_requirement_count }
-  ], actions: [{ label: t('卡套管理', 'Sleeve management'), href: '/admin/sleeves' + suffix }] },
-  { title: t('組件', 'Components'), stats: [
-    { label: t('組件定義筆數', 'Component definitions'), value: summary?.component_count }
-  ], actions: [{ label: t('組件管理', 'Manage components'), href: '/admin/collection/components/classification' + suffix }] },
-  { title: t('資料來源', 'Data sources'), stats: [
-    { label: t('BGG 遊戲', 'BGG games'), value: summary?.bgg_count },
-    { label: t('非 BGG 遊戲', 'Non-BGG games'), value: summary?.notbgg_count,
-      note: summary ? t(`含已封存 ${summary.notbgg_archived_count.toLocaleString(lang)} 筆`, `Includes ${summary.notbgg_archived_count.toLocaleString(lang)} archived`) : t('封存數量無法取得', 'Archived count unavailable') }
-  ], actions: [
-    { label: t('BGG 管理（待開發）', 'BGG management (coming soon)'), href: null },
-    { label: t('NotBGG 管理', 'Manage NotBGG'), href: '/admin/notbgg' + suffix }
-  ] }
+const lang = Astro.url.searchParams.get('lang') === 'en' ? 'en' : 'zh-TW';
+const t = (zh: string, en: string) => lang === 'en' ? en : zh;
+const href = (path: string, params: Record<string, string> = {}) => {
+    const query = new URLSearchParams(params);
+    if (lang === 'en') query.set('lang', lang);
+    return query.size ? path + '?' + query.toString() : path;
+};
+const summary = await readAdminDashboardSummary(env.DB);
+const { collection, sleeves, components, sources, purchases, sync } = summary;
+const title = t('管理工作台', 'Management Dashboard');
+const unavailable = t('無法取得', 'Unavailable');
+const number = new Intl.NumberFormat(lang);
+const percent = new Intl.NumberFormat(lang, { style: 'percent', maximumFractionDigits: 1 });
+const updated = new Date();
+const localTime = new Intl.DateTimeFormat(lang, {
+    dateStyle: 'short', timeStyle: 'short', timeZone: 'Asia/Taipei',
+});
+const picture = (name: string) => '/images/admin/' + name + '.webp';
+const failed = sync?.failed ?? null;
+const failedLabel = t('BGG 同步失敗', 'BGG sync failures');
+const failedHref = href('/admin/bgg', { state: 'failed' });
+const pending = failed ? [{ href: failedHref, label: failedLabel, count: failed, tone: 'warning' as const }] : [];
+const purchaseHref = href('/admin/purchases');
+const money = ({ currency, amount }: { currency: string; amount: number }) => {
+    if (!/^[A-Z]{3}$/.test(currency) || !Intl.supportedValuesOf('currency').includes(currency)) return null;
+    const formatter = new Intl.NumberFormat(lang, { style: 'currency', currency, currencyDisplay: 'code' });
+    const places = formatter.resolvedOptions().maximumFractionDigits ?? 0;
+    // Render the stored integer exactly, including the last minor unit of large totals.
+    const units = BigInt(amount);
+    const scale = 10n ** BigInt(places);
+    const fraction = new Intl.NumberFormat(lang, { minimumIntegerDigits: Math.max(places, 1), useGrouping: false });
+    return formatter.formatToParts(units / scale).map(part =>
+        part.type === 'fraction' ? fraction.format(units % scale) : part.value).join('');
+};
+const actions = [
+    { href: href('/admin/collection/new'), label: t('新增收藏', 'Add collection'), icon: 'plus', tone: 'brand' },
+    { href: href('/admin/collection'), label: t('查詢收藏', 'Find collections'), icon: 'search', tone: 'wood' },
+    { href: purchaseHref, label: t('新增採購', 'Add purchase'), icon: 'cart', tone: 'success' },
+    { href: href('/admin/sleeves'), label: t('卡套管理', 'Manage sleeves'), icon: 'sleeves', tone: 'brand' },
+    { href: href('/admin/bgg'), label: t('BGG 同步', 'BGG sync'), icon: 'sync', tone: 'warning' },
+] as const;
+const stats = [
+    { label: t('收藏總數', 'Total collections'), value: collection?.total, icon: 'dice', tone: 'brand', image: 'fn-collection' },
+    { label: t('已收藏', 'Owned'), value: collection?.owned, icon: 'check-circle', tone: 'success', image: 'fn-dashboard' },
+    { label: t('願望清單', 'Wishlist'), value: collection?.wishlist, icon: 'heart', tone: 'wish', image: 'fn-collection' },
+    { label: t('預購中', 'Preordered'), value: collection?.preorder, icon: 'cart', tone: 'warning', image: 'fn-purchases' },
+] as const;
+const statuses = [
+    { title: t('卡套狀況', 'Sleeve status'), icon: 'sleeves', image: 'fn-sleeves', rows: [
+        { label: t('卡套尺寸數', 'Sleeve sizes'), count: sleeves?.sizes ?? null },
+        { label: t('有需求紀錄', 'Requirement records'), count: sleeves?.requirements ?? null },
+    ] },
+    { title: t('組件狀況', 'Component status'), icon: 'puzzle', image: 'fn-components', rows: [
+        { label: t('組件定義數', 'Component definitions'), count: components?.definitions ?? null },
+        { label: t('實體組件紀錄', 'Physical component records'), count: components?.records ?? null },
+    ] },
+    { title: t('遊戲資料來源', 'Game data sources'), icon: 'database', image: 'fn-game-data', rows: [
+        { label: t('BGG 資料', 'BGG records'), count: sources?.bgg ?? null },
+        { label: t('NotBGG 資料', 'NotBGG records'), count: sources?.notbgg ?? null },
+    ] },
+] as const;
+const moneyGroups = [
+    { label: t('未封存收藏', 'Unarchived collections'), rows: purchases?.active },
+    { label: t('已封存收藏', 'Archived collections'), rows: purchases?.archived },
+];
+const warnings = [
+    { label: t('不一致', 'Inconsistent'), ids: purchases?.inconsistent, tone: 'danger' },
+    { label: t('待核', 'Needs review'), ids: purchases?.review, tone: 'warning' },
 ];
 ---
+<AdminLayout lang={lang} title={title}>
+  <main class="admin-kit dashboard" id="editor-content" tabindex="-1">
+    <PageHeader title={title} icon="home" description={t('日常管理、資料維護與待處理事項總覽', 'Daily administration, data maintenance, and pending work')}>
+      <span>{t('更新時間', 'Updated')} <time datetime={updated.toISOString()}>{localTime.format(updated)}</time></span>
+      <a class="admin-kit-button" data-variant="secondary" href={href('/admin')}><AdminIcon name="refresh" size={18} />{t('重新整理', 'Refresh')}</a>
+    </PageHeader>
 
-<AdminLayout lang={lang} title={t('管理首頁', 'Dashboard')}>
-  <main id="editor-content" class="dashboard" tabindex="-1">
-    <div class="dashboard-heading">
-      <div><p class="eyebrow">NOTBGG / ADMINISTRATION</p><h1>{t('管理首頁', 'Dashboard')}</h1>
-        <p class="intro">{t('收藏資料總覽與管理入口', 'Collection overview and management')}</p></div>
-      <a class="public-link" href={en ? '/en/' : '/'}>{t('← 返回公開網站', '← Back to public site')}</a>
-    </div>
-    {errorMessage && <div class="dashboard-error" role="alert">{errorMessage}</div>}
-    <section class="dashboard-grid" aria-label={t('管理區塊', 'Management sections')}>
-      {cards.map((card) => (
-        <article class="dashboard-card">
-          <h2>{card.title}</h2>
-          <dl class="dashboard-stats">
-            {card.stats.map((stat) => (
-              <div class="dashboard-stat">
-                <dt>{stat.label}</dt>
-                <dd>{stat.value === undefined ? '—' : stat.value.toLocaleString(lang)}
-                  {stat.value === undefined && <span class="sr-only">{t('統計無法取得', 'Statistics unavailable')}</span>}
-                </dd>
-                {'note' in stat && <p class="stat-note">{stat.note}</p>}
-              </div>
-            ))}
+    <section aria-labelledby="quick-actions">
+      <h2 id="quick-actions">{t('快捷操作', 'Quick actions')}</h2>
+      <div class="admin-kit-grid" data-grid="tiles">
+        {actions.map(action => <QuickActionTile {...action} />)}
+      </div>
+    </section>
+
+    {failed !== 0 && <section aria-label={t('警示', 'Alerts')}>
+      <AlertBanner title={failedLabel} tone="warning" href={failedHref} linkLabel={t('查看詳情', 'View details')}
+        unavailableLabel={unavailable} description={failed === null ? undefined :
+          t(`目前有 ${number.format(failed)} 筆同步失敗`, `${number.format(failed)} records currently failed`)} />
+    </section>}
+
+    <section class="dashboard-overview" aria-labelledby="dashboard-overview">
+      <h2 id="dashboard-overview">{t('收藏與資料概況', 'Collection and data overview')}</h2>
+      <div class="admin-kit-grid" data-grid="stats">
+        {stats.map(({ image, ...stat }, index) => <StatCard {...stat} value={stat.value ?? null}
+          locale={lang} unavailableLabel={unavailable} illustration={picture(image)}
+          detail={index > 0 && collection && collection.total > 0 && stat.value !== undefined
+            ? percent.format(stat.value / collection.total) : undefined} />)}
+      </div>
+
+      <div class="admin-kit-grid dashboard-panels" aria-label={t('採購概況', 'Purchase overview')}>
+        <StatCard label={t('已記錄採購成本', 'Recorded purchase costs')} icon="cart" illustration={picture('fn-purchases')} locale={lang} unavailableLabel={unavailable}>
+          <dl class="purchase-values">
+            {moneyGroups.map(({ label, rows }) => <div><dt>{label}</dt><dd>
+              {!rows ? <><span aria-hidden="true">—</span><span class="admin-kit-sr">{unavailable}</span></> :
+                rows.length === 0 ? t('尚未記錄', 'Not yet recorded') : rows.map(row => <div>{money(row) ??
+                  <>{row.currency} <span aria-hidden="true">—</span><span class="admin-kit-sr">{unavailable}</span></>}</div>)}
+            </dd></div>)}
           </dl>
-          <footer class:list={['dashboard-actions', { paired: card.actions.length === 2 }]}>
-            {card.actions.map((action) => action.href
-              ? <a class="admin-button primary" href={action.href}>{action.label}</a>
-              : <button class="admin-button" type="button" disabled>{action.label}</button>)}
-          </footer>
-        </article>
-      ))}
+          <p>{t('僅含採購分攤。歷史價格與維修費不計入，也不代表估值。', 'Purchase allocations only. Excludes historical prices and repair costs. This is not a valuation.')}</p>
+          {warnings.map(({ label, ids, tone }) => ids?.length ? <details class="admin-kit-notice" data-tone={tone}>
+            <summary>{t(`${label} ${number.format(ids.length)} 筆`, `${label}: ${number.format(ids.length)}`)}</summary>
+            <ul>{ids.map(id => <li><a href={href('/admin/purchases', { id: String(id) })}>{t('訂單', 'Order')} #{number.format(id)}</a></li>)}</ul>
+          </details> : null)}
+          <a href={purchaseHref}>{t('查看採購清單', 'View purchases')}</a>
+        </StatCard>
+
+        <StatCard label={t('未分攤金額', 'Unallocated amount')} icon="cart" illustration={picture('fn-purchases')} locale={lang} unavailableLabel={unavailable}>
+          {!purchases ? <p><span aria-hidden="true">—</span><span class="admin-kit-sr">{unavailable}</span></p> :
+            purchases.unallocated.length === 0 ? <p>{t('無正數餘額', 'No positive balances')}</p> :
+            <ul>{purchases.unallocated.map(row => <li>{money(row) ?? <>{row.currency} <span aria-hidden="true">—</span><span class="admin-kit-sr">{unavailable}</span></>}</li>)}</ul>}
+          {purchases?.excess.length ? <div>
+            <p>{t('超額分攤', 'Overallocated')}</p>
+            <ul>{purchases.excess.map(row => <li>{money(row) ?? <>{row.currency} <span aria-hidden="true">—</span><span class="admin-kit-sr">{unavailable}</span></>} · {t(`${number.format(row.count)} 筆`, `${number.format(row.count)} orders`)}</li>)}</ul>
+          </div> : null}
+          <a href={purchaseHref}>{t('查看採購清單', 'View purchases')}</a>
+        </StatCard>
+
+        <StatCard label={t('採購訂單狀態', 'Purchase order status')} icon="clipboard-check" illustration={picture('fn-purchases')} locale={lang} unavailableLabel={unavailable}>
+          <dl class="purchase-values">
+            {[{ label: t('待處理', 'Open'), count: purchases?.open }, { label: t('已取消', 'Cancelled'), count: purchases?.cancelled }].map(({ label, count }) =>
+              <div><dt>{label}</dt><dd>{count === undefined ? <><span aria-hidden="true">—</span><span class="admin-kit-sr">{unavailable}</span></> : number.format(count)}</dd></div>)}
+          </dl>
+          <a href={purchaseHref}>{t('查看採購清單', 'View purchases')}</a>
+        </StatCard>
+      </div>
+
+      <div class="admin-kit-grid dashboard-panels">
+        {statuses.map(({ image, rows, ...status }) => <StatusListCard {...status} rows={[...rows]} illustration={picture(image)} locale={lang} unavailableLabel={unavailable} />)}
+      </div>
+    </section>
+
+    <section class="admin-kit-panel" aria-labelledby="pending-work">
+      <h2 id="pending-work">{t('待處理項目', 'Pending work')}</h2>
+      {failed === null ? <p><span aria-hidden="true">—</span><span class="admin-kit-sr">{unavailable}</span></p> :
+        pending.length ? <PendingList locale={lang} items={pending} /> :
+        <EmptyState illustration={picture('empty-no-result')} reason={t('目前沒有待處理項目。', 'There is no pending work.')}
+          href={href('/admin/bgg')} action={t('查看 BGG 管理', 'View BGG management')} />}
     </section>
   </main>
 </AdminLayout>
 
 <style>
-  .dashboard{max-width:1200px;margin:auto;padding:40px 24px 64px;color:#202822}
-  .dashboard-heading{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:20px;margin-bottom:28px}
-  .eyebrow{margin:0 0 8px;font-size:11px;letter-spacing:.14em;color:#0f6b5c}
-  h1{margin:0;font-size:30px;line-height:1.3} .intro{margin:8px 0 0;color:#68675f}
-  .public-link{font-size:13px}
-  .dashboard-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
-  .dashboard-card{min-width:0;display:flex;flex-direction:column;padding:26px;background:#fff;border:1px solid #dad8d0;border-radius:12px}
-  h2{margin:0 0 22px;font-size:20px;font-weight:650}
-  .dashboard-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0 0 24px}
-  .dashboard-stat{min-width:0;padding:18px;background:#f3f6f2;border-radius:8px;overflow-wrap:anywhere}
-  dt{font-size:13px;color:#68675f} dd{margin:6px 0 0;font-size:32px;line-height:1.3;font-weight:650;color:#0f6b5c;font-variant-numeric:tabular-nums}
-  .stat-note{font-size:12px;color:#68675f;margin:8px 0 0}
-  .dashboard-actions{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;border-top:1px solid #e5e5dd;padding-top:20px;margin-top:auto}
-  .dashboard-actions.paired{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .dashboard-actions .admin-button{display:flex;align-items:center;justify-content:center;min-height:60px;width:100%;min-width:0;text-align:center;white-space:normal;overflow-wrap:anywhere;line-height:1.5}
-  .dashboard-actions button:disabled{background:#eceeea;border-color:#eceeea;color:#68675f;opacity:1;cursor:not-allowed}
-  .dashboard-error{padding:16px;margin-bottom:24px;background:#fff0ed;border:1px solid #e8bab3;border-radius:8px;color:#8d251c}
-  @media(max-width:760px){.dashboard{padding:28px 16px 40px}.dashboard-grid{grid-template-columns:minmax(0,1fr);gap:16px}.dashboard-card{padding:20px}h1{font-size:26px}}
-  @media(max-width:380px){.dashboard-card{padding:16px}.dashboard-stat{padding:12px}.dashboard-actions{gap:8px}.dashboard-actions .admin-button{padding:8px;font-size:12px}}
+  .dashboard, .dashboard-overview { display: grid; gap: var(--space-4); min-width: 0; }
+  .dashboard h2 { margin: 0 0 var(--space-2); }
+  .dashboard-overview > h2 { margin: 0; }
+  .dashboard > section { margin-block: 0; }
+  .dashboard .dashboard-panels { grid-template-columns: minmax(0, 1fr); }
+  .dashboard :global(.admin-kit-stat-content) { min-width: 0; overflow-wrap: anywhere; }
+  .purchase-values { margin: var(--space-2) 0; }
+  .purchase-values dd { margin: 0; }
+  .purchase-values dt { font-weight: 700; }
+  .purchase-values > div + div { margin-block-start: var(--space-2); }
+  .dashboard time, .dashboard :global(.admin-kit-stat-content) { font-variant-numeric: tabular-nums; }
+  .dashboard details { margin-block: var(--space-2); }
+  .dashboard details summary { cursor: pointer; }
+  .dashboard :global(.admin-kit-empty) { border: 0; box-shadow: none; }
+  @media (min-width: 768px) {
+    .dashboard .dashboard-panels { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
 </style>

@@ -1,0 +1,10 @@
+---
+import AdminIcon from './AdminIcon.astro';
+interface Props { label: string; count?: number; locale?: string; tone?: 'neutral' | 'danger' | 'warning' | 'success' | 'info' }
+const { label, count, locale, tone = 'neutral' } = Astro.props;
+const icons = { neutral: 'info', danger: 'alert-triangle', warning: 'alert-triangle', success: 'check-circle', info: 'info' } as const;
+---
+<span class="admin-kit-badge" data-tone={tone}>
+  <AdminIcon name={icons[tone]} size={15} />
+  {count === undefined ? label : <><span class="admin-kit-sr">{label} </span>{new Intl.NumberFormat(locale).format(count)}</>}
+</span>

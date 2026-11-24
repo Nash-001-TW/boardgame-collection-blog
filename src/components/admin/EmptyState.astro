@@ -1,0 +1,9 @@
+---
+interface Props { illustration: string; reason: string; href: string; action: string }
+const { illustration, reason, href, action } = Astro.props;
+---
+<div class="admin-kit-panel admin-kit-empty">
+  <img src={illustration} width="240" height="180" alt="" aria-hidden="true" loading="lazy" />
+  <p>{reason}</p>
+  <a class="admin-kit-button" data-variant="primary" href={href}>{action}</a>
+</div>

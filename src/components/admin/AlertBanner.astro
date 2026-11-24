@@ -1,0 +1,10 @@
+---
+import AdminIcon from './AdminIcon.astro';
+interface Props { title: string; description?: string; tone: 'danger' | 'warning'; href: string; linkLabel: string; unavailableLabel: string }
+const { title, description, tone, href, linkLabel, unavailableLabel } = Astro.props;
+---
+<article class="admin-kit-alert" data-tone={tone}>
+  <AdminIcon name="alert-triangle" size={28} />
+  <div><h3>{title}</h3><p>{description ?? unavailableLabel}</p></div>
+  <a class="admin-kit-button" href={href}>{linkLabel}<AdminIcon name="chevron-right" size={16} /></a>
+</article>

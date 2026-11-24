@@ -1,0 +1,309 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import AdminIcon from '../../components/admin/AdminIcon.astro';
+import PageHeader from '../../components/admin/PageHeader.astro';
+import QuickActionTile from '../../components/admin/QuickActionTile.astro';
+import AlertBanner from '../../components/admin/AlertBanner.astro';
+import StatCard from '../../components/admin/StatCard.astro';
+import StatusListCard from '../../components/admin/StatusListCard.astro';
+import CountBadge from '../../components/admin/CountBadge.astro';
+import EmptyState from '../../components/admin/EmptyState.astro';
+import PendingList from '../../components/admin/PendingList.astro';
+
+export const prerender = false;
+if (!import.meta.env.DEV) {
+  return new Response('Not Found', { status: 404, headers: { 'Cache-Control': 'no-store' } });
+}
+Astro.response.headers.set('Cache-Control', 'no-store');
+const lang = Astro.url.searchParams.get('lang') === 'en' ? 'en' : 'zh-TW';
+const t = (zh: string, en: string) => lang === 'en' ? en : zh;
+const title = t('管理元件展示', 'Admin component gallery');
+const missing = t('無法取得', 'Unavailable');
+const number = new Intl.NumberFormat(lang);
+const date = new Intl.DateTimeFormat(lang, { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Taipei' });
+const sampleTime = '2026-11-24T02:24:00Z';
+const image = (name: string) => '/images/admin/' + name + '.webp';
+const query = Astro.url.searchParams;
+const search = query.get('q') ?? '';
+const filter = query.get('state') === 'owned' ? 'owned' : '';
+const sort = query.get('sort') === 'desc' ? 'desc' : 'asc';
+const tab = query.get('tab') === 'copies' ? 'copies' : 'overview';
+const page = Math.max(1, Math.min(8, Number.parseInt(query.get('page') ?? '1', 10) || 1));
+const url = (changes: Record<string, string>, target: string) => {
+  const params = new URLSearchParams(query);
+  for (const [key, value] of Object.entries(changes)) {
+    if (value) params.set(key, value);
+    else params.delete(key);
+  }
+  return '?' + params.toString() + '#' + target;
+};
+const actions = [
+  [t('新增收藏', 'Add collection'), 'plus', 'brand', '#table'],
+  [t('查詢收藏', 'Find collection'), 'search', 'wood', '#filters'],
+  [t('新增採購', 'Add purchase'), 'cart', 'success', '#buttons'],
+  [t('管理卡套', 'Manage sleeves'), 'sleeves', 'brand', '#alerts'],
+  [t('同步 BGG', 'Sync BGG'), 'refresh', 'warning', '#alerts'],
+] as const;
+const cards = [
+  [t('收藏總數', 'Total collections'), 1234, t('含擴充', 'Includes expansions'), 'box', 'collection', 'brand'],
+  [t('已收藏', 'Owned'), 920, new Intl.NumberFormat(lang, { style: 'percent', maximumFractionDigits: 1 }).format(920 / 1234), 'check-circle', 'dashboard', 'success'],
+  [t('願望清單', 'Wishlist'), 0, '', 'heart', 'game-data', 'wish'],
+  [t('預購中', 'Preorders'), null, '', 'cart', 'purchases', 'preorder'],
+] as const;
+const shortage = t('卡套庫存不足', 'Sleeve stock is low');
+const sync = t('BGG 同步失敗', 'BGG sync failed');
+const details = t('查看詳情', 'View details');
+const names = ['Evergreen', 'Wingspan'];
+const rows = names.filter(name => name.toLowerCase().includes(search.toLowerCase()) && (!filter || name === 'Evergreen'));
+if (sort === 'desc') rows.reverse();
+const labels = [t('封面', 'Cover'), t('遊戲', 'Game'), t('狀態', 'Status'), t('最後異動', 'Last updated')];
+const stateLabels = [t('異常', 'Issue'), t('待確認', 'Pending review'), t('正常', 'Complete'), t('不適用', 'Not applicable')];
+const pageNumbers = [...new Set([1, Math.max(2, page - 1), page, Math.min(7, page + 1), 8])].sort((a, b) => a - b);
+---
+<AdminLayout title={title} lang={lang}>
+  <main class="admin-kit" id="editor-content" tabindex="-1">
+    <PageHeader title={title} description={t('僅本機展示，所有內容均為合成範例。', 'Local preview with sample data.')} icon="home">
+      <time datetime={sampleTime}>{t('更新時間', 'Updated')} {date.format(new Date(sampleTime))}</time>
+      <a class="admin-kit-button" data-variant="secondary" href={Astro.url.pathname + Astro.url.search}><AdminIcon name="refresh" />{t('重新整理', 'Refresh')}</a>
+    </PageHeader>
+
+    <section>
+      <h2>{t('快捷操作', 'Quick actions')}</h2>
+      <div class="admin-kit-grid" data-grid="tiles">
+        {actions.map(([label, icon, tone, href]) => <QuickActionTile {label} {icon} {tone} {href} />)}
+      </div>
+    </section>
+
+    <section id="alerts">
+      <h2>{t('警示', 'Alerts')}</h2>
+      <div class="admin-kit-grid" data-grid="alerts">
+        <AlertBanner title={shortage} description={t('有 3 種尺寸低於需求。', 'Stock is below demand for 3 sizes.')} tone="danger" href="#pending" linkLabel={details} unavailableLabel={missing} />
+        <AlertBanner title={sync} description={t('目前有 2 筆失敗。', '2 records are currently failing.')} tone="warning" href="#pending" linkLabel={details} unavailableLabel={missing} />
+        <AlertBanner title={t('卡套庫存', 'Sleeve inventory')} tone="warning" href="#empty" linkLabel={details} unavailableLabel={missing} />
+      </div>
+    </section>
+
+    <section id="stats">
+      <h2>{t('收藏與資料概況', 'Collection and data summary')}</h2>
+      <div class="admin-kit-grid" data-grid="stats">
+        {cards.map(([label, value, detail, icon, art, tone]) =>
+          <StatCard {label} {value} {detail} {icon} {tone} illustration={image('fn-' + art)} locale={lang} unavailableLabel={missing} />)}
+      </div>
+    </section>
+    <section id="pending">
+      <h2>{t('狀況與待處理項目', 'Status and pending items')}</h2>
+      <div class="admin-kit-grid" data-grid="panels">
+        <StatusListCard title={t('卡套狀況', 'Sleeve status')} icon="sleeves" locale={lang} unavailableLabel={missing} rows={[
+          { label: t('尺寸數', 'Sizes'), count: 28 },
+          { label: t('有需求紀錄', 'With demand'), count: null },
+          { label: t('庫存不足', 'Low stock'), count: 3, tone: 'danger' },
+        ]} />
+        <div class="admin-kit-panel"><PendingList locale={lang} items={[
+          { label: shortage, href: '#alerts', count: 3, tone: 'danger' },
+          { label: sync, href: '#alerts', count: 2, tone: 'warning' },
+        ]} /></div>
+      </div>
+    </section>
+
+    <section id="buttons">
+      <h2>{t('按鈕與操作狀態', 'Buttons and action states')}</h2>
+      <div class="admin-kit-row">
+        {['primary', 'secondary', 'danger', 'ghost'].map((variant, i) =>
+          <button type="button" class="admin-kit-button" data-variant={variant} data-open-confirm>
+            {[t('主要操作', 'Primary'), t('次要操作', 'Secondary'), t('移除項目', 'Remove item'), t('其他操作', 'Ghost')][i]}
+          </button>)}
+        <button class="admin-kit-button" data-variant="secondary" disabled>{t('已停用', 'Disabled')}</button>
+        {[false, true].map(busy => <button type="button" class="admin-kit-button" data-variant="primary" aria-busy={busy ? 'true' : undefined}
+          disabled={busy} data-open-confirm>
+          <span class="admin-kit-spinner" aria-hidden="true"></span><span class="admin-kit-button-label"><span aria-hidden={busy ? 'true' : undefined}>{t('儲存', 'Save')}</span><span aria-hidden={busy ? undefined : 'true'}>{t('儲存中', 'Saving')}</span></span>
+        </button>)}
+      </div>
+    </section>
+
+    <section id="tabs">
+      <h2>{t('分頁籤與狀態膠囊', 'Tabs and status pills')}</h2>
+      <div class="admin-kit-row" role="tablist" aria-label={t('收藏詳細資料', 'Collection details')}>
+        <button type="button" class="admin-kit-button" role="tab" id="tab-overview" aria-controls="panel-overview"
+          aria-selected={tab === 'overview' ? 'true' : 'false'} tabindex={tab === 'overview' ? 0 : -1}>{t('概況', 'Overview')}</button>
+        <button type="button" class="admin-kit-button" role="tab" id="tab-copies" aria-controls="panel-copies"
+          aria-selected={tab === 'copies' ? 'true' : 'false'} tabindex={tab === 'copies' ? 0 : -1}>
+          {t('副本', 'Copies')}<CountBadge label={t('異常數', 'Issue count')} tone="danger" count={2} locale={lang} />
+        </button>
+      </div>
+      <div id="panel-overview" role="tabpanel" aria-labelledby="tab-overview" hidden={tab !== 'overview'} tabindex="0" class="admin-kit-panel admin-kit-row">
+        {(['danger', 'info', 'success', 'neutral'] as const).map((tone, i) => <CountBadge label={stateLabels[i]} {tone} />)}
+      </div>
+      <div id="panel-copies" role="tabpanel" aria-labelledby="tab-copies" hidden={tab !== 'copies'} tabindex="0" class="admin-kit-panel">
+        {t('副本清點範例', 'Sample copy inspection')}
+      </div>
+    </section>
+
+    <section id="filters">
+      <h2>{t('篩選列', 'Filters')}</h2>
+      <form action="/dev/ui-kit#table" method="get" class="admin-kit-filter admin-kit-row">
+        <input type="hidden" name="lang" value={lang} />
+        <input type="hidden" name="tab" value={tab} />
+        <label>{t('搜尋遊戲', 'Find a game')}<input class="admin-kit-field" name="q" type="search" autocomplete="off" value={search} /></label>
+        <details open={Boolean(filter)}>
+          <summary class="admin-kit-button">{t('更多篩選', 'More filters')}</summary>
+          <label>{t('收藏狀態', 'Collection status')}
+            <select class="admin-kit-field" name="state"><option value="">{t('全部', 'All')}</option>
+              <option value="owned" selected={Boolean(filter)}>{t('已收藏', 'Owned')}</option></select>
+          </label>
+        </details>
+        <button class="admin-kit-button" data-variant="primary">{t('套用篩選', 'Apply filters')}</button>
+      </form>
+      {(search || filter) && <div class="admin-kit-row">
+        <span>{t('已套用條件', 'Applied filters')}</span>
+        {search && <a class="admin-kit-button admin-kit-chip" href={url({ q: '', page: '' }, 'filters')}>{search} <AdminIcon name="x" size={16} /><span class="admin-kit-sr">{t('移除搜尋', 'Remove search')}</span></a>}
+        {filter && <a class="admin-kit-button admin-kit-chip" href={url({ state: '', page: '' }, 'filters')}>{t('已收藏', 'Owned')} <AdminIcon name="x" size={16} /><span class="admin-kit-sr">{t('移除收藏狀態', 'Remove collection status')}</span></a>}
+        <a class="admin-kit-button" href={url({ q: '', state: '', page: '' }, 'filters')}>{t('清除全部', 'Clear all')}</a>
+      </div>}
+    </section>
+
+    <section id="table">
+      <h2 id="table-title">{t('收藏表格', 'Collection table')}</h2>
+      {rows.length ? <table class="admin-kit-table" role="table" aria-labelledby="table-title">
+        <thead role="rowgroup"><tr role="row">
+          <th role="columnheader" scope="col">{labels[0]}</th>
+          <th role="columnheader" scope="col" aria-sort={sort === 'asc' ? 'ascending' : 'descending'}>
+            <button type="button" class="admin-kit-button" data-sort-url={url({ sort: sort === 'asc' ? 'desc' : 'asc' }, 'table')}>
+              {labels[1]}<AdminIcon name={sort === 'asc' ? 'chevron-up' : 'chevron-down'} size={16} />
+            </button>
+          </th>
+          <th role="columnheader" scope="col">{labels[2]}</th>
+          <th role="columnheader" scope="col" class="admin-kit-extra">{labels[3]}</th>
+        </tr></thead>
+        <tbody role="rowgroup">{rows.map(name => <tr role="row">
+          <td role="cell"><span class="admin-kit-cell-label" aria-hidden="true">{labels[0]}</span><span class="admin-kit-cover">
+            <span>{t('無封面', 'No cover')}</span>
+            {name === 'Evergreen' && <img width="56" height="74" loading="lazy" src={image('fn-collection')} alt="" />}
+          </span></td>
+          <td role="cell"><span class="admin-kit-cell-label" aria-hidden="true">{labels[1]}</span>{name}</td>
+          <td role="cell"><span class="admin-kit-cell-label" aria-hidden="true">{labels[2]}</span><CountBadge label={stateLabels[2]} tone="success" /></td>
+          <td role="cell" class="admin-kit-extra">{date.format(new Date(sampleTime))}</td>
+        </tr>)}</tbody>
+      </table> : <EmptyState illustration={image('empty-no-result')} reason={t('找不到符合條件的收藏。', 'No collections match these filters.')}
+        action={t('清除全部', 'Clear all')} href={url({ q: '', state: '' }, 'filters')} />}
+    </section>
+
+    <section id="pagination">
+      <h2>{t('分頁器', 'Pagination')}</h2>
+      <nav class="admin-kit-row" aria-label={t('收藏分頁範例', 'Sample collection pagination')}>
+        <a class="admin-kit-button" href={url({ page: '1' }, 'pagination')}>{t('首頁', 'First')}</a>
+        {page > 1 ? <a class="admin-kit-button" href={url({ page: String(page - 1) }, 'pagination')}>{t('上一頁', 'Previous')}</a>
+          : <button class="admin-kit-button" disabled>{t('上一頁', 'Previous')}</button>}
+        {pageNumbers.map((n, i) => <>
+          {i > 0 && n - pageNumbers[i - 1] > 1 && <span>…</span>}
+          <a class="admin-kit-button" href={url({ page: String(n) }, 'pagination')} aria-current={page === n ? 'page' : undefined}>{number.format(n)}</a>
+        </>)}
+        {page < 8 ? <a class="admin-kit-button" href={url({ page: String(page + 1) }, 'pagination')}>{t('下一頁', 'Next')}</a>
+          : <button class="admin-kit-button" disabled>{t('下一頁', 'Next')}</button>}
+        <a class="admin-kit-button" href={url({ page: '8' }, 'pagination')}>{t('末頁', 'Last')}</a>
+      </nav>
+      <p>{t('顯示', 'Showing')} {number.format((page - 1) * 20 + 1)}–{number.format(Math.min(page * 20, 156))} {t('筆，共', 'of')} {number.format(156)} {t('筆', 'records')}</p>
+    </section>
+
+    <section id="quantity">
+      <h2>{t('數量步進器', 'Quantity stepper')}</h2>
+      <label for="demo-quantity">{t('實點數量', 'Counted quantity')}</label>
+      <div class="admin-kit-row admin-kit-stepper">
+        <button type="button" class="admin-kit-button" data-variant="secondary" data-step="-1" aria-label={t('減少一件', 'Decrease by one')}>−</button>
+        <input class="admin-kit-field" id="demo-quantity" type="number" min="0" step="1" inputmode="numeric" value="3" aria-describedby="quantity-draft" />
+        <button type="button" class="admin-kit-button" data-variant="secondary" data-step="1" aria-label={t('增加一件', 'Increase by one')}>+</button>
+        <span id="quantity-draft" class="admin-kit-row"><AdminIcon name="pencil" size={16} />{t('草稿', 'Draft')}</span>
+      </div>
+      <p class="admin-kit-notice" data-tone="info" role="status" aria-live="polite">
+        {t('儲存中。', 'Saving.')}
+      </p>
+      <div class="admin-kit-notice" data-tone="danger" role="alert">
+        {t('儲存失敗，請重試。', 'Saving failed. Try again.')}
+        <button type="button" class="admin-kit-button" data-open-confirm>{t('重試', 'Retry')}</button>
+      </div>
+    </section>
+
+    <section id="batch">
+      <h2>{t('部分完成：成功 2、失敗 1', 'Partially complete: 2 succeeded, 1 failed')}</h2>
+      <ul>
+        <li>Evergreen <CountBadge label={t('成功', 'Succeeded')} tone="success" /></li>
+        <li>Wingspan <CountBadge label={t('成功', 'Succeeded')} tone="success" /></li>
+        <li>Frosthaven <CountBadge label={t('失敗', 'Failed')} tone="danger" />
+          <button type="button" class="admin-kit-button" data-open-confirm>{t('重試', 'Retry')}</button>
+        </li>
+      </ul>
+      <p data-status role="status" aria-live="polite" class="admin-kit-notice" data-tone="success">{t('已更新兩筆收藏。', 'Two collections updated.')}</p>
+      <p role="alert" class="admin-kit-notice" data-tone="danger">{t('有一筆無法更新，請重試該筆。', 'One collection could not be updated. Retry that record.')}</p>
+    </section>
+
+    <section id="empty">
+      <h2>{t('空狀態與載入錯誤', 'Empty and load error states')}</h2>
+      <div class="admin-kit-grid" data-grid="panels">
+        <EmptyState illustration={image('empty-no-copy')} reason={t('這筆收藏還沒有副本。', 'This collection has no copies.')}
+          action={t('新增副本', 'Add a copy')} href="#quantity" />
+        <EmptyState illustration={image('empty-error')} reason={t('目前無法載入收藏。', 'The collection could not be loaded.')}
+          action={t('重新整理', 'Refresh')} href={Astro.url.pathname + Astro.url.search + '#empty'} />
+      </div>
+    </section>
+
+    <dialog class="admin-kit-dialog" id="kit-confirm" aria-labelledby="kit-confirm-title" aria-describedby="kit-confirm-impact">
+      <h2 id="kit-confirm-title">{t('套用數量更正', 'Apply quantity changes')}</h2>
+      <p id="kit-confirm-impact">{t('此動作將覆蓋下列三個組件的合成數量。', 'This will overwrite the sample quantities for these three components.')}</p>
+      <ul><li>{t('卡牌', 'Cards')}</li><li>{t('標記', 'Tokens')}</li><li>{t('骰子', 'Dice')}</li></ul>
+      <form method="dialog" class="admin-kit-row">
+        <button class="admin-kit-button" data-variant="secondary" value="cancel" autofocus>{t('取消', 'Cancel')}</button>
+        <button class="admin-kit-button" data-variant="primary" value="confirm">{t('確認並套用（3 項）', 'Confirm and apply (3 items)')}</button>
+      </form>
+    </dialog>
+  </main>
+</AdminLayout>
+<script is:inline>
+  for (const cover of document.querySelectorAll('.admin-kit-cover img')) {
+    cover.addEventListener('error', () => { cover.hidden = true; });
+    if (cover.complete && !cover.naturalWidth) cover.hidden = true;
+  }
+  const dialog = document.querySelector('#kit-confirm');
+  for (const button of document.querySelectorAll('[data-open-confirm]')) {
+    button.addEventListener('click', () => dialog.showModal());
+  }
+  const quantity = document.querySelector('#demo-quantity');
+  for (const button of document.querySelectorAll('[data-step]')) {
+    button.addEventListener('click', () => {
+      if (button.dataset.step === '1') quantity.stepUp();
+      else quantity.stepDown();
+    });
+  }
+  for (const button of document.querySelectorAll('[data-sort-url]')) {
+    button.addEventListener('click', () => location.assign(button.dataset.sortUrl));
+  }
+  const tabs = [...document.querySelectorAll('#tabs [role=tab]')];
+  function selectTab(current, writeUrl) {
+    for (const tab of tabs) {
+      const selected = tab === current;
+      tab.setAttribute('aria-selected', String(selected));
+      tab.tabIndex = selected ? 0 : -1;
+      document.getElementById(tab.getAttribute('aria-controls')).hidden = !selected;
+    }
+    if (writeUrl) {
+      const url = new URL(location.href);
+      url.searchParams.set('tab', current.id.slice(4));
+      history.pushState(null, '', url);
+      document.querySelector('#filters input[name=tab]').value = url.searchParams.get('tab');
+    }
+  }
+  for (const [index, tab] of tabs.entries()) {
+    tab.addEventListener('click', () => selectTab(tab, true));
+    tab.addEventListener('keydown', event => {
+      const targets = { ArrowRight: (index + 1) % tabs.length, ArrowLeft: (index + tabs.length - 1) % tabs.length, Home: 0, End: tabs.length - 1 };
+      if (!Object.hasOwn(targets, event.key)) return;
+      event.preventDefault();
+      const current = tabs[targets[event.key]];
+      selectTab(current, true);
+      current.focus();
+    });
+  }
+  addEventListener('popstate', () => {
+    const active = new URL(location.href).searchParams.get('tab');
+    selectTab(tabs[active === 'copies' ? 1 : 0], false);
+    document.querySelector('#filters input[name=tab]').value = active === 'copies' ? 'copies' : 'overview';
+  });
+</script>

@@ -3,13 +3,86 @@ import { createRequire } from 'node:module';
 import { build } from 'esbuild';
 import { transform } from '@astrojs/compiler-rs';
 import { experimental_AstroContainer } from 'astro/container';
+import { DatabaseSync } from 'node:sqlite';
+import { readFileSync, readdirSync } from 'node:fs';
+import { sqliteD1 } from './sqlite-d1';
+
+/** R01-only synthetic data; all writes are to disposable in-memory SQLite. */
+export function r01Fixture(state: 'normal' | 'warning' | 'empty' | 'failure' = 'normal') {
+    const sqlite = new DatabaseSync(':memory:');
+    for (const file of readdirSync('migrations').filter(file => file.endsWith('.sql')).sort()) {
+        sqlite.exec(readFileSync('migrations/' + file, 'utf8').replace(/^\uFEFF/, ''));
+    }
+    if (state !== 'empty') {
+        sqlite.exec(`
+            BEGIN;
+            INSERT INTO v2_games(id,primary_name) VALUES (1,'Synthetic BGG'),(2,'Synthetic NotBGG');
+            INSERT INTO v2_legacy_id_map(legacy_table,legacy_id,target_table,target_id) VALUES ('bgg_games',1,'v2_games',1);
+            INSERT INTO notbgg_ids(seq, request_key, request_hash) VALUES (1,'synthetic','synthetic');
+            INSERT INTO notbgg_games(seq, game_id, name, type) VALUES (1,2,'Synthetic NotBGG','boardgame');
+            INSERT INTO notbgg_game_revisions(seq, revision, snapshot_json, actor) VALUES (1,1,'{}','fixture');
+            INSERT INTO v2_collection_items(id,display_name,acquisition_status,wishlist,notes,record_scope) VALUES
+              (1,'Owned','owned',0,NULL,'production'),
+              (2,'Wishlist','owned',1,'{"owned":0}','production'),
+              (3,'Preorder','preordered',0,'{"owned":1}','production'),
+              (4,'Test','owned',1,NULL,'test');
+            INSERT INTO v2_collection_management(collection_item_id,archived_at) VALUES (2,'2026-11-24');
+            INSERT INTO v2_owned_copies(id,collection_item_id,copy_label) VALUES (1,1,'Synthetic');
+            INSERT INTO v2_component_definitions(id,collection_item_id,component_name) VALUES (1,1,'Cards'),(2,4,'Test cards');
+            INSERT INTO v2_copy_components(owned_copy_id,component_definition_id) VALUES (1,1);
+            INSERT INTO v2_sleeve_sizes(id,width_tenth_mm,height_tenth_mm) VALUES (1,630,880),(2,450,680);
+            INSERT INTO v2_sleeve_requirements(collection_item_id,size_id,quantity_sheets) VALUES (1,1,30),(4,1,30);
+            INSERT INTO bgg_games(bgg_id,name,sync_status,last_attempt_at) VALUES
+              (1,'Success','success','2026-11-24'),(2,'Pending','unknown','2026-11-24');
+            INSERT INTO v2_purchase_orders(id,currency_code,item_subtotal_minor,refunded_minor,status) VALUES
+              (1,'TWD',12000,2000,'paid'),(2,'JPY',500,0,'completed'),(3,'USD',1500,0,'partially_received'),
+              (4,'TWD',3000,0,'open'),(5,'TWD',2000,0,'cancelled'),(6,'EUR',0,0,'paid');
+            INSERT INTO v2_purchase_allocations(purchase_order_id,collection_item_id,owned_copy_id,allocated_minor,allocation_method) VALUES
+              (1,1,NULL,7000,'manual'),(2,2,NULL,500,'weighted'),(3,NULL,1,1500,'direct'),
+              (4,1,NULL,1000,'weighted'),(5,1,NULL,1000,'weighted'),(6,1,NULL,0,'manual');
+            COMMIT;
+        `);
+    }
+    if (state === 'warning') {
+        // Model pre-existing malformed rows without changing the production schema or guards.
+        sqlite.exec(`
+            PRAGMA foreign_keys = OFF;
+            DROP TRIGGER v2_allocation_validate_insert;
+            INSERT INTO bgg_games(bgg_id,name,sync_status,last_attempt_at) VALUES (3,'Old failure','failed','2020-01-01');
+            INSERT INTO v2_purchase_orders(id,currency_code,item_subtotal_minor,status) VALUES
+              (7,'TWD',1000,'paid'),(8,'USD',2000,'paid'),(9,'TWD',200,'paid'),(10,'TWD',100,'paid'),
+              (11,'TWD',100,'paid'),(12,'TWD',100,'paid'),(13,'TWD',100,'paid'),(14,'TWD',100,'paid');
+            INSERT INTO v2_purchase_order_lines(id,purchase_order_id,line_number,description,collection_item_id) VALUES
+              (1,8,1,'Same-order target',1),(2,13,1,'Mismatched target',2);
+            INSERT INTO v2_purchase_allocations(purchase_order_id,purchase_order_line_id,collection_item_id,owned_copy_id,allocated_minor,allocation_method) VALUES
+              (7,NULL,1,NULL,1500,'manual'),
+              (8,1,1,NULL,1500,'weighted'),
+              (9,1,1,NULL,200,'manual'),
+              (10,NULL,NULL,999,100,'direct'),
+              (11,NULL,999,NULL,100,'direct'),
+              (12,999,1,NULL,100,'manual'),
+              (13,2,1,NULL,100,'manual'),
+              (14,NULL,1,NULL,10,'weighted'),(14,NULL,2,NULL,10,'manual');
+            PRAGMA foreign_keys = ON;
+        `);
+    }
+    const db = sqliteD1(sqlite);
+    if (state === 'failure') {
+        const prepare = db.prepare.bind(db);
+        db.prepare = (sql: string) => {
+            if (sql.includes('v2_component_definitions')) throw new Error('Synthetic component read failure');
+            return prepare(sql);
+        };
+    }
+    return { sqlite, db };
+}
 
 /** Test-only injected bindings; real Astro pages and real middleware, no dev exemption. */
-export async function dashboardPreview(bindings: Record<string, unknown>) {
+export async function dashboardPreview(bindings: Record<string, unknown>, uiKit?: { dev: boolean }) {
     async function compile(entry: string) {
         const css: string[] = [];
         const compiled = await build({ entryPoints: [entry], bundle: true, write: false,
-            format: 'cjs', platform: 'node', packages: 'external', define:{'import.meta.env.DEV':'false'}, plugins: [{ name: 'admin-astro', setup(builder) {
+            format: 'cjs', platform: 'node', packages: 'external', define:{'import.meta.env.DEV':String(entry === 'src/pages/dev/ui-kit.astro' && uiKit?.dev === true)}, plugins: [{ name: 'admin-astro', setup(builder) {
                 builder.onResolve({ filter: /^(cloudflare:workers|astro:middleware)$/ }, args => ({path:args.path,namespace:'test-bindings'}));
                 builder.onLoad({filter:/.*/,namespace:'test-bindings'},args=>({contents:args.path==='cloudflare:workers'?'export const env=TEST_BINDINGS;':'export const defineMiddleware=fn=>fn;',loader:'js'}));
                 builder.onLoad({ filter: /\.css$/ }, async args => {
@@ -29,7 +102,7 @@ export async function dashboardPreview(bindings: Record<string, unknown>) {
     }
 
  const views = new Map();
- for (const [route,entry] of [
+ for (const [route,entry] of uiKit ? [['/dev/ui-kit','src/pages/dev/ui-kit.astro']] : [
   ['/admin','src/pages/admin/index.astro'],
   ['/admin/sleeves','src/pages/admin/sleeves/index.astro'],
   ['/admin/purchases','src/pages/admin/purchases/index.astro'],
@@ -63,6 +136,7 @@ export async function dashboardPreview(bindings: Record<string, unknown>) {
   return (middleware.exports as any).onRequest({request,url},async()=>{
    const response=await container.renderToResponse(view.component,{request,params:id?{id}:{}});
    const html=await response.text();
+   if (route === '/dev/ui-kit') return new Response(html.replace('</head>','<style>' + view.css + '</style></head>'),{status:response.status,headers:response.headers});
    return new Response(html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/g,'').replace('</head>',`<style>${view.css}</style></head>`),{status:response.status,headers:response.headers});
   });
  };

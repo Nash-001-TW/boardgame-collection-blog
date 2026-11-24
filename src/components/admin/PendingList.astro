@@ -1,0 +1,13 @@
+---
+import AdminIcon from './AdminIcon.astro';
+import CountBadge from './CountBadge.astro';
+interface Props { locale: string; items: { href: string; label: string; count: number; tone: 'danger' | 'warning' }[] }
+const { locale, items } = Astro.props;
+---
+<ul class="admin-kit-pending">
+  {items.map(({ href, label, count, tone }) => <li><a href={href} data-tone={tone}>
+    <AdminIcon name="alert-triangle" size={20} />
+    <span>{label}</span><CountBadge label={label} count={count} tone={tone} locale={locale} />
+    <AdminIcon name="chevron-right" size={18} />
+  </a></li>)}
+</ul>
