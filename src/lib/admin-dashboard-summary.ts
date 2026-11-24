@@ -31,13 +31,14 @@ async function counts<T extends Record<string, number>>(db: D1Database, sql: str
     return row;
 }
 
-async function readPurchases(db: D1Database) {
-    const result = await db.prepare(`
-        WITH cost_orders AS (
+const costOrders = `
+        cost_orders AS (
             SELECT o.id, o.currency_code, r.unallocated_minor
             FROM v2_purchase_orders o JOIN v2_purchase_order_reconciliation r ON r.purchase_order_id = o.id
             WHERE o.status IN ('paid','partially_received','completed')
-        ), allocations AS (
+        )`;
+const allocations = `
+        allocations AS (
             SELECT a.purchase_order_id, a.allocated_minor, a.allocation_method, c.id AS collection_id,
                    m.archived_at, c.record_scope,
                    (a.collection_item_id IS NOT NULL AND c.id IS NULL)
@@ -52,40 +53,60 @@ async function readPurchases(db: D1Database) {
             LEFT JOIN v2_collection_items c ON c.id = COALESCE(a.collection_item_id, copy.collection_item_id)
             LEFT JOIN v2_collection_management m ON m.collection_item_id = c.id
             LEFT JOIN v2_purchase_order_lines l ON l.id = a.purchase_order_line_id
-        ), allocation_checks AS (
+        )`;
+const allocationChecks = `
+        allocation_checks AS (
             SELECT purchase_order_id, MIN(allocation_method = 'weighted') AS all_weighted,
                    MAX(invalid_target) AS invalid_target, MAX(unmapped_copy) AS unmapped_copy
             FROM allocations GROUP BY purchase_order_id
-        )
-        SELECT CASE WHEN a.archived_at IS NULL THEN 'active' ELSE 'archived' END AS kind,
-               o.currency_code AS currency, SUM(a.allocated_minor) AS amount, 0 AS order_id
-        FROM allocations a JOIN cost_orders o ON o.id = a.purchase_order_id
-        WHERE a.record_scope = 'production'
-        GROUP BY kind, currency
-        UNION ALL
-        SELECT 'unallocated', currency_code, SUM(unallocated_minor), 0 FROM cost_orders
-        WHERE unallocated_minor > 0 GROUP BY currency_code
-        UNION ALL
-        SELECT 'excess', currency_code, SUM(-unallocated_minor), COUNT(*) FROM cost_orders
-        WHERE unallocated_minor < 0 GROUP BY currency_code
-        UNION ALL
-        SELECT 'inconsistent', '', 0, o.id FROM cost_orders o
-        LEFT JOIN allocation_checks a ON a.purchase_order_id = o.id
-        WHERE o.unallocated_minor < 0 OR a.invalid_target = 1
-        UNION ALL
-        SELECT 'review', '', 0, o.id FROM cost_orders o
-        JOIN allocation_checks a ON a.purchase_order_id = o.id
-        WHERE (o.unallocated_minor > 0 AND a.all_weighted = 1) OR a.unmapped_copy = 1
-        UNION ALL
-        SELECT status, '', COUNT(*), 0 FROM v2_purchase_orders
-        WHERE status IN ('open','cancelled') GROUP BY status
-        ORDER BY kind, currency, order_id
-    `).all<PurchaseRow>();
-    if (!result.success || result.results.some(row =>
-        !Number.isSafeInteger(row.amount) || !Number.isSafeInteger(row.order_id))) {
+        )`;
+
+async function readPurchases(db: D1Database) {
+    // Keep the six reads in one D1 transaction without a compound SELECT.
+    const statements = [
+        db.prepare(`
+            WITH ${costOrders}, ${allocations}
+            SELECT CASE WHEN a.archived_at IS NULL THEN 'active' ELSE 'archived' END AS kind,
+                   o.currency_code AS currency, SUM(a.allocated_minor) AS amount, 0 AS order_id
+            FROM allocations a JOIN cost_orders o ON o.id = a.purchase_order_id
+            WHERE a.record_scope = 'production'
+            GROUP BY kind, currency
+            ORDER BY kind, currency`),
+        db.prepare(`
+            WITH ${costOrders}
+            SELECT 'unallocated' AS kind, currency_code AS currency, SUM(unallocated_minor) AS amount, 0 AS order_id FROM cost_orders
+            WHERE unallocated_minor > 0 GROUP BY currency_code
+            ORDER BY currency`),
+        db.prepare(`
+            WITH ${costOrders}
+            SELECT 'excess' AS kind, currency_code AS currency, SUM(-unallocated_minor) AS amount, COUNT(*) AS order_id FROM cost_orders
+            WHERE unallocated_minor < 0 GROUP BY currency_code
+            ORDER BY currency`),
+        db.prepare(`
+            WITH ${costOrders}, ${allocations}, ${allocationChecks}
+            SELECT 'inconsistent' AS kind, '' AS currency, 0 AS amount, o.id AS order_id FROM cost_orders o
+            LEFT JOIN allocation_checks a ON a.purchase_order_id = o.id
+            WHERE o.unallocated_minor < 0 OR a.invalid_target = 1
+            ORDER BY order_id`),
+        db.prepare(`
+            WITH ${costOrders}, ${allocations}, ${allocationChecks}
+            SELECT 'review' AS kind, '' AS currency, 0 AS amount, o.id AS order_id FROM cost_orders o
+            JOIN allocation_checks a ON a.purchase_order_id = o.id
+            WHERE (o.unallocated_minor > 0 AND a.all_weighted = 1) OR a.unmapped_copy = 1
+            ORDER BY order_id`),
+        db.prepare(`
+            SELECT status AS kind, '' AS currency, COUNT(*) AS amount, 0 AS order_id FROM v2_purchase_orders
+            WHERE status IN ('open','cancelled') GROUP BY status
+            ORDER BY kind`),
+    ];
+    const results = await db.batch<PurchaseRow>(statements);
+    if (results.length !== statements.length || results.some(result =>
+        !result.success || result.results.some(row =>
+            !Number.isSafeInteger(row.amount) || !Number.isSafeInteger(row.order_id)))) {
         throw new Error('Invalid purchase totals');
     }
-    const rows = (kind: string) => result.results.filter(row => row.kind === kind);
+    const purchaseRows = results.flatMap(result => result.results);
+    const rows = (kind: string) => purchaseRows.filter(row => row.kind === kind);
     const money = (kind: string) => rows(kind).map(({ currency, amount }) => ({ currency, amount }));
     return {
         active: money('active'),

@@ -276,3 +276,74 @@
 - **資料規則核對**：全部唯讀、各區獨立失敗。採購：成本只計 paid／partially_received／completed；已記錄成本依幣別、未封存／已封存分列，只計 production 收藏；未分攤只加正餘額；超額另列筆數與金額不互抵；「不一致」＝負餘額或有填明細但明細不存在／不屬於該訂單／收藏不符（整單分攤不標示）；「待核」＝全部 weighted 且正餘額，或副本分攤無法對應收藏；open／cancelled 分列。BGG 失敗與 BGG 管理頁同口徑（中斷的同步視為失敗）。卡套只顯示尺寸數與有需求紀錄數。
 - **Claude 重跑**：三檔 Node 測試 **11／11**；R01 Edge **7／7**；`astro check` **10 個錯誤**（無新增）；`git diff --check` 通過。Shell 回歸 9／9 引用 Codex 結果。
 - **小觀察（不擋）**：待處理為空時的空狀態按鈕是「查看 BGG 管理」，語意略牽強；無警示時快捷操作與概況之間留白較大；採購三卡高度不一致時下方留白較多。可於日後微調。
+
+## 13. 階段 2＋3 正式驗收（2026-11-24）：採購三卡失敗，其餘通過
+
+- 部署：`07d39ff` 推送後自動部署為 `df35fa2e…`（100%）；Claude 唯讀抽查 14 條路由全部符合（`/dev/ui-kit` 404＋no-store）。
+- 使用者登入後 Claude 檢查（面板寬 700px）：標題列、快捷 5 磚與連結、收藏統計（256／254／0／2，與 G0 一致）、BGG 警示（0，與 BGG 頁篩選一致）、三張狀況卡、待處理空狀態、英文模式、無橫向捲動皆通過。
+- **採購三卡全部顯示「無法取得」**。診斷（使用者同意）：
+  1. 本機以 G1 正式備份重跑同一查詢：成功、0 列（正式採購訂單與分攤皆 0 筆）。
+  2. `wrangler tail`：每次載入記錄 `Admin dashboard section unavailable purchases Error`（非逾時）。
+  3. 對正式 D1 執行同一唯讀查詢：**`too many terms in compound SELECT: SQLITE_ERROR [code: 7500]`**。
+- **根因**：採購查詢以 6 段 `UNION ALL` 組成一個複合 SELECT；Cloudflare D1 的複合 SELECT 項數上限低於本機 SQLite（預設 500），本機測試因此未能發現。專案中其他複合查詢最多 5 段（`component-classifier-adapter.ts`，正式環境運作正常）。
+- 失敗隔離如設計運作（只有採購區顯示「無法取得」，未顯示 0）。
+- 遠端操作：wrangler tail 1 次（約 30 秒）、正式 D1 唯讀查詢 1 次、正式網站登入後瀏覽數頁；寫入 0。
+
+## 14. 工作命令：採購三卡修正（2026-11-25 已授權，DECISION_LOG UI-S3-FIX-AUTH）
+
+### 14.1 修正方式
+
+- **觀察到的限制**：正式 D1 上 5 段複合 SELECT 正常（`component-classifier-adapter.ts`），6 段失敗（§13）。官方上限數字未查證，只記實測範圍。
+- **做法（建議）**：把 `readPurchases` 的 6 段 `UNION ALL` 拆成 6 條獨立查詢，用一次 `db.batch()` 送出。D1 的 batch 在同一交易內執行，6 條讀到同一時間點的資料，與原本單一查詢等效；仍只有一次往返。各查詢的 CTE 以共用常數組成，不重寫口徑。回傳結構與 R01 顯示完全不變。
+- **不採用**：縮到 5 段以下（剛好卡在實測上限，日後加一段又會壞）。
+- **防再犯**：R01 單元測試的 D1 模擬層加守衛：儀表板查詢出現 `UNION`／`INTERSECT`／`EXCEPT` 即失敗，讓本機測試能抓到這類問題。
+- **範圍外（只記風險）**：`component-classifier-adapter.ts` 的 5 段查詢正好在實測上限上，屬高敏感區，本次不動；日後修改該查詢時須注意不可再加段。
+
+### 14.2 工作命令
+
+```text
+工作命令 ID：UI-S3-FIX-20261125-01
+工作目標：修正 R01 採購三卡在正式 D1 回「too many terms in compound SELECT」而顯示「無法取得」（§13）。
+
+已批准規格：§9 採購三卡與 §11 分攤警示規則（UI-S3-R10-01～03）全部沿用，口徑不得改變。
+
+行為要求：
+  1. src/lib/admin-dashboard-summary.ts 的 readPurchases 改為 6 條不含複合運算子的 SELECT
+     （active／archived 金額、unallocated、excess、inconsistent、review、open／cancelled 筆數），
+     以一次 db.batch([...]) 執行；cost_orders／allocations／allocation_checks 三段 CTE 抽成共用常數供需要的查詢引用。
+  2. 任何一條失敗或回傳非安全整數 → 整個採購區拋錯，由既有 readSection 隔離為「無法取得」；不得部分顯示。
+  3. 回傳物件（active、archived、unallocated、excess、inconsistent、review、open、cancelled）的鍵、型別、排序不變；
+     src/pages/admin/index.astro 不需修改。
+  4. 錯誤紀錄沿用 readSection（只記區塊名與錯誤類型）。
+
+允許修改範圍：src/lib/admin-dashboard-summary.ts；tests/admin-dashboard-summary.test.ts；
+  tests/helpers/admin-dashboard-preview.ts（只限加入複合運算子守衛與 batch 失敗注入）。
+
+禁止事項：不改 index.astro、其他頁面、API、migrations、wrangler.json、package.json、astro.config.mjs、middleware、auth、
+  component-classifier-adapter.ts；不改採購口徑；不新增寫入；不連遠端、不建置、不部署、不 git commit／push；
+  不讀 .env／.dev.vars／備份。超出範圍時停下回報。
+
+允許執行的驗證：
+  1. node --import tsx --test tests/admin-dashboard-summary.test.ts tests/admin-ui-kit.test.ts tests/admin-shell.test.ts
+  2. node tests/admin-dashboard-browser.mjs <暫存目錄>（D1_A3_EDGE_LOCAL_TEST_MODE=1，截圖只放暫存目錄，不覆寫 docs/UI-S3-screenshots/）
+  3. npm run astro -- check（基準 10）
+  4. git diff --check
+
+單元測試必須涵蓋：
+  - 守衛：fixture 的 D1 模擬層對含 UNION／INTERSECT／EXCEPT 的 SQL 拋錯；修正後 R01 全部區塊在守衛下仍成功。
+  - 既有採購測試（多幣別、封存分列、尚未記錄、負餘額、取消分列、§11 四種情況、不標示的情況）結果與修正前逐項相同。
+  - batch 中任一條失敗 → 採購區為 null（無法取得），其他區塊不受影響。
+  - 正式現況：採購訂單與分攤皆 0 筆時，三卡顯示「尚未記錄」／0 筆，不是「無法取得」。
+
+完成條件與交付：檔案與摘要、驗證數字、瀏覽器逐項結果、astro check 錯誤數、未執行項目；更新 HANDOFF.md。
+部署：Claude 審查通過後，依 DEPLOY-01 另行取得推送授權。推送後 Claude 唯讀抽查路由；使用者登入後 30 分鐘內 Claude 確認
+  採購三卡正常顯示，並以 wrangler tail 確認不再出現「Admin dashboard section unavailable purchases」（需使用者同意）。
+```
+
+### 14.3 審查（2026-11-25）：通過
+
+- **範圍**：只改 `src/lib/admin-dashboard-summary.ts`、`tests/admin-dashboard-summary.test.ts`、`tests/helpers/admin-dashboard-preview.ts`，符合 §14.2。
+- **程式**：三段 CTE 抽成共用常數，6 條查詢各自只引用需要的 CTE，條件、分組與原查詢逐段相同；以一次 `db.batch()` 執行。結果筆數不符、任一條 `success` 為假或出現非安全整數即整區拋錯；回傳結構不變。
+- **測試**：fixture 的 D1 模擬層對含 `UNION`／`INTERSECT`／`EXCEPT` 的 SQL 拋錯（原查詢在此守衛下會失敗）；新增「恰好一次 6 條 batch」、「batch 6 個位置各自失敗只影響採購區」、「失敗結果與不安全數字被拒」。
+- **Claude 重跑**：Node 3 檔 **14／14**；`astro check` 352 檔 **10 個基準錯誤**（皆在未修改檔案）、0 警告；`git diff --check` 通過。Edge R01 7 項引用 Codex 中途回報，Claude 未重跑。
+- 尚未提交；推送部署依 DEPLOY-01 另需授權。

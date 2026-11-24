@@ -8,7 +8,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { sqliteD1 } from './sqlite-d1';
 
 /** R01-only synthetic data; all writes are to disposable in-memory SQLite. */
-export function r01Fixture(state: 'normal' | 'warning' | 'empty' | 'failure' = 'normal') {
+export function r01Fixture(state: 'normal' | 'warning' | 'empty' | 'failure' = 'normal', failBatchAt?: number) {
     const sqlite = new DatabaseSync(':memory:');
     for (const file of readdirSync('migrations').filter(file => file.endsWith('.sql')).sort()) {
         sqlite.exec(readFileSync('migrations/' + file, 'utf8').replace(/^\uFEFF/, ''));
@@ -67,12 +67,19 @@ export function r01Fixture(state: 'normal' | 'warning' | 'empty' | 'failure' = '
         `);
     }
     const db = sqliteD1(sqlite);
-    if (state === 'failure') {
-        const prepare = db.prepare.bind(db);
-        db.prepare = (sql: string) => {
-            if (sql.includes('v2_component_definitions')) throw new Error('Synthetic component read failure');
-            return prepare(sql);
-        };
+    const prepare = db.prepare.bind(db);
+    db.prepare = (sql: string) => {
+        if (/\b(?:UNION|INTERSECT|EXCEPT)\b/i.test(sql)) throw new Error('Compound SELECT is forbidden in the R01 fixture');
+        if (state === 'failure' && sql.includes('v2_component_definitions')) throw new Error('Synthetic component read failure');
+        return prepare(sql);
+    };
+    if (failBatchAt !== undefined) {
+        const batch = db.batch.bind(db);
+        db.batch = <T>(statements: D1PreparedStatement[]) => batch<T>(
+            statements.map((statement, index) => index === failBatchAt
+                ? prepare('SELECT * FROM synthetic_missing_batch_table')
+                : statement),
+        );
     }
     return { sqlite, db };
 }

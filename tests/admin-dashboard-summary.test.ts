@@ -7,13 +7,60 @@ import { r01Fixture } from './helpers/admin-dashboard-preview';
 test('R01 keeps existing collection and source counts and scopes related records to production', async t => {
     const fixture = r01Fixture();
     t.after(() => fixture.sqlite.close());
+    for (const operator of ['union all', 'INTERSECT', 'EXCEPT']) {
+        assert.throws(() => fixture.db.prepare(`SELECT 1 ${operator} SELECT 1`), /Compound SELECT/);
+    }
     const summary = await readAdminDashboardSummary(fixture.db);
     assert.deepEqual({ ...summary.collection }, { total: 3, owned: 2, wishlist: 1, preorder: 1 });
     assert.deepEqual({ ...summary.sleeves }, { sizes: 2, requirements: 1 });
     assert.deepEqual({ ...summary.components }, { definitions: 1, records: 1 });
     assert.deepEqual({ ...summary.sources }, { bgg: 1, notbgg: 1 });
     assert.deepEqual({ ...summary.sync }, { failed: 0 });
+    assert.ok(summary.purchases);
     assert.doesNotMatch(readFileSync('src/pages/admin/index.astro', 'utf8'), /庫存不足|sleeve shortage|insufficient stock/i);
+});
+
+test('R01 reads purchases in exactly one batch of six statements', async t => {
+    const fixture = r01Fixture();
+    t.after(() => fixture.sqlite.close());
+    const batch = fixture.db.batch.bind(fixture.db);
+    const batchSizes: number[] = [];
+    fixture.db.batch = <T>(statements: D1PreparedStatement[]) => {
+        batchSizes.push(statements.length);
+        return batch<T>(statements);
+    };
+    assert.ok((await readAdminDashboardSummary(fixture.db)).purchases);
+    assert.deepEqual(batchSizes, [6]);
+});
+
+test('Failure at any position in the purchase batch leaves other R01 sections intact', async t => {
+    const baseline = r01Fixture();
+    t.after(() => baseline.sqlite.close());
+    const expected = { ...await readAdminDashboardSummary(baseline.db), purchases: null };
+    for (let index = 0; index < 6; index++) {
+        const fixture = r01Fixture('normal', index);
+        t.after(() => fixture.sqlite.close());
+        assert.deepEqual(await readAdminDashboardSummary(fixture.db), expected, `Batch position ${index}`);
+    }
+});
+
+test('R01 rejects unsuccessful batch results and unsafe purchase amounts or order IDs', async t => {
+    const fixture = r01Fixture();
+    t.after(() => fixture.sqlite.close());
+    const batch = fixture.db.batch.bind(fixture.db);
+    const expected = { ...await readAdminDashboardSummary(fixture.db), purchases: null };
+    for (const invalid of [
+        { success: false, results: [] },
+        { success: true, results: [{ amount: Number.MAX_SAFE_INTEGER + 1, order_id: 0 }] },
+        { success: true, results: [{ amount: 0, order_id: Number.MAX_SAFE_INTEGER + 1 }] },
+    ]) {
+        fixture.db.batch = async <T>(statements: D1PreparedStatement[]) => {
+            const results = await batch<T>(statements);
+            Object.assign(results[5], invalid);
+            return results;
+        };
+        assert.deepEqual(await readAdminDashboardSummary(fixture.db), expected);
+    }
 });
 
 test('BGG counts current failures regardless of date and matches the interrupted sync filter', async t => {
