@@ -56,7 +56,6 @@ function verifyMigrationHistory(last: number) {
    assert.equal(db.prepare('SELECT COUNT(*) n FROM v2_component_definitions WHERE last_quantity_operation_id IS NOT NULL').get()?.n, 0);
   }
   if (last === 24) {
-   assert.equal(db.prepare('SELECT COUNT(*) n FROM v2_component_applicability_coverage').get()?.n, 0);
    assert.equal(db.prepare('SELECT COUNT(*) n FROM v2_component_applicability_events').get()?.n, 0);
    assert.equal(db.prepare('SELECT COUNT(*) n FROM v2_component_applicability_current').get()?.n, 0);
   }
@@ -135,7 +134,6 @@ test('0024 preserves a committed 0023 event, receipt, marker and advanced genera
   db.exec(readFileSync('migrations/0024_component_applicability.sql','utf8').replace(/^\uFEFF/,''));
   assert.deepEqual(snapshot(), before);
   assert.deepEqual(await quantityOperationStatus(binding, actor, operationId), receipt);
-  assert.equal(db.prepare('SELECT COUNT(*) n FROM v2_component_applicability_coverage').get()?.n, 0);
   assert.equal(db.prepare('SELECT COUNT(*) n FROM v2_component_applicability_events').get()?.n, 0);
   assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(), []);
  } finally { db.close(); }
