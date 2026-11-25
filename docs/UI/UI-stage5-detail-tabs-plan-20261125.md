@@ -145,3 +145,90 @@
   - R02 列表類型文字改為依資料顯示（例：「組合 · #73」）。
 - **資料觀察（補充 §6.3 of 階段 4）**：32 筆「缺少來源身份」的收藏，抽查前三筆類型皆為「組合」（禮包、大全套），未對應單一 BGG 遊戲屬合理；是否另建對應留待 #29 系列花費設計時一併考慮。
 - 遠端操作：`wrangler deployments status` 數次、HTTP 17 次、登入後瀏覽 6 頁；寫入 0。
+
+## 7. 工作命令：5b 實體組件分頁（2026-11-25 已授權，DECISION_LOG UI-S5B-AUTH）
+
+### 7.1 盤點（2026-11-25 靜態閱讀）
+
+- R06 頁 `src/pages/admin/collection/components/manage.astro`（223 行）：伺服器端以 `?collection=N` 讀定義、可清點副本、卡套需求、清點值、分類（`classifyStoredComponents`）與更正歷史（`readQuantityHistory`）；無 `collection` 時顯示 #22 收藏選擇器；頁上另有「收藏 ID」表單與「← 返回收藏」。
+- 前端 `physical-component-admin-controller.ts`：寫入走 `/api/admin/collection/components`；sessionStorage 的儲存通知與 D1 待處理操作鍵值含 `location.pathname`（換網址後舊網址下的暫存鍵不再對應；正式環境 0 個受控組件〔D1-A5-CLOSE〕，無實際影響）。
+- 舊網址引用：`CollectionDetailTabs.astro`（過渡連結）、`CollectionAdmin.astro`（mode=new 隱藏入口）、`collection-admin-controller.ts`（R02「⋯」選單、新增後入口）、`components/classification.astro`、`sleeves/index.astro`、`sleeves/requirements.astro`、側欄 `admin-shell-controller.ts`；測試 `admin-shell.test.ts`、`admin-shell-browser.mjs`、`physical-quantity-browser.mjs`、`collection-picker-browser.mjs`、預覽 helper。
+
+### 7.2 工作命令
+
+```text
+工作命令 ID：UI-S5B-20261125-01
+工作目標：把 R06 實體組件搬進收藏詳細頁分頁 /admin/collection/[id]/components（共用頁首＋分頁列），舊網址轉址，
+  移除側欄「實體組件」（Q49）。R06 的讀取、寫入、分類、D1 預覽與更正歷史行為完全不變。
+
+已批准規格：本文件 §2、§3、§4（Q45、Q46、Q49）；5a 的頁首與分頁列元件（§6）。
+
+行為要求：
+  1. 新增路由 src/pages/admin/collection/[id]/components.astro：驗證 id 與 scope（同 5a：400／404），渲染
+     CollectionDetailHeader＋CollectionDetailTabs（active="components"）＋R06 內容。收藏不在該 scope 時回 404。
+  2. 把 manage.astro 的伺服器讀取與內容區抽成元件（例如 src/components/admin/PhysicalComponentsPanel.astro，以 collectionId 為參數），
+     SQL、讀取順序、錯誤處理（400／404／503 訊息）、canWrite 條件、所有 data-* 屬性、表單欄位名稱、按鈕與
+     D1QuantityPreviewDialog／D1QuantityHistory 的用法逐字保留；只移除「← 返回收藏」導覽、「收藏 ID」表單與 CollectionPicker
+     （由頁首、分頁列與 R02 取代），保留「組件分類」連結。外框可改用階段 2 的面板與標題樣式，不得改動 controller 依賴的結構。
+  3. manage.astro 改為只做 302 轉址、不讀 D1：?collection=N（正整數）→ /admin/collection/N/components，保留 scope（未帶時為 production）
+     與 lang；未帶或無效 collection → /admin/collection（保留 lang）。
+  4. 側欄移除「實體組件」項目；/admin/collection/[id]/components 在側欄標示「全部收藏」。
+  5. 站內連結改指新網址：CollectionDetailTabs（移除 components 的過渡註解）、CollectionAdmin mode=new 隱藏入口、
+     collection-admin-controller.ts（R02「⋯」選單的實體組件、新增後入口）、classification.astro、sleeves/index.astro、sleeves/requirements.astro。
+  6. #22 收藏選擇器不再使用：不刪除 CollectionPicker.astro、collection-picker.ts、collection-picker-controller.ts 與其測試（刪除與否併入 #18 由使用者決定）；
+     tests/collection-picker-browser.mjs 因入口已轉址而停用，不執行（回報中註明）。
+  7. 中英雙語、1440／768／375 無整頁橫向捲動、WCAG AA；R06 表格寬時只允許表格區內橫向捲動。
+
+允許修改範圍：新增 src/pages/admin/collection/[id]/components.astro、src/components/admin/PhysicalComponentsPanel.astro；
+  src/pages/admin/collection/components/manage.astro（改為轉址）；src/components/admin/CollectionDetailTabs.astro；
+  src/components/CollectionAdmin.astro（只限 mode=new 隱藏入口網址）；src/lib/collection-admin-controller.ts（只限實體組件網址）；
+  src/lib/admin-shell-controller.ts（只限移除項目與目前項目比對）；src/pages/admin/collection/components/classification.astro、
+  src/pages/admin/sleeves/index.astro、src/pages/admin/sleeves/requirements.astro（只限實體組件網址）；src/styles/admin-theme.css（只限新增 R06 外框樣式）；
+  tests/admin-shell.test.ts、tests/admin-shell-browser.mjs、tests/physical-quantity-browser.mjs、tests/helpers/admin-dashboard-preview.ts（只限路由與網址）；
+  tests/admin-collection-detail.test.ts、tests/admin-collection-detail-browser.mjs（只增）。
+
+禁止事項：不改 src/lib/physical-component-management.ts、src/lib/component-classifier-adapter.ts、src/lib/physical-component-admin-controller.ts、
+  src/lib/d1-quantity-history.ts、D1QuantityPreviewDialog.astro、D1QuantityHistory.astro、PhysicalComponentFields.astro、
+  /api/admin/collection/components 與任何寫入 API；不改 migrations、wrangler.json、package.json、astro.config.mjs、middleware、auth；
+  不刪除檔案；不新增套件或網路字型；不連遠端、不建置、不部署、不 git commit／push；不讀 .env／.dev.vars／備份。超出範圍時停下回報。
+
+單元測試必須涵蓋：轉址三種情況（有效 collection＋scope、只有 collection、無或無效 collection）且不讀 D1；新路由 400／404；
+  側欄不再有「實體組件」且新路由標示「全部收藏」；既有 R06／D1 測試全數通過。
+
+允許執行的驗證：
+  1. node --import tsx --test tests/physical-component-management.test.ts tests/admin-component-classification.test.ts
+     tests/component-classifier.test.ts tests/component-classifier-adapter.test.ts tests/d1-quantity-api.test.ts tests/d1-quantity-history.test.ts
+     tests/d1-quantity-preview-view.test.ts tests/physical-quantity-impact.test.ts tests/admin-shell.test.ts tests/admin-collection-detail.test.ts
+     tests/admin-collection-list.test.ts
+  2. node tests/physical-quantity-browser.mjs <暫存目錄>（D1 A3 Edge，改用新網址，結果須與先前相同）；
+     node tests/admin-collection-detail-browser.mjs <暫存目錄>；node tests/admin-shell-browser.mjs <暫存目錄>；
+     node tests/admin-collection-list-browser.mjs <暫存目錄>
+  3. npm run astro -- check（基準 10 個錯誤，不得新增）
+  4. git diff --check
+
+瀏覽器驗收（合成資料）：實體組件分頁 1440／768／375；頁首＋分頁列；R06 新增組件、清點儲存、D1 預覽開啟後取消、更正歷史顯示
+  （沿用 physical-quantity-browser 的情境）；封存收藏唯讀；舊網址三種轉址；側欄無「實體組件」；英文。
+  截圖存 docs/UI-S5B-screenshots/。
+完成條件與交付：修改檔案與摘要、驗證數字、瀏覽器逐項結果、截圖清單、astro check 錯誤數、未執行項目（含停用的 collection-picker-browser）；
+  更新 HANDOFF.md。
+部署：Claude 審查通過、使用者看過截圖後，依 DEPLOY-01 另行授權推送；部署後 Claude 唯讀抽查，使用者登入後 30 分鐘內 Claude 檢查
+  （正式環境 0 個受控組件，D1 預覽與歷史仍依 #23 待首次建立組件時確認）。
+```
+
+### 7.3 審查（2026-11-25）：有條件通過
+
+- **範圍**：新增 `[id]/components.astro`、`PhysicalComponentsPanel.astro`、11 張截圖；`manage.astro` 改為純 302 轉址（不讀 D1）；修改分頁列、側欄、R02 選單與新增後入口、`classification.astro`、`sleeves/index.astro`、`sleeves/requirements.astro` 的網址；測試依 §7.2 與 UI-S5B-AUTH-02 更新。禁止修改清單中的檔案皆未動；未刪除檔案。
+- **程式核對**：面板與舊 R06 頁逐行比對，差異只有 §7.2 指定移除的「← 返回收藏」、收藏 ID 表單、CollectionPicker，外框由 `<main>` 改為 `<div>`、`h1` 改 `h2`、controller 匯入路徑與外框樣式；另新增「收藏不在該 scope 時回 404」（符合 §3 固定規則）。controller 只以 `[data-physical-manager]` 取得根節點，不依賴 `<main>` 焦點。
+- **Claude 重跑**：Node 11 檔 **112／116**（失敗見下）；D1 A3 Edge **12／12**；詳細頁 Edge **25／25**（含 R06 新增組件、清點儲存並重載、三種寬度、封存唯讀、英文、舊網址轉址）；`astro check` **10 個基準錯誤**；`git diff --check` 通過。側欄 9／9、R02 12／12 引用 Codex 回報。Claude 已看 components-1440、components-375 截圖。
+- **條件（未通過項，兩檔皆不在 §7.2 允許範圍）**：
+  1. `tests/physical-component-management.test.ts` 約第 200 行仍以舊網址 `manage?collection=` 預期 200 並檢查 R06 畫面內容；舊網址已依 Q49 改為 302，應改為請求 `/admin/collection/[id]/components` 以保留 R06 真實畫面的測試覆蓋。
+  2. `tests/admin-component-classification.test.ts` 約第 105 行對整頁 HTML 斷言不得出現 `<button|form>`；階段 1（`a5d16c3`）起 Admin 外框即含按鈕（HEAD 的 `AdminLayout.astro` 有 3 個 `<button`），此為**既有失敗**、非 5b 造成，應把斷言限縮到分類內容區。
+- **小觀察（不擋）**：(1) 合成資料截圖的頁首封面顯示破圖示（合成圖片網址無法載入；頁首的隱藏腳本在此頁未及時生效，正式環境 5a 驗收封面正常，部署後再確認）；(2) R06 面板內「管理實體組件」與「收藏名稱 (#N, scope)」兩個標題與頁首重複；(3) 分類清單的連結固定帶 `production`，test 收藏會 404（分類清單本身沒有 scope 欄位，Codex 回報）。
+- **過程事件**：Claude 為確認第 2 項是否既有，曾在暫存區建立 HEAD 工作樹並以目錄連結共用 `node_modules`；以 `git worktree remove --force` 移除時連同專案 `node_modules` 內容一併刪除。經使用者同意以 `npm ci` 依 lockfile 重裝（242 套件；`workerd` postinstall 依專案 `allowScripts` 未執行，執行檔已由 `@cloudflare/workerd-windows-64` 提供；`package.json`／lockfile 無變動）。之後不再以連結共用 `node_modules`。
+
+### 7.4 測試修正複審（2026-11-25，UI-S5B-AUTH-03）：通過
+
+- `physical-component-management.test.ts`：R06 畫面測試改請求 `/admin/collection/N/components?lang=en`，未帶 token 401、授權後畫面內容與寫入控制斷言全數保留；分類頁請求改寫為完整路徑，斷言不變。
+- `admin-component-classification.test.ts`：先擷取 `<main id="editor-content">` 內容並斷言存在，再於內容區檢查無「已確認實體組件」與按鈕、表單；意圖不變。
+- **Claude 重跑**：Node 11 檔 **116／116**；`git diff --check` 通過。只改這兩檔，未動 src。
+- **結論**：§7.3 條件解除，`UI-S5B-20261125-01` 審查通過。尚未提交；待使用者看截圖後依 DEPLOY-01 授權推送部署。
