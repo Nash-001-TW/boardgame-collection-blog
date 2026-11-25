@@ -90,3 +90,5 @@
 | 2026-11-25 | SLV-PLAN-Q58 | 採 A：收藏有卡套需求但沒有任何在藏／借出副本時，視為「資料不完整」第五類來源（原因：缺少副本紀錄），該尺寸缺口顯示「—」並列入資料不完整數；狀態判定順序「無需求 → 尚無產品 → 資料不完整 → 不足／充足」（[規劃 §7](docs/sleeve-shortage-plan-20261125.md)） | 使用者 | Claude Code 對話「A：算資料不完整」 | 已採納 |
 | 2026-11-25 | SLV-SHORT-AUTH | 授權執行工作命令 `SLV-SHORT-20261125-01`（#27 卡套庫存不足：共用計算、尺寸頁、R01、卡套分頁提示，本機實作與測試），範圍以 [規劃 §8](docs/sleeve-shortage-plan-20261125.md) 為準；推送部署另依 DEPLOY-01 授權 | 使用者 | Claude Code 對話「批准，交 Codex」 | 已授權 |
 | 2026-11-25 | SLV-SHORT-DEPLOY | 使用者看過截圖後同意，依 DEPLOY-01 授權提交並推送 `SLV-SHORT-20261125-01`（#27 卡套庫存不足）與相關文件（連同本機已提交的 `caa396c`），推送即部署；不需 Migration；R01 解除 UI-S3-SLV-01 暫停顯示；部署後由 Claude 唯讀確認，使用者登入後 Claude 檢查 | 使用者 | Claude Code 對話「可以，推送部署」 | 已授權 |
+| 2026-11-25 | TEST-R01-Q59 | 過時測試 `tests/admin-dashboard.test.ts` 採 A 改寫：保留「真實頁面＋Access JWT」與「真實缺表」兩項獨有覆蓋並改為針對現行 R01，刪除只驗舊版統計與版面的斷言（[規劃](docs/test-admin-dashboard-rewrite-20261125.md)） | 使用者 | Claude Code 對話「採 A，交 Codex」 | 已採納 |
+| 2026-11-25 | TEST-R01-AUTH | 授權執行工作命令 `TEST-R01-20261125-01`（只改 `tests/admin-dashboard.test.ts`，必要時 preview helper 只增），範圍以 [規劃 §3](docs/test-admin-dashboard-rewrite-20261125.md) 為準 | 使用者 | 同上 | 已授權 |
