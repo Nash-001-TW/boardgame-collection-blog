@@ -195,4 +195,6 @@ Node 測試使用行程範圍的 tsx 帳號備援。Edge 使用暫存 profile �
 
 ### 8.8 部署（2026-11-25，SERIES-DEPLOY）
 
-推送 `dcc81cb`（含 `4d1889e`）於 22:15:12（Asia/Taipei）；Workers Builds 部署版本 `4fb87f7a`，建立於 22:16:28。唯讀路由確認：`/admin/collection/1/purchases` 未登入 302 至 Access、首頁 200。登入後檢查待執行。
+推送 `dcc81cb`（含 `4d1889e`）於 22:15:12（Asia/Taipei）；Workers Builds 部署版本 `4fb87f7a`，建立於 22:16:28。唯讀路由確認：`/admin/collection/1/purchases` 未登入 302 至 Access、首頁 200。
+
+登入後檢查（使用者登入，Claude 唯讀，2026-11-25）：收藏 73「相關採購」分頁 200，h2 依序為「此收藏的已記錄成本」「系列花費合計」「相關訂單」「隨貨附贈的卡套」，無警示；系列只有自己（本體、尚未記錄成本、其中 1 款尚未記錄成本、建立關聯提示連到 `/admin/bgg?view=relations&domain=collection&source=73`）、卡套 0／0，符合 §7 預期；英文版標題與連結正確。**已驗證**。小觀察（不阻擋）：英文「1 members without recorded costs」單複數未處理。
