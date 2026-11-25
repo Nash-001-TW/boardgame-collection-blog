@@ -125,7 +125,7 @@ const number=(value:unknown)=>value===null?t('尚未建立','Not established'):N
                 row.classification==='LEGACY_PRODUCT'?t('歷史商品來源','Legacy product source'):
                 row.classification===null?t('未指派','Unassigned'):t('待確認','Pending verification')}</p>
             {row.classification_reason==='EVIDENCE_UNAVAILABLE'&&<p role="alert">{t('完整組件證據無法驗證。','Complete component evidence is unavailable.')}</p>}
-            <a href={'/admin/collection/components/manage?collection='+row.collection_item_id+'&lang='+lang}>{t('查看收藏與卡牌關聯','View collection and card assignment')}</a>
+            <a href={'/admin/collection/'+row.collection_item_id+'/components?scope='+row.record_scope+'&lang='+lang}>{t('查看收藏與卡牌關聯','View collection and card assignment')}</a>
             <a class="admin-button" href={'/admin/sleeves/requirements?collection='+row.collection_item_id+'&lang='+lang}>{t('編輯需求與逐副本套用','Edit requirements & copy applications')}</a>
         </>:<>
             <h2>#{String(row.id)} {String(row.brand??'')} {String(row.product_name)}</h2>

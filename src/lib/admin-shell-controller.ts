@@ -7,7 +7,6 @@ export const adminNavigation = [
     { id: 'owned', path: '/admin/collection', query: { tab: 'owned' }, zh: '已收藏', en: 'Owned', icon: 'check-circle' },
     { id: 'wishlist', path: '/admin/collection', query: { tab: 'wishlist' }, zh: '願望清單', en: 'Wishlist', icon: 'heart' },
     { id: 'preordered', path: '/admin/collection', query: { tab: 'preordered' }, zh: '預購中', en: 'Preordered', icon: 'calendar' },
-    { id: 'components', path: '/admin/collection/components/manage', zh: '實體組件', en: 'Physical components', icon: 'puzzle' },
     { id: 'classification', path: '/admin/collection/components/classification', zh: '組件分類查詢', en: 'Component classification', icon: 'search' },
   ] },
   { id: 'sleeves', zh: '卡套', en: 'Sleeves', icon: 'sleeves', items: [

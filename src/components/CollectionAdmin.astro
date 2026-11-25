@@ -35,7 +35,7 @@ const detailError = detailStatus===400?t('資料範圍無效。','Invalid record
 {mode==='relations' && <a href={'/admin/notbgg/'+id.slice(7)+'?lang='+lang}>{t('← 原始遊戲','← Original game')}</a>}
 </nav>
 </>}
-{mode==='new' && <p data-physical-components-entry hidden><a data-physical-components-link href={id ? '/admin/collection/components/manage?collection='+encodeURIComponent(id)+'&lang='+lang : undefined}>{t('管理實體組件','Manage physical components')}</a></p>}
+{mode==='new' && <p data-physical-components-entry hidden><a data-physical-components-link href={id ? '/admin/collection/'+encodeURIComponent(id)+'/components?scope='+initialScope+'&lang='+lang : undefined}>{t('管理實體組件','Manage physical components')}</a></p>}
 {mode==='new' && <p data-copies-entry hidden><a data-copies-link href={id ? '/admin/collection/'+encodeURIComponent(id)+'/copies?scope='+initialScope+'&lang='+lang : undefined}>{t('管理副本、語言與版本','Manage copies, languages and editions')}</a></p>}
 <label>{t('資料範圍','Record scope')}<select data-scope><option value="production">production</option><option value="test">test</option></select></label>
 <p data-admin-status role="status" aria-live="polite" tabindex="-1"></p><button type="button" data-admin-reload hidden>{t('重新載入最新資料','Reload latest data')}</button>

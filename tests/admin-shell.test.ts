@@ -19,7 +19,8 @@ test('Collection filters select one current item and preserve the parent for det
   assert.equal(current('/admin/collection?tab=all&status=owned'), 'collection');
   assert.equal(current('/admin/collection?status=borrowed'), 'collection');
   assert.equal(current('/admin/collection/1/copies?status=owned'), 'collection');
-  assert.equal(current('/admin/collection/components/manage?collection=1'), 'components');
+  assert.equal(current('/admin/collection/1/components'), 'collection');
+  assert.ok(!adminNavigation.some(group => group.items.some((item: {id: string}) => item.id === 'components')));
   assert.equal(current('/admin/collection/components/classification'), 'classification');
 });
 

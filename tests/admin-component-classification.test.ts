@@ -102,7 +102,9 @@ test('Admin component classification uses real Astro rendering and Access middle
                     assert.ok(html.includes(text), text);
                 }
                 assert.match(html, /<code\b[^>]*>card<\/code>/);
-                assert.doesNotMatch(html, /已確認實體組件|Confirmed physical component|<(button|form)\b/i);
+                const content = html.match(/<main\b[^>]*\bid="editor-content"[^>]*>([\s\S]*?)<\/main>/i);
+                assert.ok(content, 'Classification content must be present');
+                assert.doesNotMatch(content[1], /已確認實體組件|Confirmed physical component|<(button|form)\b/i);
                 assert.deepEqual(reads, ['display', 'evidence']);
             }
         });

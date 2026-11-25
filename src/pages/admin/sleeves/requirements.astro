@@ -19,7 +19,7 @@ const title=t('卡套需求與逐副本套用','Sleeve requirements & copy appli
  {error&&<p role="alert">{error}</p>}
  {data&&<>
   <h2>{String(data.collection.display_name)} · #{collectionId}</h2>
-  <p><a href={'/admin/collection/'+collectionId+'?lang='+lang}>{t('返回編輯收藏','Edit collection')}</a> · <a href={'/admin/collection/components/manage?collection='+collectionId+'&lang='+lang}>{t('實體組件與副本清點','Physical components & copy inspection')}</a></p>
+  <p><a href={'/admin/collection/'+collectionId+'?lang='+lang}>{t('返回編輯收藏','Edit collection')}</a> · <a href={'/admin/collection/'+collectionId+'/components?'+new URLSearchParams({scope:Astro.url.searchParams.get('scope')??'production',lang})}>{t('實體組件與副本清點','Physical components & copy inspection')}</a></p>
   <p>{t('建立需求與關聯不扣庫存。套用需要已確認卡牌及已清點的在藏、未封膜副本。已有套用的需求鎖定；變更需求請新增另一筆。','Requirements and assignments do not reduce stock. Applying needs confirmed cards and an inspected, unsealed copy in collection. Used requirements are locked; add another requirement for changes.')}</p>
   <details class="workflow-panel"><summary>{t('新增卡套需求','Add sleeve requirement')}</summary><SleeveRequirementForm data={data} collectionId={collectionId} lang={lang}/></details>
   <label>{t('需求篩選','Requirement filter')}<select data-assignment-filter><option value="all">{t('全部','All')}</option><option value="unassigned">{t('未指派','Unassigned')}</option><option value="assigned">{t('已關聯','Assigned')}</option></select></label>

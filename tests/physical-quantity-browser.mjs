@@ -256,7 +256,7 @@ try {
     await cdp('Network.enable');
     await cdp('Network.setExtraHTTPHeaders', { headers: { 'Cf-Access-Jwt-Assertion': token } });
     await viewport(1440, 1000);
-    await cdp('Page.navigate', { url: origin + '/admin/collection/components/manage?collection=1' });
+    await cdp('Page.navigate', { url: origin + '/admin/collection/1/components' });
     await until(async () => await field('previousExpected') === '30', 'R06 edit form');
 
     await change(30);

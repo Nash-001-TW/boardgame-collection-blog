@@ -165,7 +165,7 @@ function initializeCollectionList(root: HTMLElement) {
     for (const [label, path, query] of [
      [t('編輯', 'Edit'), edit, ''],
      [t('副本', 'Copies'), edit + '/copies', ''],
-     [t('實體組件', 'Physical components'), '/admin/collection/components/manage', 'collection=' + item.id],
+     [t('實體組件', 'Physical components'), edit + '/components', ''],
      [t('卡套需求', 'Sleeve requirements'), '/admin/sleeves/requirements', 'collection=' + item.id],
      [t('採購紀錄', 'Purchase records'), '/admin/purchases', 'collection=' + item.id],
     ]) {
@@ -305,7 +305,7 @@ export function initializeCollectionAdmin(root:HTMLElement){
   find<HTMLElement>('[data-collection-heading]')!.textContent = t('編輯收藏','Edit collection');
   const componentsLink = find<HTMLAnchorElement>('[data-physical-components-link]');
   if (componentsLink) {
-   componentsLink.href = `/admin/collection/components/manage?collection=${encodeURIComponent(id)}&lang=${en?'en':'zh-TW'}`;
+   componentsLink.href = `/admin/collection/${encodeURIComponent(id)}/components?scope=${scope}&lang=${en?'en':'zh-TW'}`;
    find<HTMLElement>('[data-physical-components-entry]')!.hidden = false;
   }
   const copiesLink = find<HTMLAnchorElement>('[data-copies-link]');

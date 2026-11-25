@@ -19,6 +19,17 @@ const harness = await build({
     bundle: true, write: false, format: 'cjs', platform: 'node', packages: 'external',
     define: { 'import.meta.url': JSON.stringify(import.meta.url), 'import.meta.env': 'undefined' },
 });
+const physicalHarness = await build({
+    stdin: {resolveDir: process.cwd(), contents:
+        'export { handlePhysicalComponentRequest } from "./src/lib/physical-component-admin-api.ts";' +
+        'export { sleeveWorkflowFixture } from "./tests/helpers/sleeve-workflow-fixture.ts";'},
+    bundle: true, write: false, format: 'cjs', platform: 'node', packages: 'external',
+    define: { 'import.meta.url': JSON.stringify(import.meta.url), 'import.meta.env': 'undefined' },
+});
+const physical = { exports: {} };
+new Function('require', 'module', 'exports', physicalHarness.outputFiles[0].text)(
+    createRequire(import.meta.url), physical, physical.exports,
+);
 const loaded = { exports: {} };
 new Function('require', 'module', 'exports', harness.outputFiles[0].text)(
     createRequire(import.meta.url), loaded, loaded.exports,
@@ -26,6 +37,7 @@ new Function('require', 'module', 'exports', harness.outputFiles[0].text)(
 const { dashboardPreview, collectionDetailFixture, accessFixture, handleCollectionAdminRequest, handleCollectionCopiesRequest } = loaded.exports;
 const fixtures = Object.fromEntries(['normal', 'header', 'copies'].map(state => [state, collectionDetailFixture(state === 'normal' ? undefined : state)]));
 let server, browser, ws;
+let physicalFixture;
 let scenario = 'normal';
 let checks = 0;
 
@@ -47,6 +59,10 @@ try {
     const auth = await accessFixture();
     const token = await auth.token();
     const bindings = { ...auth.bindings, DB: fixtures.normal.db, NOTBGG_WRITE_LIMITER: {limit: async () => ({success:true})} };
+    const physicalClient = await build({
+        entryPoints: ['src/lib/physical-component-admin-controller.ts'],
+        bundle: true, write: false, format: 'iife', platform: 'browser',
+    });
     const renderPage = await dashboardPreview(bindings);
     const client = await build({
         stdin: {resolveDir:process.cwd(), contents:
@@ -64,12 +80,33 @@ try {
                 return;
             }
             bindings.DB = fixtures[scenario].db;
+            if (physicalFixture) bindings.DB = physicalFixture.db;
             const headers = new Headers(req.headers);
             headers.set('Cf-Access-Jwt-Assertion', token);
             const body = ['GET', 'HEAD'].includes(req.method) ? undefined : Buffer.concat(await Array.fromAsync(req));
             const request = new Request(url, {headers, method:req.method, body});
             if (url.pathname === '/s5a-client.js') {
                 res.writeHead(200, {'Content-Type':'application/javascript'}).end(client.outputFiles[0].text);
+                return;
+            }
+            if (url.pathname === '/s5b-client.js') {
+                res.writeHead(200, {'Content-Type':'application/javascript'}).end(physicalClient.outputFiles[0].text);
+                return;
+            }
+            if (url.pathname === '/api/admin/collection/components') {
+                const response = await physical.exports.handlePhysicalComponentRequest(request, bindings);
+                res.writeHead(response.status, {'Content-Type':'application/json'}).end(await response.text());
+                return;
+            }
+            if (url.pathname === '/admin/collection/components/manage') {
+                const response = await renderPage(request);
+                res.writeHead(response.status, Object.fromEntries(response.headers)).end(await response.text());
+                return;
+            }
+            if (/^\/admin\/collection\/\d+\/components$/.test(url.pathname)) {
+                const response = await renderPage(request);
+                res.writeHead(response.status, {'Content-Type':'text/html; charset=utf-8'});
+                res.end((await response.text()).replace('</body>', '<script src="/s5b-client.js"></script></body>'));
                 return;
             }
             if (url.pathname.startsWith('/api/admin/collection/')) {
@@ -226,12 +263,12 @@ try {
         document.querySelector('[data-detail-header] > a').search.includes('scope=test')), true);
     assert.deepEqual(await evaluate(() => [...document.querySelectorAll('[data-detail-tabs] a')].slice(2)
         .map(a => [a.pathname, a.search])), [
-        ['/admin/collection/components/manage', '?collection=6&scope=test&lang=en'],
+        ['/admin/collection/6/components', '?scope=test&lang=en'],
         ['/admin/sleeves/requirements', '?collection=6&scope=test&lang=en'],
         ['/admin/purchases', '?collection=6&scope=test&lang=en'],
     ]);
     await capture('english');
-    pass('English, NotBGG public link and three legacy destinations retain scope and language');
+    pass('English, NotBGG public link and components and two transitional destinations retain scope and language');
 
     await navigate(details + query);
     await settle();
@@ -315,6 +352,83 @@ try {
     });
     assert.ok(ratios.every(ratio => ratio >= 4.5), JSON.stringify(ratios));
     pass('WCAG AA sampled contrast ' + ratios.length + '/' + ratios.length + ', minimum ' + Math.min(...ratios).toFixed(2));
+    physicalFixture = await physical.exports.sleeveWorkflowFixture();
+    bindings.PHYSICAL_COMPONENT_SIGNING_KEY = physicalFixture.secret;
+    physicalFixture.sqlite.exec(`
+        INSERT INTO v2_collection_management(collection_item_id, archived_at) VALUES (2, '2026-11-25');
+        INSERT INTO v2_collection_items(id, display_name, record_scope) VALUES (6, 'Synthetic test collection', 'test');
+    `);
+    const components = details + '/components';
+    const s5bScreenshots = join(output, 'UI-S5B-screenshots');
+    await mkdir(s5bScreenshots, { recursive: true });
+    const captureComponents = async name => {
+        const {data} = await cdp('Page.captureScreenshot', {format: 'png', captureBeyondViewport: false});
+        await writeFile(join(s5bScreenshots, name + '.png'), Buffer.from(data, 'base64'));
+    };
+    await resize(1440);
+    await navigate(components + query);
+    await evaluate(() => {
+        const form = document.querySelector('[data-physical-action=create]');
+        form.elements.name.value = 'Synthetic cards';
+        form.elements.expected.value = '30';
+        form.elements.confirmed.checked = true;
+        form.requestSubmit();
+    });
+    await until(() => evaluate(() => [...document.querySelectorAll('[data-physical-manager] article')].some(article =>
+        article.textContent.includes('Synthetic cards') && article.querySelector('[data-classification=PHYSICAL_COMPONENT]')) &&
+        document.querySelector('[data-physical-status]').dataset.tone === 'success'), 'component saved and classified');
+    pass('R06 creates a synthetic component through the rendered form');
+    await evaluate(() => {
+        const card = [...document.querySelectorAll('[data-physical-manager] article')].find(article => article.textContent.includes('Synthetic cards'));
+        const form = card.querySelector('[data-physical-action=count]');
+        form.elements.copyId.selectedIndex = 1;
+        form.elements.actual.value = '28';
+        form.requestSubmit();
+    });
+    await until(() => evaluate(() => [...document.querySelectorAll('[data-physical-manager] article')].some(article =>
+        article.textContent.includes('Synthetic cards') &&
+        article.querySelector('[data-physical-action=count] option:nth-child(2)')?.textContent.includes('28'))),
+        'count persisted after reload');
+    pass('R06 saves a count through the rendered form and reloads its value');
+
+    for (const width of [1440, 768, 375]) {
+        await resize(width);
+        await navigate(components + query);
+        assert.equal(await evaluate(() => document.documentElement.scrollWidth), width);
+        assert.ok(await evaluate(path => document.querySelector('[data-detail-header] h1').textContent &&
+            document.querySelector('[data-detail-tabs] [aria-current=page]').pathname === path &&
+            document.querySelector('.shell-nav [aria-current=page]').pathname === '/admin/collection' &&
+            ![...document.querySelectorAll('.shell-nav a')].some(a => a.pathname.endsWith('/components/manage')), components));
+        await captureComponents('components-' + width);
+        pass('R06 ' + width + ' px, detail and sidebar active links, retired menu item absent, no page overflow');
+    }
+    await navigate('/admin/collection/2/components' + query);
+    assert.ok(await evaluate(() => document.querySelector('[data-physical-manager]').textContent.includes('此收藏已封存。') &&
+        !document.querySelector('[data-physical-action]')));
+    await captureComponents('components-archived');
+    pass('archived collection renders R06 read-only with signing configured');
+
+    await navigate(components + '?lang=en');
+    assert.ok(await evaluate(() => document.documentElement.lang === 'en' &&
+        document.querySelector('[data-detail-tabs] [aria-current=page]').ariaLabel === 'Physical components' &&
+        document.querySelector('[data-physical-manager]').textContent.includes('Add physical component')));
+    await captureComponents('components-english');
+    pass('English R06 headings and forms');
+
+    const redirects = await evaluate(async () => Promise.all([
+        '?collection=6&scope=test&lang=en', '?collection=1', '?lang=en', '?collection=invalid&lang=en',
+    ].map(async query => {
+        const response = await fetch('/admin/collection/components/manage' + query);
+        const url = new URL(response.url);
+        return [response.redirected, response.status, url.pathname + url.search];
+    })));
+    assert.deepEqual(redirects, [
+        [true, 200, '/admin/collection/6/components?scope=test&lang=en'],
+        [true, 200, '/admin/collection/1/components?scope=production'],
+        [true, 200, '/admin/collection?lang=en'],
+        [true, 200, '/admin/collection?lang=en'],
+    ]);
+    pass('legacy R06 redirects preserve scope and language and fall back for missing/invalid IDs');
     console.log('Checks passed: ' + checks);
 } finally {
     ws?.close();
@@ -323,5 +437,6 @@ try {
         server.closeAllConnections();
         await new Promise(resolve => server.close(resolve));
     }
+    physicalFixture?.sqlite.close();
     for (const fixture of Object.values(fixtures)) fixture.sqlite.close();
 }

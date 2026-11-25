@@ -157,7 +157,7 @@ try {
         ['collection-new', '/admin/collection/new', '/admin/collection'],
         ['collection-edit', '/admin/collection/1', '/admin/collection'],
         ['copies', '/admin/collection/1/copies', '/admin/collection'],
-        ['components', '/admin/collection/components/manage?collection=1', '/admin/collection/components/manage'],
+        ['components', '/admin/collection/1/components', '/admin/collection'],
         ['classification', '/admin/collection/components/classification', '/admin/collection/components/classification'],
         ['sleeves', '/admin/sleeves', '/admin/sleeves'],
         ['requirements', '/admin/sleeves/requirements', '/admin/sleeves/requirements'],
@@ -271,7 +271,7 @@ try {
         current: document.querySelector('.shell-nav [aria-current=page]').search,
         language: Object.fromEntries(new URL(document.querySelector('[data-language-switch]').href).searchParams),
     }));
-    assert.deepEqual(targets.links, ['', '?tab=owned', '?tab=wishlist', '?tab=preordered', '', '']);
+    assert.deepEqual(targets.links, ['', '?tab=owned', '?tab=wishlist', '?tab=preordered', '']);
     assert.equal(targets.current, '?tab=owned');
     assert.deepEqual(targets.language, { status: 'owned', scope: 'test', q: 'synthetic', lang: 'en' });
     await navigate('/admin/bgg?view=relations&lang=en');

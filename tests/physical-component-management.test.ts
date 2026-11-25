@@ -194,11 +194,11 @@ test('physical component workflow through Admin API, real SQLite and Astro rende
 
         await t.test('Admin pages render real classifications and write controls', async () => {
             const render = await dashboardPreview(bindings);
-            const route = '/admin/collection/components/';
-            const request = (path: string, token?: string) => render(new Request('http://localhost' + route + path,
+            const route = '/admin/collection/' + collectionId + '/components?lang=en';
+            const request = (path: string, token?: string) => render(new Request('http://localhost' + path,
                 { headers: token ? { 'Cf-Access-Jwt-Assertion': token } : {} }));
-            assert.equal((await request('manage')).status, 401);
-            const page = await request('manage?lang=en&collection=' + collectionId, jwt);
+            assert.equal((await request(route)).status, 401);
+            const page = await request(route, jwt);
             assert.equal(page.status, 200);
             const html = await page.text();
             assert.match(html, /Renamed cards/);
@@ -208,7 +208,7 @@ test('physical component workflow through Admin API, real SQLite and Astro rende
             assert.match(html, /name="previousExpected"/);
             assert.match(html, /name="reason"/);
             assert.match(html, /data-quantity-action="retry"/);
-            assert.match(await (await request('classification', jwt)).text(), /已確認實體組件/);
+            assert.match(await (await request('/admin/collection/components/classification', jwt)).text(), /已確認實體組件/);
         });
 
         await t.test('ordinary maintenance preserves omitted and equal quantities without quantity history', async () => {

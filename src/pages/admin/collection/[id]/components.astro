@@ -1,0 +1,39 @@
+---
+import { env } from 'cloudflare:workers';
+import AdminLayout from '../../../../layouts/AdminLayout.astro';
+import CollectionDetailHeader from '../../../../components/admin/CollectionDetailHeader.astro';
+import CollectionDetailTabs from '../../../../components/admin/CollectionDetailTabs.astro';
+import PhysicalComponentsPanel from '../../../../components/admin/PhysicalComponentsPanel.astro';
+import { readCollectionHeader } from '../../../../lib/collection-v2-management';
+
+export const prerender = false;
+
+const lang = Astro.url.searchParams.get('lang') === 'en' ? 'en' : 'zh-TW';
+const t = (zh: string, en: string) => lang === 'en' ? en : zh;
+const title = t('管理實體組件', 'Manage physical components');
+const id = Astro.params.id ?? '';
+const collectionId = Number(id);
+const scope = Astro.url.searchParams.get('scope') ?? 'production';
+const validScope = scope === 'production' || scope === 'test';
+const validId = /^[1-9][0-9]*$/.test(id) && Number.isSafeInteger(collectionId);
+const header = validScope && validId ? await readCollectionHeader(env.DB, collectionId, scope) : undefined;
+let error: string | undefined;
+
+if (!validScope || !validId) {
+    Astro.response.status = 400;
+    error = !validScope ? t('資料範圍無效。', 'Invalid record scope.') : t('收藏 ID 無效。', 'Invalid collection ID.');
+} else if (header === null) {
+    Astro.response.status = 404;
+    error = t('找不到收藏。', 'Collection not found.');
+}
+---
+<AdminLayout lang={lang} title={title} languageParams={{scope}}>
+    <main id="editor-content" class="admin-page admin-kit admin-detail" tabindex="-1">
+        <CollectionDetailHeader header={header} scope={validScope ? scope : 'production'} lang={lang}
+            fallback={validId && !error ? t('收藏 #', 'Collection #') + id : title} error={error} />
+        {validScope && validId && !error && <>
+            <CollectionDetailTabs id={id} scope={scope} lang={lang} active="components" />
+            <PhysicalComponentsPanel collectionId={collectionId} scope={scope} lang={lang} />
+        </>}
+    </main>
+</AdminLayout>

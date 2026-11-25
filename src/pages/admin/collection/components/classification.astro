@@ -65,7 +65,7 @@ if (cursor !== null && (!/^[1-9][0-9]*$/.test(cursor) || !Number.isSafeInteger(a
     <header>
       <a href={'/admin/collection' + (en ? '?lang=en' : '')}>{t('← 收藏管理', '← Collection management')}</a>
       <h1>{title}</h1>
-      <a href={'/admin/collection/components/manage' + (en ? '?lang=en' : '')}>{t('管理實體組件', 'Manage physical components')}</a>
+      <a href={'/admin/collection' + (en ? '?lang=en' : '')}>{t('管理實體組件', 'Manage physical components')}</a>
     </header>
 
     {error && <p class="classification-alert" role="alert">{error}</p>}
@@ -95,7 +95,7 @@ if (cursor !== null && (!/^[1-9][0-9]*$/.test(cursor) || !Number.isSafeInteger(a
             {page.rows.map(({ result, ...row }) => (
               <tr>
                 <th scope="row">{row.id}</th>
-                <td><a href={'/admin/collection/components/manage?collection=' + row.collection_item_id + (en ? '&lang=en' : '')}>{row.collection_name ? `${row.collection_name} (#${row.collection_item_id})` : `#${row.collection_item_id}`}</a></td>
+                <td><a href={'/admin/collection/' + row.collection_item_id + '/components' + (en ? '?lang=en' : '')}>{row.collection_name ? `${row.collection_name} (#${row.collection_item_id})` : `#${row.collection_item_id}`}</a></td>
                 <td>{row.component_name}</td>
                 <td><code>{row.component_type}</code></td>
                 <td><span class="status-badge" data-classification={result?.classification ?? 'UNKNOWN'}>{labels[result?.classification ?? 'UNKNOWN']}</span></td>

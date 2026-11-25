@@ -4,6 +4,66 @@ import { readCollectionHeader } from '../src/lib/collection-v2-management';
 import { accessFixture } from './helpers/notbgg-access-fixture';
 import { collectionDetailFixture, dashboardPreview } from './helpers/admin-dashboard-preview';
 
+test('legacy physical-component route redirects without reading D1', async t => {
+    const auth = await accessFixture();
+    t.after(auth.restore);
+    let reads = 0;
+    const render = await dashboardPreview({...auth.bindings, DB:{prepare() {
+        reads++;
+        throw new Error('Unexpected D1 read');
+    }}});
+    const headers = {'Cf-Access-Jwt-Assertion':await auth.token()};
+    for (const [query, location] of [
+        ['?collection=6&scope=test&lang=en', '/admin/collection/6/components?scope=test&lang=en'],
+        ['?collection=1', '/admin/collection/1/components?scope=production'],
+        ['?lang=en&scope=test', '/admin/collection?lang=en'],
+        ['?collection=0&lang=en', '/admin/collection?lang=en'],
+        ['?collection=9007199254740992', '/admin/collection'],
+    ]) {
+        const response = await render(new Request('https://admin.example.test/admin/collection/components/manage' + query, {headers}));
+        assert.equal(response.status, 302);
+        assert.equal(response.headers.get('location'), location);
+    }
+    assert.equal(reads, 0);
+});
+
+test('physical-component route validates collection and scope and isolates the two reads', async t => {
+    const fixture = collectionDetailFixture();
+    t.after(() => fixture.sqlite.close());
+    const auth = await accessFixture();
+    t.after(auth.restore);
+    const render = await dashboardPreview({...auth.bindings, DB:fixture.db});
+    const headers = {'Cf-Access-Jwt-Assertion':await auth.token()};
+    const page = (id: string, query = '') => render(new Request(
+        'https://admin.example.test/admin/collection/' + id + '/components' + query, {headers}));
+    assert.equal((await page('invalid')).status, 400);
+    assert.equal((await page('1', '?scope=invalid')).status, 400);
+    assert.equal((await page('99999')).status, 404);
+    assert.equal((await page('6')).status, 404);
+    assert.equal((await page('6', '?scope=test')).status, 200);
+    const prepare = fixture.db.prepare.bind(fixture.db);
+    let failHeader = true;
+    fixture.db.prepare = (sql: string) => {
+        if (failHeader ? sql.includes('AS game_name') && sql.includes('WITH static')
+            : sql.includes('SELECT c.display_name, c.record_scope')) {
+            throw new Error('Synthetic read failure');
+        }
+        return prepare(sql);
+    };
+    assert.equal((await page('6')).status, 404);
+    const missingHeader = await page('1');
+    assert.equal(missingHeader.status, 200);
+    const html = await missingHeader.text();
+    assert.match(html, /無法取得收藏頁首/);
+    assert.match(html, /data-physical-manager/);
+    failHeader = false;
+    const missingPanel = await page('1');
+    assert.equal(missingPanel.status, 503);
+    const partial = await missingPanel.text();
+    assert.match(partial, /<h1>Alpha<\/h1>/);
+    assert.match(partial, /無法讀取實體組件資料/);
+});
+
 test('header uses R01 ownership and R02 cover precedence, and counts held copies only', async t => {
     const {db, sqlite} = collectionDetailFixture();
     t.after(() => sqlite.close());
