@@ -232,3 +232,17 @@
 - `admin-component-classification.test.ts`：先擷取 `<main id="editor-content">` 內容並斷言存在，再於內容區檢查無「已確認實體組件」與按鈕、表單；意圖不變。
 - **Claude 重跑**：Node 11 檔 **116／116**；`git diff --check` 通過。只改這兩檔，未動 src。
 - **結論**：§7.3 條件解除，`UI-S5B-20261125-01` 審查通過。尚未提交；待使用者看截圖後依 DEPLOY-01 授權推送部署。
+
+### 7.5 部署與唯讀抽查（2026-11-25）
+
+- 部署：`4192b69`（5b）＋`dbcc48b`（文件）推送（DECISION_LOG UI-S5B-DEPLOY），自動部署為 `14d31a92…`（100%，台北 10:52:44）。
+- Claude 唯讀抽查 14 條路由全部符合：公開頁 4 條 200；`/admin`、`/admin/collection`、`/admin/collection/102`、`/102/copies`、`/102/components`、舊 `manage?collection=102`、舊 `manage`、`classification`、`sleeves/requirements` 皆 302 至 Access；`/dev/ui-kit` 404。D1 查詢與寫入 0。
+- **正式驗收（使用者重新登入後，Claude 唯讀檢查，面板寬 518px，未新增或儲存任何資料）：通過**。
+  - 舊網址 `manage?collection=102` → `/admin/collection/102/components?scope=production`；頁首「工業革命伯明翰 籌碼版／BGG:224517／本體／持有副本 0／已收藏」，封面載入正常（合成截圖的破圖示未在正式環境出現）；目前分頁「實體組件」；R06 面板顯示新增表單與「尚無由受控流程建立的組件」；無警示、無橫向捲動。
+  - 側欄已無「實體組件」，目前項目為「全部收藏」。
+  - 舊網址 `manage`（無 collection）→ `/admin/collection`。
+  - R02「⋯」選單的實體組件連結為 `/admin/collection/73/components?scope=production&lang=zh-TW`。
+  - 組件分類頁的收藏連結改為 `/admin/collection/123/components`；「管理實體組件」連到 R02。
+  - 正式環境 0 個受控組件，D1 預覽與更正歷史仍依 #23 待首次建立組件時確認。
+- 遠端操作：登入後瀏覽 4 頁；寫入 0。
+- 另：本機 `docs/D1-A4-screenshots/` 4 張更正歷史截圖被 `physical-quantity-browser.mjs` 重跑覆寫為新版面，未提交，待使用者決定保留或還原。
