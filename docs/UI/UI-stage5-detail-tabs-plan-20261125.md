@@ -131,3 +131,17 @@
 - **頁首更新**：基本資料儲存或封存成功後重新載入頁面，伺服器重新讀取頁首；結果訊息以 sessionStorage 跨重新載入顯示（讀寫失敗只會少顯示訊息，不影響儲存）。只有帶頁首的編輯頁會重新載入，mode=new 不變。
 - 修改檔案：`collection-admin-controller.ts`（R02 類型文字；edit 模式儲存／封存後重新載入與訊息）、`CollectionDetailHeader.astro`、`CollectionAdmin.astro`、`tests/admin-collection-detail-browser.mjs`（第 14 項加驗儲存後頁首顯示新名稱與訊息）；新增 `collection-item-types.ts`。更新兩個截圖資料夾（R02 類型文字、頁首不可得）。
 - **驗證（Claude 本機執行）**：Node 6 檔 **30／30**；詳細頁 Edge **17／17**（第 14 項含頁首更新）；R02 Edge **12／12**；`astro check` **10 個基準錯誤**；`git diff --check` 通過。
+
+### 6.3 部署與正式驗收（2026-11-25）
+
+- 部署：`26b6f85`（5a）＋`a081790`（文件）推送（DECISION_LOG UI-S5A-DEPLOY），自動部署為 `ad8efce3…`（100%，台北 10:19:53）。
+- Claude 唯讀抽查 17 條路由全部符合：公開頁 6 條 200、不存在 ID 404；`/admin`、`/admin/collection`、`/admin/collection/1`、`/admin/collection/1/copies`、`/api/admin/collection`、R06、卡套需求、採購共 8 條 302 至 Access；`/dev/ui-kit`、`/dev/collection-v2-test` 404。
+- **正式驗收（使用者登入仍有效，Claude 唯讀檢查，面板寬 518px，未儲存任何資料）：通過**。
+  - `/admin/collection/102`：頁首「工業革命伯明翰 籌碼版／Brass: Birmingham／BGG:224517／本體／持有副本 0／已收藏」，封面載入；目前分頁「基本資料」；表單載入正確名稱；無橫向捲動；無「無法取得」。
+  - `/admin/collection/102/copies`：同一頁首，目前分頁「副本與品況」，「此頁沒有副本資料」。
+  - `/admin/collection/73`：「缺少來源身份」以文字顯示，類型「組合」。
+  - `/admin/collection/999999`：HTTP 404，顯示「找不到收藏。」。
+  - 三個過渡分頁連結帶 `collection`、`scope`、`lang` 指向 R06、卡套需求、採購舊頁。
+  - R02 列表類型文字改為依資料顯示（例：「組合 · #73」）。
+- **資料觀察（補充 §6.3 of 階段 4）**：32 筆「缺少來源身份」的收藏，抽查前三筆類型皆為「組合」（禮包、大全套），未對應單一 BGG 遊戲屬合理；是否另建對應留待 #29 系列花費設計時一併考慮。
+- 遠端操作：`wrangler deployments status` 數次、HTTP 17 次、登入後瀏覽 6 頁；寫入 0。
