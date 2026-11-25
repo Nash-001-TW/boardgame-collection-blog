@@ -94,16 +94,20 @@ function initializeCollectionList(root: HTMLElement) {
     row.dataset.collectionId = String(item.id);
     const cover = document.createElement('span');
     cover.className = 'admin-r02-cover';
-    cover.textContent = t('無封面', 'No cover');
+    // The fallback text exists only when no picture is shown, so screen readers never
+    // announce "no cover" for a row whose (decorative, alt="") cover image loaded.
+    const noCover = () => { cover.textContent = t('無封面', 'No cover'); };
     if (item.image) {
      const image = document.createElement('img');
      image.width = 56;
      image.height = 74;
      image.loading = 'lazy';
      image.alt = '';
-     image.addEventListener('error', () => image.remove(), {once: true});
+     image.addEventListener('error', () => { image.remove(); noCover(); }, {once: true});
      image.src = item.image;
      cover.appendChild(image);
+    } else {
+     noCover();
     }
     addCell(row, 0).appendChild(cover);
     const name = document.createElement('div');
