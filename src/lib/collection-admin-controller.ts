@@ -1,130 +1,280 @@
 import { deserializeGameRef,gameCatalogKey,type GameRef } from './game-identity';
-import type { CollectionListPage } from './collection-v2-management';
+import type { NumberedCollectionList } from './collection-v2-management';
 
 function initializeCollectionList(root: HTMLElement) {
  const en = root.dataset.lang === 'en';
  const t = (zh: string, english: string) => en ? english : zh;
- const form = root.querySelector<HTMLFormElement>('[data-list-filters]')!;
- const scope = root.querySelector('select[data-scope]') as unknown as HTMLSelectElement;
- const list = root.querySelector<HTMLElement>('[data-admin-list]')!;
- const status = root.querySelector<HTMLElement>('[data-admin-status]')!;
- const previous = root.querySelector<HTMLButtonElement>('[data-previous]')!;
- const next = root.querySelector<HTMLButtonElement>('[data-next]')!;
- const fields = form.querySelectorAll('input, select, button') as unknown as Iterable<HTMLInputElement | HTMLSelectElement | HTMLButtonElement>;
- const controls = [scope, ...fields, previous, next];
+ const find = <T = HTMLElement>(selector: string) => root.querySelector(selector) as unknown as T;
+ const form = find<HTMLFormElement>('[data-list-filters]');
+ const table = find<HTMLTableSectionElement>('[data-admin-list]');
+ const status = find('[data-admin-status]');
+ const error = find('[data-r02-error]');
+ const empty = find('[data-r02-empty]');
+ const results = find('[data-r02-results]');
+ const pagination = find('[data-r02-pagination]');
+ const pages = find('[data-r02-pages]');
+ const chips = find('[data-r02-chips]');
+ const clear = find<HTMLButtonElement>('[data-clear]');
  const url = new URL(location.href);
- scope.value = url.searchParams.get('scope') === 'test' ? 'test' : 'production';
- for (const name of ['q', 'view', 'source', 'status', 'archive', 'wishlist']) {
-  const input = form.elements.namedItem(name) as HTMLInputElement | HTMLSelectElement | null;
-  if (input && url.searchParams.has(name)) input.value = url.searchParams.get(name)!;
- }
- let filters = new URLSearchParams();
- let cursor = 0;
- let previousCursors: number[] = [];
- let nextCursor: number | null = null;
- let busy = false;
+ const tabs = root.querySelectorAll<HTMLAnchorElement>('[data-tab]');
+ const rawTab = url.searchParams.get('tab');
+ const tab = rawTab && Array.from(tabs).some(link => link.dataset.tab === rawTab) ? rawTab : 'all';
+ const defaults: Record<string, string> = {view: 'records', sort: 'updated', limit: '20', scope: 'production'};
+ const filters = ['q', 'players', 'source', 'archive', 'wishlist', 'status', 'scope'];
+ const controls = form.querySelectorAll('input,select') as unknown as Iterable<HTMLInputElement | HTMLSelectElement>;
+ const number = new Intl.NumberFormat(en ? 'en' : 'zh-TW');
+ const date = new Intl.DateTimeFormat(en ? 'en-CA' : 'zh-TW', {
+  timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit',
+ });
+ const headings = Array.from(results.querySelectorAll('th'), th => th.textContent ?? '');
+ const statuses = find<HTMLSelectElement>('[data-r02-status-labels]');
+ const scope = url.searchParams.get('scope') === 'test' ? 'test' : 'production';
+ const lang = en ? 'en' : 'zh-TW';
+ const actionParams = new URLSearchParams({scope, lang});
 
- function render(page: CollectionListPage) {
-  const grouped = filters.get('view') === 'grouped';
-  list.replaceChildren();
-  for (const group of page.groups) {
-   const card = document.createElement(grouped ? 'details' : 'div');
-   card.className = 'record';
-   card.dataset.collectionGroup = group.key;
-   const label = document.createElement(grouped ? 'summary' : 'p');
-   const identity = group.source_id ?? t('缺少來源身份', 'Missing source identity');
-   const linkStatus = group.link_status === 'pending'
-    ? t('候選連結', 'Candidate link')
-    : group.link_status === 'linked' ? t('已確認連結', 'Confirmed link') : null;
-   label.textContent = [
-    grouped ? group.game_name : null,
-    identity,
-    group.source_archived ? t('來源遊戲已封存', 'Source game archived') : null,
-    linkStatus && `${linkStatus}: ${group.linked_source_id}`,
-    group.primary_source && `${t('主來源', 'Primary source')}: ${group.primary_source === 'bgg' ? 'BGG' : 'NotBGG'}`,
-    grouped ? t(`${group.items.length} 筆收藏`, `${group.items.length} collection records`) : null,
-   ].filter(Boolean).join(' · ');
-   card.appendChild(label);
-   const members = document.createElement(grouped ? 'ul' : 'div');
-   for (const item of group.items) {
-    const row = document.createElement(grouped ? 'li' : 'div');
-    row.dataset.collectionId = String(item.id);
-    row.textContent = [`#${item.id}`, item.display_name, item.item_type, item.acquisition_status,
-     item.wishlist === 1 ? t('願望清單','Wishlist') : null,
-     item.archived_at ? t('收藏已封存', 'Collection archived') : null].filter(Boolean).join(' · ') + ' ';
-    const edit = document.createElement('a');
-    edit.href = `/admin/collection/${item.id}?scope=${filters.get('scope')}&lang=${en ? 'en' : 'zh-TW'}`;
-    edit.textContent = t('編輯', 'Edit');
-    row.appendChild(edit);
-    members.appendChild(row);
+ function target(changes: Record<string, string | null>) {
+  const path = new URL(url);
+  for (const [key, value] of Object.entries(changes)) {
+   if (value === null || value === '') path.searchParams.delete(key);
+   else path.searchParams.set(key, value);
+  }
+  return path.pathname + path.search;
+ }
+
+ const reset = target(Object.fromEntries([...filters, 'tab', 'page'].map(key => [key, null])));
+ for (const field of controls) {
+  field.value = url.searchParams.get(field.name) ?? defaults[field.name] ?? '';
+  if (field instanceof HTMLSelectElement && field.selectedIndex < 0) field.value = defaults[field.name] ?? '';
+  if (!filters.includes(field.name) || field.value === (defaults[field.name] ?? '')) continue;
+  const chip = document.createElement('a');
+  chip.className = 'admin-kit-button admin-kit-chip';
+  chip.href = target({[field.name]: null, page: '1'});
+  const label = field.closest('label')?.querySelector('span')?.textContent;
+  const value = field instanceof HTMLSelectElement ? field.selectedOptions[0]?.textContent : field.value;
+  chip.textContent = [label, value, '×'].join(' · ');
+  chip.setAttribute('aria-label', t('移除條件', 'Remove filter') + ' ' + label + ' ' + value);
+  chips.appendChild(chip);
+  const advanced = field.closest('details');
+  if (advanced) advanced.open = true;
+ }
+ clear.hidden = !chips.childElementCount && tab === 'all';
+ clear.addEventListener('click', () => location.assign(reset));
+ find<HTMLAnchorElement>('[data-r02-empty] a').href = reset;
+ find<HTMLAnchorElement>('[data-r02-new]').search = actionParams.toString();
+ for (const link of tabs) {
+  link.href = target({tab: link.dataset.tab!, page: '1'});
+  if (link.dataset.tab === tab) link.setAttribute('aria-current', 'page');
+ }
+
+ function addCell(row: HTMLTableRowElement, index: number) {
+  const cell = row.insertCell();
+  if (index === 5) cell.className = 'admin-r02-date';
+  const label = document.createElement('span');
+  label.className = 'admin-kit-cell-label';
+  label.textContent = headings[index];
+  label.setAttribute('aria-hidden', 'true');
+  cell.appendChild(label);
+  return cell;
+ }
+
+ function render(data: NonNullable<NumberedCollectionList['list']>) {
+  table.replaceChildren();
+  for (const group of data.groups) {
+   if (url.searchParams.get('view') === 'grouped') {
+    const groupRow = table.insertRow();
+    groupRow.className = 'admin-r02-group';
+    groupRow.dataset.collectionGroup = group.key;
+    const heading = document.createElement('th');
+    heading.colSpan = headings.length;
+    heading.textContent = group.game_name + ' · ' + t(number.format(group.items.length) + ' 筆收藏', number.format(group.items.length) + ' records');
+    groupRow.appendChild(heading);
    }
-   card.appendChild(members);
-   list.appendChild(card);
+   for (const item of group.items) {
+    const row = table.insertRow();
+    row.dataset.collectionId = String(item.id);
+    const cover = document.createElement('span');
+    cover.className = 'admin-r02-cover';
+    cover.textContent = t('無封面', 'No cover');
+    if (item.image) {
+     const image = document.createElement('img');
+     image.width = 56;
+     image.height = 74;
+     image.loading = 'lazy';
+     image.alt = '';
+     image.addEventListener('error', () => image.remove(), {once: true});
+     image.src = item.image;
+     cover.appendChild(image);
+    }
+    addCell(row, 0).appendChild(cover);
+    const name = document.createElement('div');
+    const title = document.createElement('strong');
+    title.textContent = item.display_name;
+    const meta = document.createElement('small');
+    const type = item.item_type === 'accessory' ? t('配件', 'Accessory')
+     : item.item_type === 'expansion' ? t('擴充', 'Expansion') : t('遊戲', 'Game');
+    meta.textContent = [type, '#' + item.id, group.source_id ?? t('缺少來源身份', 'Missing source identity'),
+     group.source_archived && t('來源遊戲已封存', 'Source game archived'),
+     group.link_status === 'pending' && t('候選連結', 'Candidate link'),
+     group.link_status === 'linked' && t('已確認連結', 'Confirmed link'), group.linked_source_id,
+     group.primary_source && (group.primary_source === 'bgg' ? 'BGG' : 'NotBGG'),
+     item.archived_at && t('收藏已封存', 'Collection archived')].filter(Boolean).join(' · ');
+    name.appendChild(title);
+    name.appendChild(meta);
+    addCell(row, 1).appendChild(name);
+    const badges = document.createElement('div');
+    badges.className = 'admin-kit-row';
+    const acquisition = item.owned === 1 ? 'owned' : item.acquisition_status === 'owned' ? 'not_owned' : item.acquisition_status;
+    const flags = new Set([acquisition]);
+    if (item.acquisition_status === 'preordered') flags.add('preordered');
+    if (item.wishlist === 1) flags.add('wishlist');
+    for (const flag of flags) {
+     const badge = document.createElement('span');
+     badge.className = 'admin-kit-badge';
+     badge.dataset.tone = flag === 'owned' ? 'success' : flag === 'wishlist' ? 'wish' : flag === 'preordered' ? 'preorder' : 'neutral';
+     const icon = document.createElement('span');
+     icon.setAttribute('aria-hidden', 'true');
+     icon.textContent = flag === 'owned' ? '✓' : flag === 'wishlist' ? '♡' : flag === 'preordered' ? '◷' : '•';
+     badge.appendChild(icon);
+     badge.append(Array.from(statuses.options).find(option => option.value === flag)?.textContent ?? flag);
+     badges.appendChild(badge);
+    }
+    addCell(row, 2).appendChild(badges);
+    const min = item.min_players, max = item.max_players;
+    addCell(row, 3).append(min && max ? (min === max ? number.format(min) : number.format(min) + '–' + number.format(max)) : '—');
+    addCell(row, 4).append(number.format(item.copies));
+    const timestamp = Date.parse(item.updated_at.trim().replace(' ', 'T').replace(/(T[\d:.]+)$/, '$1Z'));
+    const time = document.createElement('time');
+    if (Number.isFinite(timestamp)) {
+     time.dateTime = new Date(timestamp).toISOString();
+     time.textContent = date.format(timestamp);
+    } else time.textContent = '—';
+    addCell(row, 5).appendChild(time);
+
+    const actions = document.createElement('details');
+    actions.className = 'admin-r02-actions';
+    const trigger = document.createElement('summary');
+    trigger.className = 'admin-kit-button';
+    trigger.textContent = '⋯';
+    trigger.setAttribute('aria-label', t('操作', 'Actions') + ' ' + item.display_name);
+    const links = document.createElement('div');
+    const edit = '/admin/collection/' + item.id;
+    for (const [label, path, query] of [
+     [t('編輯', 'Edit'), edit, ''],
+     [t('副本', 'Copies'), edit + '/copies', ''],
+     [t('實體組件', 'Physical components'), '/admin/collection/components/manage', 'collection=' + item.id],
+     [t('卡套需求', 'Sleeve requirements'), '/admin/sleeves/requirements', 'collection=' + item.id],
+     [t('採購紀錄', 'Purchase records'), '/admin/purchases', 'collection=' + item.id],
+    ]) {
+     const link = document.createElement('a');
+     link.href = path + '?' + actionParams + (query ? '&' + query : '');
+     link.textContent = label;
+     links.appendChild(link);
+    }
+    actions.addEventListener('keydown', event => {
+     if (event.key !== 'Escape' || !actions.open) return;
+     event.preventDefault();
+     event.stopPropagation();
+     actions.open = false;
+     trigger.focus();
+    });
+    actions.appendChild(trigger);
+    actions.appendChild(links);
+    addCell(row, 6).appendChild(actions);
+   }
+  }
+  results.hidden = data.total === 0;
+  empty.hidden = data.total !== 0;
+  pagination.hidden = !data.total;
+  if (!data.total) return;
+
+  const last = Math.ceil(data.total / data.limit);
+  const firstItem = (data.page - 1) * data.limit + 1;
+  const lastItem = Math.min(data.page * data.limit, data.total);
+  const range = number.format(firstItem) + '–' + number.format(lastItem);
+  const total = number.format(data.total);
+  find('[data-r02-range]').textContent = t('顯示 ' + range + ' 筆，共 ' + total + ' 筆', 'Showing ' + range + ' of ' + total);
+  pages.replaceChildren();
+  function pageLink(page: number, label: string, accessibleLabel = label, current = false) {
+   const link = document.createElement('a');
+   link.className = 'admin-kit-button';
+   link.href = target({page: String(page)});
+   link.textContent = label;
+   link.setAttribute('aria-label', accessibleLabel);
+   if (current) link.setAttribute('aria-current', 'page');
+   pages.appendChild(link);
+  }
+  if (data.page > 1) {
+   pageLink(1, '«', t('首頁', 'First page'));
+   pageLink(data.page - 1, '‹', t('上一頁', 'Previous page'));
+  }
+  const visible = new Set([1, last, data.page - 1, data.page, data.page + 1].filter(n => n >= 1 && n <= last));
+  let previous = 0;
+  for (const page of Array.from(visible).sort((a, b) => a - b)) {
+   if (page - previous > 1) pages.append('…');
+   pageLink(page, number.format(page), t('第 ' + page + ' 頁', 'Page ' + page), page === data.page);
+   previous = page;
+  }
+  if (data.page < last) {
+   pageLink(data.page + 1, '›', t('下一頁', 'Next page'));
+   pageLink(last, '»', t('末頁', 'Last page'));
   }
  }
 
- async function load(after: number, back: number[], query = filters) {
-  if (busy) return;
-  busy = true;
-  controls.forEach(control => control.disabled = true);
-  status.textContent = t('處理中…', 'Working…'); status.dataset.tone = 'info';
+ async function load() {
+  const params = new URLSearchParams();
+  params.set('page', url.searchParams.get('page') ?? '1');
+  params.set('tab', tab);
+  for (const field of controls) {
+   if (field.value.trim()) params.set(field.name, field.value.trim());
+  }
+  error.hidden = empty.hidden = true;
+  results.hidden = false;
+  results.setAttribute('aria-busy', 'true');
+  status.textContent = t('載入中…', 'Loading…');
   try {
-   const params = new URLSearchParams(query);
-   params.set('after', String(after));
-   const response = await fetch(`/api/admin/collection?${params}`);
-   const result = await response.json() as {data?: CollectionListPage; error?: {code: string}};
-   if (!response.ok || !result.data) throw new Error(result.error?.code ?? String(response.status));
-   filters = query;
-   render(result.data);
-   cursor = after;
-   previousCursors = back;
-   nextCursor = result.data.nextCursor;
-   status.textContent = result.data.groups.length ? '' : t('找不到符合條件的收藏', 'No matching collection records');
-  } catch {
-   if (query !== filters) {
-    list.replaceChildren();
-    previousCursors = [];
-    nextCursor = null;
+   const response = await fetch('/api/admin/collection?' + params, {signal: AbortSignal.timeout(12000)});
+   const json = await response.json() as {data?: NumberedCollectionList};
+   if (!response.ok || !json.data) throw new Error('Collection response unavailable');
+   for (const link of tabs) {
+    const value = json.data.counts?.[link.dataset.tab as keyof NonNullable<NumberedCollectionList['counts']>];
+    const count = link.querySelector('[data-count]')!;
+    if (value !== undefined) count.textContent = number.format(value);
+    else {
+     const dash = document.createElement('span');
+     dash.setAttribute('aria-hidden', 'true');
+     dash.textContent = '—';
+     const description = document.createElement('span');
+     description.className = 'admin-kit-sr';
+     description.textContent = t('無法取得', 'Unavailable');
+     count.replaceChildren(dash, description);
+    }
    }
-   status.textContent = t('無法載入收藏列表，請重試。', 'Could not load the collection list. Try again.'); status.dataset.tone = 'error';
+   if (!json.data.list) throw new Error('Collection list unavailable');
+   if (json.data.list.page !== Number(params.get('page'))) {
+    url.searchParams.set('page', String(json.data.list.page));
+    history.replaceState(history.state, '', url);
+   }
+   render(json.data.list);
+   status.textContent = '';
+  } catch {
+   results.hidden = true;
+   status.textContent = '';
+   error.hidden = false;
   } finally {
-   previous.hidden = !previousCursors.length;
-   next.hidden = nextCursor === null;
-   controls.forEach(control => control.disabled = false);
-   busy = false;
+   results.removeAttribute('aria-busy');
   }
  }
 
  function applyFilters() {
-  if (busy) return;
-  const query = new URLSearchParams({scope: scope.value});
-  for (const [name, value] of new FormData(form)) {
-   if (typeof value === 'string' && value.trim()) query.set(name, value.trim());
-  }
-  for (const name of ['scope', 'q', 'view', 'source', 'status', 'archive', 'wishlist']) {
-   const value = query.get(name);
-   if (value) url.searchParams.set(name, value); else url.searchParams.delete(name);
-  }
-  history.replaceState(history.state, '', url);
-  root.querySelectorAll<HTMLAnchorElement>('nav a[href^="/admin/collection"]').forEach(anchor => {
-   const target = new URL(anchor.href);
-   target.searchParams.set('scope', scope.value);
-   anchor.href = target.href;
-  });
-  void load(0, [], query);
+  const changes: Record<string, string | null> = {page: '1'};
+  for (const field of controls) changes[field.name] = field.value.trim();
+  location.assign(target(changes));
  }
 
  form.addEventListener('submit', event => { event.preventDefault(); applyFilters(); });
- form.querySelectorAll('select').forEach(select => select.addEventListener('change', applyFilters));
- scope.addEventListener('change', applyFilters);
- next.addEventListener('click', () => {
-  if (nextCursor !== null) void load(nextCursor, [...previousCursors, cursor]);
- });
- previous.addEventListener('click', () => {
-  const after = previousCursors.at(-1);
-  if (after !== undefined) void load(after, previousCursors.slice(0, -1));
- });
- applyFilters();
+ form.addEventListener('change', event => { if (event.target instanceof HTMLSelectElement) applyFilters(); });
+ error.querySelector('a')?.addEventListener('click', event => { event.preventDefault(); void load(); });
+ void load();
 }
 
 export function initializeCollectionAdmin(root:HTMLElement){

@@ -84,6 +84,48 @@ export function r01Fixture(state: 'normal' | 'warning' | 'empty' | 'failure' = '
     return { sqlite, db };
 }
 
+/** R02 synthetic rows exercise production/test scopes without reading local bindings. */
+export function r02Fixture(failure?: 'counts' | 'list') {
+    const {sqlite} = r01Fixture('empty');
+    sqlite.exec(`
+        BEGIN;
+        INSERT INTO bgg_games(bgg_id,name,last_success_at,cache_json) VALUES
+          (900001,'Synthetic BGG','2026-11-24','{"thumbnail":"https://example.invalid/cover.webp","minPlayers":1,"maxPlayers":4}'),
+          (900002,'Unsafe cover','2026-11-24','{"image":"javascript:invalid","minPlayers":2,"maxPlayers":5}');
+        INSERT INTO v2_games(id,bgg_id,primary_name) VALUES
+          (1,900001,'Synthetic BGG'),(2,NULL,'Synthetic NotBGG'),(3,900002,'Unsafe cover');
+        INSERT INTO notbgg_ids(seq,request_key,request_hash) VALUES (1,'synthetic','synthetic');
+        INSERT INTO notbgg_games(seq,game_id,name,type,min_players,max_players,image_url) VALUES
+          (1,2,'Synthetic NotBGG','boardgame',2,5,'/images/admin/empty-no-result.webp');
+        INSERT INTO notbgg_game_revisions(seq,revision,snapshot_json,actor) VALUES (1,1,'{}','fixture');
+        INSERT INTO v2_collection_items(id,game_id,display_name,acquisition_status,wishlist,notes,record_scope,updated_at) VALUES
+          (1,1,'Alpha','owned',0,NULL,'production','2026-11-24 17:00:00'),
+          (2,1,'Alpha','owned',1,'{"owned":0}','production','2026-11-24 17:00:00'),
+          (3,2,'Bravo','preordered',1,'{"owned":1}','production','2026-11-23'),
+          (4,3,'Charlie','unknown',0,'plain text','production','2026-11-22'),
+          (5,NULL,'Unknown players','owned',0,NULL,'production','2026-11-21'),
+          (6,2,'Test record','owned',1,NULL,'test','2026-11-24');
+        INSERT INTO v2_collection_management(collection_item_id,archived_at) VALUES (2,'2026-11-25');
+        INSERT INTO v2_owned_copies(id,collection_item_id,copy_label,inventory_status) VALUES
+          (1,1,'On shelf','in_collection'),(2,1,'Loaned','loaned'),(3,1,'Sold','sold'),(4,2,'Other','loaned');
+        COMMIT;
+    `);
+    const insert = sqlite.prepare(`INSERT INTO v2_collection_items(id,game_id,display_name,updated_at)
+        VALUES (?,2,?,'2026-11-20')`);
+    for (let id = 10; id < 53; id++) insert.run(id, 'Synthetic edition ' + id);
+    const db = sqliteD1(sqlite);
+    const prepare = db.prepare.bind(db);
+    db.prepare = (sql: string) => {
+        if ((sql.match(/\b(?:UNION|INTERSECT|EXCEPT)\b/gi)?.length ?? 0) >= 4) {
+            throw new Error('D1 compound SELECT term limit');
+        }
+        if ((failure === 'counts' && sql.includes('COUNT(*) AS "all"')) ||
+            (failure === 'list' && sql.includes('bounds AS'))) throw new Error('Synthetic R02 read failure');
+        return prepare(sql);
+    };
+    return {sqlite, db};
+}
+
 /** Test-only injected bindings; real Astro pages and real middleware, no dev exemption. */
 export async function dashboardPreview(bindings: Record<string, unknown>, uiKit?: { dev: boolean }) {
     async function compile(entry: string) {

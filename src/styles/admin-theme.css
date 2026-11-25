@@ -317,3 +317,64 @@ html:has(.shell-drawer[open]) { overflow: hidden; }
 @media (max-width: 767px) {
   .admin-kit-stat { flex-direction: column; }
 }
+
+/* R02 collection list */
+.admin-r02 { min-width: 0; padding: 0; overflow-wrap: anywhere; }
+.admin-r02 [hidden] { display: none !important; }
+.admin-r02 .admin-kit-header { margin-block-end: var(--space-4); }
+.admin-r02 .admin-kit-header [data-variant="primary"] svg { color: currentColor; }
+.admin-r02-tabs, .admin-r02-filters, .admin-r02-search { margin-block-end: var(--space-3); }
+.admin-app .admin-r02-tabs > a { flex: 1 1 10rem; background: var(--bg-surface); border-color: var(--border-strong); }
+.admin-r02 :is(.admin-r02-tabs, .admin-r02-pagination) [aria-current="page"] {
+  color: var(--bg-surface); background: var(--brand-purple);
+}
+.admin-r02 :is(.admin-r02-tabs, .admin-r02-pagination) [aria-current="page"]:hover { background: var(--brand-purple-strong); }
+.admin-r02-count { background: var(--brand-purple-soft); color: var(--brand-purple-strong); border-radius: var(--radius-pill);
+  padding: 0 var(--space-2); font-variant-numeric: tabular-nums; }
+.admin-page .admin-r02-filters label { display: grid; gap: var(--space-1); min-width: 0; margin: 0; }
+.admin-r02-filters :is(input, select) { min-height: 44px; max-width: 100%; }
+.admin-app .admin-r02-filters :is(input, select) { margin-block: 0; }
+.admin-r02-search { align-items: end; }
+.admin-r02-search > label:first-child { flex: 2 1 15rem; }
+.admin-app .admin-r02-search summary { background: var(--wood-soft); border-color: var(--border-strong); }
+.admin-r02-search > details[open] { flex: 1 0 100%; }
+.admin-r02-advanced { padding: var(--space-3); margin-top: var(--space-2); background: var(--bg-surface);
+  border: 1px solid var(--border-soft); border-radius: var(--radius-md); }
+.admin-r02-toolbar { align-items: end; }
+.admin-r02-toolbar [data-r02-chips] { flex: 1 1 auto; }
+.admin-r02 [data-admin-status]:empty { display: none; }
+.admin-r02 [aria-busy="true"] { min-height: 9rem; }
+.admin-r02 table { font-variant-numeric: tabular-nums; }
+.admin-r02 td small { display: block; color: var(--ink-muted); font: var(--text-small); }
+.admin-r02 th:first-child { border-start-start-radius: var(--radius-sm); }
+.admin-r02 th:last-child { border-start-end-radius: var(--radius-sm); }
+.admin-r02-cover { display: grid; place-items: center; width: 56px; height: 74px; position: relative;
+  background: var(--wood-soft); border-radius: var(--radius-sm); text-align: center; font: var(--text-small); overflow: hidden; }
+.admin-r02-cover img { position: absolute; inset: 0; object-fit: contain; background: var(--wood-soft); }
+.admin-r02-pagination { justify-content: space-between; margin-top: var(--space-3); padding: var(--space-3);
+  border: 1px solid var(--border-soft); border-radius: var(--radius-md); font-variant-numeric: tabular-nums; }
+.admin-r02-pagination a, .admin-r02-actions summary { min-width: 44px; }
+.admin-app .admin-r02 :is(.admin-r02-pagination a, .admin-r02-actions summary) { border-color: var(--border-strong); }
+.admin-r02-actions { position: relative; width: max-content; }
+.admin-r02-actions > div { position: absolute; z-index: 2; inset-inline-end: 0; min-width: 11rem; padding: var(--space-1);
+  border: 1px solid var(--border-strong); border-radius: var(--radius-md); background: var(--bg-surface); box-shadow: var(--shadow-raised); }
+.admin-r02-actions a { display: flex; align-items: center; min-height: 44px; padding-inline: var(--space-2);
+  color: var(--brand-purple-strong); }
+.admin-r02-actions a:hover { background: var(--brand-purple-soft); }
+.admin-r02 summary::-webkit-details-marker { display: none; }
+@media (min-width: 768px) and (max-width: 1439px) {
+  .admin-r02 .admin-r02-date { display: none; }
+}
+@media (max-width: 767px) {
+  .admin-r02 table th { text-align: start; }
+  .admin-r02 table td { min-width: 0; }
+  .admin-r02 table td > :last-child { min-width: 0; }
+  .admin-r02 tr[data-collection-id] { grid-template-columns: auto minmax(0, 1fr); }
+  .admin-r02 tr[data-collection-id] td:nth-child(-n+2) { justify-content: flex-start; }
+  .admin-r02 tr[data-collection-id] td:nth-child(-n+2) .admin-kit-cell-label { display: none; }
+  .admin-r02 tr[data-collection-id] td:nth-child(n+3) { grid-column: 1 / -1; }
+  .admin-r02 table td:last-child { border-bottom: 0; }
+  .admin-r02-toolbar label { flex: 1 1 8rem; }
+  .admin-r02-toolbar [data-r02-chips]:empty { display: none; }
+  .admin-r02-toolbar [data-r02-chips]:not(:empty) { flex-basis: 100%; }
+}

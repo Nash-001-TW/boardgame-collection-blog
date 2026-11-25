@@ -1,4 +1,5 @@
 ---
+import CollectionList from './admin/CollectionList.astro';
 import AdminLayout from '../layouts/AdminLayout.astro';
 import { collectionStatuses } from '../lib/collection-v2-management';
 interface Props { mode:'list'|'new'|'edit'|'relations'; id?:string; lang?:'zh-TW'|'en' }
@@ -11,44 +12,20 @@ const initialScope = Astro.url.searchParams.get('scope') === 'test' ? 'test' : '
 ---
 <AdminLayout lang={lang} title={title}>
 <main id="editor-content" class="admin-page" data-collection-admin data-mode={mode} data-id={id} data-lang={lang}>
+{mode==='list' ? <CollectionList lang={lang} /> : <>
 <h1 data-collection-heading>{title}</h1>
 {mode==='edit'&&<p><a class="admin-button" href={'/admin/bgg?view=relations&domain=collection&source='+encodeURIComponent(id)+'&lang='+lang}>{t('管理收藏組合關係','Manage collection combinations')}</a></p>}
 {mode==='edit'&&<p><a class="admin-button" href={'/admin/purchases?collection='+encodeURIComponent(id)+'&lang='+lang}>{t('採購紀錄與已記錄成本','Purchases & recorded costs')}</a></p>}
 {mode==='edit'&&<p><a class="admin-button" href={'/admin/sleeves/requirements?collection='+encodeURIComponent(id)+'&lang='+lang}>{t('管理卡套需求與逐副本套用','Manage sleeve requirements & copy applications')}</a></p>}
 <nav aria-label={t('本頁導覽','Page navigation')}>
-{mode!=='list' && <a href={'/admin/collection?lang='+lang}>{t('← 收藏列表','← Collection list')}</a>}
-{mode==='list' && <a class="admin-button primary" href={'/admin/collection/new?lang='+lang}>{t('新增收藏','New collection record')}</a>}
+<a href={'/admin/collection?lang='+lang}>{t('← 收藏列表','← Collection list')}</a>
 {mode==='relations' && <a href={'/admin/notbgg/'+id.slice(7)+'?lang='+lang}>{t('← 原始遊戲','← Original game')}</a>}
 </nav>
 {(mode==='edit'||mode==='new') && <p data-physical-components-entry hidden={mode!=='edit'}><a data-physical-components-link href={id ? '/admin/collection/components/manage?collection='+encodeURIComponent(id)+'&lang='+lang : undefined}>{t('管理實體組件','Manage physical components')}</a></p>}
 {(mode==='edit'||mode==='new') && <p data-copies-entry hidden={mode!=='edit'}><a data-copies-link href={id ? '/admin/collection/'+encodeURIComponent(id)+'/copies?scope='+initialScope+'&lang='+lang : undefined}>{t('管理副本、語言與版本','Manage copies, languages and editions')}</a></p>}
 <label>{t('資料範圍','Record scope')}<select data-scope><option value="production">production</option><option value="test">test</option></select></label>
 <p data-admin-status role="status" aria-live="polite" tabindex="-1"></p><button type="button" data-admin-reload hidden>{t('重新載入最新資料','Reload latest data')}</button>
-{mode==='list'?<>
-<form data-list-filters>
-  <label>{t('搜尋收藏','Search collection')}<input name="q" type="search" maxlength="200" placeholder={t('名稱、BGG:ID、NotBGG:ID 或收藏 ID','Name, BGG:ID, NotBGG:ID or collection ID')}/></label>
-  <div class="fields">
-    <label>{t('顯示方式','View')}<select name="view">
-      <option value="grouped">{t('依遊戲分組','Group by game')}</option><option value="records">{t('逐筆收藏','Individual records')}</option>
-    </select></label>
-    <label>{t('來源','Source')}<select name="source">
-      <option value="">{t('所有來源','All sources')}</option><option value="bgg">BGG</option><option value="notbgg">NotBGG</option><option value="missing">{t('缺少來源身份','Missing source identity')}</option>
-    </select></label>
-    <label>{t('收藏狀態','Acquisition status')}<select name="status">
-      <option value="">{t('所有狀態','All statuses')}</option>
-      {collectionStatuses.map(status => <option value={status}>{status}</option>)}
-    </select></label>
-    <label>{t('願望清單勾選','Wishlist flag')}<select name="wishlist">
-      <option value="">{t('全部','All')}</option><option value="1">{t('已勾選願望清單','On wishlist')}</option><option value="0">{t('未勾選願望清單','Not on wishlist')}</option>
-    </select></label>
-    <label>{t('收藏封存狀態','Collection archive status')}<select name="archive">
-      <option value="">{t('全部（含封存）','All, including archived')}</option><option value="active">{t('未封存','Active')}</option><option value="archived">{t('已封存','Archived')}</option>
-    </select></label>
-  </div>
-  <button>{t('搜尋','Search')}</button>
-</form>
-<div data-admin-list></div><button data-previous type="button" hidden>{t('上一頁','Previous')}</button><button data-next type="button" hidden>{t('下一頁','Next')}</button>
-</>:mode==='relations'?<>
+{mode==='relations'?<>
 <p>{id} · {t('站內手動配件關聯；不改變收藏或 BGG 官方關聯。','Manual site accessory edges; independent of ownership and official BGG relations.')}</p>
 <form data-relation-form><label>{t('目標身份（BGG:205637 或 NotBGG:000001）','Target identity (BGG:205637 or NotBGG:000001)')}<input name="target" required maxlength="40"/></label>
 <label>{t('關聯類型','Relation type')}<select name="relationType"><option value="accessory_for">{t('專用配件','Accessory for')}</option><option value="compatible_with">{t('相容配件','Compatible with')}</option></select></label><label>{t('管理備註（不公開）','Private relation notes')}<textarea name="notes" maxlength="3000"/></label><button data-save>{t('新增關聯','Add relation')}</button></form><div data-relation-list></div>
@@ -63,5 +40,6 @@ const initialScope = Astro.url.searchParams.get('scope') === 'test' ? 'test' : '
 <p>{t('卡套尺寸與需求沿用既有 V2 卡套資料；此處備註不取代結構化需求。既有非本表單建立的副本與採購保留原狀。','Existing V2 sleeve sizes and requirements remain authoritative. Notes do not replace structured requirements. Other copies and purchase graphs remain unchanged.')}</p>
 <button data-save>{t('儲存收藏','Save collection record')}</button><button data-archive type="button" hidden>{t('封存收藏','Archive collection record')}</button>
 </form><details><summary>{t('副本、採購與卡套資料（管理員）','Copies, purchases and sleeves (admin)')}</summary><pre data-copy-summary></pre></details>
+</>}
 </>}
 </main><script>import {initializeCollectionAdmin} from '../lib/collection-admin-controller';document.querySelectorAll<HTMLElement>('[data-collection-admin]').forEach(initializeCollectionAdmin);</script></AdminLayout>

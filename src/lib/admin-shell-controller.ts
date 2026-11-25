@@ -4,9 +4,9 @@ export const adminNavigation = [
   ] },
   { id: 'collection', zh: '收藏', en: 'Collection', icon: 'collection', items: [
     { id: 'collection', path: '/admin/collection', zh: '全部收藏', en: 'All collection records', icon: 'list' },
-    { id: 'owned', path: '/admin/collection', query: { status: 'owned' }, zh: '已收藏', en: 'Owned', icon: 'check-circle' },
-    { id: 'wishlist', path: '/admin/collection', query: { wishlist: '1' }, zh: '願望清單', en: 'Wishlist', icon: 'heart' },
-    { id: 'preordered', path: '/admin/collection', query: { status: 'preordered' }, zh: '預購中', en: 'Preordered', icon: 'calendar' },
+    { id: 'owned', path: '/admin/collection', query: { tab: 'owned' }, zh: '已收藏', en: 'Owned', icon: 'check-circle' },
+    { id: 'wishlist', path: '/admin/collection', query: { tab: 'wishlist' }, zh: '願望清單', en: 'Wishlist', icon: 'heart' },
+    { id: 'preordered', path: '/admin/collection', query: { tab: 'preordered' }, zh: '預購中', en: 'Preordered', icon: 'calendar' },
     { id: 'components', path: '/admin/collection/components/manage', zh: '實體組件', en: 'Physical components', icon: 'puzzle' },
     { id: 'classification', path: '/admin/collection/components/classification', zh: '組件分類查詢', en: 'Component classification', icon: 'search' },
   ] },
@@ -35,6 +35,9 @@ export function adminNavigationHref(item: NavigationItem, lang: 'zh-TW' | 'en') 
 export function currentAdminItem(url: URL): NavigationItem['id'] | undefined {
   const path = url.pathname.replace(/\/+$/, '');
   if (path === '/admin/collection') {
+    const tab = url.searchParams.get('tab');
+    if (tab === 'owned' || tab === 'wishlist' || tab === 'preordered') return tab;
+    if (tab === 'all') return 'collection';
     const status = url.searchParams.get('status');
     if (url.searchParams.get('wishlist') === '1' || status === 'wishlist') return 'wishlist';
     if (status === 'owned' || status === 'preordered') return status;

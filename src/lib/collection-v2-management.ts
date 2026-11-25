@@ -2,6 +2,9 @@ import { getGames } from './games';
 import { getCatalogGameType } from './game-content';
 import { parseGameRef,gameCatalogKey } from './game-identity';
 import type { GameRef } from './game-identity';
+import { adminOwnedSql } from './admin-dashboard-summary';
+import { publicMetadataRegistry, publicStaticMetadataSql, publicBggMetadataSql, publicBggPresentationSql, publicNotBggPresentationSql } from './public-site-data';
+import { safeImage } from './notbgg-public';
 export class CollectionWriteError extends Error { constructor(public code:string){super(code);} }
 export type CollectionScope='production'|'test';
 export const collectionStatuses=['owned','preordered','wishlist','not_owned','sold','gifted_away','unknown'] as const;
@@ -112,6 +115,38 @@ interface CollectionListOptions {
  limit: number;
 }
 
+
+interface NumberedCollectionItem extends CollectionListItem {
+ image: string | null;
+ min_players: number | null;
+ max_players: number | null;
+ owned: number;
+ copies: number;
+ updated_at: string;
+}
+interface NumberedCollectionGroup extends CollectionListIdentity {
+ key: string;
+ items: NumberedCollectionItem[];
+}
+export interface NumberedCollectionList {
+ counts: Record<'all' | 'owned' | 'wishlist' | 'preordered', number> | null;
+ list: {groups: NumberedCollectionGroup[]; total: number; page: number; limit: number} | null;
+}
+async function readCollectionSection<T>(section: string, read: () => Promise<T>): Promise<T | null> {
+ let timer: ReturnType<typeof setTimeout> | undefined;
+ try {
+  const deadline = new Promise<never>((_, reject) => {
+   timer = setTimeout(() => reject(new DOMException('Collection read timed out', 'TimeoutError')), 8000);
+  });
+  return await Promise.race([read(), deadline]);
+ } catch (error) {
+  console.error('Admin collection section unavailable', section, error instanceof Error ? error.name : 'Unknown error');
+  return null;
+ } finally {
+  clearTimeout(timer);
+ }
+}
+
 /** Extends the existing V2 tables, never a parallel collection identity or storage backend. */
 export class CollectionV2Writer {
  constructor(private db:D1Database){}
@@ -187,6 +222,127 @@ export class CollectionV2Writer {
   }
   const last = results.at(-1);
   return {groups: [...groups.values()], nextCursor: last?.has_next ? last.cursor : null};
+ }
+
+ async listNumbered(scope: CollectionScope, options: Omit<CollectionListOptions, 'after'> & {
+  page: number; sort: string; tab: string; players: number | null;
+ }): Promise<NumberedCollectionList> {
+  scopeCheck(scope);
+  const {view, query, source, status, archive, wishlist = null, page, limit, sort, tab, players} = options;
+  const sorts = ['updated', 'name', 'id', 'copies'];
+  const sortIndex = sorts.indexOf(sort);
+  const tabIndex = ['all', 'owned', 'wishlist', 'preordered'].indexOf(tab);
+  if (!Number.isSafeInteger(page) || page < 1 || ![20, 50, 100].includes(limit)
+      || sortIndex < 0 || tabIndex < 0 || !['records', 'grouped'].includes(view) || query.length > 200
+      || (source !== null && !['bgg', 'notbgg', 'missing'].includes(source))
+      || (status !== null && !collectionStatuses.some(value => value === status))
+      || (archive !== null && !['active', 'archived'].includes(archive))
+      || (wishlist !== null && wishlist !== '0' && wishlist !== '1')
+      || (players !== null && (!Number.isInteger(players) || players < 1 || players > 20))) {
+   throw new CollectionWriteError('VALIDATION');
+  }
+  const tabs = ['1', 'owned = 1', 'wishlist = 1', "acquisition_status = 'preordered'"];
+  const ordering = ['updated_at DESC, id', 'name COLLATE NOCASE, id', 'id', 'copies DESC, id'][sortIndex];
+  const keyword = query.trim().toLowerCase();
+  const presentation = (field: keyof typeof publicBggPresentationSql) =>
+   `CASE WHEN n.seq IS NOT NULL THEN ${publicNotBggPresentationSql[field]} ELSE ${publicBggPresentationSql[field]} END`;
+  const sql = `WITH ${publicStaticMetadataSql},
+   bgg AS MATERIALIZED (
+    SELECT g.bgg_id id, ${publicBggMetadataSql} meta
+    FROM (SELECT DISTINCT bgg_id FROM v2_games WHERE bgg_id IS NOT NULL) g
+    LEFT JOIN static s ON s.id=g.bgg_id LEFT JOIN bgg_games b ON b.bgg_id=g.bgg_id
+   ), identified AS (
+    SELECT c.id, c.display_name, c.item_type, c.acquisition_status, c.wishlist, m.archived_at, c.updated_at, c.owned AS owned,
+           ${presentation("image")} AS image, ${presentation("minPlayers")} AS min_players,
+           ${presentation("maxPlayers")} AS max_players,
+           (SELECT COUNT(*) FROM v2_owned_copies copy WHERE copy.collection_item_id=c.id
+              AND copy.inventory_status IN ('in_collection','loaned')) AS copies,
+           COALESCE(n.name, g.primary_name, c.display_name) AS game_name,
+           CASE WHEN n.seq IS NOT NULL THEN 'notbgg'
+                WHEN g.bgg_id IS NOT NULL THEN 'bgg' ELSE 'missing' END AS source,
+           CASE WHEN n.seq IS NOT NULL THEN printf('NotBGG:%06d', n.seq)
+                WHEN g.bgg_id IS NOT NULL THEN 'BGG:' || g.bgg_id END AS source_id,
+           n.archived_at AS source_archived, l.status AS link_status,
+           CASE WHEN n.seq IS NOT NULL AND l.id IS NOT NULL THEN 'BGG:' || l.candidate_bgg_id
+                WHEN l.status = 'linked' THEN printf('NotBGG:%06d', l.seq) END AS linked_source_id,
+           CASE WHEN l.status = 'linked' THEN l.primary_source END AS primary_source,
+           CASE WHEN ? = 'grouped' AND c.game_id IS NOT NULL THEN 'game:' || c.game_id
+                ELSE 'collection:' || c.id END AS group_key
+    FROM (SELECT *, ${adminOwnedSql} AS owned FROM v2_collection_items WHERE record_scope = ?) c
+    LEFT JOIN v2_collection_management m ON m.collection_item_id = c.id
+    LEFT JOIN v2_games g ON g.id = c.game_id
+    LEFT JOIN notbgg_games n ON n.game_id = g.id
+    LEFT JOIN bgg b ON b.id=g.bgg_id AND n.seq IS NULL
+    LEFT JOIN notbgg_bgg_links l
+      ON (n.seq IS NOT NULL AND l.seq = n.seq AND l.status IN ('pending', 'linked'))
+      OR (n.seq IS NULL AND g.bgg_id IS NOT NULL AND l.candidate_bgg_id = g.bgg_id
+          AND l.bgg_game_id = g.id AND l.status = 'linked')
+   ), filtered AS (
+    SELECT * FROM identified
+    WHERE (${tabs[tabIndex]})
+      AND (? IS NULL OR (typeof(min_players) IN ('integer','real') AND typeof(max_players) IN ('integer','real')
+           AND min_players > 0 AND min_players <= ? AND max_players >= ?))
+      AND source = COALESCE(?, source)
+      AND acquisition_status = COALESCE(?, acquisition_status)
+      AND wishlist = COALESCE(?, wishlist)
+      AND COALESCE(?, CASE WHEN archived_at IS NULL THEN 'active' ELSE 'archived' END)
+          = CASE WHEN archived_at IS NULL THEN 'active' ELSE 'archived' END
+      AND (instr(lower(display_name), ?) > 0 OR instr(lower(game_name), ?) > 0
+           OR lower(source_id) = ? OR CAST(id AS TEXT) = ? OR 'collection:' || id = ?)
+   ), grouped AS (
+    SELECT group_key, MIN(id) id, MAX(updated_at) updated_at,
+           MIN(CASE WHEN ? = 'grouped' THEN game_name ELSE display_name END) name, SUM(copies) copies
+    FROM filtered GROUP BY group_key
+   ), totals AS (
+    SELECT COUNT(*) total FROM grouped
+   ), bounds AS (
+    SELECT total, MIN(?, MAX(1, CAST((total + ? - 1) / ? AS INTEGER))) page FROM totals
+   ), selected AS (
+    SELECT * FROM grouped ORDER BY ${ordering}
+    LIMIT ? OFFSET (SELECT (page - 1) * ? FROM bounds)
+   )
+   SELECT bounds.total, bounds.page, f.*
+   FROM bounds LEFT JOIN selected p ON 1 LEFT JOIN filtered f ON f.group_key = p.group_key
+   ORDER BY ${ordering.replace(/\b(updated_at|id|name|copies)\b/g, 'p.$1')}, f.id`;
+  const [counts, list] = await Promise.all([
+   readCollectionSection('counts', async () => {
+    const row = await this.db.prepare(`SELECT COUNT(*) AS "all",
+      COUNT(CASE WHEN (${adminOwnedSql}) = 1 THEN 1 END) AS owned,
+      COUNT(CASE WHEN wishlist = 1 THEN 1 END) AS wishlist,
+      COUNT(CASE WHEN acquisition_status = 'preordered' THEN 1 END) AS preordered
+      FROM v2_collection_items WHERE record_scope = ?`).bind(scope).first<NonNullable<NumberedCollectionList['counts']>>();
+    if (!row || Object.values(row).some(value => !Number.isSafeInteger(value) || value < 0)) throw new Error('Invalid counts');
+    return {...row};
+   }),
+   readCollectionSection('list', async () => {
+    const result = await this.db.prepare(sql).bind(
+     publicMetadataRegistry, view, scope, players, players, players, source, status,
+     wishlist === null ? null : Number(wishlist), archive, keyword, keyword, keyword, keyword, keyword,
+     view, page, limit, limit, limit, limit
+    ).all<NumberedCollectionItem & CollectionListIdentity & {group_key: string; total: number; page: number}>();
+    const first = result.results?.[0];
+    if (!result.success || !first || !Number.isSafeInteger(first.total) || !Number.isSafeInteger(first.page)) {
+     throw new Error('Invalid list result');
+    }
+    const groups = new Map<string, NumberedCollectionGroup>();
+    for (const row of result.results) {
+     const {id, group_key, display_name, item_type, acquisition_status, wishlist, archived_at, owned,
+      updated_at, copies, image, min_players, max_players, total, page, ...identity} = row;
+     if (id === null) continue; // The totals row also represents an empty page.
+     let group = groups.get(group_key);
+     if (!group) {
+      group = {key: group_key, ...identity, items: []};
+      groups.set(group_key, group);
+     }
+     group.items.push({id, display_name, item_type, acquisition_status, wishlist, archived_at, owned, updated_at,
+      copies, image: safeImage(typeof image === 'string' ? image : null),
+      min_players: typeof min_players === 'number' && min_players > 0 ? min_players : null,
+      max_players: typeof max_players === 'number' && max_players > 0 ? max_players : null});
+    }
+    return {groups: [...groups.values()], total: first.total, page: first.page, limit};
+   }),
+  ]);
+  return {counts, list};
  }
  async get(id:number,scope:CollectionScope):Promise<AdminRow|null>{positive(id);scopeCheck(scope);return this.db.prepare(`SELECT c.*,EXISTS(SELECT 1 FROM v2_games g WHERE g.id=c.game_id) resolved_game,COALESCE(m.revision,0) revision,m.archived_at,m.managed_copy_id,m.managed_order_id,n.seq notbgg_seq,n.archived_at source_archived FROM v2_collection_items c LEFT JOIN v2_collection_management m ON m.collection_item_id=c.id LEFT JOIN notbgg_games n ON n.game_id=c.game_id WHERE c.id=? AND c.record_scope=?`).bind(id,scope).first<AdminRow>();}
  async detail(id:number,scope:CollectionScope){const item=await this.get(id,scope);if(!item)return null;

@@ -1,0 +1,77 @@
+---
+import PageHeader from './PageHeader.astro';
+import AdminIcon from './AdminIcon.astro';
+import AlertBanner from './AlertBanner.astro';
+import EmptyState from './EmptyState.astro';
+const {lang} = Astro.props as {lang: 'zh-TW' | 'en'};
+const t = (zh: string, en: string) => lang === 'en' ? en : zh;
+const tabs = [
+  ['all', t('全部收藏', 'All records'), 'collection'],
+  ['owned', t('已收藏', 'Owned'), 'check-circle'],
+  ['wishlist', t('願望清單', 'Wishlist'), 'heart'],
+  ['preordered', t('預購中', 'Preordered'), 'cart'],
+] as const;
+const statuses = [
+  ['owned', t('已收藏', 'Owned')], ['preordered', t('預購中', 'Preordered')],
+  ['wishlist', t('願望清單', 'Wishlist')], ['not_owned', t('未收藏', 'Not owned')],
+  ['sold', t('已售出', 'Sold')], ['gifted_away', t('已贈出', 'Gifted away')],
+  ['unknown', t('未知', 'Unknown')],
+];
+const advanced = [
+  ['source', t('資料來源', 'Source'), [['', t('全部', 'All')], ['bgg', 'BGG'], ['notbgg', 'NotBGG'], ['missing', t('缺少來源', 'Missing source')]]],
+  ['archive', t('收藏封存狀態', 'Archive status'), [['', t('全部（含封存）', 'All, including archived')], ['active', t('未封存', 'Active')], ['archived', t('已封存', 'Archived')]]],
+  ['wishlist', t('願望清單旗標', 'Wishlist flag'), [['', t('全部', 'All')], ['1', t('已勾選', 'On wishlist')], ['0', t('未勾選', 'Not on wishlist')]]],
+  ['status', t('取得狀態', 'Acquisition status'), [['', t('全部', 'All')], ...statuses]],
+  ['scope', t('資料範圍', 'Record scope'), [['production', t('正式', 'Production')], ['test', t('測試', 'Test')]]],
+] as const;
+const columns = [
+  t('封面','Cover'), t('遊戲名稱','Game name'), t('收藏狀態','Collection status'),
+  t('玩家人數','Players'), t('副本數','Copies'), t('最後更新','Last updated'), t('操作','Actions'),
+];
+const unavailable = t('無法取得', 'Unavailable');
+const clear = t('清除全部', 'Clear all');
+const base = '/admin/collection?lang=' + lang;
+---
+<section class="admin-kit admin-r02">
+  <PageHeader title={t('收藏管理', 'Collection')} description={t('瀏覽與查找桌遊收藏', 'Browse and find your board games')} icon="collection">
+    <a data-r02-new class="admin-kit-button" data-variant="primary" href={'/admin/collection/new?lang=' + lang}><AdminIcon name="plus" size={20} />{t('新增收藏', 'New collection record')}</a>
+  </PageHeader>
+  <nav class="admin-kit-row admin-r02-tabs" aria-label={t('收藏狀態', 'Collection status')}>
+    {tabs.map(([key, label, icon]) => <a class="admin-kit-button" data-tab={key} href={base + '&tab=' + key}>
+      <AdminIcon name={icon} size={20} />{label}<span class="admin-r02-count" data-count><span aria-hidden="true">—</span><span class="admin-kit-sr">{unavailable}</span></span>
+    </a>)}
+  </nav>
+  <form data-list-filters class="admin-r02-filters">
+    <div class="admin-kit-row admin-r02-search">
+      <label><span>{t('搜尋收藏', 'Search collection')}</span><input class="admin-kit-field" name="q" type="search" maxlength="200" autocomplete="off" placeholder={t('名稱、來源 ID 或收藏 ID', 'Name, source ID or collection ID')} /></label>
+      <label><span>{columns[3]}</span><select class="admin-kit-field" name="players"><option value="">{t('全部', 'All')}</option>{Array.from({length: 20}, (_, i) => <option value={i + 1}>{i + 1}</option>)}</select></label>
+      <button class="admin-kit-button" type="submit">{t('搜尋', 'Search')}</button>
+      <details><summary class="admin-kit-button">{t('更多篩選', 'More filters')} <AdminIcon name="chevron-down" size={16} /></summary>
+        <div class="admin-kit-row admin-r02-advanced">{advanced.map(([key, label, options]) => <label><span>{label}</span><select name={key}>{options.map(([value, text]) => <option value={value}>{text}</option>)}</select></label>)}</div>
+      </details>
+    </div>
+    <div class="admin-kit-row admin-r02-toolbar">
+      <div class="admin-kit-row" data-r02-chips aria-label={t('已套用條件', 'Applied filters')}></div>
+      <button class="admin-kit-button" data-clear type="button" hidden>{clear}</button>
+      <label><span>{t('顯示方式', 'View')}</span><select name="view"><option value="records">{t('逐筆收藏', 'Individual records')}</option><option value="grouped">{t('依遊戲分組', 'Group by game')}</option></select></label>
+      <label><span>{t('排序', 'Sort')}</span><select name="sort"><option value="updated">{columns[5]}</option><option value="name">{columns[1]}</option><option value="id">{t('收藏 ID', 'Collection ID')}</option><option value="copies">{columns[4]}</option></select></label>
+      <label><span>{t('每頁筆數', 'Per page')}</span><select name="limit"><option>20</option><option>50</option><option>100</option></select></label>
+    </div>
+  </form>
+  <select data-r02-status-labels hidden aria-hidden="true">{statuses.map(([key, label]) => <option value={key}>{label}</option>)}</select>
+  <p data-admin-status role="status" aria-live="polite"></p>
+  <div aria-live="assertive" aria-atomic="true">
+    <div data-r02-error hidden><AlertBanner title={unavailable} description={t('收藏列表讀取失敗。', 'The collection list could not load.')} tone="danger" href={Astro.url.pathname + Astro.url.search} linkLabel={t('重試', 'Retry')} unavailableLabel={unavailable} /></div>
+  </div>
+  <div data-r02-empty hidden><EmptyState illustration="/images/admin/empty-no-result.webp" reason={t('查無符合條件的收藏。', 'No matching collection records.')} href={base} action={clear} /></div>
+  <div data-r02-results>
+    <table class="admin-kit-table">
+      <thead><tr>{columns.map((label, i) => <th scope="col" class:list={[i === 5 && 'admin-r02-date']}>{label}</th>)}</tr></thead>
+      <tbody data-admin-list></tbody>
+    </table>
+    <div class="admin-kit-row admin-r02-pagination" data-r02-pagination hidden>
+      <span data-r02-range></span>
+      <nav class="admin-kit-row" data-r02-pages aria-label={t('收藏列表頁碼', 'Collection list pages')}></nav>
+    </div>
+  </div>
+</section>

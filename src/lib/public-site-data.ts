@@ -9,28 +9,32 @@ import {translateGameName} from '../i18n/utils';
  * successful metadata plus an active production collection or confirmed public identity.
  * Every response is no-store; success commits are visible on the next request. */
 const staticGames=getGames();
-const registry=JSON.stringify(staticGames.filter(g=>g.bgg).map(g=>({id:g.bggId,slug:g.slug,meta:{name:g.bgg!.name,localName:translateGameName(g.bggId,g.bgg!.name,'zh-TW'),alternativeNames:g.bgg!.alternativeNames??[],year:g.bgg!.year,gameType:g.bgg!.gameType,
+export const publicMetadataRegistry=JSON.stringify(staticGames.filter(g=>g.bgg).map(g=>({id:g.bggId,slug:g.slug,meta:{name:g.bgg!.name,localName:translateGameName(g.bggId,g.bgg!.name,'zh-TW'),alternativeNames:g.bgg!.alternativeNames??[],year:g.bgg!.year,gameType:g.bgg!.gameType,
  thumbnail:g.bgg!.thumbnail||g.bgg!.image,minPlayers:g.bgg!.minPlayers,maxPlayers:g.bgg!.maxPlayers,minPlayTime:g.bgg!.minPlayTime,maxPlayTime:g.bgg!.maxPlayTime,averageRating:g.bgg!.averageRating,averageWeight:g.bgg!.averageWeight,mechanics:g.bgg!.mechanics}})));
 const active=`c.record_scope='production' AND m.archived_at IS NULL AND n.archived_at IS NULL`;
 const newQualification=`EXISTS(SELECT 1 FROM v2_games g JOIN v2_collection_items c ON c.game_id=g.id
  LEFT JOIN v2_collection_management m ON m.collection_item_id=c.id LEFT JOIN notbgg_games n ON n.game_id=g.id
  WHERE g.bgg_id=b.bgg_id AND ${active}) OR EXISTS(SELECT 1 FROM notbgg_bgg_links l JOIN notbgg_games n ON n.seq=l.seq
  WHERE l.candidate_bgg_id=b.bgg_id AND l.status='linked' AND n.archived_at IS NULL)`;
-const cte=`WITH static AS MATERIALIZED(SELECT CAST(json_extract(value,'$.id') AS INTEGER) id,json_extract(value,'$.slug') slug,json_extract(value,'$.meta') meta FROM json_each(?)),
+export const publicStaticMetadataSql = "static AS MATERIALIZED(SELECT CAST(json_extract(value,'$.id') AS INTEGER) id,json_extract(value,'$.slug') slug,json_extract(value,'$.meta') meta FROM json_each(?))";
+export const publicBggMetadataSql = "CASE WHEN b.last_success_at IS NOT NULL AND b.cache_json IS NOT NULL THEN b.cache_json ELSE s.meta END";
+export const publicBggPresentationSql = {"image":"COALESCE(json_extract(b.meta,'$.thumbnail'),json_extract(b.meta,'$.image'))","minPlayers":"json_extract(b.meta,'$.minPlayers')","maxPlayers":"json_extract(b.meta,'$.maxPlayers')"};
+export const publicNotBggPresentationSql = {"image":"COALESCE(n.thumbnail_url,n.image_url)","minPlayers":"n.min_players","maxPlayers":"n.max_players"};
+const cte=`WITH ${publicStaticMetadataSql},
  ids AS MATERIALIZED(SELECT id FROM static UNION SELECT b.bgg_id FROM bgg_games b WHERE b.cache_json IS NOT NULL AND b.last_success_at IS NOT NULL AND (${newQualification})),
  links AS MATERIALIZED(SELECT l.seq,l.candidate_bgg_id,l.primary_source FROM notbgg_bgg_links l JOIN notbgg_games n ON n.seq=l.seq JOIN ids ON ids.id=l.candidate_bgg_id WHERE l.status='linked' AND n.archived_at IS NULL),
- bgg AS MATERIALIZED(SELECT ids.id,s.slug,json_extract(s.meta,'$.localName') local_name,CASE WHEN b.last_success_at IS NOT NULL AND b.cache_json IS NOT NULL THEN b.cache_json ELSE s.meta END meta,
+ bgg AS MATERIALIZED(SELECT ids.id,s.slug,json_extract(s.meta,'$.localName') local_name,${publicBggMetadataSql} meta,
  CASE WHEN b.last_success_at IS NOT NULL AND b.cache_json IS NOT NULL THEN 'D1' ELSE 'static' END origin FROM ids LEFT JOIN static s ON s.id=ids.id LEFT JOIN bgg_games b ON b.bgg_id=ids.id),
  catalog AS MATERIALIZED(
  SELECT 'BGG:'||b.id key,'bgg' source,b.id bgg_id,NULL seq,b.slug,b.origin,json_extract(b.meta,'$.name') name,
- COALESCE(json_extract(b.meta,'$.alternativeNames'),'[]')||' '||COALESCE(b.local_name,'') aliases,COALESCE(json_extract(b.meta,'$.thumbnail'),json_extract(b.meta,'$.image')) image,
+ COALESCE(json_extract(b.meta,'$.alternativeNames'),'[]')||' '||COALESCE(b.local_name,'') aliases,${publicBggPresentationSql.image} image,
  json_extract(b.meta,'$.year') year,CASE json_extract(b.meta,'$.gameType') WHEN 'boardgameexpansion' THEN 'expansion' WHEN 'boardgameaccessory' THEN 'accessory' ELSE 'boardgame' END type,
- json_extract(b.meta,'$.minPlayers') min_players,json_extract(b.meta,'$.maxPlayers') max_players,json_extract(b.meta,'$.minPlayTime') min_time,json_extract(b.meta,'$.maxPlayTime') max_time,
+ ${publicBggPresentationSql.minPlayers} min_players,${publicBggPresentationSql.maxPlayers} max_players,json_extract(b.meta,'$.minPlayTime') min_time,json_extract(b.meta,'$.maxPlayTime') max_time,
  json_extract(b.meta,'$.averageRating') rating,json_extract(b.meta,'$.averageWeight') weight,COALESCE(json_extract(b.meta,'$.mechanics'),'[]') mechanics,'[]' accessories
  FROM bgg b WHERE NOT EXISTS(SELECT 1 FROM links l WHERE l.candidate_bgg_id=b.id AND l.primary_source='notbgg')
  UNION ALL
- SELECT 'NotBGG:'||printf('%06d',n.seq),'notbgg',NULL,n.seq,NULL,'NotBGG',n.name,n.alternate_names_json,COALESCE(n.thumbnail_url,n.image_url),n.year_published,
- CASE n.type WHEN 'boardgameaccessory' THEN 'accessory' WHEN 'boardgameexpansion' THEN 'expansion' ELSE 'boardgame' END,n.min_players,n.max_players,n.min_playtime,n.max_playtime,NULL,NULL,n.mechanics_json,COALESCE((SELECT json_group_array(category) FROM notbgg_accessory_categories WHERE seq=n.seq),'[]')
+ SELECT 'NotBGG:'||printf('%06d',n.seq),'notbgg',NULL,n.seq,NULL,'NotBGG',n.name,n.alternate_names_json,${publicNotBggPresentationSql.image},n.year_published,
+ CASE n.type WHEN 'boardgameaccessory' THEN 'accessory' WHEN 'boardgameexpansion' THEN 'expansion' ELSE 'boardgame' END,${publicNotBggPresentationSql.minPlayers},${publicNotBggPresentationSql.maxPlayers},n.min_playtime,n.max_playtime,NULL,NULL,n.mechanics_json,COALESCE((SELECT json_group_array(category) FROM notbgg_accessory_categories WHERE seq=n.seq),'[]')
  FROM notbgg_games n WHERE n.archived_at IS NULL AND NOT EXISTS(SELECT 1 FROM links l WHERE l.seq=n.seq AND l.primary_source='bgg'))`;
 const legacyOwned=`CASE lower(CAST(CASE WHEN json_valid(c.notes) THEN json_extract(c.notes,'$.owned') END AS TEXT)) WHEN 'true' THEN 1 WHEN '1' THEN 1 WHEN 'false' THEN 0 WHEN '0' THEN 0 ELSE c.acquisition_status='owned' END`;
 const matchCatalog=`(g.bgg_id=k.bgg_id OR n.seq=k.seq OR EXISTS(SELECT 1 FROM links l WHERE
@@ -66,7 +70,7 @@ export async function readPublicBrowse(db:D1Database|undefined,params:URLSearchP
  AND (?='' OR EXISTS(SELECT 1 FROM json_each(COALESCE(accessories,'[]')) WHERE value=?)))`;
  // Give the game listing the same public column set without reading any collection notes.
  const sql=selected;
- const args=[registry,q,q,source,source,type,type,status,status,status,status,players,players,Number(plus),players,time,timeMin,timeMax,weight,weightMin,weightMax,weightMax,mechanic,mechanic,mechanic,accessory,accessory];
+ const args=[publicMetadataRegistry,q,q,source,source,type,type,status,status,status,status,players,players,Number(plus),players,time,timeMin,timeMax,weight,weightMin,weightMax,weightMax,mechanic,mechanic,mechanic,accessory,accessory];
  const ordering=sort==='name'?'COALESCE(display_name,name) COLLATE NOCASE ASC':sort==='name-desc'?'COALESCE(display_name,name) COLLATE NOCASE DESC':sort==='year'?'year DESC':sort==='year-asc'?'year IS NULL,year ASC':sort==='rating'?'rating DESC':'weight DESC';
  const [rows,count]=await Promise.all([db.prepare(`${sql} SELECT * FROM filtered ORDER BY ${ordering},key,${collection?'collection_id':'source'} LIMIT 20 OFFSET ?`).bind(...args,(page-1)*20).all<Record<string,unknown>>(),db.prepare(`${sql} SELECT COUNT(*) total FROM filtered`).bind(...args).first<{total:number}>()]);
  if(!rows.success||!count||!Number.isSafeInteger(count.total))throw new HttpError(503,'PUBLIC_DATA_UNAVAILABLE');
@@ -83,7 +87,7 @@ export function publicBggMetadata(value:unknown,id:number):BggGameData{
 }
 export async function readPublicBgg(db:D1Database|undefined,id:number,lang:'en'|'zh-TW'){
  if(!isBggId(id))throw new HttpError(404,'GAME_NOT_FOUND');if(!db)throw new HttpError(503,'PUBLIC_DATA_UNAVAILABLE');
- const row=await db.prepare(`${cte} SELECT b.meta,b.origin,l.seq,l.primary_source FROM bgg b LEFT JOIN links l ON l.candidate_bgg_id=b.id WHERE b.id=?`).bind(registry,id).first<{meta:string;origin:string;seq:number|null;primary_source:string|null}>();
+ const row=await db.prepare(`${cte} SELECT b.meta,b.origin,l.seq,l.primary_source FROM bgg b LEFT JOIN links l ON l.candidate_bgg_id=b.id WHERE b.id=?`).bind(publicMetadataRegistry,id).first<{meta:string;origin:string;seq:number|null;primary_source:string|null}>();
  if(!row)return null;
  if(row.seq&&row.primary_source==='notbgg')return {redirect:(lang==='en'?'/en':'')+'/games/notbgg/'+String(row.seq).padStart(6,'0'),game:null,origin:row.origin};
  // Slim static listing metadata is not a substitute for the original full static detail.
@@ -107,7 +111,7 @@ export async function readPublicOverview(db:D1Database|undefined){
 }
 /** Only identity keys, never all collection rows or raw metadata. */
 export async function readPublicBggIndex(db:D1Database){
- const result=await db.prepare(`${cte} SELECT id FROM bgg ORDER BY id LIMIT 20001`).bind(registry).all<{id:number}>();
+ const result=await db.prepare(`${cte} SELECT id FROM bgg ORDER BY id LIMIT 20001`).bind(publicMetadataRegistry).all<{id:number}>();
  if(!result.success||result.results.length>20000)throw new HttpError(503,'PUBLIC_DATA_UNAVAILABLE');return result.results.map(r=>r.id);
 }
 export async function publicBggRoute(db:D1Database|undefined,url:URL,id:number|null,lang:'en'|'zh-TW'){

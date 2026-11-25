@@ -1,3 +1,5 @@
+export const adminOwnedSql = "CASE WHEN json_valid(notes) = 1 THEN CASE WHEN json_type(notes, '$.owned') IS NOT NULL THEN CAST(json_extract(notes, '$.owned') AS INTEGER) ELSE acquisition_status = 'owned' END ELSE acquisition_status = 'owned' END";
+
 type Collection = { total: number; owned: number; wishlist: number; preorder: number };
 type Sleeves = { sizes: number; requirements: number };
 type Components = { definitions: number; records: number };
@@ -125,11 +127,7 @@ export async function readAdminDashboardSummary(db: D1Database | undefined) {
         readSection('collection', db, db => counts<Collection>(db, `
             WITH imported AS (
                 SELECT wishlist, acquisition_status,
-                       CASE WHEN json_valid(notes) = 1 THEN CASE
-                           WHEN json_type(notes, '$.owned') IS NOT NULL
-                           THEN CAST(json_extract(notes, '$.owned') AS INTEGER)
-                           ELSE acquisition_status = 'owned' END
-                       ELSE acquisition_status = 'owned' END AS owned
+                       ${adminOwnedSql} AS owned
                 FROM v2_collection_items WHERE record_scope = 'production'
             )
             SELECT COUNT(*) AS total, COUNT(CASE WHEN owned = 1 THEN 1 END) AS owned,

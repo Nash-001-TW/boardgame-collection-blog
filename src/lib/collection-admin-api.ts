@@ -30,6 +30,13 @@ export async function handleCollectionAdminRequest(request:Request,bindings:NotB
    if(id){const d=await repo.detail(id,s);if(!d)throw new HttpError(404,'NOT_FOUND');return ok(d);}
    const after=Number(url.searchParams.get('after')??0),limit=Number(url.searchParams.get('limit')??20);
    const view=url.searchParams.get('view');
+   if(url.searchParams.has('page'))return ok(await repo.listNumbered(s,{
+    view:view??'records',limit,query:url.searchParams.get('q')??'',source:url.searchParams.get('source'),
+    status:url.searchParams.get('status'),archive:url.searchParams.get('archive'),wishlist:url.searchParams.get('wishlist'),
+    page:Number(url.searchParams.get('page')),sort:url.searchParams.get('sort')??'updated',
+    tab:url.searchParams.get('tab')??'all',
+    players:url.searchParams.has('players')?Number(url.searchParams.get('players')):null,
+   }));
    if(view!==null)return ok(await repo.listPage(s,{
     view,after,limit,query:url.searchParams.get('q')??'',source:url.searchParams.get('source'),
     status:url.searchParams.get('status'),archive:url.searchParams.get('archive'),

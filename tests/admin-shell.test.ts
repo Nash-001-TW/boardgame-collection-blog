@@ -13,6 +13,10 @@ test('Collection filters select one current item and preserve the parent for det
   assert.equal(current('/admin/collection?status=owned'), 'owned');
   assert.equal(current('/admin/collection?wishlist=1'), 'wishlist');
   assert.equal(current('/admin/collection?status=preordered'), 'preordered');
+  assert.equal(current('/admin/collection?tab=owned'), 'owned');
+  assert.equal(current('/admin/collection?tab=wishlist'), 'wishlist');
+  assert.equal(current('/admin/collection?tab=preordered'), 'preordered');
+  assert.equal(current('/admin/collection?tab=all&status=owned'), 'collection');
   assert.equal(current('/admin/collection?status=borrowed'), 'collection');
   assert.equal(current('/admin/collection/1/copies?status=owned'), 'collection');
   assert.equal(current('/admin/collection/components/manage?collection=1'), 'components');
@@ -29,7 +33,7 @@ test('Sleeve requirements, BGG views and NotBGG details select their own entries
 
 test('Filter navigation retains its query and appends the English preference', () => {
   const [, collection] = adminNavigation;
-  assert.equal(adminNavigationHref(collection.items[1], 'en'), '/admin/collection?status=owned&lang=en');
-  assert.equal(adminNavigationHref(collection.items[2], 'zh-TW'), '/admin/collection?wishlist=1');
-  assert.equal(adminNavigationHref(collection.items[3], 'zh-TW'), '/admin/collection?status=preordered');
+  assert.equal(adminNavigationHref(collection.items[1], 'en'), '/admin/collection?tab=owned&lang=en');
+  assert.equal(adminNavigationHref(collection.items[2], 'zh-TW'), '/admin/collection?tab=wishlist');
+  assert.equal(adminNavigationHref(collection.items[3], 'zh-TW'), '/admin/collection?tab=preordered');
 });

@@ -271,8 +271,8 @@ try {
         current: document.querySelector('.shell-nav [aria-current=page]').search,
         language: Object.fromEntries(new URL(document.querySelector('[data-language-switch]').href).searchParams),
     }));
-    assert.deepEqual(targets.links, ['', '?status=owned', '?wishlist=1', '?status=preordered', '', '']);
-    assert.equal(targets.current, '?status=owned');
+    assert.deepEqual(targets.links, ['', '?tab=owned', '?tab=wishlist', '?tab=preordered', '', '']);
+    assert.equal(targets.current, '?tab=owned');
     assert.deepEqual(targets.language, { status: 'owned', scope: 'test', q: 'synthetic', lang: 'en' });
     await navigate('/admin/bgg?view=relations&lang=en');
     assert.ok(await evaluate(() => document.documentElement.lang === 'en' &&
