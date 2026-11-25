@@ -9,11 +9,11 @@ if (manager) {
     const en = manager.dataset.lang === 'en';
     const t = (zh: string, english: string) => en ? english : zh;
     const status = manager.querySelector<HTMLElement>('[data-physical-status]');
-    const noticeKey = 'physical-component-saved:' + location.pathname + location.search;
+    const noticeKey = () => 'physical-component-saved:' + location.pathname + location.search;
     try {
-        const action = sessionStorage.getItem(noticeKey);
+        const action = sessionStorage.getItem(noticeKey());
         if (action && status) {
-            sessionStorage.removeItem(noticeKey);
+            sessionStorage.removeItem(noticeKey());
             if (action.startsWith('{')) {
                 const notice = JSON.parse(action) as { message: string; tone: string };
                 status.textContent = notice.message;
@@ -152,11 +152,11 @@ if (manager) {
         const details = form.closest('details');
         if (details) details.open = true;
     }
-    async function send(state: RequestState) {
+    async function send(state: RequestState, signal?: AbortSignal) {
         const response = await fetch('/api/admin/collection/components', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-NotBGG-Request': '1', 'Idempotency-Key': state.key },
-            body: state.body,
+            body: state.body, signal,
         });
         return { ok: response.ok, payload: await response.json() as Payload | null };
     }
@@ -184,7 +184,7 @@ if (manager) {
         }
     }
     function saved(action: string) {
-        try { sessionStorage.setItem(noticeKey, action); } catch (error) { logErrorType(error); }
+        try { sessionStorage.setItem(noticeKey(), action); } catch (error) { logErrorType(error); }
         location.reload();
     }
     function recoveryMessage(form: HTMLFormElement, pending: RequestState) {
@@ -425,12 +425,149 @@ if (manager) {
         }
     });
 
+    const picker = manager.querySelector('[data-count-copy]');
+    if (picker instanceof HTMLSelectElement) {
+        const copyPicker = picker;
+        const previous = manager.querySelector<HTMLButtonElement>('[data-count-step="-1"]')!;
+        const next = manager.querySelector<HTMLButtonElement>('[data-count-step="1"]')!;
+        const uncounted = t('未清點', 'Uncounted');
+        let selectedCopy = copyPicker.value;
+        let saving = 0;
+
+        function rememberCopy() {
+            const url = new URL(location.href);
+            if (url.searchParams.get('copy') === selectedCopy) return;
+            url.searchParams.set('copy', selectedCopy);
+            history.replaceState(history.state, '', url);
+        }
+
+        function syncPicker() {
+            copyPicker.disabled = saving > 0;
+            previous.disabled = saving > 0 || copyPicker.selectedIndex === 0;
+            next.disabled = saving > 0 || copyPicker.selectedIndex === copyPicker.options.length - 1;
+        }
+
+        const rows = Array.from(manager.querySelectorAll<HTMLElement>('[data-count-values]'), row => {
+            type Count = { actual: number | null; revision: number };
+            const values = new Map<string, Count>(JSON.parse(row.dataset.countValues!));
+            const current = row.querySelector<HTMLElement>('[data-count-current]')!;
+            const form = row.querySelector<HTMLFormElement>('form');
+            const input = form?.querySelector<HTMLInputElement>('[name="actual"]');
+            const message = form?.querySelector<HTMLElement>('[data-count-status]');
+            const save = form?.querySelector<HTMLButtonElement>('[data-count-save]');
+            const retry = form?.querySelector<HTMLButtonElement>('[data-count-retry]');
+            const reload = form?.querySelector<HTMLButtonElement>('[data-count-reload]');
+            let pending: RequestState | undefined;
+            let blocked = false;
+            let inFlight = false;
+
+            const count = () => values.get(selectedCopy)!;
+            const dirty = () => !!input && (input.validity.badInput ||
+                (input.value === '' ? null : Number(input.value)) !== count().actual);
+            function syncRow() {
+                if (input && save && retry && reload) {
+                    input.disabled = inFlight || !!pending || blocked;
+                    save.disabled = input.disabled || !dirty() || !input.validity.valid;
+                    retry.hidden = inFlight || !pending;
+                    reload.hidden = !blocked;
+                }
+            }
+
+            function render() {
+                current.textContent = String(count().actual ?? uncounted);
+                if (form && input && message) {
+                    form.querySelector<HTMLInputElement>('[name="copyId"]')!.value = selectedCopy;
+                    form.querySelector<HTMLInputElement>('[name="revision"]')!.value = String(count().revision);
+                    input.value = String(count().actual ?? '');
+                    message.textContent = '';
+                }
+                pending = undefined;
+                blocked = false;
+                syncRow();
+            }
+
+            async function saveCount() {
+                if (!pending || !message || !form || inFlight) return;
+                inFlight = true;
+                saving++;
+                syncPicker();
+                syncRow();
+                message.textContent = t('儲存中…', 'Saving…');
+                try {
+                    const { ok, payload } = await send(pending, AbortSignal.timeout(quantityTimeoutMs));
+                    const code = payload?.error?.code;
+                    if (ok && payload?.success === true) {
+                        const { actual, revision } = JSON.parse(pending.body);
+                        values.set(selectedCopy, { actual, revision: revision + 1 });
+                        render();
+                        message.textContent = t('已確認', 'Confirmed');
+                    } else if (code && code !== 'SERVICE_UNAVAILABLE') {
+                        pending = undefined;
+                        blocked = true;
+                        message.textContent = errors[code] ?? fallback;
+                    } else {
+                        message.textContent = t('儲存失敗，可重試。', 'Save failed. You can retry.');
+                    }
+                } catch (error) {
+                    logErrorType(error);
+                    message.textContent = t('儲存失敗，可重試。', 'Save failed. You can retry.');
+                } finally {
+                    inFlight = false;
+                    saving--;
+                    syncPicker();
+                    syncRow();
+                }
+            }
+
+            form?.addEventListener('submit', event => {
+                event.preventDefault();
+                if (!save || save.disabled) return;
+                const data = new FormData(form);
+                const body = Object.fromEntries(Array.from(data, ([name, value]) => [name, Number(value)]));
+                pending = { body: JSON.stringify({ action: 'count', ...body }), key: crypto.randomUUID() };
+                void saveCount();
+            });
+            input?.addEventListener('input', () => {
+                if (message) message.textContent = '';
+                syncRow();
+            });
+            retry?.addEventListener('click', () => void saveCount());
+            reload?.addEventListener('click', () => location.reload());
+            return { dirty, render };
+        });
+
+        function switchCopy(copy: string) {
+            if (copy === selectedCopy) return;
+            const unsaved = rows.filter(row => row.dirty()).length;
+            if (saving || (unsaved && !window.confirm(t(
+                '有 ' + unsaved + ' 列尚未儲存，切換會捨棄。',
+                unsaved + ' row(s) have unsaved changes. Switching copies will discard them.',
+            )))) {
+                copyPicker.value = selectedCopy;
+                return;
+            }
+            selectedCopy = copy;
+            copyPicker.value = copy;
+            rememberCopy();
+            rows.forEach(row => row.render());
+            syncPicker();
+        }
+
+        copyPicker.addEventListener('change', () => switchCopy(copyPicker.value));
+        previous.addEventListener('click', () => switchCopy(copyPicker.options[copyPicker.selectedIndex - 1].value));
+        next.addEventListener('click', () => switchCopy(copyPicker.options[copyPicker.selectedIndex + 1].value));
+        rememberCopy();
+        rows.forEach(row => row.render());
+        syncPicker();
+    }
+
     manager.addEventListener('submit', async event => {
         const form = event.target;
         if (!(form instanceof HTMLFormElement) || !form.dataset.physicalAction || !status) return;
         event.preventDefault();
         if (busy.has(form)) return;
         const action = form.dataset.physicalAction;
+        if (action === 'count') return;
         const data = new FormData(form);
         const body: Record<string, unknown> = { action };
         for (const name of ['name', 'type', 'unit']) if (data.has(name)) body[name] = data.get(name);
@@ -439,8 +576,8 @@ if (manager) {
         }
         if (data.has('expected')) body.expected = data.get('expected') === '' ? null : Number(data.get('expected'));
         if (action === 'create') body.confirmed = data.has('confirmed');
-        if (action === 'count' || action === 'assign') {
-            const select = form.elements.namedItem(action === 'count' ? 'copyId' : 'requirementId');
+        if (action === 'assign') {
+            const select = form.elements.namedItem('requirementId');
             if (select instanceof HTMLSelectElement) body.revision = Number(select.selectedOptions[0]?.dataset.revision);
         }
 

@@ -208,6 +208,7 @@ try {
     };
     const change = (expected, reason = '') => evaluate((selector, expected, reason) => {
         const form = document.querySelector(selector);
+        form.closest('[data-component-management]').open = true;
         form.closest('details').open = true;
         const input = form.elements.namedItem('expected');
         input.value = String(expected);
@@ -319,6 +320,7 @@ try {
     const historyDetail = historyEntry + ' [data-d1-history-detail]';
     assert.equal(await text(historyPanel + ' > summary'), '更正歷史（1）');
     assert.equal(await evaluate(selector => document.querySelector(selector).open, historyPanel), false);
+    await click('[data-component-management] > summary');
     await capture('history-collapsed', historyPanel, historyScreenshots);
     await click(historyPanel + ' > summary');
     assert.match(await text(historyEntry + ' > summary'), /30 → 31 張.*Synthetic browser correction/s);
@@ -405,11 +407,10 @@ try {
     const countResponse = await evaluate(async definitionId => {
         const form = document.querySelector('form[data-physical-action="count"]:has([name="definitionId"][value="' + definitionId + '"])');
         const data = new FormData(form);
-        const copy = form.querySelector('[name="copyId"] option[value="1"]');
         const response = await fetch('/api/admin/collection/components', {
             method: 'POST', headers: { 'Content-Type': 'application/json', 'X-NotBGG-Request': '1' },
             body: JSON.stringify({ action: 'count', definitionId, definitionRevision: Number(data.get('definitionRevision')),
-                copyId: 1, revision: Number(copy.dataset.revision), actual: 29 }),
+                copyId: Number(data.get('copyId')), revision: Number(data.get('revision')), actual: 29 }),
         });
         return response.status;
     }, fixture.cardId);

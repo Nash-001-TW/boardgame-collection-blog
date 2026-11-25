@@ -79,6 +79,11 @@ for (const count of counts) {
     countsByDefinition.set(count.component_definition_id, rows);
 }
 const canWrite = signingConfigured && !error && collection?.archived_at === null;
+const requestedCopy = Astro.url.searchParams.get('copy');
+const selectedCopy = copies.find(copy => String(copy.id) === requestedCopy) ?? copies[0];
+const copyLink = '/admin/collection/' + collectionId + '/copies?' + new URLSearchParams({
+    scope, ...(en ? { lang: 'en' } : {}),
+});
 const unassigned = requirements.filter(row => row.component_definition_id === null);
 ---
 
@@ -93,6 +98,56 @@ const unassigned = requirements.filter(row => row.component_definition_id === nu
             <p data-physical-status role="status" aria-live="polite" tabindex="-1"></p>
             {!signingConfigured && <p role="alert">{t('來源簽章尚未設定。', 'Source signing is unavailable.')}</p>}
             {collection.archived_at && <p>{t('此收藏已封存。', 'This collection is archived.')}</p>}
+            <section data-count-picker aria-labelledby="count-copy-heading">
+                <h3 id="count-copy-heading">{t('清點副本', 'Count copy')}</h3>
+                {selectedCopy ? <div class="count-controls">
+                    <label>{t('副本', 'Copy')}
+                        <select data-count-copy>
+                            {copies.map(copy => <option value={copy.id} selected={copy.id === selectedCopy.id}>#{copy.id} {copy.copy_label}</option>)}
+                        </select>
+                    </label>
+                    <button type="button" class="admin-button" data-count-step="-1" disabled={selectedCopy.id === copies[0].id}>{t('上一個', 'Previous')}</button>
+                    <button type="button" class="admin-button" data-count-step="1" disabled={selectedCopy.id === copies.at(-1)?.id}>{t('下一個', 'Next')}</button>
+                </div> : <p>{t('沒有可清點的在藏未封膜副本。', 'No eligible unsealed copies are in the collection.')}
+                    {' '}<a href={copyLink}>{t('副本與品況', 'Copies and condition')}</a>
+                </p>}
+            </section>
+            <section data-count-list aria-labelledby="count-list-heading">
+                <h3 id="count-list-heading">{t('清點清單', 'Count list')}</h3>
+                {!definitions.length && <p>{t('尚無由受控流程建立的組件。', 'No components have been created through the managed workflow.')}</p>}
+                {definitions.map(component => {
+                    const verified = classifications.get(component.id)?.classification === 'PHYSICAL_COMPONENT';
+                    const componentCounts = countsByDefinition.get(component.id);
+                    const current = selectedCopy && componentCounts?.get(selectedCopy.id);
+                    const actual = current ? current.actual_quantity : null;
+                    return <article data-count-row>
+                        <h4>#{component.id} {component.component_name}</h4>
+                        <p>{t('預期數量', 'Expected quantity')} {component.expected_quantity ?? '—'} ({component.quantity_unit})</p>
+                        {!verified ? <p>{t('待確認，不可清點。來源證據不可用或有衝突。', 'Pending verification. Counting is unavailable because source evidence is unavailable or conflicting.')}</p>
+                            : selectedCopy && <div data-count-values={JSON.stringify(copies.map(copy => {
+                                const count = componentCounts?.get(copy.id);
+                                return [String(copy.id), { actual: count?.actual_quantity ?? null, revision: count?.count_revision ?? 0 }];
+                            }))}>
+                                <p>{t('目前實點', 'Current count')} <span data-count-current>{actual ?? t('未清點', 'Uncounted')}</span></p>
+                                {canWrite && <form method="post" data-physical-action="count" class="count-controls">
+                                    <input type="hidden" name="definitionId" value={component.id} />
+                                    <input type="hidden" name="definitionRevision" value={component.physical_revision} />
+                                    <input type="hidden" name="copyId" value={selectedCopy.id} />
+                                    <input type="hidden" name="revision" value={current ? current.count_revision : 0} />
+                                    <label>{t('實際數量', 'Actual quantity')}
+                                        <input name="actual" type="number" required min="0" max={maxComponentQuantity} step="1" value={actual ?? ''} />
+                                    </label>
+                                    <button type="submit" class="admin-button" data-count-save disabled>{t('儲存', 'Save')}</button>
+                                    <p data-count-status role="status" aria-live="polite"></p>
+                                    <button type="button" class="admin-button" data-count-retry hidden>{t('重試', 'Retry')}</button>
+                                    <button type="button" class="admin-button" data-count-reload hidden>{t('重新載入', 'Reload')}</button>
+                                </form>}
+                            </div>}
+                    </article>;
+                })}
+            </section>
+            <details data-component-management open={!definitions.length}>
+                <summary>{t('組件管理（影響所有副本）', 'Component management (affects all copies)')}</summary>
             {canWrite && <section>
                 <h3>{t('新增實體組件', 'Add physical component')}</h3>
                 <form method="post" data-physical-action="create" class="fields">
@@ -108,7 +163,6 @@ const unassigned = requirements.filter(row => row.component_definition_id === nu
                 {definitions.map(component => {
                     const result = classifications.get(component.id);
                     const verified = result?.classification === 'PHYSICAL_COMPONENT';
-                    const componentCounts = countsByDefinition.get(component.id);
                     const assigned = requirements.filter(row => row.component_definition_id === component.id);
                     return <article>
                         <h4>#{component.id} {component.component_name}</h4>
@@ -144,23 +198,6 @@ const unassigned = requirements.filter(row => row.component_definition_id === nu
                         </>}
                         <D1QuantityHistory en={en} history={history} definitionId={component.id} />
                         {canWrite && verified && <>
-                            {copies.length ? <form method="post" data-physical-action="count" class="fields">
-                                <input type="hidden" name="definitionId" value={component.id} />
-                                <input type="hidden" name="definitionRevision" value={component.physical_revision} />
-                                <label>{t('清點副本（顯示目前實點）', 'Count copy (current actual quantity)')}
-                                    <select name="copyId" required>
-                                        <option value="">{t('選擇副本', 'Select a copy')}</option>
-                                        {copies.map(copy => {
-                                            const count = componentCounts?.get(copy.id);
-                                            return <option value={copy.id} data-revision={count?.count_revision ?? 0}>
-                                                #{copy.id} {copy.copy_label} · {count?.actual_quantity ?? t('未清點', 'Uncounted')}
-                                            </option>;
-                                        })}
-                                    </select>
-                                </label>
-                                <label>{t('實際數量', 'Actual quantity')} <input name="actual" type="number" required min="0" max={maxComponentQuantity} step="1" /></label>
-                                <button class="admin-button">{t('儲存清點', 'Save count')}</button>
-                            </form> : <p>{t('沒有可清點的在藏未封膜副本。', 'No eligible unsealed copies are in the collection.')}</p>}
                             {result.canAssignToSleeves && (unassigned.length ? <form method="post" data-physical-action="assign" class="fields">
                                 <input type="hidden" name="definitionId" value={component.id} />
                                 <input type="hidden" name="definitionRevision" value={component.physical_revision} />
@@ -178,6 +215,7 @@ const unassigned = requirements.filter(row => row.component_definition_id === nu
                     </article>;
                 })}
             </section>
+            </details>
         </>}
         <D1QuantityPreviewDialog en={en} copies={copies} />
     </div>
@@ -201,4 +239,14 @@ const unassigned = requirements.filter(row => row.component_definition_id === nu
     [data-quantity-notice][data-tone="success"] { padding: 12px; border-radius: 8px; background: #E8F3E3; color: #2B1914; }
     article, section { border-top: 1px solid #dad8d0; margin-top: 20px; padding-top: 12px; }
     summary { cursor: pointer; }
+    .count-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; min-width: 0; }
+    .count-controls label { display: grid; gap: 4px; min-width: 0; max-width: 100%; }
+    .count-controls :is(button, input, select), [data-component-management] > summary { min-height: 44px; }
+    .count-controls :is(input, select) { max-width: 100%; }
+    .count-controls input[type="number"] { width: 10ch; }
+    .count-controls [hidden] { display: none; }
+    [data-count-status] { flex-basis: 100%; margin: 0; }
+    [data-component-management] { margin-top: 20px; }
+    [data-component-management] > summary { align-content: center; }
+    [data-count-row] { overflow-wrap: anywhere; }
 </style>

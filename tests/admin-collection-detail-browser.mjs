@@ -188,7 +188,7 @@ try {
         const message = JSON.parse(data);
         calls.get(message.id)?.(message);
     });
-    function cdp(method, params = {}) {
+    function cdp(method, params = {}, sessionId) {
         const id = ++sequence;
         return new Promise((resolve, reject) => {
             const timer = setTimeout(() => {
@@ -201,7 +201,7 @@ try {
                 if (message.error) reject(new Error(message.error.message));
                 else resolve(message.result);
             });
-            ws.send(JSON.stringify({ id, method, params }));
+            ws.send(JSON.stringify({ id, method, params, sessionId }));
         });
     }
 
@@ -218,7 +218,8 @@ try {
         const targetUrl = origin + path;
         const result = await cdp('Page.navigate', { url: targetUrl });
         assert.equal(result.errorText, undefined, path);
-        await until(() => evaluate(url => location.href === url && document.readyState === 'complete', targetUrl), targetUrl);
+        await until(() => evaluate(url => (location.href === url || (new URL(url).pathname.endsWith('/components') &&
+            (() => { const actual = new URL(location.href); actual.searchParams.delete('copy'); return actual.href === url; })())) && document.readyState === 'complete', targetUrl), targetUrl);
     };
 
     const pass = label => console.log('PASS ' + ++checks + ' ' + label);
@@ -339,7 +340,8 @@ try {
 
     await evaluate(() => document.querySelector('[data-detail-tabs] a:nth-child(2)').focus());
     await beginNavigation();
-    const onPath = path => until(() => evaluate(url => location.href === url && document.readyState === 'complete', origin + path + query), path);
+    const onPath = path => until(() => evaluate(url => (location.href === url || (new URL(url).pathname.endsWith('/components') &&
+            (() => { const actual = new URL(location.href); actual.searchParams.delete('copy'); return actual.href === url; })())) && document.readyState === 'complete', origin + path + query), path);
     await onPath(copies);
     await cdp('Page.reload');
     await onPath(copies);
@@ -409,15 +411,15 @@ try {
     await evaluate(() => {
         const card = [...document.querySelectorAll('[data-physical-manager] article')].find(article => article.textContent.includes('Synthetic cards'));
         const form = card.querySelector('[data-physical-action=count]');
-        form.elements.copyId.selectedIndex = 1;
         form.elements.actual.value = '28';
+        form.elements.actual.dispatchEvent(new Event('input', { bubbles: true }));
         form.requestSubmit();
     });
     await until(() => evaluate(() => [...document.querySelectorAll('[data-physical-manager] article')].some(article =>
         article.textContent.includes('Synthetic cards') &&
-        article.querySelector('[data-physical-action=count] option:nth-child(2)')?.textContent.includes('28'))),
-        'count persisted after reload');
-    pass('R06 saves a count through the rendered form and reloads its value');
+        article.querySelector('[data-count-current]')?.textContent === '28')),
+        'count updated in its row');
+    pass('R06 saves a count through the rendered form and updates its row');
 
     for (const width of [1440, 768, 375]) {
         await resize(width);
@@ -748,6 +750,216 @@ try {
         document.querySelector('[data-collection-sleeve-gifts]').innerText.includes('隨貨附贈的卡套')));
     db.batch = seriesBatch;
     pass('Series-only read failure preserves HTTP 200, orders and gifts');
+    physicalFixture.sqlite.close();
+    physicalFixture = await physical.exports.sleeveWorkflowFixture();
+    bindings.PHYSICAL_COMPONENT_SIGNING_KEY = physicalFixture.secret;
+    physicalFixture.sqlite.exec(`
+        UPDATE v2_owned_copies SET copy_label='First copy' WHERE id=1;
+        INSERT INTO v2_component_definitions(collection_item_id, component_name, physical_creation_token)
+            VALUES (1, 'Pending pieces', 'synthetic-unverified');
+        INSERT INTO v2_sleeve_requirements(collection_item_id, size_id, quantity_sheets) VALUES (1,2,12);
+    `);
+
+    const r06Screenshots = 'docs/R06-MIN-screenshots';
+    await mkdir(r06Screenshots, { recursive: true });
+    const captureR06 = async (name, target = '[data-count-picker]') => {
+        await evaluate(async selector => {
+            document.querySelector(selector).scrollIntoView({ block: 'start', behavior: 'instant' });
+            await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        }, target);
+        const listRegion = name.startsWith('count-list-') ? await evaluate(() => {
+            const picker = document.querySelector('[data-count-picker]').getBoundingClientRect();
+            const management = document.querySelector('[data-component-management]').getBoundingClientRect();
+            return { x: 0, y: Math.floor(scrollY + picker.top), width: innerWidth,
+                height: Math.ceil(management.bottom - picker.top + 8), scale: 1 };
+        }) : undefined;
+        const {data} = await cdp('Page.captureScreenshot', {format: 'png',
+            ...(listRegion ? {captureBeyondViewport: true, clip: listRegion} : {})});
+        await writeFile(join(r06Screenshots, name + '.png'), Buffer.from(data, 'base64'));
+    };
+    const countPath = components + query + '&copy=1';
+    const setCount = (index, value, submit = false) => evaluate((index, value, submit) => {
+        const form = document.querySelectorAll('[data-physical-action=count]')[index];
+        form.elements.actual.value = value;
+        form.elements.actual.dispatchEvent(new Event('input', { bubbles: true }));
+        if (submit) form.requestSubmit();
+    }, index, value, submit);
+    const rowState = () => evaluate(() => Array.from(document.querySelectorAll('[data-physical-action=count]'), form => ({
+        input: form.elements.actual.value,
+        revision: Number(form.elements.revision.value),
+        current: form.closest('[data-count-values]').querySelector('[data-count-current]').textContent,
+        status: form.querySelector('[data-count-status]').textContent,
+        reload: !form.querySelector('[data-count-reload]').hidden,
+        retry: !form.querySelector('[data-count-retry]').hidden,
+    })));
+    const selected = () => evaluate(() => document.querySelector('[data-count-copy]').value === new URL(location.href).searchParams.get('copy')
+        ? document.querySelector('[data-count-copy]').value : '');
+    const storedCount = () => physicalFixture.sqlite.prepare(
+        'SELECT actual_quantity, count_revision FROM v2_copy_components WHERE owned_copy_id=1 AND component_definition_id=?',
+    ).get(physicalFixture.cardId);
+    const raw = await (await fetch(origin + components + query + '&copy=2')).text();
+    assert.match(raw, /<option value="2" selected/);
+    assert.match(raw, /name="copyId" value="2"/);
+    await navigate(components + query);
+    await until(async () => await selected() === '1', 'default copy in URL');
+    assert.ok(await evaluate(() => {
+        const list = document.querySelector('[data-count-list]');
+        const rows = list.querySelectorAll('[data-count-row]');
+        const management = document.querySelector('[data-component-management]');
+        return !!(list.compareDocumentPosition(management) & Node.DOCUMENT_POSITION_FOLLOWING) &&
+            rows.length === 3 && rows[2].textContent.includes('待確認，不可清點') && !rows[2].querySelector('input') &&
+            !management.open && document.querySelector('[data-count-step="-1"]').disabled;
+    }));
+    await evaluate(() => document.querySelector('[data-count-copy]').focus());
+    await cdp('Input.dispatchKeyEvent', {type: 'keyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9});
+    await cdp('Input.dispatchKeyEvent', {type: 'keyUp', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9});
+    assert.equal(await evaluate(() => document.activeElement.dataset.countStep), '1');
+    await cdp('Input.dispatchKeyEvent', {type: 'keyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9});
+    await cdp('Input.dispatchKeyEvent', {type: 'keyUp', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9});
+    assert.equal(await evaluate(() => document.activeElement.name), 'actual');
+    pass('R06 scenario 1: server-selected copy, default URL, panel order and pending row');
+
+    for (const width of [375, 768, 1280, 1440]) {
+        await resize(width);
+        assert.ok(await evaluate(width => document.documentElement.scrollWidth === width &&
+            Array.from(document.querySelectorAll('[data-count-picker] :is(select, button), [data-count-list] :is(input[type=number], [data-count-save])'))
+                .every(node => node.getBoundingClientRect().height >= 44), width));
+        if (width !== 1440) await captureR06('count-list-zh-' + width);
+    }
+    await resize(1280);
+    await navigate(components + '?lang=en&copy=1');
+    assert.match(await evaluate(() => document.querySelector('[data-count-list]').textContent), /Pending verification/);
+    await captureR06('count-list-en-1280');
+    await navigate(countPath);
+
+    await evaluate(() => { document.body.dataset.pageInstance = 'count-scenario'; });
+    await setCount(1, '9');
+    await setCount(0, '29', true);
+    await until(async () => (await rowState())[0].status === '已確認', 'first count saved');
+    assert.deepEqual((await rowState()).map(({input, revision}) => [input, revision]), [['29', 2], ['9', 0]]);
+    assert.equal(await evaluate(() => document.body.dataset.pageInstance), 'count-scenario');
+    await captureR06('count-success-zh-1280', '[data-count-row]');
+    pass('R06 scenario 2: save in place and preserve the other input');
+
+    await cdp('Page.reload');
+    await until(async () => await selected() === '1' && (await rowState())[0].current === '29' &&
+        await evaluate(() => !document.body.dataset.pageInstance), 'reload stored count');
+    pass('R06 scenario 3: reload restores selected copy and saved value');
+    await setCount(0, '28', true);
+    await until(async () => (await rowState())[0].revision === 3, 'second revision');
+    await setCount(0, '27', true);
+    await until(async () => (await rowState())[0].revision === 4, 'third revision without reload');
+    pass('R06 scenario 4: consecutive saves increment revision in place');
+
+    const {targetId: otherTab} = await cdp('Target.createTarget', {url: origin + countPath});
+    try {
+        const {sessionId} = await cdp('Target.attachToTarget', {targetId: otherTab, flatten: true});
+        await until(async () => {
+            const result = await cdp('Runtime.evaluate', {
+                expression: 'document.readyState === "complete" && document.querySelector("[data-count-copy]")?.value === "1"',
+                returnByValue: true,
+            }, sessionId);
+            return result.result.value === true;
+        }, 'second tab');
+        const result = await cdp('Runtime.evaluate', {expression: `(() => {
+            const form = document.querySelector('[data-physical-action=count]');
+            form.elements.actual.value = '26';
+            form.elements.actual.dispatchEvent(new Event('input', { bubbles: true }));
+            form.requestSubmit();
+        })()`}, sessionId);
+        assert.equal(result.exceptionDetails, undefined);
+        await until(() => storedCount().count_revision === 5, 'second tab saved');
+    } finally {
+        await cdp('Target.closeTarget', {targetId: otherTab});
+    }
+    await setCount(1, '8');
+    await setCount(0, '25', true);
+    await until(async () => (await rowState())[0].reload, 'only stale row shows reload');
+    assert.match((await rowState())[0].status, /資料已變更/);
+    assert.deepEqual((await rowState())[1], {input: '8', revision: 0, current: '未清點', status: '', reload: false, retry: false});
+    assert.deepEqual([storedCount().actual_quantity, storedCount().count_revision], [26, 5]);
+    await captureR06('count-conflict-zh-1280', '[data-count-row]');
+    pass('R06 scenario 5: second-tab conflict stays in its row and does not write');
+
+    await evaluate(() => {
+        window.confirm = message => { document.body.dataset.confirmMessage = message; return false; };
+        document.querySelector('[data-count-step="1"]').click();
+    });
+    assert.equal(await selected(), '1');
+    assert.match(await evaluate(() => document.body.dataset.confirmMessage), /有 2 列尚未儲存/);
+    assert.equal((await rowState())[1].input, '8');
+    await evaluate(() => document.querySelector('[data-count-reload]').click());
+    await until(async () => await selected() === '1' && (await rowState())[0].current === '26' && !(await rowState())[0].reload, 'row reload preserves copy');
+    await setCount(1, '7');
+    await evaluate(() => {
+        window.confirm = () => true;
+        document.querySelector('[data-count-step="1"]').click();
+    });
+    assert.equal(await selected(), '2');
+    assert.equal((await rowState())[0].current, '30');
+    assert.equal((await rowState())[1].input, '');
+    pass('R06 scenario 6: cancel preserves edits, confirmed switch discards, row reload preserves copy');
+
+    await evaluate(() => {
+        const fetchOriginal = window.fetch.bind(window);
+        window.r06Attempts = [];
+        window.fetch = (url, options) => {
+            if (JSON.parse(options.body).action === 'count') {
+                window.r06Attempts.push([options.headers['Idempotency-Key'], options.body]);
+                if (window.r06Attempts.length === 1) return Promise.reject(new TypeError('Synthetic offline request'));
+            }
+            return fetchOriginal(url, options);
+        };
+    });
+    await setCount(0, '20', true);
+    await until(async () => (await rowState())[0].retry, 'network failure offers retry');
+    await evaluate(() => document.querySelector('[data-count-retry]').click());
+    await until(async () => (await rowState())[0].status === '已確認', 'retry succeeded');
+    const attempts = await evaluate(() => window.r06Attempts);
+    assert.equal(attempts.length, 2);
+    assert.deepEqual(attempts[0], attempts[1]);
+    assert.equal(JSON.parse(attempts[1][1]).revision, 1);
+    pass('R06 network retry resends exactly the same idempotency key and revision');
+
+    const manage = () => evaluate(() => { document.querySelector('[data-component-management]').open = true; });
+    await manage();
+    await captureR06('management-expanded-zh-1280', '[data-component-management]');
+    await evaluate(() => {
+        const form = document.querySelector('[data-physical-action=assign]');
+        form.elements.requirementId.selectedIndex = 1;
+        form.requestSubmit();
+    });
+    await until(() => evaluate(() => document.querySelector('[data-physical-status]').dataset.tone === 'success' &&
+        document.querySelector('[data-component-management]').textContent.includes('已關聯卡套需求')), 'assignment notice after switching copies');
+    assert.equal(await selected(), '2');
+    assert.equal(await evaluate(() => document.querySelector('[data-physical-status]').textContent), '已儲存，畫面已更新。');
+    assert.equal(physicalFixture.sqlite.prepare('SELECT component_definition_id FROM v2_sleeve_requirements WHERE size_id=2').get().component_definition_id, physicalFixture.cardId);
+    pass('R06 assignment and notice after switching copy and reloading; create and edit checked in regression suites');
+
+    await navigate(components + '?lang=en&copy=1');
+    await setCount(0, '24', true);
+    await until(async () => (await rowState())[0].status === 'Confirmed', 'English success');
+    await captureR06('count-success-en-1280', '[data-count-row]');
+    physicalFixture.sqlite.prepare(`
+        UPDATE v2_copy_components SET actual_quantity=23, count_revision=count_revision+1
+        WHERE owned_copy_id=1 AND component_definition_id=?
+    `).run(physicalFixture.cardId);
+    await setCount(0, '22', true);
+    await until(async () => (await rowState())[0].reload, 'English conflict');
+    assert.match((await rowState())[0].status, /The record changed/);
+    await captureR06('count-conflict-en-1280', '[data-count-row]');
+
+    physicalFixture.sqlite.exec("UPDATE v2_owned_copies SET seal_status='sealed' WHERE collection_item_id=1");
+    await navigate(components + query);
+    assert.ok(await evaluate(() => !document.querySelector('[data-count-copy]') &&
+        document.querySelector('[data-count-picker] a').pathname.endsWith('/copies') &&
+        document.querySelector('[data-component-management] [data-physical-action=create]')));
+    await captureR06('no-eligible-copy-zh-1280');
+    await navigate(components + '?lang=en');
+    await manage();
+    await captureR06('no-eligible-copy-en-1280');
+    await captureR06('management-expanded-en-1280', '[data-component-management]');
+    pass('R06 scenario 8: responsive bilingual captures and no eligible copy');
     console.log('Checks passed: ' + checks);
 } finally {
     ws?.close();

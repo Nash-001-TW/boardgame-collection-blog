@@ -205,6 +205,11 @@ test('physical component workflow through Admin API, real SQLite and Astro rende
             assert.match(html, /Confirmed physical component/);
             assert.match(html, /data-physical-action="create"/);
             assert.match(html, /data-physical-action="count"/);
+            assert.match(html, /data-count-picker[\s\S]*data-count-list[\s\S]*data-component-management/);
+            assert.match(html, /name="copyId" value="50"/);
+            assert.match(html, /name="revision" value="2"/);
+            assert.match(html, /data-count-current[^>]*>20<\/span>/);
+            assert.match(html, /data-count-status role="status" aria-live="polite"/);
             assert.match(html, /name="previousExpected"/);
             assert.match(html, /name="reason"/);
             assert.match(html, /data-quantity-action="retry"/);
