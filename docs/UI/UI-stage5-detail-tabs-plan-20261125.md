@@ -246,3 +246,98 @@
   - 正式環境 0 個受控組件，D1 預覽與更正歷史仍依 #23 待首次建立組件時確認。
 - 遠端操作：登入後瀏覽 4 頁；寫入 0。
 - 另：本機 `docs/D1-A4-screenshots/` 4 張更正歷史截圖被 `physical-quantity-browser.mjs` 重跑覆寫為新版面，未提交，待使用者決定保留或還原。
+
+## 8. 工作命令：5c 卡套需求＋相關採購分頁（2026-11-25 已授權，DECISION_LOG UI-S5C-AUTH）
+
+### 8.1 盤點（2026-11-25 靜態閱讀）
+
+- 卡套需求 `src/pages/admin/sleeves/requirements.astro`（R09，63 行）：伺服器端以 `?collection=N` 呼叫 `readSleeveWorkflow`，渲染需求新增／編輯（`SleeveRequirementForm`）、指派篩選、逐副本套用表單與未對應歷史套用；前端 `sleeve-workflow-controller.ts` 以 `[data-sleeve-workflow]` 為根、寫入走既有 API、成功後重新載入（sessionStorage 鍵含 `location.href`）。頁上另有「卡套管理／收藏清單」導覽、「收藏 ID」表單、「返回編輯收藏／實體組件」連結。
+- 相關採購 `src/pages/admin/purchases/index.astro`（R10）：全域採購管理；`readPurchases(db, params)` 以 `collection` 篩選回傳訂單（每頁 20，`after` 游標）、各幣別／狀態的整筆訂單金額、已付款訂單對該收藏的分攤；新增訂單時 `PurchaseLine` 可預填收藏。
+- 舊網址引用：`CollectionDetailTabs.astro`（兩個過渡連結）、`collection-admin-controller.ts`（R02「⋯」選單的卡套需求、採購紀錄）、`sleeves/index.astro`（各收藏的需求連結）、側欄 `admin-shell-controller.ts`「卡套需求與套用」（指向無 collection 的需求頁）；測試 `admin-shell.test.ts`、`admin-shell-browser.mjs`、`admin-collection-detail-browser.mjs`、`sleeve-workflow-browser.mjs`、預覽 helper。
+- **需使用者確認的連帶影響**：依 Q50，無 `collection` 的需求頁改轉到卡套管理，側欄「卡套需求與套用」將只會轉址，本工作命令一併移除該側欄項目（比照 Q49 對「實體組件」的處理）。
+
+### 8.2 工作命令
+
+```text
+工作命令 ID：UI-S5C-20261125-01
+工作目標：新增「卡套需求」（/admin/collection/[id]/sleeves）與「相關採購」（/admin/collection/[id]/purchases）兩個分頁，
+  共用頁首與分頁列；卡套需求舊網址轉址；移除側欄「卡套需求與套用」。R09 寫入行為與採購管理頁完全不變。
+
+已批准規格：本文件 §2、§3、§4（Q45、Q46、Q50、Q51）；5a／5b 的頁首、分頁列與面板做法（§6、§7）。
+
+卡套需求分頁：
+  1. 新增路由 src/pages/admin/collection/[id]/sleeves.astro：驗證 id 與 scope（400／404，同 5a／5b），渲染頁首＋分頁列（active="sleeves"）
+     ＋卡套需求內容。
+  2. 把 requirements.astro 的讀取與內容區抽成元件（例如 src/components/admin/SleeveWorkflowPanel.astro）：readSleeveWorkflow 呼叫、錯誤處理、
+     需求／指派／套用的條件判斷（locked、eligible、inspected、canApply）、所有 data-* 屬性、表單欄位名稱、按鈕與 SleeveRequirementForm 用法逐字保留；
+     根節點保留 data-sleeve-workflow 與 data-lang。只移除頁上導覽、「收藏 ID」表單、「返回編輯收藏／實體組件」連結。
+  3. requirements.astro 改為只做 302 轉址、不讀 D1：?collection=N（正整數）→ /admin/collection/N/sleeves（保留 scope，未帶為 production；保留 lang）；
+     未帶或無效 → /admin/sleeves（保留 lang）。
+  4. 側欄移除「卡套需求與套用」；/admin/collection/[id]/sleeves 在側欄標示「全部收藏」。
+
+相關採購分頁（唯讀）：
+  5. 新增路由 src/pages/admin/collection/[id]/purchases.astro：驗證 id 與 scope（400／404），渲染頁首＋分頁列（active="purchases"）。
+  6. 內容以既有 readPurchases(db, params)（params 只帶 collection=N 與分頁 after）讀取，不新增查詢、不改 purchase-admin.ts：
+     - 「此收藏的已記錄成本」：costs 中該收藏的分攤，依幣別分列、不換算、不加總不同幣別；只含已付款／部分收貨／完成訂單（沿用函式口徑），
+       附說明「只計採購分攤，不含歷史價格與維修費」。
+     - 「相關訂單」：每筆顯示訂單編號（連到 /admin/purchases?id=X）、日期、商店、幣別、狀態（中文標籤同採購頁）、淨額／已分攤／未分攤，
+       並註明金額為整筆訂單；每頁 20 筆，以 after 分頁（第一頁／下一頁），分頁參數寫入此分頁網址。
+     - 操作連結：「新增採購（預填此收藏）」→ /admin/purchases?new=1&collection=N；「在採購管理開啟」→ /admin/purchases?collection=N。
+     - 無訂單時顯示空狀態（EmptyState）；讀取失敗顯示「無法取得」（AlertBanner）且頁首照常。
+  7. /admin/purchases?collection=N 不轉址（Q51）。
+
+站內連結：
+  8. CollectionDetailTabs 的卡套需求、相關採購改指新路由並移除過渡註解；R02「⋯」選單的卡套需求、採購紀錄改指新路由；
+     sleeves/index.astro 各收藏的需求連結改指新路由。
+
+共同：中英雙語；1440／768／375 無整頁橫向捲動；WCAG AA；金額沿用最小貨幣單位整數的既有顯示方式。
+
+允許修改範圍：新增 src/pages/admin/collection/[id]/sleeves.astro、src/pages/admin/collection/[id]/purchases.astro、
+  src/components/admin/SleeveWorkflowPanel.astro、（如需）src/components/admin/CollectionPurchasesPanel.astro；
+  src/pages/admin/sleeves/requirements.astro（改為轉址）；src/components/admin/CollectionDetailTabs.astro；
+  src/lib/collection-admin-controller.ts（只限 R02 選單兩個網址）；src/lib/admin-shell-controller.ts（只限移除項目與目前項目比對）；
+  src/pages/admin/sleeves/index.astro（只限需求連結網址）；src/styles/admin-theme.css（只限新增兩分頁外框樣式）；
+  tests/admin-shell.test.ts、tests/admin-shell-browser.mjs、tests/sleeve-workflow-browser.mjs、tests/helpers/admin-dashboard-preview.ts（只限路由與網址）；
+  tests/admin-collection-detail-browser.mjs（只限把卡套需求、相關採購兩個過渡連結的預期網址改為新路由，並新增 5c 檢查）；
+  tests/admin-collection-detail.test.ts（只增）。
+
+禁止事項：不改 src/lib/sleeve-workflow.ts、src/lib/sleeve-workflow-controller.ts、src/lib/sleeve-admin-api.ts、SleeveRequirementForm.astro、
+  src/lib/purchase-admin.ts、src/lib/purchase-admin-controller.ts、src/pages/admin/purchases/index.astro、PurchaseLine.astro 與任何寫入 API；
+  不改 migrations、wrangler.json、package.json、astro.config.mjs、middleware、auth；不刪除檔案；不新增套件或網路字型；
+  不建立或移除 git worktree、不以連結共用 node_modules；不連遠端、不建置、不部署、不 git commit／push；不讀 .env／.dev.vars／備份。超出範圍時停下回報。
+
+單元測試必須涵蓋：需求頁轉址三種情況且不讀 D1；兩新路由 400／404；側欄不再有「卡套需求與套用」且新路由標示「全部收藏」；
+  相關採購分頁的成本只列該收藏、依幣別不加總、讀取失敗隔離；既有卡套與採購測試全數通過。
+
+允許執行的驗證：
+  1. node --import tsx --test tests/sleeve-workflow.test.ts tests/sleeve-admin.test.ts tests/purchase-admin.test.ts tests/admin-shell.test.ts
+     tests/admin-collection-detail.test.ts tests/admin-collection-list.test.ts tests/physical-component-management.test.ts
+  2. node tests/sleeve-workflow-browser.mjs <暫存目錄>；node tests/purchase-admin-browser.mjs <暫存目錄>（回歸，不改）；
+     node tests/admin-collection-detail-browser.mjs <暫存目錄>；node tests/admin-shell-browser.mjs <暫存目錄>；node tests/admin-collection-list-browser.mjs <暫存目錄>
+     （截圖只寫暫存目錄或本工作命令的截圖資料夾，不得覆寫其他既有截圖資料夾）
+  3. npm run astro -- check（基準 10 個錯誤，不得新增）
+  4. git diff --check
+
+瀏覽器驗收（合成資料）：兩分頁各 1440／768／375；卡套需求新增一筆需求與一次套用（沿用 sleeve-workflow-browser 情境）；相關採購有訂單、
+  無訂單、讀取失敗、分頁；封存收藏；英文；需求頁舊網址轉址；側欄無「卡套需求與套用」。截圖存 docs/UI-S5C-screenshots/。
+完成條件與交付：修改檔案與摘要、驗證數字、瀏覽器逐項結果、截圖清單、astro check 錯誤數、未執行項目；更新 HANDOFF.md。
+部署：Claude 審查通過、使用者看過截圖後，依 DEPLOY-01 另行授權推送；部署後 Claude 唯讀抽查，使用者登入後 Claude 檢查。
+```
+
+### 8.3 審查（2026-11-25）：有條件通過
+
+- **範圍**：新增 `[id]/sleeves.astro`、`[id]/purchases.astro`、`SleeveWorkflowPanel.astro`、`CollectionPurchasesPanel.astro`、12 張截圖；`requirements.astro` 改為純 302 轉址（不讀 D1）；修改分頁列、側欄（移除「卡套需求與套用」）、R02 選單、`sleeves/index.astro`、`admin-theme.css` 與指定測試。禁止修改清單中的檔案皆未動；未刪除檔案；其他截圖資料夾未被覆寫。
+- **程式核對**：卡套面板與舊頁比對，差異只有根節點由 `<main>` 改為 `<section>`（保留 `data-sleeve-workflow`、`data-lang`）、移除導覽、收藏 ID 表單與返回連結、controller 匯入路徑；條件判斷與表單逐字相同。採購面板只呼叫既有 `readPurchases`（collection＋after），成本只取該收藏、依幣別分列，讀取失敗回 503 並以 AlertBanner 顯示，頁首照常。
+- **Claude 重跑**：Node 7 檔 **48／48**；詳細頁 Edge **35／35**（5c 新增 10 項）；卡套 Edge **3／3**；`astro check` **10 個基準錯誤**；`git diff --check` 通過。Shell 9／9、R02 12／12 引用 Codex 回報。Claude 已看 purchases-1440、sleeves-archived 截圖。
+- **條件（未通過或需處理，皆不在 §8.2 範圍內）**：
+  1. `tests/purchase-admin-browser.mjs` 只通過 2／4：第三組等待副本頁 `h1` 為「收藏副本／Collection copies」逾時，第四組未執行。原因是 **5a** 讓副本頁 `h1` 改為收藏名稱（頁首），此腳本當時不在 5a 驗證清單而未發現。屬 5a 造成的測試回歸，需改腳本的等待條件。
+  2. 已封存收藏的「卡套需求」分頁顯示紅色「無法載入收藏卡套資料」並回 503：`readSleeveWorkflow` 對封存收藏刻意回 404，舊頁同樣顯示此錯誤（既有行為），但在有「已封存」頁首的分頁裡會被誤解為故障。建議面板把此情況改為中性說明（例如「此收藏已封存，卡套需求僅供保留，不提供操作」）並回 200；這會偏離「錯誤處理逐字保留」，需授權。
+- **小觀察（不擋）**：合成資料截圖的頁首封面仍顯示破圖示（合成圖片網址無法載入）；正式環境 5a、5b 驗收時封面皆正常，但「圖片載入失敗時隱藏」是否在正式環境生效尚未實測。
+
+### 8.4 補充修正複審（2026-11-25，UI-S5C-AUTH-02）：通過
+
+- `purchase-admin-browser.mjs`：只改 `goto` 對副本頁的等待，由 h1「收藏副本」改為副本區 h2；其餘斷言不變。
+- `SleeveWorkflowPanel.astro`：只有 `readSleeveWorkflow` 丟出 HttpError 404 `COLLECTION_UNAVAILABLE`（封存）時改為中性說明「此收藏已封存，卡套需求僅供保留，不提供操作。」並維持 200；其他錯誤（503）逐字保留。`sleeve-workflow.ts` 未動。
+- `admin-collection-detail-browser.mjs` 對應斷言與 `sleeves-archived.png` 已更新（Claude 已看新截圖）。
+- **Claude 重跑**：Node 7 檔 **48／48**；採購 Edge **4／4**；詳細頁 Edge **35／35**；`git diff --check` 通過；其他截圖資料夾未被覆寫。`astro check` 10 個基準錯誤引用 Codex 回報（本輪只改一個元件的條件顯示，前一輪 Claude 實測亦為 10）。
+- **結論**：§8.3 條件解除，`UI-S5C-20261125-01` 審查通過。尚未提交；待使用者看截圖後依 DEPLOY-01 授權推送部署。
