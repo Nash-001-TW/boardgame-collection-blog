@@ -347,3 +347,11 @@
 - **測試**：fixture 的 D1 模擬層對含 `UNION`／`INTERSECT`／`EXCEPT` 的 SQL 拋錯（原查詢在此守衛下會失敗）；新增「恰好一次 6 條 batch」、「batch 6 個位置各自失敗只影響採購區」、「失敗結果與不安全數字被拒」。
 - **Claude 重跑**：Node 3 檔 **14／14**；`astro check` 352 檔 **10 個基準錯誤**（皆在未修改檔案）、0 警告；`git diff --check` 通過。Edge R01 7 項引用 Codex 中途回報，Claude 未重跑。
 - 尚未提交；推送部署依 DEPLOY-01 另需授權。
+
+### 14.4 部署與唯讀抽查（2026-11-25）
+
+- 部署：`763cb81` 於台北 02:03 推送（DECISION_LOG UI-S3-FIX-DEPLOY），約 1 分鐘後自動部署為 `eacc4ecc…`（100%，台北 02:04:35）。
+- Claude 唯讀抽查 19 條路由全部符合：公開頁 `/`、`/collection`、`/games`、`/en/games`、`/sitemap.xml`、`/robots.txt`、`/about/`、`/games/bgg-451166` 200；`/games/bgg/451166`、`/en/games/bgg/451166` 307；`/games/bgg/2147483647` 404；`/admin`、`/api/admin/auth-check`、`/admin/bgg`、`/api/admin/bgg`、`/admin/collection/components/manage` 302 至 Access 登入；插畫 `empty-no-count.webp` 200；`/dev/collection-v2-test`、`/dev/ui-kit` 404＋no-store。
+- 遠端操作：`wrangler deployments status` 1 次、HTTP HEAD/GET 19 次；D1 查詢 0、寫入 0。
+- **正式驗收（2026-11-25 台北 08:17，使用者登入後 Claude 檢查，面板寬 518px）：通過**。採購三卡：已記錄採購成本「未封存／已封存皆尚未記錄」、未分攤金額「無正數餘額」、採購訂單狀態「待處理 0／已取消 0」，符合正式現況（採購訂單與分攤皆 0 筆）；整頁無「無法取得」；其他區塊數字與 §13 一致（收藏 256／254／0／2）；無橫向捲動。
+- `wrangler tail` 未執行（頁面已無失敗區塊，屬可選確認）。
