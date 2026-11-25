@@ -685,6 +685,69 @@ try {
     await navigate(purchasePath+'?scope=production&lang=en');
     assert.ok(await evaluate(() => document.querySelector('[data-collection-sleeve-gifts]').innerText.includes('Complimentary sleeves')));
     pass('English gift form, balance and related purchases section');
+    const seriesScreenshots = join(output, 'SERIES-screenshots');
+    await mkdir(seriesScreenshots);
+    giftFixture.sqlite.exec(`
+        INSERT INTO v2_collection_items(id,display_name,item_type) VALUES
+          (9003,'Synthetic expansion','expansion'),(9004,'Synthetic accessory','accessory'),
+          (9005,'Synthetic shared bundle','bundle'),(9006,'Synthetic standalone','base'),
+          (9007,'Synthetic ambiguous expansion','expansion'),(9008,'Synthetic first base','base'),
+          (9009,'Synthetic second base','base'),(9010,'Synthetic bundle-only game','base');
+        INSERT INTO v2_collection_relations(source_item_id,target_item_id,relation_type) VALUES
+          (9003,1,'expansion_of'),(9004,1,'accessory_for'),(9005,1,'bundle_contains'),(9005,9003,'bundle_contains'),(9005,9010,'bundle_contains'),
+          (9007,9008,'expansion_of'),(9007,9009,'requires_base');
+        INSERT INTO v2_purchase_orders(id,currency_code,item_subtotal_minor,status) VALUES
+          (301,'USD',1200,'paid'),(302,'TWD',2400,'completed');
+        INSERT INTO v2_purchase_allocations(purchase_order_id,collection_item_id,allocated_minor) VALUES
+          (301,9003,1200),(302,9005,2400);
+    `);
+    const captureSeries = async (name, selector, width) => {
+        const clip = await evaluate((selector, width) => {
+            const bounds = document.querySelector(selector).getBoundingClientRect();
+            return {x:0,y:Math.max(0,Math.floor(bounds.top + scrollY - 12)),
+                width,height:Math.ceil(bounds.height + 24),scale:1};
+        }, selector, width);
+        const {data} = await cdp('Page.captureScreenshot', {format:'png',clip,captureBeyondViewport:true});
+        await writeFile(join(seriesScreenshots, name + '-' + width + '.png'),Buffer.from(data,'base64'),{flag:'wx'});
+    };
+    for (const width of [375,768,1280]) {
+        await resize(width);
+        for (const [name,id,pattern] of [
+            ['series',1,'Synthetic accessory.*尚未記錄成本.*合計.*TWD · 1500.*USD · 1275.*其中 1 款尚未記錄成本'],
+            ['expansion',9003,'Synthetic collection.*本體.*Synthetic expansion.*目前'],
+            ['shared-bundle',1,'共用禮包.*Synthetic shared bundle.*共 3 款，其中 2 款在此系列.*TWD · 2400'],
+            ['standalone',9006,'尚未建立系列關聯'],
+            ['multiple-bases',9007,'此收藏關聯到多個本體.*Synthetic first base.*Synthetic second base'],
+        ]) {
+            await navigate('/admin/collection/'+id+'/purchases'+query);
+            const view = await evaluate(() => {
+                const section = document.querySelector('[data-series-spending]');
+                return {
+                    text: section.innerText.replace(/\s+/g,' '),
+                    links: [...section.querySelectorAll('a')].map(a => a.pathname + a.search),
+                    fits: document.documentElement.scrollWidth === innerWidth,
+                };
+            });
+            assert.match(view.text,/系列花費合計/);
+            assert.match(view.text,new RegExp(pattern));
+            assert.ok(view.fits);
+            if (name === 'series') assert.ok(view.links.includes('/admin/collection/9003/purchases?lang=zh-TW'));
+            if (name === 'standalone') assert.ok(view.links.includes('/admin/bgg?view=relations&domain=collection&source=9006&lang=zh-TW'));
+            if (name === 'multiple-bases') assert.ok(view.links.includes('/admin/collection/9009/purchases?lang=zh-TW'));
+            await captureSeries(name, name === 'shared-bundle' ? '[data-series-shared-bundles]' : '[data-series-spending]', width);
+            pass('Series spending ' + name + ' at ' + width + ' px');
+        }
+    }
+    const seriesBatch = db.batch.bind(db);
+    db.batch = statements => statements.length === 5
+        ? Promise.reject(new Error('Synthetic series read failure')) : seriesBatch(statements);
+    assert.equal((await fetch(origin+purchasePath+query)).status,200);
+    await navigate(purchasePath+query);
+    assert.ok(await evaluate(() => document.querySelector('[data-series-spending]').innerText.includes('無法取得系列花費') &&
+        document.querySelector('.admin-collection-purchases').innerText.includes('相關訂單') &&
+        document.querySelector('[data-collection-sleeve-gifts]').innerText.includes('隨貨附贈的卡套')));
+    db.batch = seriesBatch;
+    pass('Series-only read failure preserves HTTP 200, orders and gifts');
     console.log('Checks passed: ' + checks);
 } finally {
     ws?.close();

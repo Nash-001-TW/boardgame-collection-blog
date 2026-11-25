@@ -172,6 +172,20 @@ test('sleeve and purchase tabs validate ID and scope and isolate purchase read f
     assert.match(html, /\/admin\/purchases\?new=1&amp;collection=1/);
     assert.equal((await page('/purchases?collection=1')).status, 200);
 
+    assert.match(html, /此收藏的已記錄成本.*系列花費合計.*相關訂單/s);
+    assert.match(html, /\/admin\/bgg\?view=relations&amp;domain=collection&amp;source=1&amp;lang=zh-TW/);
+    sqlite.exec(`INSERT INTO v2_collection_items(id,display_name,item_type) VALUES(9001,'Synthetic expansion','expansion');
+        INSERT INTO v2_collection_relations(source_item_id,target_item_id,relation_type) VALUES(9001,1,'expansion_of')`);
+    assert.match(await (await page('/collection/1/purchases?lang=en')).text(), /Series spending.*href="\/admin\/collection\/9001\/purchases\?lang=en"/s);
+    const batch = db.batch.bind(db);
+    db.batch = statements => statements.length === 5
+        ? Promise.reject(new Error('Synthetic series read failure'))
+        : batch(statements);
+    const seriesFailed = await page('/collection/1/purchases');
+    assert.equal(seriesFailed.status, 200);
+    assert.match(await seriesFailed.text(), /此收藏的已記錄成本.*無法取得系列花費.*相關訂單.*隨貨附贈的卡套/s);
+    db.batch = batch;
+
     const prepare = db.prepare.bind(db);
     let failHeader = false;
     db.prepare = (sql: string) => {

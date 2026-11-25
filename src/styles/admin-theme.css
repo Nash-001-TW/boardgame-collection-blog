@@ -482,3 +482,38 @@ html:has(.shell-drawer[open]) { overflow: hidden; }
 .admin-page [data-gift-fields] :focus-visible { outline: var(--focus-ring); outline-offset: 3px; }
 .admin-page [data-gift-fields] p:empty { margin: 0; }
 .admin-page [data-collection-sleeve-gifts] h3 { overflow-wrap: anywhere; }
+.admin-series-table { width: 100%; border-collapse: collapse; }
+.admin-series-table :is(th, td) {
+    padding: var(--space-2);
+    border-bottom: 1px solid var(--border-strong);
+    text-align: start;
+    vertical-align: top;
+    overflow-wrap: anywhere;
+}
+.admin-series-bundles { list-style: none; padding: 0; }
+.admin-series-bundles > li {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr));
+    gap: var(--space-2) var(--space-3);
+    border-top: 1px solid var(--border-strong);
+    padding-block: var(--space-3);
+    overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+    .admin-series-table, .admin-series-table tbody, .admin-series-table tbody tr,
+    .admin-series-table tbody :is(th, td) { display: block; }
+    .admin-series-table thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+    }
+    .admin-series-table tbody :is(th, td) { padding: 0; border: 0; }
+    .admin-series-table tbody tr, .admin-series-bundles > li {
+        grid-template-columns: minmax(0, 1fr);
+        border: 1px solid var(--border-strong);
+        margin-block: var(--space-2);
+        padding: var(--space-3);
+    }
+}
