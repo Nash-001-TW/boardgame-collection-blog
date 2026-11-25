@@ -341,3 +341,17 @@
 - `admin-collection-detail-browser.mjs` 對應斷言與 `sleeves-archived.png` 已更新（Claude 已看新截圖）。
 - **Claude 重跑**：Node 7 檔 **48／48**；採購 Edge **4／4**；詳細頁 Edge **35／35**；`git diff --check` 通過；其他截圖資料夾未被覆寫。`astro check` 10 個基準錯誤引用 Codex 回報（本輪只改一個元件的條件顯示，前一輪 Claude 實測亦為 10）。
 - **結論**：§8.3 條件解除，`UI-S5C-20261125-01` 審查通過。尚未提交；待使用者看截圖後依 DEPLOY-01 授權推送部署。
+
+### 8.5 部署與唯讀抽查（2026-11-25）
+
+- 部署：`f4ab4da`（5c）＋`4892e6d`（文件）推送（DECISION_LOG UI-S5C-DEPLOY），自動部署為 `307cf1d6…`（100%，台北 11:31:49）。
+- Claude 唯讀抽查 14 條路由全部符合：公開頁 4 條 200；`/admin`、`/admin/collection/102`、`/102/components`、`/102/sleeves`、`/102/purchases`、舊 `sleeves/requirements?collection=102`、舊 `sleeves/requirements`、`/admin/sleeves`、`/admin/purchases?collection=102` 皆 302 至 Access；`/dev/ui-kit` 404。D1 查詢與寫入 0。
+- **正式驗收（使用者重新登入後，Claude 唯讀檢查，面板寬 518px，未新增或儲存任何資料）：通過**。
+  - 舊網址 `sleeves/requirements?collection=102` → `/admin/collection/102/sleeves?scope=production`；頁首正確、目前分頁「卡套」；卡套面板顯示說明、新增需求、需求篩選與既有需求 #784（64 × 89 mm · 76 張 · 未指派）；無警示、無橫向捲動。
+  - 側欄已無「卡套需求與套用」，目前項目為「全部收藏」。
+  - `/admin/collection/102/purchases`：HTTP 200、目前分頁「採購」；「尚無已記錄成本」「沒有符合條件的採購」（正式採購 0 筆）；「新增採購（預填此收藏）」與「在採購管理開啟」連結正確。
+  - 舊網址 `sleeves/requirements`（無 collection）→ `/admin/sleeves`。
+  - `/admin/purchases?collection=102` 仍為採購管理頁（200，不轉址）。
+- **小觀察（不擋）**：相關採購沒有任何訂單時，仍顯示「第一頁」分頁連結，以及第二個重複的「新增採購（預填此收藏）」按鈕（空狀態內），可日後微調。
+- 遠端操作：登入後瀏覽 4 頁；寫入 0。
+- **階段 5 結案**：收藏詳細頁五個分頁（基本資料、副本與品況、實體組件、卡套需求、相關採購）全部上線並通過正式驗收。
