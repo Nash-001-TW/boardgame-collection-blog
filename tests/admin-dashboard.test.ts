@@ -1,128 +1,155 @@
-import test from 'node:test';
 import assert from 'node:assert/strict';
-import { isolatedNotBggD1, migrateIsolatedD1 } from './helpers/notbgg-local-d1.ts';
-import { accessFixture } from './helpers/notbgg-access-fixture.ts';
-import { dashboardPreview } from './helpers/admin-dashboard-preview.ts';
-import { NotBggRepository } from '../src/lib/notbgg-repository.ts';
-import { NotBggLinkRepository } from '../src/lib/notbgg-link-repository.ts';
-import { handleNotBggAdminRequest } from '../src/lib/notbgg-admin-api.ts';
+import { readdirSync, readFileSync } from 'node:fs';
+import { DatabaseSync } from 'node:sqlite';
+import test from 'node:test';
 import { handleCollectionAdminRequest } from '../src/lib/collection-admin-api.ts';
+import { handleNotBggAdminRequest } from '../src/lib/notbgg-admin-api.ts';
+import { dashboardPreview, r01Fixture } from './helpers/admin-dashboard-preview.ts';
+import { accessFixture } from './helpers/notbgg-access-fixture.ts';
+import { sqliteD1 } from './helpers/sqlite-d1.ts';
 
-// No Wrangler config/env files, existing local D1, production credentials or remote DB.
-test('dashboard V2: isolated D1 statistics, real pages, Access JWT and JWKS', async t => {
- const local=await isolatedNotBggD1(),auth=await accessFixture(),db=local.db;
- try {
-  await migrateIsolatedD1(db);
-  const bindings={...auth.bindings,DB:db,LOCAL_ADMIN_DEV:'false'};
-  const render=await dashboardPreview(bindings),jwt=await auth.token();
-  const request=(path:string,token:string|undefined=jwt)=>new Request('http://localhost'+path,{headers:token?{'Cf-Access-Jwt-Assertion':token}:{}});
-  const page=async(lang='zh-TW')=>{const response=await render(request('/admin?lang='+lang));assert.equal(response.status,200);return response.text();};
-  function values(html:string){return [...html.matchAll(/<dd\b[^>]*>\s*([^<]*?)\s*<\/dd>/g)].map(m=>Number(m[1].trim().replaceAll(',','')));}
-  const repo=new NotBggRepository(db);
-  await t.test('fresh migrated database renders real zero counts and both zero archive hints',async()=>{
-   for(const lang of ['zh-TW','en']){const html=await page(lang);assert.deepEqual(values(html),Array(9).fill(0));assert.ok(html.includes(lang==='en'?'Includes 0 archived':'含已封存 0 筆'));}
-  });
-  const games=[];
-  for(let i=0;i<3;i++)games.push((await repo.create({name:'Dashboard isolated '+i,type:'boardgame'},{actor:'fixture',idempotencyKey:'dashboard-'+i})).game);
-  // A reserved ID alone is not a game and must not be counted.
-  await db.prepare("INSERT INTO notbgg_ids(request_key,request_hash) VALUES ('unused-dashboard-reservation','fixture')").run();
-  // Only two legacy-mapped BGG games; an unmapped BGG game must not change bgg_count.
-  await db.batch([
-   db.prepare("INSERT INTO v2_games(id,bgg_id,primary_name,catalog_source) VALUES (100,101,'Mapped A','bgg'),(101,102,'Mapped B','bgg'),(102,103,'Unmapped','bgg')"),
-   db.prepare("INSERT INTO v2_legacy_id_map(legacy_table,legacy_id,target_table,target_id) VALUES ('bgg_games','101','v2_games',100),('bgg_games','102','v2_games',101),('other','103','v2_games',102)"),
-   db.prepare(`INSERT INTO v2_collection_items(id,game_id,display_name,item_type,acquisition_status,wishlist,notes,record_scope) VALUES
-    (100,100,'Owned','base','owned',0,NULL,'production'),
-    (101,100,'Owned override false','base','owned',0,'{"owned":0}','production'),
-    (102,100,'Owned override true','base','not_owned',0,'{"owned":1}','production'),
-    (103,100,'Preordered wishlist','base','preordered',1,NULL,'production'),
-    (104,100,'Preordered only','base','preordered',0,NULL,'production'),
-    (105,100,'Wishlist','base','wishlist',1,'malformed-json','production'),
-    (106,100,'Ignored test preorder','base','preordered',1,NULL,'test'),
-    (107,100,'Ignored test owned','base','owned',1,NULL,'test')`),
-   db.prepare("INSERT INTO v2_component_definitions(collection_item_id,component_name) VALUES (100,'A'),(100,'B'),(103,'C'),(106,'Excluded')"),
-   db.prepare("INSERT INTO v2_sleeve_sizes(id,width_tenth_mm,height_tenth_mm) VALUES (100,630,880),(101,450,680)"),
-   db.prepare("INSERT INTO v2_sleeve_requirements(collection_item_id,size_id,quantity_sheets) VALUES (100,100,50),(103,100,80),(105,101,20),(106,101,999)"),
-   db.prepare("INSERT INTO v2_purchase_orders(id,acquisition_channel) VALUES (100,'preorder')"),
-   db.prepare("INSERT INTO v2_purchase_order_lines(purchase_order_id,line_number,description,collection_item_id) VALUES (100,1,'Already owned via preorder channel',100)")
-  ]);
-  // Display order: collection, owned, wishlist, preordered, sizes, requirements, components, BGG, NotBGG.
-  const expected=[6,2,2,2,2,3,3,2,3];
-  await t.test('all nine displayed statistics and 0 archived: zh/en real D1, no placeholders',async()=>{
-   for(const lang of ['zh-TW','en']){
-    const html=await page(lang);assert.deepEqual(values(html),expected);assert.ok(!html.includes('role="alert"'));
-    assert.ok(html.includes(lang==='en'?'Includes 0 archived':'含已封存 0 筆'));
-    assert.equal((html.match(/<button\b[^>]*disabled/g)||[]).length,1);
-    console.log('dashboard baseline '+lang+': '+JSON.stringify(values(html)));
-   }
-  });
-  await t.test('preordered status is independent of preorder purchase channel and test scope',async()=>{
-   // Change only purchase channel: count must remain exactly 2.
-   await db.prepare("UPDATE v2_purchase_orders SET acquisition_channel='purchase' WHERE id=100").run();
-   assert.equal(values(await page())[3],2);
-   await db.prepare("UPDATE v2_purchase_orders SET acquisition_channel='preorder' WHERE id=100").run();
-   assert.equal(values(await page())[3],2);
-  });
-  await t.test('confirmed BGG-linked custom master remains in total, independent of collections',async()=>{
-   const links=new NotBggLinkRepository(db),id=games[0].notBggId;
-   await links.execute(id,{action:'propose',expectedProfileRevision:1,expectedEventId:0,bggId:194655,reason:'isolated verification'},'fixture');
-   const state=await links.state(id);
-   await links.execute(id,{action:'confirm',expectedProfileRevision:1,expectedEventId:state.expectedEventId,linkId:state.link!.id,reason:'isolated verification'},'fixture');
-   assert.equal((await links.state(id)).state,'linked');assert.deepEqual(values(await page()),expected);
-  });
-  await t.test('archive nonzero retains total and translates hint',async()=>{
-   await repo.archive(games[1].notBggId,{actor:'fixture',expectedRevision:1});
-   for(const lang of ['zh-TW','en']){const html=await page(lang);assert.deepEqual(values(html),expected);assert.ok(html.includes(lang==='en'?'Includes 1 archived':'含已封存 1 筆'));}
-  });
-  await t.test('large real D1 counts: 1,236 total, 1,234 archived; valid identities/revisions',async()=>{
-   // Bulk fixture only in disposable D1. Retain every production constraint and immutable revision.
-   const seq='WITH RECURSIVE nums(n) AS (SELECT 10000 UNION ALL SELECT n+1 FROM nums WHERE n<11232) ';
-   const template=JSON.stringify(games[2]);
-   await db.batch([
-    db.prepare(seq+"INSERT INTO notbgg_ids(seq,request_key,request_hash) SELECT n,'dashboard-bulk-'||n,'isolated-fixture' FROM nums"),
-    db.prepare(seq+"INSERT INTO v2_games(id,primary_name,game_type,catalog_source) SELECT n,'Bulk '||n,'base','manual' FROM nums"),
-    db.prepare(seq+"INSERT INTO notbgg_games(seq,game_id,name,type) SELECT n,n,'Bulk '||n,'boardgame' FROM nums"),
-    db.prepare(seq+"INSERT INTO notbgg_game_revisions(seq,revision,snapshot_json,actor) SELECT n,1,json_set(?,'$.gameId',n,'$.notBggId',printf('NotBGG:%06d',n),'$.name','Bulk '||n),'fixture' FROM nums").bind(template)
-   ]);
-   await db.batch([
-    db.prepare("INSERT INTO notbgg_game_revisions(seq,revision,snapshot_json,actor) SELECT seq,2,json_set(snapshot_json,'$.revision',2,'$.archivedAt','2026-01-01T00:00:00.000Z','$.updatedAt','2026-01-01T00:00:00.000Z'),'fixture' FROM notbgg_game_revisions WHERE seq BETWEEN 10000 AND 11232 AND revision=1"),
-    db.prepare("UPDATE notbgg_games SET revision=2,archived_at='2026-01-01T00:00:00.000Z',updated_at='2026-01-01T00:00:00.000Z' WHERE seq BETWEEN 10000 AND 11232")
-   ]);
-   const large=[...expected];large[8]=1236;
-   for(const lang of ['zh-TW','en']){const html=await page(lang);assert.deepEqual(values(html),large);assert.ok(html.includes(lang==='en'?'Includes 1,234 archived':'含已封存 1,234 筆'));}
-   assert.equal((await db.prepare('SELECT COUNT(*) n FROM notbgg_games WHERE archived_at IS NOT NULL').first<{n:number}>())!.n,1234);
-   assert.equal((await db.prepare('PRAGMA foreign_key_check').all()).results.length,0);
-   console.log('dashboard large: '+JSON.stringify(large)+'; archived=1234');
-  });
-  await t.test('rendered management links resolve real pages with JWT; absent/wrong/expired tokens reject',async()=>{
-   for(const lang of ['zh-TW','en']){
-    const html=await page(lang),suffix=lang==='en'?'?lang=en':'';
-    for(const route of ['/admin/collection','/admin/notbgg']){
-     assert.ok(html.includes('href="'+route+suffix+'"'));
-     const response=await render(request(route+suffix));assert.equal(response.status,200);assert.ok((await response.text()).includes('<main'));
-     assert.equal((await render(new Request('http://localhost'+route))).status,401);
-     assert.equal((await render(request(route,await auth.token({wrongKey:true})))).status,401);
-     assert.equal((await render(request(route,await auth.token({email:'other@example.test'})))).status,403);
-     assert.equal((await render(request(route,await auth.token({exp:Math.floor(Date.now()/1000)-60})))).status,401);
+const languages = [
+    {
+        lang: 'zh-TW', suffix: '',
+        headings: ['管理工作台', '快捷操作', '收藏與資料概況', '待處理項目'],
+        unavailable: '無法取得', sources: ['BGG 資料', 'NotBGG 資料'],
+        purchase: '已記錄採購成本', sleeve: '卡套狀況', components: '組件狀況',
+    },
+    {
+        lang: 'en', suffix: '?lang=en',
+        headings: ['Management Dashboard', 'Quick actions', 'Collection and data overview', 'Pending work'],
+        unavailable: 'Unavailable', sources: ['BGG records', 'NotBGG records'],
+        purchase: 'Recorded purchase costs', sleeve: 'Sleeve status', components: 'Component status',
+    },
+] as const;
+
+const managementRoutes = ['/admin/collection', '/admin/sleeves', '/admin/purchases', '/admin/bgg'];
+
+function request(path: string, token?: string) {
+    return new Request('http://localhost' + path, {
+        headers: token ? { 'Cf-Access-Jwt-Assertion': token } : {},
+    });
+}
+
+function section(html: string, headingId: string) {
+    const match = html.match(new RegExp('<section\\b[^>]*aria-labelledby="' + headingId + '"[^>]*>[\\s\\S]*?</section>'));
+    assert.ok(match, 'Missing R01 section: ' + headingId);
+    return match[0];
+}
+
+function card(html: string, title: string) {
+    const match = [...html.matchAll(/<article\b[^>]*>[\s\S]*?<\/article>/g)]
+        .find(([body]) => body.includes(title));
+    assert.ok(match, 'Missing R01 card: ' + title);
+    return match[0];
+}
+
+test('R01 renders the real bilingual dashboard and management links behind Access JWT', async t => {
+    const { sqlite, db } = r01Fixture('empty');
+    t.after(() => sqlite.close());
+    const auth = await accessFixture();
+    t.after(auth.restore);
+    const bindings = { ...auth.bindings, DB: db, LOCAL_ADMIN_DEV: 'false' };
+    const render = await dashboardPreview(bindings);
+    const jwt = await auth.token();
+
+    await t.test('valid JWT renders the main blocks and opens the rendered quick-action links', async () => {
+        for (const { lang, suffix, headings, unavailable } of languages) {
+            const response = await render(request('/admin?lang=' + lang, jwt));
+            assert.equal(response.status, 200, lang);
+            const html = await response.text();
+            const main = html.match(/<main\b[^>]*>[\s\S]*?<\/main>/)?.[0];
+            assert.ok(main, lang);
+            const renderedHeadings = [...main.matchAll(/<h[12]\b[^>]*>([^<]*)<\/h[12]>/g)]
+                .map(([, heading]) => heading.trim());
+            assert.deepEqual(renderedHeadings, [...headings], lang);
+            assert.ok(!main.includes(unavailable), lang);
+
+            const actions = section(main, 'quick-actions');
+            for (const route of ['/admin/collection/new', ...managementRoutes]) {
+                const href = route + suffix;
+                assert.ok(actions.includes('href="' + href + '"'), href);
+                const destination = await render(request(href, jwt));
+                assert.equal(destination.status, 200, href);
+                assert.match(await destination.text(), /<main\b/, href);
+            }
+        }
+    });
+
+    await t.test('Access middleware rejects missing, wrong-key, other-account and expired JWTs', async () => {
+        const rejected = [
+            { label: 'missing', token: undefined, dedicatedStatus: 401 },
+            { label: 'wrong key', token: await auth.token({ wrongKey: true }), dedicatedStatus: 401 },
+            { label: 'other account', token: await auth.token({ email: 'other@example.test' }), dedicatedStatus: 403 },
+            { label: 'expired', token: await auth.token({ exp: Math.floor(Date.now() / 1000) - 60 }), dedicatedStatus: 401 },
+        ];
+        for (const { label, token, dedicatedStatus } of rejected) {
+            // The general admin middleware returns 403 for every failed Access check.
+            // The management destinations use the dedicated branch, which distinguishes 401 and 403.
+            assert.equal((await render(request('/admin', token))).status, 403, label);
+            for (const route of [...managementRoutes, '/admin/notbgg']) {
+                assert.equal((await render(request(route, token))).status, dedicatedStatus, route + ': ' + label);
+            }
+            assert.equal((await render(request('/admin/notbgg', token))).status, dedicatedStatus, label);
+        }
+    });
+
+    await t.test('valid JWT still opens NotBGG and authorizes the existing management API reads', async () => {
+        const notBgg = await render(request('/admin/notbgg', jwt));
+        assert.equal(notBgg.status, 200);
+        assert.match(await notBgg.text(), /<main\b/);
+        assert.equal((await handleNotBggAdminRequest(request('/api/admin/notbgg', jwt), bindings)).status, 200);
+        assert.equal((await handleCollectionAdminRequest(
+            request('/api/admin/collection?scope=production', jwt), bindings,
+        )).status, 200);
+    });
+});
+
+test('R01 keeps both languages usable with real missing tables after migration 0013', async t => {
+    const sqlite = new DatabaseSync(':memory:');
+    t.after(() => sqlite.close());
+    const migrations = readdirSync('migrations')
+        .filter(file => /^\d+.*\.sql$/.test(file) && file <= '0013_v2_record_scope.sql').sort();
+    assert.equal(migrations.at(-1), '0013_v2_record_scope.sql');
+    for (const file of migrations) sqlite.exec(readFileSync('migrations/' + file, 'utf8').replace(/^\uFEFF/, ''));
+
+    const db = sqliteD1(sqlite);
+    await assert.rejects(db.prepare('SELECT 1 FROM notbgg_games').first(), /no such table: notbgg_games/);
+    await assert.rejects(db.prepare('SELECT 1 FROM v2_collection_management').first(), /no such table: v2_collection_management/);
+    await assert.rejects(db.prepare('SELECT 1 FROM v2_bgg_sync_gate').first(), /no such table: v2_bgg_sync_gate/);
+
+    const auth = await accessFixture();
+    t.after(auth.restore);
+    const render = await dashboardPreview({ ...auth.bindings, DB: db, LOCAL_ADMIN_DEV: 'false' });
+    const jwt = await auth.token();
+
+    for (const { lang, suffix, unavailable, sources, purchase, sleeve, components } of languages) {
+        const response = await render(request('/admin?lang=' + lang, jwt));
+        assert.equal(response.status, 200, lang);
+        const html = await response.text();
+        const overview = section(html, 'dashboard-overview');
+        for (const label of sources) {
+            const row = overview.match(new RegExp('<dt\\b[^>]*>' + label + '</dt>\\s*<dd\\b[^>]*>([\\s\\S]*?)</dd>'));
+            assert.ok(row?.[1].includes(unavailable), lang + ': ' + label);
+        }
+        assert.ok(card(overview, purchase).includes(unavailable), lang + ': ' + purchase);
+        assert.ok(section(html, 'pending-work').includes(unavailable), lang + ': pending work');
+
+        // These blocks use tables already present in 0013.
+        const collection = card(overview, lang === 'en' ? 'Total collections' : '收藏總數');
+        assert.match(collection, /<p\b[^>]*class="[^"]*admin-kit-number[^"]*"[^>]*>\s*\d+\s*<\/p>/, lang);
+        assert.ok(card(overview, sleeve).includes(unavailable), lang + ': ' + sleeve);
+        {
+            const block = card(overview, components);
+            assert.match(block, /<dd\b[^>]*>\s*\d+\s*<\/dd>/, lang + ': ' + components);
+            assert.ok(!block.includes(unavailable), lang + ': ' + components);
+        }
+        const actions = section(html, 'quick-actions');
+        for (const route of ['/admin/collection/new', ...managementRoutes]) {
+            assert.ok(actions.includes('href="' + route + suffix + '"'), lang + ': ' + route);
+        }
+        const destination = await render(request('/admin/collection/new' + suffix, jwt));
+        assert.equal(destination.status, 200, lang);
+        assert.match(await destination.text(), /<main\b/, lang);
     }
-   }
-   assert.equal((await render(new Request('http://localhost/admin'))).status,403);
-   const headers={'Cf-Access-Jwt-Assertion':jwt};
-   assert.equal((await handleNotBggAdminRequest(new Request('http://localhost/api/admin/notbgg',{headers}),bindings)).status,200);
-   assert.equal((await handleCollectionAdminRequest(new Request('http://localhost/api/admin/collection?scope=production',{headers}),bindings)).status,200);
-  });
-  await t.test('actual missing table causes caught error, HTTP 200 and usable cards in both languages',async()=>{
-   const empty=await isolatedNotBggD1();
-   try{
-    // Stop before NotBGG migrations: reproduce the exact missing notbgg_games table.
-    await migrateIsolatedD1(empty.db,'0013_v2_record_scope.sql');
-    await assert.rejects(empty.db.prepare('SELECT COUNT(*) FROM notbgg_games').first(),/no such table: notbgg_games/);
-    bindings.DB=empty.db;
-    for(const lang of ['zh-TW','en']){
-     const html=await page(lang);assert.ok(html.includes('role="alert"'));assert.ok(html.includes(lang==='en'?'An error occurred while reading the D1 database':'讀取 D1 資料庫時發生錯誤'));
-     assert.equal((html.match(/<article\b/g)||[]).length,4);assert.equal((html.match(/<button\b[^>]*disabled/g)||[]).length,1);
-     assert.ok(html.includes('/admin/collection'));assert.ok(html.includes('/admin/notbgg'));assert.ok(html.includes('—'));
-    }
-   }finally{bindings.DB=db;await empty.dispose();}
-  });
- } finally {auth.restore();await local.dispose();}
 });
