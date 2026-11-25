@@ -33,7 +33,7 @@ const number=(value:unknown)=>value===null?t('尚未建立','Not established'):N
 <AdminLayout lang={lang} title={title}>
 <main id="editor-content" class="admin-page sleeve-admin" data-sleeve-admin data-lang={lang}>
     <h1>{title}</h1>
-    <p><a class="admin-button" href={'/admin/sleeves/requirements?lang='+lang}>{t('管理需求與逐副本套用','Manage requirements & copy applications')}</a></p>
+    <p><a class="admin-button" href={link({view:'requirements',after:null,product:null})}>{t('管理需求與逐副本套用','Manage requirements & copy applications')}</a></p>
     <nav aria-label={t('卡套管理分頁','Sleeve sections')}>
         {(['products','sizes','requirements','transactions'] as const).map((tab,i)=>
             <a class="admin-button" aria-current={view===tab?'page':undefined} href={link({view:tab,after:null,product:null})}>
@@ -126,7 +126,7 @@ const number=(value:unknown)=>value===null?t('尚未建立','Not established'):N
                 row.classification===null?t('未指派','Unassigned'):t('待確認','Pending verification')}</p>
             {row.classification_reason==='EVIDENCE_UNAVAILABLE'&&<p role="alert">{t('完整組件證據無法驗證。','Complete component evidence is unavailable.')}</p>}
             <a href={'/admin/collection/'+row.collection_item_id+'/components?scope='+row.record_scope+'&lang='+lang}>{t('查看收藏與卡牌關聯','View collection and card assignment')}</a>
-            <a class="admin-button" href={'/admin/sleeves/requirements?collection='+row.collection_item_id+'&lang='+lang}>{t('編輯需求與逐副本套用','Edit requirements & copy applications')}</a>
+            <a class="admin-button" href={'/admin/collection/'+row.collection_item_id+'/sleeves?scope='+row.record_scope+'&lang='+lang}>{t('編輯需求與逐副本套用','Edit requirements & copy applications')}</a>
         </>:<>
             <h2>#{String(row.id)} {String(row.brand??'')} {String(row.product_name)}</h2>
             <p>{kinds[row.transaction_type as keyof typeof kinds]} · {String(row.transaction_date)} · {number(row.quantity_sheets)} {t('張','sleeves')}</p>

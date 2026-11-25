@@ -29,7 +29,7 @@ try{
   else if(url.pathname==='/preview-games.js')response=new Response(publicPreview.javascript,{headers:{'Content-Type':'text/javascript'}});
   else if(url.pathname.startsWith('/admin')){
    const rendered=await preview(request),html=await rendered.text();
-   response=new Response(html.replace('</body>',`<script src="/${url.pathname==='/admin/sleeves/requirements'?'workflow':'sleeve-admin'}.js"></script></body>`),{status:rendered.status,headers:rendered.headers});
+   response=new Response(html.replace('</body>',`<script src="/${url.pathname==='/admin/collection/1/sleeves'?'workflow':'sleeve-admin'}.js"></script></body>`),{status:rendered.status,headers:rendered.headers});
   }else {const html=await publicPreview.html(url);response=new Response(html??'Not found',{status:html?200:404,headers:{'Content-Type':'text/html; charset=utf-8'}});}
   const body=await response.text();assert.ok(!body.includes(f.secret),'signing key absent');
   const headers=new Headers(response.headers);headers.delete('Content-Length');
@@ -47,13 +47,13 @@ try{
  async function evaluate(fn,...args){const r=await send('Runtime.evaluate',{expression:'('+fn.toString()+')(...'+JSON.stringify(args)+')',returnByValue:true,awaitPromise:true});if(r.exceptionDetails)throw new Error(r.exceptionDetails.exception?.description??r.exceptionDetails.text);return r.result.value;}
  const text=(selector,expected)=>until(()=>evaluate((selector,expected)=>[...document.querySelectorAll(selector)].some(el=>el.textContent.includes(expected)),selector,expected),expected);
  const width=n=>send('Emulation.setDeviceMetricsOverride',{width:n,height:1000,mobile:false,deviceScaleFactor:1});
- async function goto(path){await send('Page.navigate',{url:origin+path});await text('h1',path.includes('requirements')?(path.includes('lang=en')?'Sleeve requirements':'卡套需求'):path.includes('/games/')?'':path.includes('lang=en')?'Sleeve management':'卡套管理');}
+ async function goto(path){await send('Page.navigate',{url:origin+path});await text(path.includes('/collection/1/sleeves')?'[data-sleeve-workflow]':'h1',path.includes('/collection/1/sleeves')?(path.includes('lang=en')?'Requirements and assignments':'卡套需求'):path.includes('/games/')?'':path.includes('lang=en')?'Sleeve management':'卡套管理');}
  async function fill(selector,values){await evaluate((selector,values)=>{const form=document.querySelector(selector);form.closest('details')?.setAttribute('open','');for(const [name,value]of Object.entries(values)){const input=form.elements.namedItem(name);if(input.type==='checkbox')input.checked=value;else input.value=String(value);input.dispatchEvent(new Event('change',{bubbles:true}));}},selector,values);}
  async function submit(selector){const box=await evaluate(selector=>{const button=document.querySelector(selector+' button');button.scrollIntoView({block:'center'});const r=button.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};},selector);await send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...box});await send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...box});}
  await send('Page.enable');await send('Runtime.enable');await send('Network.enable');
  await send('Network.setExtraHTTPHeaders',{headers:{'Cf-Access-Jwt-Assertion':jwt}});await width(1440);
- await goto('/admin/sleeves?lang=en');await evaluate(()=>document.querySelector('a[href*="/admin/sleeves/requirements"]').click());await text('h1','Sleeve requirements');
- await goto('/admin/sleeves/requirements?collection=1&lang=en');
+ await goto('/admin/sleeves?view=requirements&lang=en');await evaluate(()=>document.querySelector('a[href*="/admin/collection/1/sleeves"]').click());await text('[data-sleeve-workflow]','Requirements and assignments');
+ await goto('/admin/collection/1/sleeves?lang=en');
  const create='[data-workflow-action=requirement]';
  await fill(create,{sizeId:1,quantity:30,notes:'Browser cards',componentId:f.cardId});await submit(create);
  await until(()=>f.sqlite.prepare("SELECT id FROM v2_sleeve_requirements WHERE notes='Browser cards'").get(),'create requirement');
@@ -79,7 +79,7 @@ try{
  console.log('PASS stale ledger error, no partial application or duplicate stock use');
  const layouts=[];
  for(const lang of ['en','zh-TW']){
-  await goto('/admin/sleeves/requirements?collection=1&lang='+lang);
+  await goto('/admin/collection/1/sleeves?lang='+lang);
   for(const n of [1440,1024,768,375,320]){await width(n);const fits=await evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth);layouts.push({lang,width:n,fits});assert.ok(fits,JSON.stringify(layouts.at(-1)));}
  }
  await writeFile(out+'/layouts.json',JSON.stringify(layouts,null,2));

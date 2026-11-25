@@ -1,0 +1,73 @@
+---
+import { env } from 'cloudflare:workers';
+import { readPurchases } from '../../lib/purchase-admin';
+import AlertBanner from './AlertBanner.astro';
+import EmptyState from './EmptyState.astro';
+
+interface Props { collectionId: number; lang: 'zh-TW' | 'en'; }
+const { collectionId, lang } = Astro.props;
+const t = (zh: string, en: string) => lang === 'en' ? en : zh;
+const { pathname, searchParams } = Astro.url;
+const collection = String(collectionId);
+const params = new URLSearchParams({ collection });
+const after = searchParams.get('after');
+if (after !== null) params.set('after', after);
+let data: Awaited<ReturnType<typeof readPurchases>> | undefined;
+try {
+    data = await readPurchases(env.DB, params);
+} catch {
+    Astro.response.status = 503;
+}
+const costs = data?.costs.filter(row => Number(row.collection_item_id) === collectionId) ?? [];
+const statuses = new Map([
+    ['open', t('未付款／待處理', 'Open / pending')],
+    ['paid', t('已付款', 'Paid')],
+    ['partially_received', t('部分收貨', 'Partially received')],
+    ['completed', t('完成', 'Completed')],
+    ['cancelled', t('取消', 'Cancelled')],
+]);
+const pageLink = (cursor?: number) => {
+    const query = new URLSearchParams({ scope: searchParams.get('scope') ?? 'production', lang });
+    if (cursor !== undefined) query.set('after', String(cursor));
+    return pathname + '?' + query;
+};
+const purchaseLink = (query: Record<string, string>) => '/admin/purchases?' + new URLSearchParams({...query, lang});
+const createLink = purchaseLink({ new: '1', collection });
+const createLabel = t('新增採購（預填此收藏）', 'New purchase (prefill this collection)');
+const unavailable = t('無法取得', 'Unavailable');
+---
+<section class="admin-collection-purchases" aria-label={t('相關採購', 'Related purchases')}>
+    <div class="admin-collection-purchase-links">
+        <a class="admin-kit-button" data-variant="primary" href={createLink}>{createLabel}</a>
+        <a class="admin-kit-button" href={purchaseLink({ collection })}>{t('在採購管理開啟', 'Open in purchase management')}</a>
+    </div>
+    {data ? <>
+        <section class="admin-kit-panel">
+            <h2>{t('此收藏的已記錄成本', 'Recorded costs for this collection')}</h2>
+            <p>{t('只計採購分攤，不含歷史價格與維修費。金額依幣別以整數最小貨幣單位顯示。', 'Includes purchase allocations only, excluding historical prices and repair costs. Amounts are shown in integer minor units by currency.')}</p>
+            {costs.length ? <ul>
+                {costs.map(row => <li>{String(row.currency_code)} · {String(row.allocated_minor)}</li>)}
+            </ul> : <p>{t('尚無已記錄成本。', 'No recorded costs yet.')}</p>}
+        </section>
+        <section class="admin-kit-panel">
+            <h2>{t('相關訂單', 'Related orders')}</h2>
+            {data.orders.length ? <>
+                <p>{t('以下為整筆訂單金額，以整數最小貨幣單位顯示。', 'Amounts below are for whole orders, in integer minor units.')}</p>
+                <ul class="admin-collection-purchase-orders">
+                    {data.orders.map(row => <li>
+                        <h3><a href={purchaseLink({ id: String(row.id) })}>#{String(row.id)}{row.order_reference ? ' · ' + String(row.order_reference) : ''}</a></h3>
+                        <p>{String(row.ordered_at ?? '—')} · {String(row.merchant_name ?? '—')} · {String(row.currency_code)} · {statuses.get(String(row.status)) ?? String(row.status)}</p>
+                        <p>{t('淨額／已分攤／未分攤', 'Net / allocated / unallocated')} · {String(row.paid_minor)} / {String(row.allocated_minor)} / {String(row.unallocated_minor)}</p>
+                    </li>)}
+                </ul>
+            </> : <EmptyState illustration="/images/admin/empty-no-result.webp"
+                reason={t('沒有符合條件的採購。', 'No matching purchases.')} href={createLink} action={createLabel} />}
+            <nav class="admin-collection-purchase-links" aria-label={t('相關訂單分頁', 'Related order pages')}>
+                <a class="admin-kit-button" href={pageLink()}>{t('第一頁', 'First page')}</a>
+                {data.nextCursor !== null && <a class="admin-kit-button" href={pageLink(data.nextCursor)}>{t('下一頁', 'Next page')}</a>}
+            </nav>
+        </section>
+    </> : <AlertBanner tone="danger" title={unavailable} unavailableLabel={unavailable}
+        description={t('無法取得相關採購資料。', 'Related purchases could not be loaded.')}
+        href={pathname + Astro.url.search} linkLabel={t('重試', 'Retry')} />}
+</section>

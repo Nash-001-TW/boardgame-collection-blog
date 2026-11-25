@@ -98,7 +98,7 @@ try {
                 res.writeHead(response.status, {'Content-Type':'application/json'}).end(await response.text());
                 return;
             }
-            if (url.pathname === '/admin/collection/components/manage') {
+            if (url.pathname === '/admin/collection/components/manage' || url.pathname === '/admin/sleeves/requirements') {
                 const response = await renderPage(request);
                 res.writeHead(response.status, Object.fromEntries(response.headers)).end(await response.text());
                 return;
@@ -264,11 +264,11 @@ try {
     assert.deepEqual(await evaluate(() => [...document.querySelectorAll('[data-detail-tabs] a')].slice(2)
         .map(a => [a.pathname, a.search])), [
         ['/admin/collection/6/components', '?scope=test&lang=en'],
-        ['/admin/sleeves/requirements', '?collection=6&scope=test&lang=en'],
-        ['/admin/purchases', '?collection=6&scope=test&lang=en'],
+        ['/admin/collection/6/sleeves', '?scope=test&lang=en'],
+        ['/admin/collection/6/purchases', '?scope=test&lang=en'],
     ]);
     await capture('english');
-    pass('English, NotBGG public link and components and two transitional destinations retain scope and language');
+    pass('English, NotBGG public link and collection tab destinations retain scope and language');
 
     await navigate(details + query);
     await settle();
@@ -429,6 +429,102 @@ try {
         [true, 200, '/admin/collection?lang=en'],
     ]);
     pass('legacy R06 redirects preserve scope and language and fall back for missing/invalid IDs');
+    const s5cScreenshots = join(output, 'UI-S5C-screenshots');
+    await mkdir(s5cScreenshots, { recursive: true });
+    const captureS5c = async name => {
+        const {data} = await cdp('Page.captureScreenshot', {format:'png', captureBeyondViewport:false});
+        await writeFile(join(s5cScreenshots, name + '.png'), Buffer.from(data, 'base64'));
+    };
+    const sleevePath = details + '/sleeves';
+    const purchasePath = details + '/purchases';
+    physicalFixture.sqlite.exec(`
+        WITH RECURSIVE ids(id) AS (SELECT 101 UNION ALL SELECT id + 1 FROM ids WHERE id < 121)
+        INSERT INTO v2_purchase_orders (id, ordered_at, merchant_name, currency_code, status, item_subtotal_minor)
+        SELECT id, '2026-11-25', 'Synthetic store', CASE WHEN id = 121 THEN 'USD' ELSE 'TWD' END, 'paid', 200 FROM ids;
+        INSERT INTO v2_purchase_allocations (purchase_order_id, collection_item_id, allocated_minor)
+        SELECT id, 1, 75 FROM v2_purchase_orders WHERE id BETWEEN 101 AND 121;
+    `);
+    for (const [name, path, selector] of [
+        ['sleeves', sleevePath, '[data-sleeve-workflow]'],
+        ['purchases', purchasePath, '.admin-collection-purchases'],
+    ]) {
+        for (const width of [1440, 768, 375]) {
+            await resize(width);
+            await navigate(path + query);
+            assert.equal(await evaluate(() => document.documentElement.scrollWidth), width);
+            assert.ok(await evaluate((path, selector) =>
+                !!document.querySelector(selector) &&
+                document.querySelector('[data-detail-tabs] [aria-current=page]').pathname === path &&
+                document.querySelector('.shell-nav [aria-current=page]').pathname === '/admin/collection' &&
+                !document.querySelector('.shell-nav a[href*="/sleeves/requirements"]'), path, selector));
+            await captureS5c(name + '-' + width);
+            pass(name + ' ' + width + ' px, active tab and collection sidebar, no retired entry or page overflow');
+        }
+    }
+    await navigate(purchasePath + '?scope=production&lang=en');
+    const purchaseView = await evaluate(() => {
+        const panel = document.querySelector('.admin-collection-purchases');
+        return {
+            lang: document.documentElement.lang,
+            costs: [...panel.querySelectorAll(':scope > section:first-of-type li')].map(li => li.textContent.trim()).sort(),
+            count: panel.querySelectorAll('.admin-collection-purchase-orders > li').length,
+            next: [...panel.querySelectorAll('nav a')].find(link => link.textContent.trim() === 'Next page').search,
+            links: [...panel.querySelectorAll('.admin-collection-purchase-links a')].slice(0,2).map(a => a.pathname + a.search),
+            forms: panel.querySelectorAll('form').length,
+        };
+    });
+    assert.deepEqual(purchaseView, {
+        lang:'en', costs:['TWD · 1500', 'USD · 75'], count:20, next:'?scope=production&lang=en&after=120',
+        links:['/admin/purchases?new=1&collection=1&lang=en', '/admin/purchases?collection=1&lang=en'], forms:0,
+    });
+    await captureS5c('purchases-english');
+    await navigate(purchasePath + purchaseView.next);
+    assert.deepEqual(await evaluate(() => [...document.querySelectorAll('.admin-collection-purchase-orders h3 a')]
+        .map(a => a.pathname + a.search)), ['/admin/purchases?id=121&lang=en']);
+    await captureS5c('purchases-page-2');
+    pass('related orders use a 20-row cursor, retain scope and language, and display separate currency costs');
+
+    await navigate('/admin/collection/2/purchases' + query);
+    assert.ok(await evaluate(() => document.querySelector('[data-detail-header]').textContent.includes('已封存') &&
+        document.querySelector('.admin-collection-purchases .admin-kit-empty').textContent.includes('沒有符合條件的採購')));
+    await captureS5c('purchases-archived-empty');
+    const archivedSleeves = '/admin/collection/2/sleeves' + query;
+    assert.equal((await fetch(origin + archivedSleeves)).status, 200);
+    await navigate(archivedSleeves);
+    assert.ok(await evaluate(() => {
+        const panel = document.querySelector('[data-sleeve-workflow]');
+        return document.querySelector('[data-detail-header]').textContent.includes('已封存') &&
+            !panel.querySelector('form, [data-workflow-action], [role=alert]') &&
+            panel.textContent.includes('此收藏已封存，卡套需求僅供保留，不提供操作。');
+    }));
+    await captureS5c('sleeves-archived');
+    pass('archived collection retains its header and cannot render sleeve write forms, purchases show an empty state');
+
+    const db = physicalFixture.db;
+    const prepare = db.prepare.bind(db);
+    db.prepare = sql => {
+        if (sql.includes('FROM v2_purchase_orders o JOIN v2_purchase_order_reconciliation')) throw new Error('Synthetic purchase read failure');
+        return prepare(sql);
+    };
+    assert.equal((await fetch(origin + purchasePath + query)).status, 503);
+    await navigate(purchasePath + query);
+    assert.ok(await evaluate(() => document.querySelector('[data-detail-header] h1').textContent.includes('Synthetic collection') &&
+        document.querySelector('.admin-collection-purchases .admin-kit-alert').textContent.includes('無法取得')));
+    await captureS5c('purchases-unavailable');
+    db.prepare = prepare;
+    pass('purchase read failure returns 503 and preserves the collection header');
+
+    await navigate(sleevePath + '?scope=production&lang=en');
+    assert.ok(await evaluate(() => document.documentElement.lang === 'en' &&
+        document.querySelector('[data-detail-tabs] [aria-current=page]').ariaLabel === 'Sleeve requirements' &&
+        document.querySelector('[data-sleeve-workflow]').textContent.includes('Add sleeve requirement')));
+    await captureS5c('sleeves-english');
+    const legacySleeves = await fetch(origin + '/admin/sleeves/requirements?collection=1&lang=en', {redirect:'manual'});
+    assert.equal(legacySleeves.status, 302);
+    assert.equal(legacySleeves.headers.get('location'), sleevePath + '?scope=production&lang=en');
+    const globalPurchases = await fetch(origin + '/admin/purchases?collection=1', {redirect:'manual'});
+    assert.equal(globalPurchases.status, 200);
+    pass('English sleeve controls render, legacy sleeve URL redirects and global purchase filter stays on its own page');
     console.log('Checks passed: ' + checks);
 } finally {
     ws?.close();

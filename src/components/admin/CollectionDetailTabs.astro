@@ -4,20 +4,18 @@ interface Props {
   id: string;
   scope: string;
   lang: 'zh-TW' | 'en';
-  active: 'details' | 'copies' | 'components';
+  active: 'details' | 'copies' | 'components' | 'sleeves' | 'purchases';
 }
 const {id, scope, lang, active} = Astro.props;
 const t = (zh: string, en: string) => lang === 'en' ? en : zh;
 const base = '/admin/collection/' + encodeURIComponent(id);
 const params = new URLSearchParams({scope, lang});
-const legacyParams = new URLSearchParams({collection:id, scope, lang});
 const links = [
   ['details', base + '?' + params, 'list', t('基本資料','Basic details'), t('基本','Details')],
   ['copies', base + '/copies?' + params, 'box', t('副本與品況','Copies & condition'), t('副本','Copies')],
   ['components', base + '/components?' + params, 'puzzle', t('實體組件','Physical components'), t('組件','Parts')],
-  // Transitional links until these tabs move into the detail routes in 5c.
-  ['sleeves', '/admin/sleeves/requirements?' + legacyParams, 'sleeves', t('卡套需求','Sleeve requirements'), t('卡套','Sleeves')],
-  ['purchases', '/admin/purchases?' + legacyParams, 'cart', t('相關採購','Related purchases'), t('採購','Orders')],
+  ['sleeves', base + '/sleeves?' + params, 'sleeves', t('卡套需求','Sleeve requirements'), t('卡套','Sleeves')],
+  ['purchases', base + '/purchases?' + params, 'cart', t('相關採購','Related purchases'), t('採購','Orders')],
 ] as const;
 ---
 <nav aria-label={t('收藏詳細頁分頁','Collection detail pages')} class="admin-detail-tabs" data-detail-tabs>

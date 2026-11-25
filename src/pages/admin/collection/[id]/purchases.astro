@@ -1,0 +1,55 @@
+---
+import { env } from 'cloudflare:workers';
+import AdminLayout from '../../../../layouts/AdminLayout.astro';
+import CollectionDetailHeader from '../../../../components/admin/CollectionDetailHeader.astro';
+import CollectionDetailTabs from '../../../../components/admin/CollectionDetailTabs.astro';
+import CollectionPurchasesPanel from '../../../../components/admin/CollectionPurchasesPanel.astro';
+import { CollectionV2Writer, readCollectionHeader } from '../../../../lib/collection-v2-management';
+
+export const prerender = false;
+
+const lang = Astro.url.searchParams.get('lang') === 'en' ? 'en' : 'zh-TW';
+const t = (zh: string, en: string) => lang === 'en' ? en : zh;
+const title = t('相關採購', 'Related purchases');
+const id = Astro.params.id ?? '';
+const collectionId = Number(id);
+const scope = Astro.url.searchParams.get('scope') ?? 'production';
+const validScope = scope === 'production' || scope === 'test';
+const validId = /^[1-9][0-9]*$/.test(id) && Number.isSafeInteger(collectionId);
+const header = validScope && validId ? await readCollectionHeader(env.DB, collectionId, scope) : undefined;
+let error: string | undefined;
+let scopeUnavailable = false;
+
+if (!validScope || !validId) {
+    Astro.response.status = 400;
+    error = !validScope ? t('資料範圍無效。', 'Invalid record scope.') : t('收藏 ID 無效。', 'Invalid collection ID.');
+}
+
+// The panel reader takes only a collection ID. If the header query fails, verify scope
+// with the existing scoped lookup before exposing panel data or forms.
+let missing = header === null;
+if (validScope && validId && header === undefined) {
+    try {
+        missing = !await new CollectionV2Writer(env.DB).get(collectionId, scope);
+    } catch {
+        scopeUnavailable = true;
+        Astro.response.status = 503;
+    }
+}
+if (missing) {
+    Astro.response.status = 404;
+    error = t('找不到收藏。', 'Collection not found.');
+}
+---
+<AdminLayout lang={lang} title={title} languageParams={{scope}}>
+    <main id="editor-content" class="admin-page admin-kit admin-detail" tabindex="-1">
+        <CollectionDetailHeader header={header} scope={validScope ? scope : 'production'} lang={lang}
+            fallback={validId && !error ? t('收藏 #', 'Collection #') + id : title} error={error} />
+        {validScope && validId && !error && <>
+            <CollectionDetailTabs id={id} scope={scope} lang={lang} active="purchases" />
+            {scopeUnavailable
+                ? <p role="alert">{t('無法確認收藏範圍。', 'Could not verify the collection scope.')}</p>
+                : <CollectionPurchasesPanel collectionId={collectionId} lang={lang} />}
+        </>}
+    </main>
+</AdminLayout>

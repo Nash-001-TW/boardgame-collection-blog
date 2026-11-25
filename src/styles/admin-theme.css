@@ -451,3 +451,18 @@ html:has(.shell-drawer[open]) { overflow: hidden; }
   .admin-detail-tab-label { display: none; }
   .admin-detail-tab-compact { display: inline; }
 }
+
+.admin-sleeve-workflow, .admin-collection-purchases {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.admin-sleeve-workflow [role="status"]:empty { margin: 0; }
+.admin-sleeve-workflow fieldset { min-width: 0; }
+.admin-sleeve-workflow form label { min-width: 0; }
+.admin-sleeve-workflow .admin-button { min-height: 44px; white-space: normal; }
+.admin-collection-purchase-links { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.admin-collection-purchase-links a { min-height: 44px; white-space: normal; }
+.admin-collection-purchase-orders { list-style: none; padding: 0; }
+.admin-collection-purchase-orders > li { border-top: 1px solid var(--border-strong); padding-block: var(--space-3); }

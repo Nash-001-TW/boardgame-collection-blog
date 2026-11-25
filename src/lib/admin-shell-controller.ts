@@ -11,7 +11,6 @@ export const adminNavigation = [
   ] },
   { id: 'sleeves', zh: '卡套', en: 'Sleeves', icon: 'sleeves', items: [
     { id: 'sleeves', path: '/admin/sleeves', zh: '卡套管理', en: 'Sleeve management', icon: 'sleeves' },
-    { id: 'requirements', path: '/admin/sleeves/requirements', zh: '卡套需求與套用', en: 'Sleeve requirements & application', icon: 'clipboard-check' },
   ] },
   { id: 'purchases', zh: '採購', en: 'Purchasing', icon: 'cart', items: [
     { id: 'purchases', path: '/admin/purchases', zh: '採購管理', en: 'Purchase management', icon: 'cart' },
@@ -31,8 +30,10 @@ export function adminNavigationHref(item: NavigationItem, lang: 'zh-TW' | 'en') 
   return query.size ? item.path + '?' + query : item.path;
 }
 
-export function currentAdminItem(url: URL): NavigationItem['id'] | undefined {
+export function currentAdminItem(url: URL): NavigationItem['id'] | 'requirements' | undefined {
   const path = url.pathname.replace(/\/+$/, '');
+  // Preserve the legacy route marker consumed by AdminLayout until that layout is updated.
+  if (path === '/admin/sleeves/requirements') return 'requirements';
   if (path === '/admin/collection') {
     const tab = url.searchParams.get('tab');
     if (tab === 'owned' || tab === 'wishlist' || tab === 'preordered') return tab;

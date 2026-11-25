@@ -24,8 +24,11 @@ test('Collection filters select one current item and preserve the parent for det
   assert.equal(current('/admin/collection/components/classification'), 'classification');
 });
 
-test('Sleeve requirements, BGG views and NotBGG details select their own entries', () => {
-  assert.equal(current('/admin/sleeves/requirements'), 'requirements');
+test('Sleeve management, collection tabs, BGG views and NotBGG details select their entries', () => {
+  assert.equal(current('/admin/sleeves'), 'sleeves');
+  assert.equal(current('/admin/collection/1/sleeves'), 'collection');
+  assert.equal(current('/admin/collection/1/purchases'), 'collection');
+  assert.ok(!adminNavigation.some(group => group.items.some(item => item.path === '/admin/sleeves' + '/requirements')));
   assert.equal(current('/admin/bgg?view=relations'), 'relations');
   assert.equal(current('/admin/bgg'), 'bgg');
   assert.equal(current('/admin/notbgg/000001/link'), 'notbgg');

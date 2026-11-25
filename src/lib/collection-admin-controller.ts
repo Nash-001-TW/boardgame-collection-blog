@@ -166,8 +166,8 @@ function initializeCollectionList(root: HTMLElement) {
      [t('編輯', 'Edit'), edit, ''],
      [t('副本', 'Copies'), edit + '/copies', ''],
      [t('實體組件', 'Physical components'), edit + '/components', ''],
-     [t('卡套需求', 'Sleeve requirements'), '/admin/sleeves/requirements', 'collection=' + item.id],
-     [t('採購紀錄', 'Purchase records'), '/admin/purchases', 'collection=' + item.id],
+     [t('卡套需求', 'Sleeve requirements'), edit + '/sleeves', ''],
+     [t('採購紀錄', 'Purchase records'), edit + '/purchases', ''],
     ]) {
      const link = document.createElement('a');
      link.href = path + '?' + actionParams + (query ? '&' + query : '');

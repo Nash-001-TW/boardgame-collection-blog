@@ -173,6 +173,8 @@ export async function dashboardPreview(bindings: Record<string, unknown>, uiKit?
   ['/admin/collection','src/pages/admin/collection/index.astro'],
   ['/admin/collection/copies','src/pages/admin/collection/[id]/copies.astro'],
   ['/admin/collection/components/classification','src/pages/admin/collection/components/classification.astro'],
+  ['/admin/collection/[id]/sleeves','src/pages/admin/collection/[id]/sleeves.astro'],
+  ['/admin/collection/[id]/purchases','src/pages/admin/collection/[id]/purchases.astro'],
   ['/admin/collection/[id]/components','src/pages/admin/collection/[id]/components.astro'],
   ['/admin/collection/components/manage','src/pages/admin/collection/components/manage.astro'],
   ['/admin/collection/new','src/pages/admin/collection/new.astro'],
@@ -187,12 +189,12 @@ export async function dashboardPreview(bindings: Record<string, unknown>, uiKit?
  const container=await experimental_AstroContainer.create();
  return async (request:Request):Promise<Response> => {
   const url=new URL(request.url),copyRoute=url.pathname.match(/^\/admin\/collection\/([1-9][0-9]*)\/copies\/?$/);
-  const componentsRoute=url.pathname.match(/^\/admin\/collection\/([^/]+)\/components\/?$/);
+  const componentsRoute=url.pathname.match(/^\/admin\/collection\/([^/]+)\/(components|sleeves|purchases)\/?$/);
   const collectionRoute=url.pathname.match(/^\/admin\/collection\/([1-9][0-9]*)\/?$/);
   const notBggRoute=url.pathname.match(/^\/admin\/notbgg\/([0-9]{6,})(?:\/(link|relations))?\/?$/);
   const id=componentsRoute?.[1] ?? copyRoute?.[1] ?? collectionRoute?.[1] ?? notBggRoute?.[1];
   let route=url.pathname;
-  if(componentsRoute) route='/admin/collection/[id]/components';
+  if(componentsRoute) route='/admin/collection/[id]/' + componentsRoute[2];
   if(copyRoute) route='/admin/collection/copies';
   if(collectionRoute) route='/admin/collection/[id]';
   if(notBggRoute) route='/admin/notbgg/[id]' + (notBggRoute[2] ? '/' + notBggRoute[2] : '');
