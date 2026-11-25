@@ -270,3 +270,12 @@ D 部署 28b（依 DEPLOY-01，與本命令一併授權時才執行）：
 交付：A1 數值、A2 備份證據與預演結果、A3 指令結果與時間、A4 對帳數值、D 的版本與抽查結果、遠端操作次數（Metadata／SELECT／Export／寫入／推送分列）；
   寫入本文件 §9 之後的結果小節，並在 HANDOFF.md 追加條目。
 ```
+
+### 9.2 執行結果（2026-11-25，Claude 執行）
+
+- **A0**：本機提交 `ac3ef61`（0025＋測試）、`f8435cc`（28b）、`eb64adb`（文件），未推送。
+- **A1 唯讀預檢**（Metadata 1、SELECT 1；寫入 0）：流量版本 `9bcb2222` 100%；ledger 23 筆、最後 `0023_shared_quantity_commit.sql`；待刪除觸發器 8／8、view 1、交易表 1 存在；新名稱占用 0；交易 0、套用 0、產品 0、需求 786；負數 RETURN 0；`sqlite_sequence` 無交易表列。使用者確認期間無其他更新（對話選項「確認沒有」）。
+- **A2 備份與預演**：官方 Export 1 次 → `D:/CodexHome/private-0025-backup-05752ee314b0/boardgame-collection-db-before-0025.sql`（專案外，ACL 僅目前網域使用者 FullControl、停用繼承；未加入 Git），2,145,230 bytes，SHA-256 `56910856044ad9966b8fe64a5026f928ba856ea2e4787d601d7fe39c47de6902`。以此備份還原到本機記憶體 SQLite 執行組合檔：成功；ledger 23→24、最後 0025；建立觸發器 7、view 1、索引 2；應移除物件殘留 0；資料筆數不變；`foreign_key_check` 0；`integrity_check` ok。
+- **A3 正式套用**（寫入 1 次，台北 17:03:48）：`wrangler d1 execute boardgame-collection-db --remote --file <組合檔>`；0025 SHA-256 `ae6ae0f3…` 與審查一致；組合檔 SHA-256 `d5cb6a30…`（scratchpad，未入 repo）；結束碼 0，`changed_db: true`，`last_row_id` 24。
+- **A4 套用後對帳**（SELECT 1；寫入 0）：ledger 24 筆、最後 `0025_sleeve_gift_and_ledger_locks.sql`；交易表定義含 GIFT；建立觸發器 7／7（需求鎖定為新定義）；view 1；索引 2；應移除物件殘留 0；交易 0、套用 0、產品 0、需求 786（與 A1 相同）；`pragma_foreign_key_check` 0。網站抽查 8 條：公開 4 條 200、Admin 3 條 302、`/dev/ui-kit` 404。**A1～A4 全數通過。**
+- 遠端操作合計（至 A4）：Metadata 1、SELECT 2、Export 1、正式寫入 1。
