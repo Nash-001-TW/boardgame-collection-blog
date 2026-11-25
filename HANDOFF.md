@@ -275,3 +275,5 @@ node --import tsx --test tests/public-site-data.test.ts tests/public-site-sqlite
 - **2026-11-25（Asia/Taipei）**：依使用者指示修正 28b 小觀察 1（Claude 實作）：只連採購明細的贈送自動帶入明細所屬收藏（`sleeve-admin.ts`，填寫的收藏優先），測試同步更新。驗證：Node 62／62、詳細頁 Edge 47／47、`astro check` 6。尚未提交；下一步為 0025 正式套用工作命令。
 - **2026-11-25（Asia/Taipei）**：Claude 起草 `SLV-GIFT-APPLY-20261125-01`（[規劃 §9](docs/sleeve-gift-plan-20261125.md)，**候選**）：比照 0023 流程——A0 本機提交、A1 唯讀預檢、A2 官方 Export 備份＋以備份本機預演、A3 逐檔執行 0025＋ledger（唯一一次正式寫入，禁止 migrations apply）、A4 套用後對帳、D 依 DEPLOY-01 緊接推送 28b。執行者 Claude（TEAM-04）。待使用者批准。只改文件。
 - **2026-11-25（Asia/Taipei）**：`SLV-GIFT-APPLY-20261125-01` A0～A4 完成並通過（[規劃 §9.2](docs/sleeve-gift-plan-20261125.md)）：正式 D1 已套用 **0025**（台北 17:03:48，ledger 24 筆）；備份 SHA-256 `56910856…`；對帳全數符合、外鍵 0 違規。接著依 SLV-GIFT-DEPLOY 推送 28b。
+- **2026-11-25（Asia/Taipei）**：28b 已推送（`df5a4ce`），部署為 Worker `13f7be9b…`（台北 17:05:36，0025 套用後約 2 分鐘）；唯讀抽查 10 條路由符合（[規劃 §9.2](docs/sleeve-gift-plan-20261125.md)）。Access 登入已過期，待使用者重新登入後檢查。
+- **2026-11-25（Asia/Taipei）**：#28 正式驗收**通過**（[規劃 §9.2](docs/sleeve-gift-plan-20261125.md)）：卡套管理、交易、尺寸頁正常；收藏「相關採購」新增「隨貨附贈的卡套」（尚無紀錄）；R01 與 #27 驗收相同。正式 0 個產品，「贈送」選項無法在正式畫面看到，待使用者第一次建立產品時確認。寫入 0。**#28 結案**。
