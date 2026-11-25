@@ -161,3 +161,7 @@ Edge 使用 `D1_A3_EDGE_LOCAL_TEST_MODE=1` 及絕對路徑的暫存 profile，�
 - 觀察（不阻擋）：(1) 網路失敗後該列輸入鎖定，只能按「重試」或自行重新整理頁面；(2) 375 寬「下一個」會換到第二行。
 - **工作樹殘留**：Codex 在 repo 根目錄留下未追蹤的隔離副本 `.r06-local-validation/`（約 737 MB，整份 repo 複本，含 `.wrangler` 本機狀態與 migrations 等 `.sql`；已確認沒有 junction／symlink；Codex 回報誤複製的根目錄 SQL 備份已移除）。不得提交；刪除待使用者同意。
 - 本人未重跑測試，測試結果以 §8.4 Codex 回報為準。
+
+### 8.7 部署（2026-11-25，R06-MIN-DEPLOY）
+
+推送 `0c47b36`（含 `697a9f6`、`a34953a`）於 23:36:36（Asia/Taipei）；Workers Builds 部署版本 `91ef7459`，建立於 23:37:37。唯讀路由確認：`/admin/collection/73/components` 未登入 302 至 Access、首頁 200。登入後檢查待執行。
