@@ -148,6 +148,50 @@ async function readCollectionSection<T>(section: string, read: () => Promise<T>)
 }
 
 /** Extends the existing V2 tables, never a parallel collection identity or storage backend. */
+export interface CollectionHeader {
+ display_name: string;
+ game_name: string;
+ source_id: string | null;
+ item_type: string;
+ acquisition_status: string;
+ owned: number;
+ wishlist: number;
+ archived_at: string | null;
+ copies: number;
+ image: string | null;
+}
+
+/** A missing row and an unavailable header have different HTTP and UI outcomes. */
+export async function readCollectionHeader(db: D1Database, id: number, scope: CollectionScope) {
+ positive(id);
+ scopeCheck(scope);
+ const result = await readCollectionSection('header', async () => {
+  const row = await db.prepare(`WITH ${publicStaticMetadataSql},
+   bgg AS (
+    SELECT ${publicBggMetadataSql} AS meta
+    FROM v2_collection_items ci JOIN v2_games g ON g.id=ci.game_id
+    LEFT JOIN static s ON s.id=g.bgg_id LEFT JOIN bgg_games b ON b.bgg_id=g.bgg_id
+    WHERE ci.id=? AND ci.record_scope=? AND g.bgg_id IS NOT NULL
+   )
+   SELECT c.display_name, COALESCE(n.name,g.primary_name,c.display_name) AS game_name,
+    CASE WHEN n.seq IS NOT NULL THEN printf('NotBGG:%06d',n.seq)
+         WHEN g.bgg_id IS NOT NULL THEN 'BGG:' || g.bgg_id END AS source_id,
+    c.item_type,c.acquisition_status,c.wishlist,m.archived_at,c.owned,
+    (SELECT COUNT(*) FROM v2_owned_copies copy WHERE copy.collection_item_id=c.id
+       AND copy.inventory_status IN ('in_collection','loaned')) AS copies,
+    CASE WHEN n.seq IS NOT NULL THEN ${publicNotBggPresentationSql.image}
+         ELSE ${publicBggPresentationSql.image} END AS image
+   FROM (SELECT *, ${adminOwnedSql} AS owned FROM v2_collection_items WHERE id=? AND record_scope=?) c
+   LEFT JOIN v2_collection_management m ON m.collection_item_id=c.id
+   LEFT JOIN v2_games g ON g.id=c.game_id
+   LEFT JOIN notbgg_games n ON n.game_id=g.id
+   LEFT JOIN bgg b ON n.seq IS NULL`)
+   .bind(publicMetadataRegistry,id,scope,id,scope).first<CollectionHeader>();
+  return {row: row && {...row, image: safeImage(row.image)}};
+ });
+ return result?.row;
+}
+
 export class CollectionV2Writer {
  constructor(private db:D1Database){}
  async list(scope:CollectionScope,after=0,limit=20){scopeCheck(scope);if(!Number.isSafeInteger(after)||after<0||!Number.isInteger(limit)||limit<1||limit>100)throw new CollectionWriteError('VALIDATION');return (await this.db.prepare(`SELECT c.id,c.display_name,c.item_type,c.acquisition_status,c.record_scope,m.archived_at,COALESCE(m.revision,0) revision,n.seq notbgg_seq,n.archived_at source_archived FROM v2_collection_items c LEFT JOIN v2_collection_management m ON m.collection_item_id=c.id LEFT JOIN notbgg_games n ON n.game_id=c.game_id WHERE c.record_scope=? AND c.id>? ORDER BY c.id LIMIT ?`).bind(scope,after,limit).all()).results;}

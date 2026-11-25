@@ -4,12 +4,18 @@ import AdminLayout from '../../../../layouts/AdminLayout.astro';
 import { readCollectionCopies } from '../../../../lib/collection-copies';
 import { HttpError } from '../../../../lib/notbgg-admin-api';
 import { conditionCodes } from '../../../../lib/purchase-admin';
+import { readCollectionHeader } from '../../../../lib/collection-v2-management';
+import CollectionDetailHeader from '../../../../components/admin/CollectionDetailHeader.astro';
+import CollectionDetailTabs from '../../../../components/admin/CollectionDetailTabs.astro';
 export const prerender=false;
 const lang=Astro.url.searchParams.get('lang')==='en'?'en':'zh-TW';
 const en=lang==='en',t=(zh:string,english:string)=>en?english:zh;
 const collectionId=Number(Astro.params.id);
 const scope=Astro.url.searchParams.get('scope')??'production';
 const after=Number(Astro.url.searchParams.get('after')??0);
+const validScope=scope==='production'||scope==='test';
+const headerPromise=validScope&&Number.isSafeInteger(collectionId)&&collectionId>0
+    ?readCollectionHeader(env.DB,collectionId,scope):undefined;
 let data:Awaited<ReturnType<typeof readCollectionCopies>>|undefined;
 let error='';
 try{
@@ -20,6 +26,10 @@ try{
     error=t('無法讀取副本，請確認收藏、資料範圍或稍後重試。','Could not load copies. Check the collection and scope, or retry later.');
 }
 const title=t('收藏副本、語言與版本','Collection copies, languages and editions');
+const header=await headerPromise;
+if(header===null)Astro.response.status=404;
+const detailError=!validScope?t('資料範圍無效。','Invalid record scope.')
+    :header===null||Astro.response.status===404?t('找不到收藏。','Collection not found.'):undefined;
 const fields=[['label',t('副本標籤','Copy label'),160,'copy_label'],['language',t('語言','Language'),40,'language_code'],['edition',t('版本','Edition'),300,'edition']] as const;
 const statusNames:Record<string,string>={
     sealed:t('未拆封','Sealed'),unsealed:t('已拆封','Unsealed'),unknown:t('未知','Unknown'),
@@ -30,35 +40,34 @@ const base='/admin/collection/'+collectionId+'/copies?scope='+scope+'&lang='+lan
 const tagNames:Record<string,string>={sealed:t('未拆封','Sealed'),opened_unplayed:t('拆封未玩','Opened, unplayed'),sleeved:t('已套卡套','Sleeved'),missing_parts:t('缺少組件','Missing parts'),moisture_damage:t('受潮損壞','Moisture damage')};
 ---
 <AdminLayout lang={lang} title={title} languageParams={{scope}}>
-<main id="editor-content" class="admin-page" data-copies-admin data-collection-id={collectionId} data-scope={scope} data-lang={lang}>
-    <nav aria-label={t('本頁導覽','Page navigation')}>
-        <a href={'/admin/collection/'+collectionId+'?scope='+scope+'&lang='+lang}>{t('← 返回收藏','← Back to collection')}</a>
-        <a href={'/admin/collection/components/manage?collection='+collectionId+'&lang='+lang}>{t('實體組件與清點','Physical components and counts')}</a>
-    </nav>
-    <h1>{title}</h1>
+<main id="editor-content" class="admin-page admin-kit admin-detail" data-copies-admin data-collection-id={collectionId} data-scope={scope} data-lang={lang}>
+    <CollectionDetailHeader header={header} scope={validScope?scope:'production'} lang={lang} fallback={title} error={detailError}/>
+    {validScope && Number.isSafeInteger(collectionId) && collectionId>0 && Astro.response.status!==404 &&
+        <CollectionDetailTabs id={String(collectionId)} scope={scope} lang={lang} active="copies"/>}
+    {header && <h2>{title}</h2>}
     {error&&<p role="alert">{error}</p>}
     <p role="status" aria-live="polite" tabindex="-1" data-copy-status></p>
     {data&&<>
-        <h2>{data.collection.name} · #{collectionId} · {scope}</h2>
+        {!header && <h2>{data.collection.name} · #{collectionId} · {scope}</h2>}
         <p>{t('每份實際收藏可分別記錄語言與版本。此處不會連動修改整體收藏狀態或購買紀錄。','Each physical copy can have its own language and edition. These edits are independent of the collection status and purchases.')}</p>
         {data.collection.archived?<p>{t('收藏已封存，目前為唯讀。','This collection is archived and read only.')}</p>:
-            <details class="record">
+            <details class="admin-kit-panel admin-detail-panel">
                 <summary>{t('新增一份副本','Add a copy')}</summary>
                 <form data-copy-action="create" class="fields">
                     <input name="expectedRevision" type="hidden" value={data.collection.revision}/>
                     {fields.map(([name,label,max])=><label>{label}<input name={name} maxlength={max}/></label>)}
-                    <button class="admin-button primary">{t('確認新增副本','Add copy')}</button>
+                    <button class="admin-kit-button" data-variant="primary">{t('確認新增副本','Add copy')}</button>
                 </form>
             </details>}
         {data.copies.length===0&&<p>{t('此頁沒有副本資料。','There are no copies on this page.')}</p>}
-        {data.copies.map(copy=><article class="record" data-copy-id={String(copy.id)}>
+        {data.copies.map(copy=><article class="admin-kit-panel admin-detail-panel" data-copy-id={String(copy.id)}>
             <h3>#{String(copy.id)} {String(copy.copy_label??'')}</h3>
             <p>{statusNames[String(copy.seal_status)]??String(copy.seal_status)} · {statusNames[String(copy.inventory_status)]??String(copy.inventory_status)}</p>
             <form data-copy-action="edit" class="fields">
                 <input name="copyId" type="hidden" value={String(copy.id)}/>
                 <input name="expectedRevision" type="hidden" value={data.collection.revision}/>
                 {fields.map(([name,label,max,column])=><label>{label}<input name={name} maxlength={max} value={String(copy[column]??'')} disabled={data.collection.archived}/></label>)}
-                {!data.collection.archived&&<button class="admin-button">{t('儲存副本','Save copy')}</button>}
+                {!data.collection.archived&&<button class="admin-kit-button" data-variant="secondary">{t('儲存副本','Save copy')}</button>}
             </form>
             <details class="copy-condition"><summary>{t('副本狀況與檢查','Copy condition & inspection')}</summary>
              <p>{t('狀況與收藏生命週期分開；不會修改任何組件清點。其他損壞請填寫私人說明；全新與未拆封分別記錄。','Conditions are separate from the collection lifecycle. No component counts are changed. Describe other damage in private notes; new condition and sealed status are separate.')}</p>
@@ -70,16 +79,15 @@ const tagNames:Record<string,string>={sealed:t('未拆封','Sealed'),opened_unpl
               <label>{t('檢查日期（可留空）','Inspection date (optional)')}<input name="date" type="date" value={String(copy.condition_checked_at??'')} disabled={data.collection.archived}/></label>
               <fieldset><legend>{t('既有狀況標籤','Condition tags')}</legend>{conditionCodes.map(code=><label><input name="tags" type="checkbox" value={code} checked={data.tags.some(tag=>tag.owned_copy_id===copy.id&&tag.condition_code===code)} disabled={data.collection.archived}/>{tagNames[code]}</label>)}</fieldset>
               <label>{t('缺件、損壞說明與備註（私人）','Missing parts, damage & notes (private)')}<textarea name="details" maxlength="3000" disabled={data.collection.archived}>{String(copy.condition_details??'')}</textarea></label>
-              {!data.collection.archived&&<button class="admin-button">{t('儲存副本狀況','Save copy condition')}</button>}
+              {!data.collection.archived&&<button class="admin-kit-button" data-variant="secondary">{t('儲存副本狀況','Save copy condition')}</button>}
              </form>
             </details>
         </article>)}
         <nav aria-label={t('分頁','Pagination')}>
-            {after>0&&<a class="admin-button" href={base}>{t('第一頁','First page')}</a>}
-            {data.nextCursor!==null&&<a class="admin-button" href={base+'&after='+data.nextCursor}>{t('下一頁','Next page')}</a>}
+            {after>0&&<a class="admin-kit-button" data-variant="secondary" href={base}>{t('第一頁','First page')}</a>}
+            {data.nextCursor!==null&&<a class="admin-kit-button" data-variant="secondary" href={base+'&after='+data.nextCursor}>{t('下一頁','Next page')}</a>}
         </nav>
     </>}
 </main>
 </AdminLayout>
 <script>import '../../../../lib/collection-copies-controller';</script>
-<style>.copy-condition{margin-top:20px;border-top:1px solid var(--admin-border);padding-top:12px}.copy-condition summary{cursor:pointer;padding:10px 0}.copy-condition fieldset{min-width:0;border:1px solid var(--admin-border);border-radius:8px}.copy-condition fieldset label{display:flex;gap:8px;align-items:center;margin:8px 0}.copy-condition p{overflow-wrap:anywhere}</style>

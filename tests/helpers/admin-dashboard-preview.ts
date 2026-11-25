@@ -126,6 +126,19 @@ export function r02Fixture(failure?: 'counts' | 'list') {
     return {sqlite, db};
 }
 
+export function collectionDetailFixture(failure?: 'header' | 'copies') {
+    const {db, sqlite} = r02Fixture();
+    const prepare = db.prepare.bind(db);
+    db.prepare = (sql: string) => {
+        if ((failure === 'header' && sql.includes('AS game_name') && sql.includes('WITH static')) ||
+            (failure === 'copies' && sql.includes('condition_details') && sql.includes('LIMIT 21'))) {
+            throw new Error('Synthetic detail read failure');
+        }
+        return prepare(sql);
+    };
+    return {db, sqlite};
+}
+
 /** Test-only injected bindings; real Astro pages and real middleware, no dev exemption. */
 export async function dashboardPreview(bindings: Record<string, unknown>, uiKit?: { dev: boolean }) {
     async function compile(entry: string) {

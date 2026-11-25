@@ -1,6 +1,15 @@
 ---
 import CollectionAdmin from '../../../components/CollectionAdmin.astro';
+import { env } from 'cloudflare:workers';
+import { readCollectionHeader } from '../../../lib/collection-v2-management';
 export const prerender=false;
 const lang=Astro.url.searchParams.get('lang')==='en'?'en':'zh-TW';
+const id=Astro.params.id??'';
+const scope=Astro.url.searchParams.get('scope')??'production';
+const validScope=scope==='production'||scope==='test';
+const validId=/^\d+$/.test(id)&&Number.isSafeInteger(Number(id))&&Number(id)>0;
+const header=validScope&&validId?await readCollectionHeader(env.DB,Number(id),scope):undefined;
+const status=!validScope?400:!validId||header===null?404:200;
+Astro.response.status=status;
 ---
-<CollectionAdmin mode="edit" id={Astro.params.id??''} lang={lang}/>
+<CollectionAdmin mode="edit" id={id} lang={lang} header={header} detailStatus={status}/>

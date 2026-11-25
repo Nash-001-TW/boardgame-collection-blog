@@ -1,28 +1,42 @@
 ---
 import CollectionList from './admin/CollectionList.astro';
 import AdminLayout from '../layouts/AdminLayout.astro';
-import { collectionStatuses } from '../lib/collection-v2-management';
-interface Props { mode:'list'|'new'|'edit'|'relations'; id?:string; lang?:'zh-TW'|'en' }
-const {mode,id='',lang='zh-TW'}=Astro.props,en=lang==='en',t=(zh:string,english:string)=>en?english:zh;
+import { collectionStatuses, type CollectionHeader } from '../lib/collection-v2-management';
+import CollectionDetailHeader from './admin/CollectionDetailHeader.astro';
+import CollectionDetailTabs from './admin/CollectionDetailTabs.astro';
+interface Props { mode:'list'|'new'|'edit'|'relations'; id?:string; lang?:'zh-TW'|'en'; header?:CollectionHeader|null; detailStatus?:number }
+const {mode,id='',lang='zh-TW',header,detailStatus=200}=Astro.props,en=lang==='en',t=(zh:string,english:string)=>en?english:zh;
 const fields=[['displayName','收藏名稱','Collection name','text'],['personalRating','個人評分（0–10）','Personal rating (0–10)','number'],['playCount','遊玩次數','Play count','number'],['language','語言版本','Language','text'],['edition','版本','Edition','text'],['purchaseDate','購買日期','Purchase date','date'],['priceMinor','價格（最小貨幣單位，如分）','Price (minor currency units)','number'],['currency','幣別','Currency','text'],['merchant','購買來源','Merchant','text']] as const;
 const notes=[['comment','個人評論','Personal comment'],['sleeveNotes','卡套備註','Sleeve notes'],['storageNotes','額外收納備註','Storage notes'],['accessoryNotes','附加配件備註','Accessory notes']] as const;
 const title = mode === 'list' ? t('收藏管理', 'Collection') : mode === 'new' ? t('新增收藏', 'New collection record')
   : mode === 'edit' ? t('編輯收藏', 'Edit collection') : t('配件關聯', 'Accessory relations');
 const initialScope = Astro.url.searchParams.get('scope') === 'test' ? 'test' : 'production';
+const edit = mode==='edit';
+const showEditor = !edit || detailStatus===200;
+const detailError = detailStatus===400?t('資料範圍無效。','Invalid record scope.')
+  : detailStatus===404?t('找不到收藏。','Collection not found.'):undefined;
 ---
-<AdminLayout lang={lang} title={title}>
-<main id="editor-content" class="admin-page" data-collection-admin data-mode={mode} data-id={id} data-lang={lang}>
+<AdminLayout lang={lang} title={title} languageParams={edit?{scope:initialScope}:undefined}>
+<main id="editor-content" class:list={['admin-page',edit&&'admin-kit admin-detail']} data-collection-admin={showEditor?'':undefined} data-mode={mode} data-id={id} data-lang={lang}>
 {mode==='list' ? <CollectionList lang={lang} /> : <>
+{/* With the editor still shown, the form section already carries the "edit" heading, so the
+    header fallback names the record instead of repeating it. */}
+{edit && <CollectionDetailHeader header={header} scope={initialScope} lang={lang}
+  fallback={showEditor ? t('收藏','Collection')+' #'+id : title} error={detailError}/>}
+{edit && showEditor && <CollectionDetailTabs id={id} scope={initialScope} lang={lang} active="details"/>}
+{showEditor && <>
+{edit ? <div class="admin-kit-row admin-detail-section-heading">
+<h2 data-collection-heading>{title}</h2>
+<a class="admin-kit-button" data-variant="secondary" href={'/admin/bgg?view=relations&domain=collection&source='+encodeURIComponent(id)+'&lang='+lang}>{t('管理收藏組合關係','Manage collection combinations')}</a>
+</div> : <>
 <h1 data-collection-heading>{title}</h1>
-{mode==='edit'&&<p><a class="admin-button" href={'/admin/bgg?view=relations&domain=collection&source='+encodeURIComponent(id)+'&lang='+lang}>{t('管理收藏組合關係','Manage collection combinations')}</a></p>}
-{mode==='edit'&&<p><a class="admin-button" href={'/admin/purchases?collection='+encodeURIComponent(id)+'&lang='+lang}>{t('採購紀錄與已記錄成本','Purchases & recorded costs')}</a></p>}
-{mode==='edit'&&<p><a class="admin-button" href={'/admin/sleeves/requirements?collection='+encodeURIComponent(id)+'&lang='+lang}>{t('管理卡套需求與逐副本套用','Manage sleeve requirements & copy applications')}</a></p>}
 <nav aria-label={t('本頁導覽','Page navigation')}>
 <a href={'/admin/collection?lang='+lang}>{t('← 收藏列表','← Collection list')}</a>
 {mode==='relations' && <a href={'/admin/notbgg/'+id.slice(7)+'?lang='+lang}>{t('← 原始遊戲','← Original game')}</a>}
 </nav>
-{(mode==='edit'||mode==='new') && <p data-physical-components-entry hidden={mode!=='edit'}><a data-physical-components-link href={id ? '/admin/collection/components/manage?collection='+encodeURIComponent(id)+'&lang='+lang : undefined}>{t('管理實體組件','Manage physical components')}</a></p>}
-{(mode==='edit'||mode==='new') && <p data-copies-entry hidden={mode!=='edit'}><a data-copies-link href={id ? '/admin/collection/'+encodeURIComponent(id)+'/copies?scope='+initialScope+'&lang='+lang : undefined}>{t('管理副本、語言與版本','Manage copies, languages and editions')}</a></p>}
+</>}
+{mode==='new' && <p data-physical-components-entry hidden><a data-physical-components-link href={id ? '/admin/collection/components/manage?collection='+encodeURIComponent(id)+'&lang='+lang : undefined}>{t('管理實體組件','Manage physical components')}</a></p>}
+{mode==='new' && <p data-copies-entry hidden><a data-copies-link href={id ? '/admin/collection/'+encodeURIComponent(id)+'/copies?scope='+initialScope+'&lang='+lang : undefined}>{t('管理副本、語言與版本','Manage copies, languages and editions')}</a></p>}
 <label>{t('資料範圍','Record scope')}<select data-scope><option value="production">production</option><option value="test">test</option></select></label>
 <p data-admin-status role="status" aria-live="polite" tabindex="-1"></p><button type="button" data-admin-reload hidden>{t('重新載入最新資料','Reload latest data')}</button>
 {mode==='relations'?<>
@@ -31,15 +45,16 @@ const initialScope = Astro.url.searchParams.get('scope') === 'test' ? 'test' : '
 <label>{t('關聯類型','Relation type')}<select name="relationType"><option value="accessory_for">{t('專用配件','Accessory for')}</option><option value="compatible_with">{t('相容配件','Compatible with')}</option></select></label><label>{t('管理備註（不公開）','Private relation notes')}<textarea name="notes" maxlength="3000"/></label><button data-save>{t('新增關聯','Add relation')}</button></form><div data-relation-list></div>
 </>:<>
 <section data-game-picker><h2>{t('選擇既有遊戲','Choose an existing game')}</h2><form data-picker-form><label>{t('名稱、BGG:ID 或 NotBGG:ID','Name, BGG:ID or NotBGG:ID')}<input name="q" type="search" maxlength="200"/></label><button>{t('搜尋','Search')}</button></form><div data-game-results></div></section>
-<p data-system></p><form data-collection-form>
+<p data-system></p><form data-collection-form class={edit?'admin-kit-panel admin-detail-panel':undefined}>
 <div class="fields">{fields.map(([key,zh,english,type])=><label>{t(zh,english)}{key==='displayName'?' *':''}<input name={key} type={type} required={key==='displayName'||key==='currency'} maxlength={type==='text'?300:undefined} min={type==='number'?0:undefined} max={key==='personalRating'?10:undefined} step={key==='personalRating'?'0.1':type==='number'?'1':undefined} value={key==='currency'?'TWD':undefined}/></label>)}
 <label>{t('擁有／收藏狀態','Acquisition status')}<select name="acquisitionStatus">{collectionStatuses.map(s=><option value={s} selected={s==='owned'}>{s}</option>)}</select></label>
 <label><input name="wishlist" type="checkbox"/>{t('願望清單','Wishlist')}</label>
 <label><input name="createCopy" type="checkbox" checked/><span data-copy-create-label>{t('建立一份實體副本','Create a physical copy')}</span></label></div>
 {notes.map(([key,zh,english])=><label>{t(zh,english)}<textarea name={key} maxlength={key==='comment'?10000:3000}/></label>)}
 <p>{t('卡套尺寸與需求沿用既有 V2 卡套資料；此處備註不取代結構化需求。既有非本表單建立的副本與採購保留原狀。','Existing V2 sleeve sizes and requirements remain authoritative. Notes do not replace structured requirements. Other copies and purchase graphs remain unchanged.')}</p>
-<button data-save>{t('儲存收藏','Save collection record')}</button><button data-archive type="button" hidden>{t('封存收藏','Archive collection record')}</button>
+<button data-save class={edit?'admin-kit-button':undefined} data-variant={edit?'primary':undefined}>{t('儲存收藏','Save collection record')}</button><button data-archive class={edit?'admin-kit-button':undefined} data-variant={edit?'danger':undefined} type="button" hidden>{t('封存收藏','Archive collection record')}</button>
 </form><details><summary>{t('副本、採購與卡套資料（管理員）','Copies, purchases and sleeves (admin)')}</summary><pre data-copy-summary></pre></details>
+</>}
 </>}
 </>}
 </main><script>import {initializeCollectionAdmin} from '../lib/collection-admin-controller';document.querySelectorAll<HTMLElement>('[data-collection-admin]').forEach(initializeCollectionAdmin);</script></AdminLayout>

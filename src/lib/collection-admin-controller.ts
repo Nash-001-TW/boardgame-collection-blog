@@ -1,5 +1,6 @@
 import { deserializeGameRef,gameCatalogKey,type GameRef } from './game-identity';
 import type { NumberedCollectionList } from './collection-v2-management';
+import { collectionItemTypeLabel } from './collection-item-types';
 
 function initializeCollectionList(root: HTMLElement) {
  const en = root.dataset.lang === 'en';
@@ -114,8 +115,7 @@ function initializeCollectionList(root: HTMLElement) {
     const title = document.createElement('strong');
     title.textContent = item.display_name;
     const meta = document.createElement('small');
-    const type = item.item_type === 'accessory' ? t('配件', 'Accessory')
-     : item.item_type === 'expansion' ? t('擴充', 'Expansion') : t('遊戲', 'Game');
+    const type = collectionItemTypeLabel(item.item_type, en);
     meta.textContent = [type, '#' + item.id, group.source_id ?? t('缺少來源身份', 'Missing source identity'),
      group.source_archived && t('來源遊戲已封存', 'Source game archived'),
      group.link_status === 'pending' && t('候選連結', 'Candidate link'),
@@ -335,14 +335,27 @@ export function initializeCollectionAdmin(root:HTMLElement){
   for(const name of ['comment','storageNotes','sleeveNotes','accessoryNotes','language','edition','purchaseDate','merchant'])data[name]=field(name)!.value||null;
   data.wishlist=(field('wishlist') as HTMLInputElement).checked;
   if(mode==='new'){if(!selected)throw new Error(t('請選擇既有遊戲','Choose an existing game'));const body={ref:selected,data,createCopy:(field('createCopy') as HTMLInputElement).checked};const serialized=JSON.stringify(body);if(lastBody&&lastBody!==serialized)key=crypto.randomUUID();lastBody=serialized;const result=await api(path(),'POST',body);id=String(result.collectionId);mode='edit';history.replaceState(history.state,'',editHref(result.collectionId));}
-  else await api(path('/'+id),'PATCH',{expectedRevision:revision,data,createCopy:(field('createCopy') as HTMLInputElement).checked});dirty=false;await load();message(t('已儲存收藏 #','Saved collection #')+id);
+  else await api(path('/'+id),'PATCH',{expectedRevision:revision,data,createCopy:(field('createCopy') as HTMLInputElement).checked});dirty=false;if(refreshDetailHeader(t('已儲存收藏 #','Saved collection #')+id))return;await load();message(t('已儲存收藏 #','Saved collection #')+id);
  });});
- find<HTMLButtonElement>('[data-archive]')?.addEventListener('click',()=>void run(async()=>{if(!confirm(t('封存收藏？不刪除遊戲、實體副本、購買資料或歷史。','Archive collection? Game, physical copies, purchases and history are retained.')))return;await api(path('/'+id+'/archive'),'POST',{expectedRevision:revision});await load();message(t('已封存','Archived'));}));
+ find<HTMLButtonElement>('[data-archive]')?.addEventListener('click',()=>void run(async()=>{if(!confirm(t('封存收藏？不刪除遊戲、實體副本、購買資料或歷史。','Archive collection? Game, physical copies, purchases and history are retained.')))return;await api(path('/'+id+'/archive'),'POST',{expectedRevision:revision});if(refreshDetailHeader(t('已封存','Archived')))return;await load();message(t('已封存','Archived'));}));
  find<HTMLFormElement>('[data-picker-form]')?.addEventListener('submit',event=>{event.preventDefault();void run(search);});
  async function search(){const q=(find<HTMLInputElement>('[data-picker-form] [name=q]')!).value,rows=await api(path('/search')+'&q='+encodeURIComponent(q)),list=find<HTMLElement>('[data-game-results]')!;list.replaceChildren();for(const r of rows){const b=node('button',`${r.name} · ${r.type} · ${gameCatalogKey(r.ref)}`) as HTMLButtonElement;b.type='button';b.onclick=()=>{selected=r.ref;field('displayName')!.value=r.name;message(t('已選擇 ','Selected ')+gameCatalogKey(r.ref));};list.appendChild(b);}if(!rows.length)list.textContent=t('找不到可用遊戲','No available game');}
  find<HTMLFormElement>('[data-relation-form]')?.addEventListener('submit',event=>{event.preventDefault();void run(async()=>{const f=event.target as HTMLFormElement;await api(`/api/admin/notbgg/${encodeURIComponent(id)}/relations`,'POST',{target:deserializeGameRef((f.elements.namedItem('target') as HTMLInputElement).value.trim()),relationType:(f.elements.namedItem('relationType') as unknown as HTMLSelectElement).value,notes:(f.elements.namedItem('notes') as HTMLTextAreaElement).value||null});await load();message(t('關聯已新增','Relation added'));});});
  reload.onclick=()=>{if(!dirty||confirm(t('放棄未儲存變更並重新載入？','Discard unsaved changes and reload?')))void run(load);};
  scopeSelect.onchange=()=>{if(dirty&&!confirm(t('放棄未儲存變更？','Discard unsaved changes?'))){scopeSelect.value=scope;return;}const url=new URL(location.href);url.searchParams.set('scope',scopeSelect.value);dirty=false;location.assign(url);};
  window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
- void run(async()=>{await load();if(mode==='new'){const game=new URL(location.href).searchParams.get('game');if(game){find<HTMLInputElement>('[data-picker-form] [name=q]')!.value=game;await search();}}message('');});
+ void run(async()=>{await load();if(mode==='new'){const game=new URL(location.href).searchParams.get('game');if(game){find<HTMLInputElement>('[data-picker-form] [name=q]')!.value=game;await search();}}message(takeFlash());});
+ // The detail header is server rendered; after a successful save or archive the page reloads so the
+ // header (status, archive mark, copies) is read fresh, and the result message survives the reload.
+ // Only pages that render the header reload; storage failures only lose the message, never the save.
+ function refreshDetailHeader(text:string){
+  if(mode!=='edit'||!document.querySelector('[data-detail-header]'))return false;
+  try{sessionStorage.setItem(flashKey(),text);}catch{/* message is optional */}
+  dirty=false;location.reload();return true;
+ }
+ function flashKey(){return 'collection-detail-flash:'+scope+':'+id;}
+ function takeFlash(){
+  if(mode!=='edit')return '';
+  try{const text=sessionStorage.getItem(flashKey())??'';sessionStorage.removeItem(flashKey());return text;}catch{return '';}
+ }
 }

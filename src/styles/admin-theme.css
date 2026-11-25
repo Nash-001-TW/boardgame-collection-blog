@@ -378,3 +378,76 @@ html:has(.shell-drawer[open]) { overflow: hidden; }
   .admin-r02-toolbar [data-r02-chips]:empty { display: none; }
   .admin-r02-toolbar [data-r02-chips]:not(:empty) { flex-basis: 100%; }
 }
+
+/* Collection detail routes share the header, navigation and editor surfaces. */
+.admin-detail { color: var(--ink-body); font: var(--text-body); overflow-wrap: anywhere; }
+.admin-detail-header, .admin-detail-panel { margin-block: var(--space-4); }
+.admin-detail-identity {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: center;
+  margin-block: var(--space-3);
+}
+.admin-page .admin-detail-header h1 { margin: 0; color: var(--ink); font: var(--text-display); }
+.admin-detail-header p { margin-block: var(--space-1); }
+.admin-detail-identity .admin-kit-row { margin-block-start: var(--space-2); }
+.admin-detail-cover {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 96px;
+  border-radius: var(--radius-sm);
+  background: var(--wood-soft);
+  color: var(--wood);
+  overflow: hidden;
+}
+.admin-detail-cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.admin-page .admin-detail-tabs {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin-block: var(--space-4);
+}
+.admin-page .admin-detail-tabs a { min-height: 44px; text-align: center; align-self: stretch; }
+.admin-detail-tabs svg { flex: none; }
+.admin-detail-tab-compact { display: none; }
+.admin-detail [hidden] { display: none; }
+.admin-detail :focus-visible { outline: var(--focus-ring); outline-offset: 3px; }
+.admin-detail h2 { font: var(--text-title); }
+.admin-detail-section-heading { justify-content: space-between; }
+.admin-page.admin-detail .fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  gap: var(--space-3);
+}
+.admin-detail .fields > *, .admin-detail-panel label { min-width: 0; }
+.admin-detail form > label { display: block; margin-block: var(--space-3); }
+.admin-detail input:not([type=checkbox]), .admin-detail select, .admin-detail textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  max-width: 100%;
+  border: 1px solid var(--ink-muted);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2);
+  background: var(--bg-surface);
+  color: var(--ink-body);
+  font: inherit;
+}
+.admin-detail select[data-scope] { width: auto; margin-inline-start: var(--space-2); }
+.admin-detail textarea { min-height: 5rem; resize: vertical; }
+.admin-detail summary { min-height: 44px; cursor: pointer; font: var(--text-subtitle); }
+.admin-detail-panel button { justify-self: start; align-self: end; }
+.admin-detail [data-collection-form] > button + button { margin-inline-start: var(--space-2); }
+.admin-detail pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.admin-detail .copy-condition { margin-block-start: var(--space-4); border-top: 1px solid var(--border-strong); padding-top: var(--space-3); }
+.admin-detail .copy-condition fieldset { min-width: 0; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); }
+.admin-detail .copy-condition fieldset label { display: flex; align-items: center; gap: var(--space-2); min-height: 44px; }
+@media (max-width: 767px) {
+  .admin-page .admin-detail-tabs { grid-template-columns: repeat(5, minmax(3.5rem, 1fr)); overflow-x: auto; padding: 8px; }
+  .admin-page .admin-detail-tabs a { flex-direction: column; font-size: .8125rem; padding-inline: var(--space-1); }
+  .admin-detail-tab-label { display: none; }
+  .admin-detail-tab-compact { display: inline; }
+}

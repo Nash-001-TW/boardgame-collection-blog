@@ -1,0 +1,70 @@
+---
+import AdminIcon from './AdminIcon.astro';
+import type { CollectionHeader } from '../../lib/collection-v2-management';
+import { collectionItemTypeLabel } from '../../lib/collection-item-types';
+
+interface Props {
+  header?: CollectionHeader | null;
+  scope: string;
+  lang: 'zh-TW' | 'en';
+  fallback: string;
+  error?: string;
+}
+const {header, scope, lang, fallback, error} = Astro.props;
+const t = (zh: string, en: string) => lang === 'en' ? en : zh;
+const labels: Record<string, string> = {
+  owned: t('已收藏','Owned'), preordered: t('預購中','Preordered'), wishlist: t('願望清單','Wishlist'),
+  not_owned: t('未收藏','Not owned'), sold: t('已售出','Sold'), gifted_away: t('已贈出','Gifted away'),
+  unknown: t('未知','Unknown'), archived: t('已封存','Archived'),
+};
+const tones: Record<string,string> = {owned:'success', wishlist:'wish', preordered:'preorder'};
+const symbols: Record<string,string> = {owned:'✓', wishlist:'♡', preordered:'◷'};
+const flags = new Set<string>();
+if (header) {
+  flags.add(header.owned === 1 ? 'owned' : header.acquisition_status === 'owned' ? 'not_owned' : header.acquisition_status);
+  if (header.acquisition_status === 'preordered') flags.add('preordered');
+  if (header.wishlist === 1) flags.add('wishlist');
+  if (header.archived_at) flags.add('archived');
+}
+const prefix = lang === 'en' ? '/en' : '';
+const source = header?.source_id?.match(/^(BGG|NotBGG):([0-9]+)$/);
+const sourceHref = source ? prefix + (source[1] === 'BGG' ? '/games/bgg-' : '/games/notbgg/') + source[2] : null;
+---
+<header class="admin-detail-header" data-detail-header>
+  <a class="admin-kit-button" href={'/admin/collection?' + new URLSearchParams({scope, lang})}>
+    <AdminIcon name="arrow-left" size={16} />{t('全部收藏','All collection records')}
+  </a>
+  {header ? (
+    <div class="admin-detail-identity">
+      <div class="admin-detail-cover">
+        <span aria-hidden="true"><AdminIcon name="box" size={28} /></span>
+        {header.image && <img src={header.image} alt="" width="72" height="96" referrerpolicy="no-referrer" />}
+      </div>
+      <div>
+        <h1>{header.display_name}</h1>
+        {header.game_name !== header.display_name && <p>{header.game_name}</p>}
+        <div class="admin-kit-row">
+          {sourceHref ? <a href={sourceHref}>{header.source_id}</a> : <span>{t('缺少來源身份','Missing source identity')}</span>}
+          <span>{collectionItemTypeLabel(header.item_type, lang === 'en')}</span>
+          <span>{t('持有副本','Owned copies')} · {new Intl.NumberFormat(lang).format(header.copies)}</span>
+        </div>
+        <div class="admin-kit-row">
+          {[...flags].map(flag => <span class="admin-kit-badge" data-tone={tones[flag] ?? 'neutral'}>
+            <span aria-hidden="true">{symbols[flag] ?? '•'}</span>{labels[flag] ?? flag}
+          </span>)}
+        </div>
+      </div>
+    </div>
+  ) : (
+    <div>
+      <h1>{fallback}</h1>
+      <p role="alert">{error ?? t('無法取得收藏頁首。','Collection header unavailable.')}</p>
+    </div>
+  )}
+</header>
+<script>
+  for (const image of document.querySelectorAll<HTMLImageElement>('.admin-detail-cover img')) {
+    image.addEventListener('error', () => { image.hidden = true; }, {once:true});
+    if (image.complete && !image.naturalWidth) image.hidden = true;
+  }
+</script>
