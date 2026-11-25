@@ -162,3 +162,19 @@
 - **結果**：列表不可得只剩警示橫幅＋重試（即時區域通知）；空的狀態列不再佔位；手機卡片以封面縮圖＋名稱、類型、ID 為標題。
 - **Claude 重跑**：Node 6 檔 **43／43**；`git diff --check` 通過；已看兩張更新截圖。Shell 瀏覽器 **9／9**、R02 瀏覽器 **12／12**、Node 3 檔 15／15、`astro check` 10 個基準錯誤引用 Codex 回報（使用程序限定的 Edge Crashpad 與 tsx 帳號名稱回退）。即時區域尚未以實際螢幕閱讀器驗證。
 - **結論**：§6.1 條件解除，`UI-S4-20261125-01` 審查通過。尚未提交；待使用者看截圖後依 DEPLOY-01 授權推送部署。
+
+### 6.3 部署與唯讀抽查（2026-11-25）
+
+- 部署：`40b8abc`（R02）＋`906911c`（文件）於台北 09:33 推送（DECISION_LOG UI-S4-DEPLOY），自動部署為 `468b7e3b…`（100%，台北 09:34:40）。
+- Claude 唯讀抽查 20 條路由全部符合：公開頁 8 條 200；BGG 舊格式 2 條 307；不存在 ID 404；`/admin`、`/admin/collection`、`/admin/collection?tab=owned`、`/api/admin/collection`、`/api/admin/auth-check`、`/admin/bgg`、`/admin/collection/components/manage` 皆 302 至 Access 登入；`/dev/collection-v2-test`、`/dev/ui-kit` 404。
+- 遠端操作：`wrangler deployments status` 數次（Metadata 讀取）、HTTP 20 次；D1 查詢 0、寫入 0。
+- **正式驗收（2026-11-25 台北 09:4x，使用者登入後 Claude 檢查，面板寬 518px）：通過**。
+  - 頁籤：全部 256／已收藏 254／願望清單 0／預購中 2，與 R01（256／254／0／2）一致。
+  - 列表：預設 20 筆、「顯示 1–20 筆，共 256 筆」、13 頁；封面來自 `cf.geekdo-images.com`，第 1 頁 9 張全部載入、0 張失敗，第 2 頁（每頁 50）抽查 1 張載入正常；人數與 API 一致。
+  - 篩選與網址：`?tab=preordered` 2 筆；`?tab=owned&players=4&sort=name&limit=50&page=2` 重新開啟後頁籤、人數、排序、每頁 50、第 2 頁皆還原（51–100／194 筆），條件膠囊顯示「玩家人數 · 4」；語言切換連結保留參數。
+  - 側欄：子項連結為 `?tab=owned／wishlist／preordered`；`?tab=owned` 與舊網址 `?status=owned` 皆標示「已收藏」，舊網址以「取得狀態 · 已收藏」膠囊篩選出 254 筆。
+  - 窄寬度（518px）為卡片版面、無橫向捲動；整頁無「無法取得」；R01 數字不變。
+- **小觀察（不擋）**：封面格內的「無封面」備用文字在有圖片時仍存在於 DOM（視覺被圖片蓋住），螢幕閱讀器可能讀出；可於日後改為無圖時才輸出。
+- **已修正（2026-11-25，使用者指示「先修改小問題後再提交」，Claude 實作）**：`collection-admin-controller.ts` 改為只在沒有封面或圖片載入失敗時才輸出「無封面」。Claude 驗證：Node 3 檔 15／15、R02 瀏覽器 **12／12**（Claude 本機直接執行）、`astro check` 10 個基準錯誤、`git diff --check` 通過。尚未部署（推送依 DEPLOY-01 另行授權）。
+- **資料觀察**：正式環境 32 筆收藏「缺少來源身份」（未連到 BGG／NotBGG 遊戲），因此無封面、無人數；依「最後更新」排序時排在第一頁。屬既有資料狀態，非本次程式問題。
+- 遠端操作：使用者登入後瀏覽 R02／R01 數頁、唯讀 API 讀取數次；寫入 0。
