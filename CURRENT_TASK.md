@@ -56,7 +56,7 @@
 | # | 類型 | 項目 | 負責 |
 | --- | --- | --- | --- |
 | 18 | 清理 | （2026-11-24 併入）`/dev/collection-v2-test` 舊診斷頁；`/dev/ui-kit` 元件展示頁於 UI 階段 5 後若不再使用。原項目：11 個未被引用的元件（HomePage、GameList、CatalogBrowserControls、CatalogCard、GameBrowserControls、CollectionPage、CollectionFilter、CollectionCard、GameSummary、GameRelations、GameSleeves）是否刪除 | 使用者決策，Codex 處理 |
-| 19 | 清理 | 測試暫存資料夾 `.bgg-b2-test-*` | 使用者決策 |
+| 19 | 清理 | ✅ **已刪除（2026-11-25）**：測試暫存資料夾 `.bgg-b2-test-*`（`relation-import-engine.test.ts` 的 mkdtemp 殘留，2 個各 16K） | 使用者決策 |
 | 20 | 文件 | `docs/current-progress.md` 停在 2026-11-18，含「移交 ChatGPT」等失效安排；應改為指向 HANDOFF.md、CURRENT_TASK.md 與 Release-04 | Claude |
 | 21 | 文件 | ✅ **已提交（2026-11-23）**：`docs/UI/` 9 張設計圖、設計規範與流程文件 | Claude |
 
