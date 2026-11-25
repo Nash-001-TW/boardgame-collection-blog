@@ -13,6 +13,7 @@ const view=params.get('view')??'products';
 const kinds={
     OPENING_BALANCE:t('期初張數','Opening balance'),
     PURCHASE:t('進貨（包）','Purchase (packs)'),
+    GIFT:t('贈送','Gift'),
     USE:t('手動使用（張）','Manual use (sleeves)'),
     RETURN:t('退回庫存（張）','Return to stock (sleeves)'),
     ADJUST:t('增減調整（正／負張數）','Adjustment (signed sleeves)'),
@@ -136,7 +137,7 @@ const unlocated = data?.unlocatedHistoricalCount ?? 0;
             <h2>#{String(row.id)} {String(row.brand??'')} {String(row.product_name)}</h2>
             <p>{sizeLabel(row)} · {String(row.sheets_per_pack)} {t('張／包','sleeves/pack')} · {Number(row.is_active)?t('啟用','Active'):t('停用','Inactive')}</p>
             <dl>
-                <div><dt>{t('已記錄期初與進貨（張）','Recorded opening & purchases (sleeves)')}</dt><dd>{Number(row.transaction_count)?number(row.received??0):number(null)}</dd></div>
+                <div><dt>{t('已入庫（期初、進貨與贈送，張）','Received (opening, purchases and gifts, sleeves)')}</dt><dd>{Number(row.transaction_count)?number(row.received??0):number(null)}</dd></div>
                 <div><dt>{t('已記錄使用（張，未扣除退回）','Recorded use (gross sleeves)')}</dt><dd>{Number(row.transaction_count)?number(row.used??0):number(null)}</dd></div>
                 <div><dt>{t('帳面剩餘（張）','Ledger balance (sleeves)')}</dt><dd>{number(row.balance)}</dd></div>
             </dl>
@@ -146,9 +147,10 @@ const unlocated = data?.unlocatedHistoricalCount ?? 0;
                     <input name="productId" type="hidden" value={String(row.id)}/><input name="revision" type="hidden" value={String(row.admin_revision)}/>
                     <label>{t('品牌','Brand')}<input name="brand" maxlength="100" value={String(row.brand??'')}/></label>
                     <label>{t('產品名稱','Product name')}<input name="name" required maxlength="160" value={String(row.product_name)}/></label>
-                    <label>{t('寬度 mm','Width mm')}<input name="width" required type="number" min="1" max="2000" step=".1" value={Number(row.width_tenth_mm)/10}/></label>
-                    <label>{t('高度 mm','Height mm')}<input name="height" required type="number" min="1" max="2000" step=".1" value={Number(row.height_tenth_mm)/10}/></label>
-                    <label>{t('每包張數','Sleeves per pack')}<input name="sheetsPerPack" required type="number" min="1" max="10000" step="1" value={Number(row.sheets_per_pack)}/></label>
+                    <label>{t('寬度 mm','Width mm')}<input name="width" required type="number" min="1" max="2000" step=".1" value={Number(row.width_tenth_mm)/10} readonly={Number(row.transaction_count)>0}/></label>
+                    <label>{t('高度 mm','Height mm')}<input name="height" required type="number" min="1" max="2000" step=".1" value={Number(row.height_tenth_mm)/10} readonly={Number(row.transaction_count)>0}/></label>
+                    <label>{t('每包張數','Sleeves per pack')}<input name="sheetsPerPack" required type="number" min="1" max="10000" step="1" value={Number(row.sheets_per_pack)} readonly={Number(row.transaction_count)>0}/></label>
+                    {Number(row.transaction_count)>0 && <p>{t('已有交易，尺寸與每包張數不可修改；請停用並新增產品。','This product has transactions. To change its size or pack quantity, deactivate it and add a new product.')}</p>}
                     <label>{t('厚度 µm（可留空）','Thickness µm (optional)')}<input name="thickness" type="number" min="1" max="2000" step="1" value={row.thickness_microns===null?undefined:Number(row.thickness_microns)}/></label>
                     <label>{t('備註','Notes')}<textarea name="notes" maxlength="1000">{String(row.notes??'')}</textarea></label>
                     <label><input name="active" type="checkbox" checked={Number(row.is_active)===1}/>{t('啟用產品','Active product')}</label>
@@ -157,11 +159,22 @@ const unlocated = data?.unlocatedHistoricalCount ?? 0;
             </details>
             {Number(row.is_active)===1&&<>
                 <details><summary>{t('登錄庫存變更','Record stock change')}</summary>
-                    <form data-sleeve-action="stock" class="fields">
+                    <form data-sleeve-action="stock" class="fields" data-balance={Number(row.balance ?? 0)} data-pack-size={Number(row.sheets_per_pack)}>
                         <input name="productId" type="hidden" value={String(row.id)}/><input name="revision" type="hidden" value={String(row.admin_revision)}/>
                         <input name="lastTransactionId" type="hidden" value={String(row.last_transaction_id)}/>
-                        <label>{t('操作','Operation')}<select name="kind">{sleeveTransactions.filter(kind=>Number(row.transaction_count)>0?kind!=='OPENING_BALANCE':kind==='OPENING_BALANCE'||kind==='PURCHASE').map(kind=><option value={kind}>{kinds[kind]}</option>)}</select></label>
-                        <label>{t('數量（進貨填包數，其餘填張數；調整可為負數）','Quantity (packs for purchase, sleeves otherwise; signed for adjustment)')}<input name="quantity" type="number" required step="1" min="-1000000" max="1000000"/></label>
+                        <label>{t('操作','Operation')}<select name="kind">{sleeveTransactions.filter(kind=>Number(row.transaction_count)>0?kind!=='OPENING_BALANCE':kind==='OPENING_BALANCE'||kind==='PURCHASE'||kind==='GIFT').map(kind=><option value={kind}>{kind==='GIFT'?t('贈送／隨貨附贈','Gift / included with order'):kinds[kind]}</option>)}</select></label>
+                        <label><span data-stock-quantity-label>{t('數量（進貨填包數，其餘填張數；調整可為負數）','Quantity (packs for purchase, sleeves otherwise; signed for adjustment)')}</span><input name="quantity" type="number" required step="1" min="-1000000" max="1000000"/></label>
+                        <fieldset data-gift-fields hidden disabled>
+                            <legend>{t('贈送資料','Gift details')}</legend>
+                            <label>{t('數量單位','Quantity unit')}<select name="unit"><option value="sheet">{t('張（散裝）','Sleeves (loose)')}</option><option value="pack">{t('整包','Packs')}</option></select></label>
+                            <label>{t('收藏 ID（選填）','Collection ID (optional)')}<input name="collectionId" type="number" min="1" step="1" aria-describedby={'gift-collection-'+row.id}/></label>
+                            <p id={'gift-collection-'+row.id} data-gift-collection role="status"></p>
+                            <label>{t('採購訂單 ID（選填）','Purchase order ID (optional)')}<input name="giftOrder" type="number" min="1" step="1" aria-describedby={'gift-order-'+row.id}/></label>
+                            <p id={'gift-order-'+row.id} data-gift-order role="status"></p>
+                            <label>{t('採購明細（選填）','Purchase line (optional)')}<select name="purchaseOrderLineId" disabled><option value="">{t('不連結明細','No linked line')}</option></select></label>
+                            <p>{t('價格固定為 0，不計入採購成本。','Price is fixed at zero and excluded from purchase costs.')}</p>
+                            <p aria-live="polite">{t('新餘額（張）','New balance (sleeves)')} <output data-gift-balance>—</output></p>
+                        </fieldset>
                         <label>{t('交易日期','Transaction date')}<input name="date" type="date" required/></label>
                         <label>{t('原因或備註','Reason or notes')}<textarea name="notes" maxlength="1000"/></label>
                         <button class="admin-button">{t('確認登錄','Record change')}</button>
@@ -186,6 +199,11 @@ const unlocated = data?.unlocatedHistoricalCount ?? 0;
             <h2>#{String(row.id)} {String(row.brand??'')} {String(row.product_name)}</h2>
             <p>{kinds[row.transaction_type as keyof typeof kinds]} · {String(row.transaction_date)} · {number(row.quantity_sheets)} {t('張','sleeves')}</p>
             {row.pack_count!==null&&<p>{String(row.pack_count)} × {String(row.sheets_per_pack_snapshot)} {t('張／包（交易時快照）','sleeves/pack (snapshot)')}</p>}
+            {row.transaction_type==='GIFT'&&<p>
+                {row.collection_name&&<a href={'/admin/collection/'+row.collection_item_id+'/purchases?'+new URLSearchParams({scope:String(row.collection_scope),lang})}>{String(row.collection_name)}</a>}
+                {row.collection_name&&row.purchase_order_id&&' · '}
+                {row.purchase_order_id&&<a href={'/admin/purchases?'+new URLSearchParams({id:String(row.purchase_order_id),lang})}>{t('訂單','Order')} #{String(row.purchase_order_id)}</a>}
+            </p>}
             <p>{String(row.notes??'')}</p>
         </>}
     </article>)}

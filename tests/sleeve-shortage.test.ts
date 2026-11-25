@@ -6,8 +6,8 @@ import { readAdminDashboardSummary } from '../src/lib/admin-dashboard-summary';
 import { r01Fixture } from './helpers/admin-dashboard-preview';
 
 type State = Parameters<typeof r01Fixture>[0];
-function fixture(t: { after: (fn: () => void) => void }, state?: State) {
-    const result = r01Fixture(state);
+function fixture(t: { after: (fn: () => void) => void }, state?: State, omitSyntheticOpening = false) {
+    const result = r01Fixture(state, undefined, omitSyntheticOpening);
     t.after(() => result.sqlite.close());
     return result;
 }
@@ -34,7 +34,8 @@ test('two collections needing 80 each with 100 available have a global gap of 60
         UPDATE v2_sleeve_requirements SET quantity_sheets=80 WHERE collection_item_id=1 AND size_id=1;
         INSERT INTO v2_owned_copies(id,collection_item_id,copy_label) VALUES (2,3,'Other');
         INSERT INTO v2_sleeve_requirements(collection_item_id,size_id,quantity_sheets) VALUES (3,1,80);
-        UPDATE v2_sleeve_inventory_transactions SET quantity_sheets=100 WHERE product_id=1;
+        INSERT INTO v2_sleeve_inventory_transactions(product_id,transaction_type,transaction_date,quantity_sheets)
+            VALUES (1,'ADJUST','2026-11-25',90);
     `);
     const row = (await readSleeveShortage(db)).rows.find(row => row.id === 1);
     assert.deepEqual([row?.pending, row?.available, row?.gap], [160, 100, 60]);
@@ -82,7 +83,7 @@ test('separates missing products, unestablished stock, tracked zero and all inac
 const cases = {
     unknown_copy: "INSERT INTO v2_owned_copies(collection_item_id,copy_label,inventory_status) VALUES (3,'Unknown','unknown')",
     missing_copy: "UPDATE v2_owned_copies SET inventory_status='sold' WHERE id=2",
-    unknown_stock: "DELETE FROM v2_sleeve_inventory_transactions WHERE product_id=3",
+    unknown_stock: '',
     legacy_application: `INSERT INTO v2_sleeve_inventory_transactions(id,product_id,transaction_type,transaction_date,quantity_sheets,collection_item_id,owned_copy_id)
         VALUES (99,3,'USE','2026-11-25',-1,3,2);
         INSERT INTO v2_sleeve_applications(owned_copy_id,inventory_transaction_id,quantity_sheets) VALUES (2,99,1)`,
@@ -94,7 +95,7 @@ const cases = {
 } as const;
 for (const [reason, sql] of Object.entries(cases)) {
     test(reason + ' affects only the related size', async t => {
-        const { db, sqlite } = fixture(t, 'shortage');
+        const { db, sqlite } = fixture(t, 'shortage', reason === 'unknown_stock');
         sqlite.exec(`
             INSERT INTO v2_owned_copies(id,collection_item_id,copy_label) VALUES (2,3,'Second collection');
             INSERT INTO v2_sleeve_requirements(id,collection_item_id,size_id,quantity_sheets) VALUES (99,3,5,20);
@@ -109,6 +110,14 @@ for (const [reason, sql] of Object.entries(cases)) {
         assert.equal(result.rows.find(row => row.id === 4)?.status, 'no_product');
     });
 }
+
+test('gift is available stock even as the first transaction', async t => {
+    const { db, sqlite } = fixture(t, 'shortage', true);
+    sqlite.exec(`INSERT INTO v2_sleeve_inventory_transactions(product_id,transaction_type,transaction_date,quantity_sheets)
+        VALUES (3,'GIFT','2026-11-25',30)`);
+    const row = (await readSleeveShortage(db)).rows.find(row => row.id === 5);
+    assert.deepEqual([row?.available,row?.gap,row?.status], [30,0,'sufficient']);
+});
 
 test('status ordering, size filters and R01 counts share the same results', async t => {
     const { db } = fixture(t, 'shortage');

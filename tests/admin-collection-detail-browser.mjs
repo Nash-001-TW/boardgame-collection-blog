@@ -63,6 +63,18 @@ try {
         entryPoints: ['src/lib/physical-component-admin-controller.ts'],
         bundle: true, write: false, format: 'iife', platform: 'browser',
     });
+    const giftHarness = await build({
+        stdin: {resolveDir:process.cwd(), contents:
+            'export { handleSleeveAdminRequest } from "./src/lib/sleeve-admin-api.ts";' +
+            'export { handlePurchaseAdminRequest } from "./src/lib/purchase-admin-api.ts";'},
+        bundle:true, write:false, format:'cjs', platform:'node', packages:'external',
+        define:{'import.meta.url':JSON.stringify(import.meta.url),'import.meta.env':'undefined'},
+    });
+    const giftApi = {exports:{}};
+    new Function('require','module','exports',giftHarness.outputFiles[0].text)(createRequire(import.meta.url),giftApi,giftApi.exports);
+    const giftClient = await build({
+        entryPoints:['src/lib/sleeve-admin-controller.ts'],bundle:true,write:false,format:'iife',platform:'browser',
+    });
     const renderPage = await dashboardPreview(bindings);
     const client = await build({
         stdin: {resolveDir:process.cwd(), contents:
@@ -85,6 +97,22 @@ try {
             headers.set('Cf-Access-Jwt-Assertion', token);
             const body = ['GET', 'HEAD'].includes(req.method) ? undefined : Buffer.concat(await Array.fromAsync(req));
             const request = new Request(url, {headers, method:req.method, body});
+            if (url.pathname === '/slv-gift-client.js') {
+                res.writeHead(200, {'Content-Type':'application/javascript'}).end(giftClient.outputFiles[0].text);
+                return;
+            }
+            if (url.pathname === '/api/admin/sleeves' || url.pathname === '/api/admin/purchases') {
+                const handle = url.pathname.endsWith('/sleeves') ? giftApi.exports.handleSleeveAdminRequest : giftApi.exports.handlePurchaseAdminRequest;
+                const response = await handle(request,bindings);
+                res.writeHead(response.status, Object.fromEntries(response.headers)).end(await response.text());
+                return;
+            }
+            if (url.pathname === '/admin/sleeves') {
+                const response = await renderPage(request);
+                res.writeHead(response.status, {'Content-Type':'text/html; charset=utf-8'});
+                res.end((await response.text()).replace('</body>', '<script src="/slv-gift-client.js"></script></body>'));
+                return;
+            }
             if (url.pathname === '/s5a-client.js') {
                 res.writeHead(200, {'Content-Type':'application/javascript'}).end(client.outputFiles[0].text);
                 return;
@@ -525,6 +553,138 @@ try {
     const globalPurchases = await fetch(origin + '/admin/purchases?collection=1', {redirect:'manual'});
     assert.equal(globalPurchases.status, 200);
     pass('English sleeve controls render, legacy sleeve URL redirects and global purchase filter stays on its own page');
+
+    const giftScreenshots = process.env.SLV_GIFT_SCREENSHOTS ?? join(output, 'SLV-GIFT-screenshots');
+    await mkdir(giftScreenshots,{recursive:true});
+    const captureGift = async name => {
+        const {data} = await cdp('Page.captureScreenshot',{format:'png'});
+        await writeFile(join(giftScreenshots,name+'.png'),Buffer.from(data,'base64'));
+    };
+    const giftFixture = physicalFixture;
+    giftFixture.sqlite.exec(`INSERT INTO v2_purchase_orders(id,currency_code,item_subtotal_minor,status) VALUES(208,'TWD',100,'paid');
+        INSERT INTO v2_purchase_order_lines(id,purchase_order_id,line_number,description,collection_item_id)
+        VALUES(209,208,1,'Synthetic gift source',1)`);
+    const sleeveAdmin = '/admin/sleeves';
+    const createGiftProduct = '[data-sleeve-action=create]';
+    const setForm = (selector, values) => evaluate((selector,values) => {
+        const form = document.querySelector(selector);
+        form.closest('details')?.setAttribute('open','');
+        for (const [name,value] of Object.entries(values)) {
+            const input = form.elements.namedItem(name);
+            input.value = value;
+            input.dispatchEvent(new Event('input',{bubbles:true}));
+            input.dispatchEvent(new Event('change',{bubbles:true}));
+        }
+    },selector,values);
+    const submitGift = selector => evaluate(selector => {
+        window.confirm = () => true;
+        document.querySelector(selector).requestSubmit();
+    },selector);
+    const savedGift = () => until(() => evaluate(() => document.querySelector('[data-sleeve-status]')?.dataset.tone === 'success'), 'sleeve saved');
+    await resize(1440);
+    await navigate(sleeveAdmin);
+    await setForm(createGiftProduct,{name:'Gift-only sleeves',brand:'Synthetic brand',width:'47.5',height:'100.5',sheetsPerPack:'60'});
+    await submitGift(createGiftProduct);
+    await savedGift();
+    const giftProductId = giftFixture.sqlite.prepare("SELECT id FROM v2_sleeve_products WHERE product_name='Gift-only sleeves'").get().id;
+    const productUrl = sleeveAdmin+'?product='+giftProductId;
+    const stockForm = '[data-sleeve-action=stock]';
+    const editForm = '[data-sleeve-action=edit]';
+    await navigate(productUrl);
+    assert.ok(await evaluate(selector => [...document.querySelector(selector+' [name=kind]').options].some(option=>option.value==='GIFT'),stockForm));
+    await setForm(stockForm,{kind:'GIFT',unit:'pack',quantity:'2'});
+    assert.equal(await evaluate(() => document.querySelector('[data-gift-balance]').textContent),'120');
+    await evaluate(() => document.querySelector('[data-gift-fields]').scrollIntoView({block:'center'}));
+    await captureGift('new-size-first-gift-1440');
+    await submitGift(stockForm);
+    await savedGift();
+    assert.deepEqual([...Object.values(giftFixture.sqlite.prepare(`SELECT transaction_type,quantity_sheets,pack_count,sheets_per_pack_snapshot
+        FROM v2_sleeve_inventory_transactions WHERE product_id=?`).get(giftProductId))],['GIFT',120,2,60]);
+    pass('New size and first transaction recorded as a two-pack gift');
+
+    await resize(768);
+    await setForm(stockForm,{kind:'GIFT',unit:'sheet',quantity:'7',collectionId:'1',giftOrder:'208'});
+    await until(() => evaluate(() => document.querySelector('[data-gift-collection]').textContent.includes('Synthetic collection') &&
+        document.querySelector('[name=purchaseOrderLineId] option[value="209"]')), 'collection name and order lines');
+    await setForm(stockForm,{purchaseOrderLineId:'209'});
+    assert.equal(await evaluate(() => document.querySelector('[data-gift-balance]').textContent),'127');
+    const giftContrast = await evaluate(() => {
+        const rgb = color => color.match(/[\d.]+/g).map(Number);
+        const luminance = ([r,g,b]) => [r,g,b].map(value => value / 255)
+            .map(value => value <= 0.04045 ? value/12.92 : ((value+0.055)/1.055)**2.4)
+            .reduce((sum,value,index)=>sum+value*[0.2126,0.7152,0.0722][index],0);
+        return [...document.querySelectorAll('[data-gift-fields] :is(legend,label,p,output,select,input)')]
+            .filter(element => element.textContent.trim() || element.value)
+            .map(element => {
+                let background = element;
+                while (background && rgb(getComputedStyle(background).backgroundColor)[3] === 0) background = background.parentElement;
+                const foreground = luminance(rgb(getComputedStyle(element).color));
+                const surface = background ? luminance(rgb(getComputedStyle(background).backgroundColor)) : 1;
+                return (Math.max(foreground,surface)+0.05)/(Math.min(foreground,surface)+0.05);
+            });
+    });
+    assert.ok(giftContrast.length >= 10 && giftContrast.every(ratio => ratio >= 4.5), JSON.stringify(giftContrast));
+    pass('Gift fields expose text contrast of at least '+Math.min(...giftContrast).toFixed(2)+':1 across '+giftContrast.length+' samples');
+    for (const width of [1440,768,375]) {
+        await resize(width);
+        assert.ok(await evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+        await evaluate(() => document.querySelector('[data-gift-fields]').scrollIntoView({block:'center'}));
+        await captureGift('linked-gift-'+width);
+        pass('Linked loose gift form fits '+width+' px');
+    }
+    await submitGift(stockForm);
+    await savedGift();
+    const linkedGift = giftFixture.sqlite.prepare('SELECT * FROM v2_sleeve_inventory_transactions WHERE product_id=? ORDER BY id DESC LIMIT 1').get(giftProductId);
+    assert.deepEqual([linkedGift.quantity_sheets,linkedGift.pack_count,linkedGift.collection_item_id,linkedGift.purchase_order_line_id,
+        linkedGift.unit_pack_price_minor,linkedGift.total_price_minor],[7,null,1,209,null,null]);
+    pass('Loose gift links collection and order line with NULL prices');
+
+    await evaluate(selector => document.querySelector(selector).closest('details').open=true,editForm);
+    assert.ok(await evaluate(selector => ['width','height','sheetsPerPack'].every(name=>document.querySelector(selector).elements.namedItem(name).readOnly),editForm));
+    await evaluate(selector => document.querySelector(selector).scrollIntoView({block:'center'}),editForm);
+    await captureGift('product-locked-375');
+    pass('Product size and pack quantity are read-only after first gift');
+    await navigate(productUrl+'&view=transactions');
+    assert.ok(await evaluate(() => document.querySelector('main').innerText.includes('贈送') &&
+        document.querySelector('a[href*="/admin/collection/1/purchases"]') &&
+        document.querySelector('a[href*="/admin/purchases?id=208"]')));
+    await captureGift('ledger-375');
+    pass('Gift ledger label, collection link and order link');
+
+    await navigate(purchasePath+query);
+    assert.ok(await evaluate(() => document.querySelector('[data-collection-sleeve-gifts]').innerText.includes('Gift-only sleeves') &&
+        document.querySelector('[data-collection-sleeve-gifts] a[href*="id=208"]')));
+    await evaluate(() => document.querySelector('[data-collection-sleeve-gifts]').scrollIntoView({block:'end'}));
+    await captureGift('collection-linked-375');
+    pass('Collection lists linked gift and source order');
+    await navigate('/admin/collection/2/purchases'+query);
+    assert.ok(await evaluate(() => document.querySelector('[data-collection-sleeve-gifts]').innerText.includes('尚無附贈卡套紀錄')));
+    await evaluate(() => document.querySelector('[data-collection-sleeve-gifts]').scrollIntoView({block:'end'}));
+    await captureGift('collection-empty-375');
+    pass('Other collection has an empty gift section');
+    db.prepare = sql => {
+        if (sql.includes("t.collection_item_id=? AND t.transaction_type='GIFT'")) throw new Error('Synthetic gift read failure');
+        return prepare(sql);
+    };
+    assert.equal((await fetch(origin+purchasePath+query)).status,200);
+    await navigate(purchasePath+query);
+    assert.ok(await evaluate(() => document.querySelector('[data-detail-header] h1') &&
+        document.querySelector('.admin-collection-purchases').innerText.includes('此收藏的已記錄成本') &&
+        document.querySelector('[data-collection-sleeve-gifts]').innerText.includes('無法取得')));
+    await evaluate(() => document.querySelector('[data-collection-sleeve-gifts]').scrollIntoView({block:'end'}));
+    await captureGift('collection-unavailable-375');
+    db.prepare = prepare;
+    pass('Gift-only read failure preserves HTTP 200, header and purchase data');
+    await resize(1440);
+    await navigate(productUrl+'&lang=en');
+    await setForm(stockForm,{kind:'GIFT',unit:'pack',quantity:'1'});
+    assert.ok(await evaluate(() => document.querySelector('[data-gift-fields]').innerText.includes('Price is fixed at zero') &&
+        document.querySelector('[data-gift-balance]').textContent==='187'));
+    await evaluate(() => document.querySelector('[data-gift-fields]').scrollIntoView({block:'center'}));
+    await captureGift('gift-form-en');
+    await navigate(purchasePath+'?scope=production&lang=en');
+    assert.ok(await evaluate(() => document.querySelector('[data-collection-sleeve-gifts]').innerText.includes('Complimentary sleeves')));
+    pass('English gift form, balance and related purchases section');
     console.log('Checks passed: ' + checks);
 } finally {
     ws?.close();

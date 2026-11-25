@@ -466,3 +466,19 @@ html:has(.shell-drawer[open]) { overflow: hidden; }
 .admin-collection-purchase-links a { min-height: 44px; white-space: normal; }
 .admin-collection-purchase-orders { list-style: none; padding: 0; }
 .admin-collection-purchase-orders > li { border-top: 1px solid var(--border-strong); padding-block: var(--space-3); }
+.admin-page [data-gift-fields] {
+    grid-column: 1 / -1;
+    min-inline-size: 0;
+    margin: 0 0 var(--space-3);
+    padding: var(--space-3);
+    border: 1px solid var(--border-strong);
+    overflow-wrap: anywhere;
+}
+.admin-page [data-gift-fields] select {
+    min-inline-size: 0;
+    max-inline-size: 100%;
+}
+.admin-page [data-gift-fields] :is(input, select):enabled { border-color: var(--ink-muted); }
+.admin-page [data-gift-fields] :focus-visible { outline: var(--focus-ring); outline-offset: 3px; }
+.admin-page [data-gift-fields] p:empty { margin: 0; }
+.admin-page [data-collection-sleeve-gifts] h3 { overflow-wrap: anywhere; }

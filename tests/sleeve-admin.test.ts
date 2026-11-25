@@ -5,7 +5,7 @@ import test from 'node:test';
 import { sqliteD1 } from './helpers/sqlite-d1.ts';
 import { accessFixture } from './helpers/notbgg-access-fixture.ts';
 import { handleSleeveAdminRequest } from '../src/lib/sleeve-admin-api.ts';
-import { readSleeveAdmin } from '../src/lib/sleeve-admin.ts';
+import { readCollectionSleeveGifts, readSleeveAdmin } from '../src/lib/sleeve-admin.ts';
 import { writePhysicalComponent } from '../src/lib/physical-component-management.ts';
 
 test('sleeve admin through real SQLite, signed authentication and existing ledger constraints',async t=>{
@@ -95,7 +95,11 @@ test('sleeve admin through real SQLite, signed authentication and existing ledge
             assert.equal((await send({...stock('ADJUST',1,last(),2),date:'2026-02-30'})).status,400);
             assert.equal((await send(stock('ADJUST',0,last(),2))).status,400);
             assert.equal((await send({...product,action:'edit',productId:id,revision:2,width:64})).status,409);
-            assert.equal((await send({...product,action:'edit',productId:id,revision:2,sheetsPerPack:50})).status,201);
+            const locked = await send({...product,action:'edit',productId:id,revision:2,sheetsPerPack:50});
+            assert.equal(locked.status,409);
+            assert.equal((await locked.json() as {error:{code:string}}).error.code,'SLEEVE_PRODUCT_PACK_LOCKED');
+            assert.equal(sqlite.prepare('SELECT sheets_per_pack FROM v2_sleeve_products WHERE id=?').get(id)?.sheets_per_pack,100);
+            assert.equal((await send({...product,action:'edit',productId:id,revision:2,name:'Ledger product'})).status,201);
             assert.equal(sqlite.prepare("SELECT sheets_per_pack_snapshot n FROM v2_sleeve_inventory_transactions WHERE product_id=? AND transaction_type='PURCHASE'").get(id)?.n,100);
         });
 
@@ -122,6 +126,53 @@ test('sleeve admin through real SQLite, signed authentication and existing ledge
             assert.equal(first.rows.length,20);assert.ok(first.nextCursor);
             const second=await readSleeveAdmin(db,new URLSearchParams({after:String(first.nextCursor)}),secret);
             assert.ok(second.rows.length);assert.ok(second.rows.every(row=>Number(row.id)>Number(first.nextCursor)));
+        });
+
+        await t.test('new size accepts first gift, snapshots packs, and validates optional links atomically',async()=>{
+            sqlite.exec(`INSERT INTO v2_purchase_orders(id,currency_code,item_subtotal_minor,status) VALUES(9,'TWD',100,'paid');
+                INSERT INTO v2_purchase_order_lines(id,purchase_order_id,line_number,description,collection_item_id)
+                VALUES(8,9,1,'Linked line',1),(9,9,2,'No collection',NULL)`);
+            const created = await send({...product,name:'Gift-only size',width:47.5,height:100.5,sheetsPerPack:60});
+            assert.equal(created.status,201);
+            id = (await created.json() as {data:{id:number}}).data.id;
+            assert.equal(last(),0);
+            const first = {...stock('GIFT',2,0),unit:'pack'};
+            assert.equal((await send(first,'first-gift-001')).status,201);
+            assert.equal((await send(first,'first-gift-001')).status,200);
+            const linked = {...stock('GIFT',5,last()),unit:'sheet',collectionId:1,purchaseOrderLineId:8};
+            assert.equal((await send({...linked,collectionId:2})).status,409);
+            assert.equal((await send({...linked,collectionId:999})).status,409);
+            assert.equal((await send({...linked,purchaseOrderLineId:999})).status,409);
+            assert.equal((await send({...linked,quantity:-1})).status,400);
+            assert.equal((await send({...linked,unit:'box'})).status,400);
+            assert.equal((await send({...linked,totalPriceMinor:1})).status,400);
+            assert.equal((await send({...first,lastTransactionId:last(),quantity:16_667})).status,409);
+            sqlite.exec(`CREATE TRIGGER synthetic_immutable_conflict BEFORE INSERT ON v2_sleeve_inventory_transactions
+                BEGIN UPDATE v2_sleeve_inventory_transactions SET notes=notes WHERE product_id=NEW.product_id; END`);
+            const immutable = await send(linked);
+            assert.equal(immutable.status,409);
+            assert.equal((await immutable.json() as {error:{code:string}}).error.code,'SLEEVE_TRANSACTION_IMMUTABLE');
+            sqlite.exec('DROP TRIGGER synthetic_immutable_conflict');
+            assert.equal(balance(),120);
+            assert.equal((await send(linked)).status,201);
+            assert.equal((await send({...stock('GIFT',3,last()),unit:'sheet',collectionId:1})).status,201);
+            assert.equal((await send({...stock('GIFT',4,last()),unit:'sheet',purchaseOrderLineId:8})).status,201);
+            assert.equal((await send({...stock('GIFT',6,last()),unit:'sheet',collectionId:2,purchaseOrderLineId:9})).status,201);
+            assert.equal(balance(),138);
+            const list = await readSleeveAdmin(db,new URLSearchParams({view:'transactions',product:String(id)}),secret);
+            assert.deepEqual(list.rows.map(row => [row.quantity_sheets,row.pack_count,row.sheets_per_pack_snapshot,
+                row.unit_pack_price_minor,row.total_price_minor,row.collection_name,row.purchase_order_id]), [
+                [120,2,60,null,null,null,null],[5,null,null,null,null,'Fixture collection',9],
+                [3,null,null,null,null,'Fixture collection',null],[4,null,null,null,null,'Fixture collection',9],
+                [6,null,null,null,null,'Other collection',9],
+            ]);
+            assert.equal((await readSleeveAdmin(db,new URLSearchParams({product:String(id)}),secret)).rows[0].received,138);
+            // The line-only gift (4 sheets) inherits line 8's collection; line 9 has no collection, so the
+            // gift explicitly linked to collection 2 keeps it.
+            assert.deepEqual((await readCollectionSleeveGifts(db,1)).map(row=>[row.quantity_sheets,row.purchase_order_id]),[[4,9],[3,null],[5,9]]);
+            assert.deepEqual((await readCollectionSleeveGifts(db,2)).map(row=>row.quantity_sheets),[6]);
+            assert.equal((await send({action:'archive',productId:id,revision:1})).status,201);
+            assert.equal((await send({...stock('GIFT',1,last(),2),unit:'sheet'})).status,409);
         });
     }finally{auth.restore();sqlite.close();}
 });

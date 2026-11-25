@@ -31,7 +31,7 @@ function allowed(body: Record<string, unknown>, keys: string[]) {
     if (Object.keys(body).some(key => !keys.includes(key))) throw new HttpError(400, 'UNKNOWN_FIELD');
 }
 
-export const sleeveTransactions = ['OPENING_BALANCE', 'PURCHASE', 'USE', 'RETURN', 'ADJUST', 'DISCARD'] as const;
+export const sleeveTransactions = ['OPENING_BALANCE', 'PURCHASE', 'GIFT', 'USE', 'RETURN', 'ADJUST', 'DISCARD'] as const;
 
 /** Shared atomic ledger command commit, including replay after a concurrent duplicate. */
 export async function commitSleeveCommand(db:D1Database,statements:D1PreparedStatement[],
@@ -84,15 +84,14 @@ export async function writeSleeveAdmin(db: D1Database, actor: string, key: strin
         } else {
             explicitResult = sleeveInteger(body.productId,1);
             const revision = sleeveInteger(body.revision);
+            // The 0025 trigger checks the current ledger inside the update, including a concurrent first gift.
             statements.push(db.prepare(`UPDATE v2_sleeve_products SET
                 size_id=(SELECT id FROM v2_sleeve_sizes WHERE width_tenth_mm=? AND height_tenth_mm=?),
                 brand=?,product_name=?,sheets_per_pack=?,thickness_microns=?,notes=?,is_active=?,
                 admin_revision=admin_revision+1,updated_at=CURRENT_TIMESTAMP
-                WHERE id=? AND admin_revision=? AND (
-                    size_id=(SELECT id FROM v2_sleeve_sizes WHERE width_tenth_mm=? AND height_tenth_mm=?)
-                    OR NOT EXISTS (SELECT 1 FROM v2_sleeve_inventory_transactions WHERE product_id=v2_sleeve_products.id))
+                WHERE id=? AND admin_revision=?
                 RETURNING id`).bind(width,height,brand || null,name,pack,thickness,notes || null,Number(body.active),
-                    explicitResult,revision,width,height));
+                    explicitResult,revision));
         }
     } else if (action === 'archive') {
         allowed(body,['action','productId','revision']);
@@ -101,7 +100,9 @@ export async function writeSleeveAdmin(db: D1Database, actor: string, key: strin
             updated_at=CURRENT_TIMESTAMP WHERE id=? AND admin_revision=? RETURNING id`)
             .bind(explicitResult,sleeveInteger(body.revision)));
     } else {
-        allowed(body,['action','productId','revision','lastTransactionId','kind','quantity','date','notes']);
+        const gift = body.kind === 'GIFT';
+        allowed(body,['action','productId','revision','lastTransactionId','kind','quantity','date','notes',
+            ...(gift ? ['unit','collectionId','purchaseOrderLineId'] : [])]);
         const productId = sleeveInteger(body.productId,1);
         const revision = sleeveInteger(body.revision);
         const last = sleeveInteger(body.lastTransactionId);
@@ -116,27 +117,48 @@ export async function writeSleeveAdmin(db: D1Database, actor: string, key: strin
             throw new HttpError(400, 'INVALID_SLEEVE_INPUT');
         }
         const notes = text(body.notes,1000);
-        statements.push(db.prepare(`INSERT INTO v2_sleeve_inventory_transactions
-            (source_key,product_id,transaction_type,transaction_date,pack_count,sheets_per_pack_snapshot,quantity_sheets,notes)
-            SELECT ?,p.id,?,?,CASE WHEN ?='PURCHASE' THEN ? END,
-                CASE WHEN ?='PURCHASE' THEN p.sheets_per_pack END,
-                CASE WHEN ?='PURCHASE' THEN ?*p.sheets_per_pack
-                    WHEN ? IN ('USE','DISCARD') THEN -? ELSE ? END,?
-            FROM v2_sleeve_products p WHERE p.id=? AND p.admin_revision=? AND p.is_active=1
+        if (gift && body.unit !== 'pack' && body.unit !== 'sheet') throw new HttpError(400, 'INVALID_SLEEVE_INPUT');
+        const collectionId = body.collectionId == null ? null : sleeveInteger(body.collectionId,1);
+        const lineId = body.purchaseOrderLineId == null ? null : sleeveInteger(body.purchaseOrderLineId,1);
+        const packs = kind === 'PURCHASE' || (gift && body.unit === 'pack');
+        // Validate links and the ledger snapshot within the same atomic command.
+        statements.push(db.prepare(`WITH input(kind, quantity, packs, collection_id, line_id) AS (VALUES (?,?,?,?,?))
+            INSERT INTO v2_sleeve_inventory_transactions
+            (source_key,product_id,transaction_type,transaction_date,pack_count,sheets_per_pack_snapshot,quantity_sheets,notes,
+             collection_item_id,purchase_order_line_id,unit_pack_price_minor,total_price_minor)
+            SELECT ?,p.id,i.kind,?,CASE WHEN i.packs THEN i.quantity END,
+                CASE WHEN i.packs THEN p.sheets_per_pack END,
+                CASE WHEN i.packs THEN i.quantity*p.sheets_per_pack
+                    WHEN i.kind IN ('USE','DISCARD') THEN -i.quantity ELSE i.quantity END,?,
+                -- A gift linked only to a purchase line belongs to that line's collection, so it
+                -- appears in the collection's gift list; an explicit collection always wins.
+                COALESCE(i.collection_id,(SELECT l.collection_item_id FROM v2_purchase_order_lines l WHERE l.id=i.line_id)),
+                i.line_id,NULL,NULL
+            FROM v2_sleeve_products p CROSS JOIN input i WHERE p.id=? AND p.admin_revision=? AND p.is_active=1
               AND COALESCE((SELECT MAX(id) FROM v2_sleeve_inventory_transactions WHERE product_id=p.id),0)=?
-              AND ((?='OPENING_BALANCE' AND ?=0) OR (?='PURCHASE') OR (? NOT IN ('PURCHASE','OPENING_BALANCE') AND ?>0))
-              AND (?<>'PURCHASE' OR ?*p.sheets_per_pack<=1000000)
+              AND ((i.kind='OPENING_BALANCE' AND ?=0) OR i.kind IN ('PURCHASE','GIFT') OR (i.kind<>'OPENING_BALANCE' AND ?>0))
+              AND (NOT i.packs OR i.quantity*p.sheets_per_pack<=1000000)
+              AND (i.collection_id IS NULL OR EXISTS (SELECT 1 FROM v2_collection_items WHERE id=i.collection_id))
+              AND (i.line_id IS NULL OR EXISTS (SELECT 1 FROM v2_purchase_order_lines l WHERE l.id=i.line_id
+                AND (i.collection_id IS NULL OR l.collection_item_id IS NULL OR l.collection_item_id=i.collection_id)))
               AND COALESCE((SELECT SUM(quantity_sheets) FROM v2_sleeve_inventory_transactions WHERE product_id=p.id),0)
-                + CASE WHEN ?='PURCHASE' THEN ?*p.sheets_per_pack WHEN ? IN ('USE','DISCARD') THEN -? ELSE ? END >= 0
-            RETURNING id`).bind(requestKey,kind,date,kind,quantity,kind,kind,quantity,kind,quantity,quantity,notes || null,
-                productId,revision,last,kind,last,kind,kind,last,kind,quantity,kind,quantity,kind,quantity,quantity));
+                + CASE WHEN i.packs THEN i.quantity*p.sheets_per_pack
+                    WHEN i.kind IN ('USE','DISCARD') THEN -i.quantity ELSE i.quantity END >= 0
+            RETURNING id`).bind(kind,quantity,Number(packs),collectionId,lineId,requestKey,date,notes || null,
+                productId,revision,last,last,last));
     }
 
     statements.push(db.prepare(`INSERT INTO v2_sleeve_admin_commands(request_key,request_hash,actor,operation,result_id)
         VALUES (?,?,?,?,CASE WHEN changes()=1 THEN ${explicitResult === null ? 'last_insert_rowid()' : '?'} ELSE NULL END)`)
         .bind(requestKey,hash,actor,String(action),...(explicitResult === null ? [] : [explicitResult])));
-    return commitSleeveCommand(db,statements,replay,
-        /NOT NULL constraint failed: v2_sleeve_admin_commands.result_id|stock negative/,'SLEEVE_STATE_CHANGED');
+    try {
+        return await commitSleeveCommand(db,statements,replay,
+            /NOT NULL constraint failed: v2_sleeve_admin_commands.result_id|stock negative/,'SLEEVE_STATE_CHANGED');
+    } catch (error) {
+        const conflict = /\b(SLEEVE_PRODUCT_PACK_LOCKED|SLEEVE_TRANSACTION_IMMUTABLE)\b/.exec(String(error));
+        if (conflict) throw new HttpError(409, conflict[1]);
+        throw error;
+    }
 }
 
 export async function readSleeveAdmin(db: D1Database, params: URLSearchParams, secret: unknown) {
@@ -156,7 +178,7 @@ export async function readSleeveAdmin(db: D1Database, params: URLSearchParams, s
             (SELECT COALESCE(MAX(id),0) FROM v2_sleeve_inventory_transactions WHERE product_id=p.id) AS last_transaction_id,
             (SELECT SUM(quantity_sheets) FROM v2_sleeve_inventory_transactions WHERE product_id=p.id) AS balance,
             (SELECT SUM(-quantity_sheets) FROM v2_sleeve_inventory_transactions WHERE product_id=p.id AND transaction_type='USE') AS used,
-            (SELECT SUM(quantity_sheets) FROM v2_sleeve_inventory_transactions WHERE product_id=p.id AND transaction_type IN ('OPENING_BALANCE','PURCHASE')) AS received
+            (SELECT SUM(quantity_sheets) FROM v2_sleeve_inventory_transactions WHERE product_id=p.id AND transaction_type IN ('OPENING_BALANCE','PURCHASE','GIFT')) AS received
             FROM v2_sleeve_products p JOIN v2_sleeve_sizes s ON s.id=p.size_id
             WHERE p.id>? AND (?=0 OR p.size_id=?) AND (?=0 OR p.id=?)
               AND (?='all' OR p.is_active=CASE WHEN ?='active' THEN 1 ELSE 0 END)
@@ -175,8 +197,11 @@ export async function readSleeveAdmin(db: D1Database, params: URLSearchParams, s
         return { view, rows: page.slice(0,20).map(row => ({ ...row }) as Record<string, unknown>), nextCursor: page.length > 20 ? page[19].id : null,
             sleeveSizes: shortage.rows.map(({ id, width_tenth_mm, height_tenth_mm }) => ({ id, width_tenth_mm, height_tenth_mm })), unlocatedHistoricalCount: shortage.unlocatedHistoricalCount };
     } else if (view === 'transactions') {
-        const result = await db.prepare(`SELECT t.*,p.product_name,p.brand FROM v2_sleeve_inventory_transactions t
+        const result = await db.prepare(`SELECT t.*,p.product_name,p.brand,c.display_name AS collection_name,
+            c.record_scope AS collection_scope,l.purchase_order_id FROM v2_sleeve_inventory_transactions t
             JOIN v2_sleeve_products p ON p.id=t.product_id
+            LEFT JOIN v2_collection_items c ON t.transaction_type='GIFT' AND c.id=t.collection_item_id
+            LEFT JOIN v2_purchase_order_lines l ON t.transaction_type='GIFT' AND l.id=t.purchase_order_line_id
             WHERE t.id>? AND (?=0 OR t.product_id=?) AND (?=0 OR p.size_id=?)
             AND (?='' OR instr(lower(p.product_name||' '||COALESCE(t.notes,'')),lower(?))>0)
             ORDER BY t.id LIMIT 21`).bind(after,product,product,size,size,q,q).all<Record<string,unknown>>();
@@ -200,4 +225,21 @@ export async function readSleeveAdmin(db: D1Database, params: URLSearchParams, s
             classification_reason: classifications.get(Number(row.component_definition_id))?.reason ?? null}));
     }
     return { view, rows: rows.slice(0,20), nextCursor: rows.length>20 ? rows[19].id as number : null };
+}
+
+export async function readCollectionSleeveGifts(db: D1Database, collectionId: number) {
+    const result = await db.prepare(`SELECT t.transaction_date,t.quantity_sheets,t.pack_count,
+        p.brand,p.product_name,s.width_tenth_mm,s.height_tenth_mm,l.purchase_order_id
+        FROM v2_sleeve_inventory_transactions t
+        JOIN v2_sleeve_products p ON p.id=t.product_id
+        JOIN v2_sleeve_sizes s ON s.id=p.size_id
+        LEFT JOIN v2_purchase_order_lines l ON l.id=t.purchase_order_line_id
+        WHERE t.collection_item_id=? AND t.transaction_type='GIFT'
+        ORDER BY t.transaction_date DESC,t.id DESC`).bind(sleeveInteger(collectionId,1)).all<{
+            transaction_date: string; quantity_sheets: number; pack_count: number | null;
+            brand: string | null; product_name: string; width_tenth_mm: number; height_tenth_mm: number;
+            purchase_order_id: number | null;
+        }>();
+    if (!result.success) throw new HttpError(503,'DATABASE_UNAVAILABLE');
+    return result.results;
 }

@@ -1,6 +1,7 @@
 ---
 import { env } from 'cloudflare:workers';
 import { readPurchases } from '../../lib/purchase-admin';
+import { readCollectionSleeveGifts } from '../../lib/sleeve-admin';
 import AlertBanner from './AlertBanner.astro';
 import EmptyState from './EmptyState.astro';
 
@@ -35,6 +36,12 @@ const purchaseLink = (query: Record<string, string>) => '/admin/purchases?' + ne
 const createLink = purchaseLink({ new: '1', collection });
 const createLabel = t('新增採購（預填此收藏）', 'New purchase (prefill this collection)');
 const unavailable = t('無法取得', 'Unavailable');
+let gifts: Awaited<ReturnType<typeof readCollectionSleeveGifts>> | undefined;
+try {
+    gifts = await readCollectionSleeveGifts(env.DB, collectionId);
+} catch (error) {
+    console.error('Collection sleeve gifts unavailable', error);
+}
 ---
 <section class="admin-collection-purchases" aria-label={t('相關採購', 'Related purchases')}>
     <div class="admin-collection-purchase-links">
@@ -70,4 +77,18 @@ const unavailable = t('無法取得', 'Unavailable');
     </> : <AlertBanner tone="danger" title={unavailable} unavailableLabel={unavailable}
         description={t('無法取得相關採購資料。', 'Related purchases could not be loaded.')}
         href={pathname + Astro.url.search} linkLabel={t('重試', 'Retry')} />}
+    <section class="admin-kit-panel" data-collection-sleeve-gifts>
+        <h2>{t('隨貨附贈的卡套', 'Complimentary sleeves')}</h2>
+        {gifts === undefined ? <p>{unavailable}</p> : gifts.length === 0
+            ? <p>{t('此收藏尚無附贈卡套紀錄。', 'No sleeve gifts are linked to this collection.')}</p>
+            : <ul class="admin-collection-purchase-orders">
+                {gifts.map(gift => <li>
+                    <h3>{[gift.brand, gift.product_name].filter(Boolean).join(' ')}</h3>
+                    <p>{gift.transaction_date} · {gift.width_tenth_mm/10} × {gift.height_tenth_mm/10} mm · {gift.quantity_sheets} {t('張','sleeves')}
+                        {gift.pack_count !== null && <> · {gift.pack_count} {t('包','packs')}</>}
+                        {gift.purchase_order_id !== null && <> · <a href={purchaseLink({id:String(gift.purchase_order_id)})}>{t('訂單','Order')} #{gift.purchase_order_id}</a></>}
+                    </p>
+                </li>)}
+            </ul>}
+    </section>
 </section>

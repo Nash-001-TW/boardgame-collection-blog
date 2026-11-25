@@ -8,7 +8,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { sqliteD1 } from './sqlite-d1';
 
 /** R01-only synthetic data; all writes are to disposable in-memory SQLite. */
-export function r01Fixture(state: 'normal' | 'warning' | 'empty' | 'failure' | 'shortage' | 'sleeve-failure' = 'normal', failBatchAt?: number) {
+export function r01Fixture(state: 'normal' | 'warning' | 'empty' | 'failure' | 'shortage' | 'sleeve-failure' = 'normal', failBatchAt?: number, omitSyntheticOpening = false) {
     const sqlite = new DatabaseSync(':memory:');
     for (const file of readdirSync('migrations').filter(file => file.endsWith('.sql')).sort()) {
         sqlite.exec(readFileSync('migrations/' + file, 'utf8').replace(/^\uFEFF/, ''));
@@ -52,7 +52,8 @@ export function r01Fixture(state: 'normal' | 'warning' | 'empty' | 'failure' | '
             VALUES (1,1,'Short stock',100,1),(2,3,'Unknown stock',100,1),
                    (3,5,'Sufficient stock',100,1),(4,6,'Inactive stock',100,0);
         INSERT INTO v2_sleeve_inventory_transactions(product_id,transaction_type,transaction_date,quantity_sheets)
-            VALUES (1,'OPENING_BALANCE','2026-11-25',10),(3,'OPENING_BALANCE','2026-11-25',30),
+            VALUES (1,'OPENING_BALANCE','2026-11-25',10),
+                   ${omitSyntheticOpening ? '' : "(3,'OPENING_BALANCE','2026-11-25',30),"}
                    (4,'OPENING_BALANCE','2026-11-25',100);
     `);
     if (state === 'warning') {
