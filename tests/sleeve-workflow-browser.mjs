@@ -92,5 +92,16 @@ try{
  await send('Network.setExtraHTTPHeaders',{headers:{'Cf-Access-Jwt-Assertion':await auth.token({email:'viewer@example.test'})}});
  assert.equal(await evaluate(async()=>{const r=await fetch('/api/admin/sleeves',{method:'POST',headers:{'Content-Type':'application/json','X-NotBGG-Request':'1'},body:'{}'});return r.status;}),403);
  assert.deepEqual(jsErrors,[]);
+ f.sqlite.exec(`
+   INSERT INTO v2_sleeve_sizes(id,width_tenth_mm,height_tenth_mm) VALUES (3,500,700),(4,510,700);
+   INSERT INTO v2_sleeve_requirements(collection_item_id,size_id,quantity_sheets) VALUES (1,3,10),(1,4,10),(1,2,200);
+   INSERT INTO v2_sleeve_products(size_id,product_name,sheets_per_pack) VALUES (3,'No ledger',50);
+ `);
+ await send('Network.setExtraHTTPHeaders',{headers:{'Cf-Access-Jwt-Assertion':jwt}});
+ await goto('/admin/collection/1/sleeves?lang=en');
+ await text('[data-sleeve-shortage=incomplete]','Data for this size is incomplete');
+ await text('[data-sleeve-shortage=no_product]','No sleeve products for this size');
+ await text('[data-sleeve-shortage=shortage]','Combined demand for this size across collections exceeds stock');
+ console.log('PASS global stock hints do not change the existing workflow');
  console.log('PASS bilingual five-width layouts, public actual products and privacy, unauthenticated/non-admin denied; no Wrangler or remote D1');
 }finally{ws?.close();browser?.kill();if(server)await new Promise(r=>server.close(r));f.sqlite.close();auth.restore();}

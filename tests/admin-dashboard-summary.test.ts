@@ -12,12 +12,11 @@ test('R01 keeps existing collection and source counts and scopes related records
     }
     const summary = await readAdminDashboardSummary(fixture.db);
     assert.deepEqual({ ...summary.collection }, { total: 3, owned: 2, wishlist: 1, preorder: 1 });
-    assert.deepEqual({ ...summary.sleeves }, { sizes: 2, requirements: 1 });
+    assert.deepEqual({ ...summary.sleeves }, { sizes: 2, requirements: 1, shortage: 0, incomplete: 0 });
     assert.deepEqual({ ...summary.components }, { definitions: 1, records: 1 });
     assert.deepEqual({ ...summary.sources }, { bgg: 1, notbgg: 1 });
     assert.deepEqual({ ...summary.sync }, { failed: 0 });
     assert.ok(summary.purchases);
-    assert.doesNotMatch(readFileSync('src/pages/admin/index.astro', 'utf8'), /庫存不足|sleeve shortage|insufficient stock/i);
 });
 
 test('R01 reads purchases in exactly one batch of six statements', async t => {
@@ -30,7 +29,7 @@ test('R01 reads purchases in exactly one batch of six statements', async t => {
         return batch<T>(statements);
     };
     assert.ok((await readAdminDashboardSummary(fixture.db)).purchases);
-    assert.deepEqual(batchSizes, [6]);
+    assert.deepEqual(batchSizes, [5, 6]);
 });
 
 test('Failure at any position in the purchase batch leaves other R01 sections intact', async t => {
@@ -56,7 +55,7 @@ test('R01 rejects unsuccessful batch results and unsafe purchase amounts or orde
     ]) {
         fixture.db.batch = async <T>(statements: D1PreparedStatement[]) => {
             const results = await batch<T>(statements);
-            Object.assign(results[5], invalid);
+            if (statements.length === 6) Object.assign(results[5], invalid);
             return results;
         };
         assert.deepEqual(await readAdminDashboardSummary(fixture.db), expected);

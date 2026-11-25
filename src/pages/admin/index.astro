@@ -34,6 +34,11 @@ const failed = sync?.failed ?? null;
 const failedLabel = t('BGG 同步失敗', 'BGG sync failures');
 const failedHref = href('/admin/bgg', { state: 'failed' });
 const pending = failed ? [{ href: failedHref, label: failedLabel, count: failed, tone: 'warning' as const }] : [];
+const sleeveHref = (status: string) => href('/admin/sleeves', { view: 'sizes', status });
+const shortageLabel = t('庫存不足', 'Stock shortages');
+const incompleteLabel = t('資料不完整', 'Incomplete data');
+if (sleeves?.shortage) pending.push({ href: sleeveHref('shortage'), label: shortageLabel, count: sleeves.shortage, tone: 'warning' });
+if (sleeves?.incomplete) pending.push({ href: sleeveHref('incomplete'), label: incompleteLabel, count: sleeves.incomplete, tone: 'warning' });
 const purchaseHref = href('/admin/purchases');
 const money = ({ currency, amount }: { currency: string; amount: number }) => {
     if (!/^[A-Z]{3}$/.test(currency) || !Intl.supportedValuesOf('currency').includes(currency)) return null;
@@ -63,6 +68,8 @@ const statuses = [
     { title: t('卡套狀況', 'Sleeve status'), icon: 'sleeves', image: 'fn-sleeves', rows: [
         { label: t('卡套尺寸數', 'Sleeve sizes'), count: sleeves?.sizes ?? null },
         { label: t('有需求紀錄', 'Requirement records'), count: sleeves?.requirements ?? null },
+        { label: shortageLabel, count: sleeves?.shortage ?? null },
+        { label: incompleteLabel, count: sleeves?.incomplete ?? null },
     ] },
     { title: t('組件狀況', 'Component status'), icon: 'puzzle', image: 'fn-components', rows: [
         { label: t('組件定義數', 'Component definitions'), count: components?.definitions ?? null },
@@ -96,10 +103,15 @@ const warnings = [
       </div>
     </section>
 
-    {failed !== 0 && <section aria-label={t('警示', 'Alerts')}>
-      <AlertBanner title={failedLabel} tone="warning" href={failedHref} linkLabel={t('查看詳情', 'View details')}
+    {(failed !== 0 || !!sleeves?.shortage) && <section aria-label={t('警示', 'Alerts')}>
+      {failed !== 0 && <AlertBanner title={failedLabel} tone="warning" href={failedHref} linkLabel={t('查看詳情', 'View details')}
         unavailableLabel={unavailable} description={failed === null ? undefined :
-          t(`目前有 ${number.format(failed)} 筆同步失敗`, `${number.format(failed)} records currently failed`)} />
+          t(`目前有 ${number.format(failed)} 筆同步失敗`, `${number.format(failed)} records currently failed`)} />}
+      {!!sleeves?.shortage && <AlertBanner
+        title={t(`${number.format(sleeves.shortage)} 種尺寸庫存不足`, `${number.format(sleeves.shortage)} sizes with stock shortages`)}
+        description={sleeves.incomplete ? t(`另有 ${number.format(sleeves.incomplete)} 種尺寸資料不完整，無法判定`,
+          `${number.format(sleeves.incomplete)} other sizes have incomplete data`) : ''}
+        tone="warning" href={sleeveHref('shortage')} linkLabel={t('查看不足尺寸', 'View shortages')} unavailableLabel={unavailable} />}
     </section>}
 
     <section class="dashboard-overview" aria-labelledby="dashboard-overview">
@@ -155,8 +167,9 @@ const warnings = [
 
     <section class="admin-kit-panel" aria-labelledby="pending-work">
       <h2 id="pending-work">{t('待處理項目', 'Pending work')}</h2>
-      {failed === null ? <p><span aria-hidden="true">—</span><span class="admin-kit-sr">{unavailable}</span></p> :
-        pending.length ? <PendingList locale={lang} items={pending} /> :
+      {pending.length > 0 && <PendingList locale={lang} items={pending} />}
+      {(failed === null || !sleeves) ? <p><span aria-hidden="true">—</span><span class="admin-kit-sr">{unavailable}</span></p> :
+        !pending.length &&
         <EmptyState illustration={picture('empty-no-result')} reason={t('目前沒有待處理項目。', 'There is no pending work.')}
           href={href('/admin/bgg')} action={t('查看 BGG 管理', 'View BGG management')} />}
     </section>

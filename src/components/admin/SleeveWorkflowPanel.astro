@@ -2,6 +2,7 @@
 import { env } from 'cloudflare:workers';
 import { HttpError } from '../../lib/notbgg-admin-api';
 import { readSleeveWorkflow } from '../../lib/sleeve-workflow';
+import { readSleeveShortage, type ShortageStatus } from '../../lib/sleeve-shortage';
 import SleeveRequirementForm from './SleeveRequirementForm.astro';
 interface Props { collectionId: number; lang: 'zh-TW' | 'en'; }
 const { collectionId, lang } = Astro.props;
@@ -18,6 +19,23 @@ if (collectionId) try {
         Astro.response.status=503;error=t('無法載入收藏卡套資料。','Collection sleeve data could not be loaded.');
     }
 }
+const shortageStatuses = new Map<number, ShortageStatus>();
+let shortageUnavailable = false;
+if (data?.requirements.length && Astro.url.searchParams.get('scope') !== 'test') {
+    try {
+        for (const row of (await readSleeveShortage(env.DB)).rows) shortageStatuses.set(row.id, row.status);
+    } catch (cause) {
+        console.error('Collection sleeve shortage read failed', cause instanceof Error ? cause.name : typeof cause);
+        shortageUnavailable = true;
+    }
+}
+const shortageMessages = {
+    shortage: t('此尺寸與其他收藏合計的需求超過庫存', 'Combined demand for this size across collections exceeds stock'),
+    incomplete: t('此尺寸資料不完整，無法判定庫存是否足夠', 'Data for this size is incomplete, so stock sufficiency is unknown'),
+    no_product: t('尚無此尺寸的卡套產品', 'No sleeve products for this size'),
+    sufficient: '',
+    none: '',
+};
 ---
 <section class="admin-sleeve-workflow" aria-label={t('卡套需求與逐副本套用','Sleeve requirements & copy applications')} data-sleeve-workflow data-lang={lang}>
  <p role="status" tabindex="-1" data-workflow-status aria-live="polite"></p>
@@ -28,13 +46,16 @@ if (collectionId) try {
   <p>{t('建立需求與關聯不扣庫存。套用需要已確認卡牌及已清點的在藏、未封膜副本。已有套用的需求鎖定；變更需求請新增另一筆。','Requirements and assignments do not reduce stock. Applying needs confirmed cards and an inspected, unsealed copy in collection. Used requirements are locked; add another requirement for changes.')}</p>
   <details class="workflow-panel"><summary>{t('新增卡套需求','Add sleeve requirement')}</summary><SleeveRequirementForm data={data} collectionId={collectionId} lang={lang}/></details>
   <label>{t('需求篩選','Requirement filter')}<select data-assignment-filter><option value="all">{t('全部','All')}</option><option value="unassigned">{t('未指派','Unassigned')}</option><option value="assigned">{t('已關聯','Assigned')}</option></select></label>
+  {shortageUnavailable && <p role="status">{t('無法取得尺寸庫存狀況。', 'Size stock status is unavailable.')}</p>}
   {data.requirements.length===0&&<p>{t('尚無卡套需求。','No sleeve requirements.')}</p>}
   {data.requirements.map(r=>{
+   const status = shortageStatuses.get(Number(r.size_id)) ?? 'none';
    const applications=data!.applications.filter(a=>a.requirement_id===r.id);
    const locked=applications.length>0||data!.applications.some(a=>a.requirement_id===null);
    const eligible=data!.eligible.includes(Number(r.component_definition_id));
    return <article class="workflow-panel" data-requirement={String(r.id)} data-assigned={r.component_definition_id===null?'unassigned':'assigned'}>
     <h3>#{String(r.id)} · {Number(r.width_tenth_mm)/10} × {Number(r.height_tenth_mm)/10} mm · {String(r.quantity_sheets)} {t('張','sleeves')}</h3>
+    {shortageMessages[status] && <p data-sleeve-shortage={status}>{shortageMessages[status]}</p>}
     <p>{r.component_definition_id===null?t('未指派','Unassigned'):eligible?t('已確認實體卡牌','Confirmed physical card'):t('歷史／待確認引用（不可套用）','Legacy / unverified reference (cannot apply)')}</p>
     {locked?<p>{t('已有套用紀錄，需求已鎖定。','Requirement locked by recorded applications.')}</p>:<details><summary>{t('編輯需求','Edit requirement')}</summary><SleeveRequirementForm data={data!} row={r} collectionId={collectionId} lang={lang}/></details>}
     {data!.copies.filter(c=>r.owned_copy_id===null||r.owned_copy_id===c.id).map(c=>{

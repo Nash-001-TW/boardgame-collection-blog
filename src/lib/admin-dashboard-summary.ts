@@ -1,7 +1,8 @@
+import { readSleeveShortage } from './sleeve-shortage';
+
 export const adminOwnedSql = "CASE WHEN json_valid(notes) = 1 THEN CASE WHEN json_type(notes, '$.owned') IS NOT NULL THEN CAST(json_extract(notes, '$.owned') AS INTEGER) ELSE acquisition_status = 'owned' END ELSE acquisition_status = 'owned' END";
 
 type Collection = { total: number; owned: number; wishlist: number; preorder: number };
-type Sleeves = { sizes: number; requirements: number };
 type Components = { definitions: number; records: number };
 type Sources = { bgg: number; notbgg: number };
 type PurchaseRow = { kind: string; currency: string; amount: number; order_id: number };
@@ -134,9 +135,11 @@ export async function readAdminDashboardSummary(db: D1Database | undefined) {
                    COUNT(CASE WHEN wishlist = 1 THEN 1 END) AS wishlist,
                    COUNT(CASE WHEN acquisition_status = 'preordered' THEN 1 END) AS preorder
             FROM imported`)),
-        readSection('sleeves', db, db => counts<Sleeves>(db, `
-            SELECT (SELECT COUNT(*) FROM v2_sleeve_sizes) AS sizes,
-                   (SELECT COUNT(*) FROM v2_sleeve_requirements WHERE collection_item_id IN (${production})) AS requirements`)),
+        readSection('sleeves', db, async db => {
+            const shortage = await readSleeveShortage(db);
+            return { sizes: shortage.rows.length, requirements: shortage.requirementCount,
+                shortage: shortage.totals.shortage, incomplete: shortage.totals.incomplete };
+        }),
         readSection('components', db, db => counts<Components>(db, `
             SELECT (SELECT COUNT(*) FROM v2_component_definitions WHERE collection_item_id IN (${production})) AS definitions,
                    (SELECT COUNT(*) FROM v2_copy_components c JOIN v2_owned_copies copy ON copy.id = c.owned_copy_id

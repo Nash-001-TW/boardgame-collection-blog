@@ -8,7 +8,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { sqliteD1 } from './sqlite-d1';
 
 /** R01-only synthetic data; all writes are to disposable in-memory SQLite. */
-export function r01Fixture(state: 'normal' | 'warning' | 'empty' | 'failure' = 'normal', failBatchAt?: number) {
+export function r01Fixture(state: 'normal' | 'warning' | 'empty' | 'failure' | 'shortage' | 'sleeve-failure' = 'normal', failBatchAt?: number) {
     const sqlite = new DatabaseSync(':memory:');
     for (const file of readdirSync('migrations').filter(file => file.endsWith('.sql')).sort()) {
         sqlite.exec(readFileSync('migrations/' + file, 'utf8').replace(/^\uFEFF/, ''));
@@ -43,6 +43,18 @@ export function r01Fixture(state: 'normal' | 'warning' | 'empty' | 'failure' = '
             COMMIT;
         `);
     }
+    if (state === 'shortage') sqlite.exec(`
+        INSERT INTO v2_sleeve_sizes(id,width_tenth_mm,height_tenth_mm)
+            VALUES (3,460,690),(4,470,700),(5,480,710),(6,490,720);
+        INSERT INTO v2_sleeve_requirements(collection_item_id,size_id,quantity_sheets)
+            VALUES (1,3,30),(1,4,30),(1,5,30),(1,6,30),(2,2,999),(4,2,999);
+        INSERT INTO v2_sleeve_products(id,size_id,product_name,sheets_per_pack,is_active)
+            VALUES (1,1,'Short stock',100,1),(2,3,'Unknown stock',100,1),
+                   (3,5,'Sufficient stock',100,1),(4,6,'Inactive stock',100,0);
+        INSERT INTO v2_sleeve_inventory_transactions(product_id,transaction_type,transaction_date,quantity_sheets)
+            VALUES (1,'OPENING_BALANCE','2026-11-25',10),(3,'OPENING_BALANCE','2026-11-25',30),
+                   (4,'OPENING_BALANCE','2026-11-25',100);
+    `);
     if (state === 'warning') {
         // Model pre-existing malformed rows without changing the production schema or guards.
         sqlite.exec(`
@@ -71,12 +83,13 @@ export function r01Fixture(state: 'normal' | 'warning' | 'empty' | 'failure' = '
     db.prepare = (sql: string) => {
         if (/\b(?:UNION|INTERSECT|EXCEPT)\b/i.test(sql)) throw new Error('Compound SELECT is forbidden in the R01 fixture');
         if (state === 'failure' && sql.includes('v2_component_definitions')) throw new Error('Synthetic component read failure');
+        if (state === 'sleeve-failure' && sql.includes('FROM v2_sleeve_sizes')) throw new Error('Synthetic sleeve read failure');
         return prepare(sql);
     };
     if (failBatchAt !== undefined) {
         const batch = db.batch.bind(db);
         db.batch = <T>(statements: D1PreparedStatement[]) => batch<T>(
-            statements.map((statement, index) => index === failBatchAt
+            statements.map((statement, index) => statements.length === 6 && index === failBatchAt
                 ? prepare('SELECT * FROM synthetic_missing_batch_table')
                 : statement),
         );

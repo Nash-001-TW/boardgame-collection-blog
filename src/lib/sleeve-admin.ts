@@ -1,3 +1,4 @@
+import { readSleeveShortage } from './sleeve-shortage';
 import { HttpError } from './notbgg-admin-api';
 import { classifyStoredComponents } from './component-classifier-adapter';
 
@@ -164,14 +165,15 @@ export async function readSleeveAdmin(db: D1Database, params: URLSearchParams, s
         if (!result.success) throw new HttpError(503,'DATABASE_UNAVAILABLE');
         rows = result.results;
     } else if (view === 'sizes') {
-        const result = await db.prepare(`SELECT s.*,
-            (SELECT COUNT(*) FROM v2_sleeve_products WHERE size_id=s.id) AS product_count,
-            (SELECT COUNT(*) FROM v2_sleeve_requirements WHERE size_id=s.id) AS requirement_count,
-            (SELECT SUM(quantity_sheets) FROM v2_sleeve_requirements WHERE size_id=s.id) AS required
-            FROM v2_sleeve_sizes s WHERE s.id>? AND (?=0 OR s.id=?) ORDER BY s.id LIMIT 21`)
-            .bind(after,size,size).all<Record<string,unknown>>();
-        if (!result.success) throw new HttpError(503,'DATABASE_UNAVAILABLE');
-        rows = result.results;
+        const filter = params.get('status') ?? 'all';
+        if (!['all','shortage','incomplete','demand'].includes(filter)) throw new HttpError(400,'INVALID_SLEEVE_QUERY');
+        const shortage = await readSleeveShortage(db);
+        const matching = shortage.rows.filter(row => (!size || row.id === size) &&
+            (filter === 'all' || (filter === 'demand' ? row.status !== 'none' : row.status === filter)));
+        const start = after ? matching.findIndex(row => row.id === after) + 1 : 0;
+        const page = matching.slice(start, start + 21);
+        return { view, rows: page.slice(0,20).map(row => ({ ...row }) as Record<string, unknown>), nextCursor: page.length > 20 ? page[19].id : null,
+            sleeveSizes: shortage.rows.map(({ id, width_tenth_mm, height_tenth_mm }) => ({ id, width_tenth_mm, height_tenth_mm })), unlocatedHistoricalCount: shortage.unlocatedHistoricalCount };
     } else if (view === 'transactions') {
         const result = await db.prepare(`SELECT t.*,p.product_name,p.brand FROM v2_sleeve_inventory_transactions t
             JOIN v2_sleeve_products p ON p.id=t.product_id

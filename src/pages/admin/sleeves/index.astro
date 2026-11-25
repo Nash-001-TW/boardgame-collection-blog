@@ -2,6 +2,7 @@
 import { env } from 'cloudflare:workers';
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { readSleeveAdmin, sleeveTransactions } from '../../../lib/sleeve-admin';
+import type { SleeveShortageRow } from '../../../lib/sleeve-shortage';
 import { HttpError } from '../../../lib/notbgg-admin-api';
 export const prerender = false;
 const lang = Astro.url.searchParams.get('lang')==='en'?'en':'zh-TW';
@@ -29,6 +30,26 @@ const link=(changes:Record<string,string|null>)=>{
 };
 const sizeLabel=(row:Record<string,unknown>)=>Number(row.width_tenth_mm)/10+' × '+Number(row.height_tenth_mm)/10+' mm';
 const number=(value:unknown)=>value===null?t('尚未建立','Not established'):Number.isSafeInteger(value)?Number(value).toLocaleString(lang):t('無法計算','Unavailable');
+const sizeRows = view === 'sizes' ? data?.rows as unknown as SleeveShortageRow[] | undefined : undefined;
+const counts = (value: number | null) => value === null ? '—' : value.toLocaleString(lang);
+const statusLabels = {
+    none: '—',
+    no_product: t('尚無產品', 'No products'),
+    incomplete: t('資料不完整', 'Incomplete data'),
+    shortage: t('不足', 'Shortage'),
+    sufficient: t('充足', 'Sufficient'),
+};
+const reasonLabels = {
+    unknown_copy: t('副本狀態未知', 'Unknown copy status'),
+    legacy_application: t('有未對應需求的歷史套用', 'Historical applications without a requirement'),
+    unknown_stock: t('啟用產品庫存尚未建立', 'Active product stock not established'),
+    invalid_quantity: t('套用量或帳面數量異常', 'Invalid application quantity or ledger balance'),
+    missing_copy: t('缺少在藏或借出副本', 'No in-collection or loaned copies'),
+};
+const tableLabels = [t('啟用產品數','Active products'), t('可用庫存（張）','Available stock'),
+    t('待套用量（張）','Pending sleeves'), t('缺口（張）','Shortfall'), t('狀態','Status'),
+    t('有效需求筆數','Requirements'), t('歷史套用筆數','Historical applications')];
+const unlocated = data?.unlocatedHistoricalCount ?? 0;
 ---
 <AdminLayout lang={lang} title={title}>
 <main id="editor-content" class="admin-page sleeve-admin" data-sleeve-admin data-lang={lang}>
@@ -45,7 +66,17 @@ const number=(value:unknown)=>value===null?t('尚未建立','Not established'):N
     <form method="get" class="fields">
         <input type="hidden" name="lang" value={lang}/><input type="hidden" name="view" value={view}/>
         {view!=='sizes'&&<label>{t('搜尋','Search')}<input name="q" value={params.get('q')??''} maxlength="160"/></label>}
-        <label>{t('尺寸 ID（可留空）','Size ID (optional)')}<input name="size" type="number" min="1" step="1" value={params.get('size')??undefined}/></label>
+        {view==='sizes' ? <>
+            <label>{t('庫存篩選','Stock filter')}<select name="status">
+                {Object.entries({ all:t('全部','All'), shortage:statusLabels.shortage, demand:t('有需求','Has demand'),
+                    incomplete:statusLabels.incomplete }).map(([id,label]) =>
+                    <option value={id} selected={(params.get('status') ?? 'all') === id}>{label}</option>)}
+            </select></label>
+            <label>{t('尺寸','Size')}<select name="size">
+                <option value="">{t('全部尺寸','All sizes')}</option>
+                {data?.sleeveSizes?.map(size => <option value={String(size.id)} selected={Number(params.get('size')) === size.id}>{sizeLabel(size)}</option>)}
+            </select></label>
+        </> : <label>{t('尺寸 ID（可留空）','Size ID (optional)')}<input name="size" type="number" min="1" step="1" value={params.get('size')??undefined}/></label>}
         {(view==='products'||view==='transactions')&&<label>{t('產品 ID（可留空）','Product ID (optional)')}<input name="product" type="number" min="1" step="1" value={params.get('product')??undefined}/></label>}
         {view==='products'&&<label>{t('產品狀態','Product status')}<select name="active">
             {['all','active','inactive'].map((value,i)=><option value={value} selected={value===(params.get('active')??'all')}>{[t('全部','All'),t('啟用','Active'),t('停用','Inactive')][i]}</option>)}
@@ -72,7 +103,35 @@ const number=(value:unknown)=>value===null?t('尚未建立','Not established'):N
             'Quantities reflect recorded ledger entries. No entries means not established. Record use, returns, adjustments and discards explicitly. Requirement assignments do not reduce stock.')}</p>
     </>}
     {data&&data.rows.length===0&&<p class="sleeve-panel">{t('沒有符合條件的資料。','No matching records.')}</p>}
-    {data?.rows.map(row=><article class="record" data-sleeve-record={String(row.id)}>
+    {view === 'sizes' && <section class="admin-kit" aria-label={t('尺寸庫存概況','Stock by size')}>
+        {unlocated > 0 && <p class="admin-kit-notice" data-tone="warning">{t(
+            `有 ${counts(unlocated)} 筆歷史資料無法判定影響哪個尺寸。`,
+            `${counts(unlocated)} historical records could not be matched to a size.`)}</p>}
+        <p>{t('尺寸合計僅供概況。每次套用須選一項庫存足夠的產品，可分次使用不同產品。',
+            'Size totals are an overview. Select one product with enough stock per application. You can use different products across applications.')}</p>
+        {!!sizeRows?.length && <table class="admin-kit-table sleeve-size-table" role="table" aria-label={t('尺寸庫存','Size stock')}>
+            <thead role="rowgroup"><tr role="row">
+                <th scope="col" role="columnheader">{t('尺寸','Size')}</th>
+                {tableLabels.map(label => <th scope="col" role="columnheader">{label}</th>)}
+            </tr></thead>
+            <tbody role="rowgroup">{sizeRows.map(row => <tr role="row" data-sleeve-record={String(row.id)} data-size-status={row.status}>
+                <th scope="row" role="rowheader">
+                    <span>{sizeLabel({ ...row })}</span>
+                    <small><a href={'?'+new URLSearchParams({view:'products',size:String(row.id),lang})}>{t('產品','Products')}</a>
+                    {' · '}<a href={'?'+new URLSearchParams({view:'requirements',size:String(row.id),lang})}>{t('需求','Requirements')}</a></small>
+                </th>
+                {[counts(row.activeProducts),
+                    <>{counts(row.available)}{row.inactiveProducts > 0 && <small>{t('停用庫存','Inactive stock')} {counts(row.inactiveStock)}</small>}</>,
+                    counts(row.pending), counts(row.gap),
+                    <>{row.status === 'none' ? '—' : <span class="admin-kit-badge" data-tone={row.status === 'shortage' ? 'danger' :
+                        row.status === 'incomplete' ? 'warning' : row.status === 'sufficient' ? 'success' : 'neutral'}>{statusLabels[row.status]}</span>}
+                        {row.status === 'incomplete' && <small>{row.reasons.map(reason => reasonLabels[reason]).join(t('、', '; '))}</small>}</>,
+                    counts(row.requirementCount), counts(row.historicalCount)].map((value,index) =>
+                    <td role="cell"><span class="admin-kit-cell-label" aria-hidden="true">{tableLabels[index]}</span><span>{value}</span></td>)}
+            </tr>)}</tbody>
+        </table>}
+    </section>}
+    {view !== 'sizes' && data?.rows.map(row=><article class="record" data-sleeve-record={String(row.id)}>
         {view==='products'?<>
             <h2>#{String(row.id)} {String(row.brand??'')} {String(row.product_name)}</h2>
             <p>{sizeLabel(row)} · {String(row.sheets_per_pack)} {t('張／包','sleeves/pack')} · {Number(row.is_active)?t('啟用','Active'):t('停用','Inactive')}</p>
@@ -113,10 +172,6 @@ const number=(value:unknown)=>value===null?t('尚未建立','Not established'):N
                     <button class="admin-button danger">{t('停用產品','Deactivate product')}</button>
                 </form>
             </>}
-        </>:view==='sizes'?<>
-            <h2>#{String(row.id)} {sizeLabel(row)}</h2>
-            <p>{t('產品數','Products')} {number(row.product_count)} · {t('需求筆數','Requirements')} {number(row.requirement_count)} · {t('需求張數','Required sleeves')} {number(row.required??0)}</p>
-            <a href={link({view:'products',size:String(row.id),after:null})}>{t('查看產品','View products')}</a>
         </>:view==='requirements'?<>
             <h2>#{String(row.id)} {String(row.display_name)}</h2>
             <p>{sizeLabel(row)} · {number(row.quantity_sheets)} {t('張','sleeves')} · {String(row.record_scope)}</p>
@@ -141,4 +196,13 @@ const number=(value:unknown)=>value===null?t('尚未建立','Not established'):N
 </main>
 </AdminLayout>
 <script>import '../../../lib/sleeve-admin-controller';</script>
-<style>.sleeve-panel{padding:20px;border:1px solid var(--admin-border);border-radius:8px;background:#fff;margin:20px 0}.sleeve-panel>summary{cursor:pointer;font-weight:600}.sleeve-admin details{margin:16px 0}.sleeve-admin summary{cursor:pointer;padding:8px 0}.sleeve-admin nav a[aria-current=page]{background:#dceee5;color:#075342;font-weight:650}</style>
+<style>.sleeve-panel{padding:20px;border:1px solid var(--admin-border);border-radius:8px;background:#fff;margin:20px 0}.sleeve-panel>summary{cursor:pointer;font-weight:600}.sleeve-admin details{margin:16px 0}.sleeve-admin summary{cursor:pointer;padding:8px 0}.sleeve-admin nav a[aria-current=page]{background:#dceee5;color:#075342;font-weight:650}
+.sleeve-size-table tbody th { background: var(--bg-surface); }
+.sleeve-size-table small { display: block; margin-top: var(--space-1); }
+@media (max-width: 1100px) and (min-width: 768px) {
+    .sleeve-size-table th, .sleeve-size-table td { padding-inline: var(--space-1); }
+}
+@media (max-width: 767px) {
+    .sleeve-size-table td > span:last-child { text-align: end; }
+}
+</style>

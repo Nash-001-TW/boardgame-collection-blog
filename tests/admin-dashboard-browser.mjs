@@ -8,7 +8,8 @@ import { build } from 'esbuild';
 
 const output = process.argv[2];
 if (!output) throw new Error('A disposable artifact directory is required');
-const screenshots = join(output, 'UI-S3-screenshots');
+const shortageOnly = process.env.SLV_SHORT_BROWSER === '1';
+const screenshots = shortageOnly ? output : join(output, 'UI-S3-screenshots');
 await mkdir(screenshots, { recursive: true });
 
 const harness = await build({
@@ -24,7 +25,7 @@ new Function('require', 'module', 'exports', harness.outputFiles[0].text)(
     createRequire(import.meta.url), loaded, loaded.exports,
 );
 const { dashboardPreview, r01Fixture, accessFixture } = loaded.exports;
-const fixtures = Object.fromEntries(['normal', 'warning', 'empty', 'failure'].map(state => [state, r01Fixture(state)]));
+const fixtures = Object.fromEntries(['normal', 'warning', 'empty', 'failure', 'shortage', 'sleeve-failure'].map(state => [state, r01Fixture(state)]));
 let server, browser, ws;
 let checks = 0;
 
@@ -140,6 +141,11 @@ try {
         });
         await writeFile(join(screenshots, name + '.png'), Buffer.from(data, 'base64'));
     };
+    if (shortageOnly) {
+        const { checkSleeveShortage } = await import('./sleeve-shortage-browser.mjs?checks');
+        await checkSleeveShortage({ cdp, navigate, evaluate, until, pass, capture });
+        console.log(checks + ' shortage browser checks passed.');
+    } else {
     const inspect = () => evaluate(async () => {
         const images = [...document.querySelectorAll('main img, .shell-banner')];
         for (const image of images) image.loading = 'eager';
@@ -182,7 +188,7 @@ try {
         assert.equal(result.alert, '');
         assert.match(result.text, /TWD\s*70\.00/);
         assert.match(result.text, /JPY\s*500/);
-        assert.doesNotMatch(result.text, /庫存不足|待確認分類|尚未對應|近期活動/);
+        assert.doesNotMatch(result.text, /種尺寸庫存不足|待確認分類|尚未對應|近期活動/);
         assert.ok(result.watermark);
         await capture('r01-' + width);
         pass('normal state, links, layout and watermarks at ' + width);
@@ -229,6 +235,7 @@ try {
     pass('English content and language-preserving links');
 
     console.log(checks + ' browser checks passed; 7 synthetic screenshots saved.');
+    }
 } finally {
     ws?.close();
     browser?.kill();
