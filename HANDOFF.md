@@ -343,3 +343,8 @@ node --import tsx --test tests/public-site-data.test.ts tests/public-site-sqlite
 - **2026-11-26（Asia/Taipei）**：#34 已部署（使用者授權）：提交 `a451682`，15:31:38 推送，自動部署為 `3735aada`（100%，15:33:03）；唯讀抽查 9 條路由全部符合。實際驗收併 #23。
 - **2026-11-26（Asia/Taipei）**：#23 進度（正式資料，Claude 唯讀查詢確認）：使用者建立收藏 #262 豪華版（base）、#263 混亂教團（expansion）、#264 遊戲墊、#265 玩家桌墊（accessory）；收藏關係 #1～#3 方向都正確（擴充 → 主遊戲、配件 → 適用遊戲）；採購 #1（跳蚤二手，TWD 2038，完成）依 Claude 建議手動把 2038 全部分攤到 #262，其他三項 0。使用者反映關係管理頁只顯示英文代碼與 ID，新增 CURRENT_TASK #35（待規劃）。
 - **2026-11-26（Asia/Taipei）**：使用者確認 #262 的系列花費顯示正確，系列花費改版在正式環境驗收通過。**組件清點的驗收使用者決定暫緩、之後補做**，包括 D1 G7、P0-B 清點日期、P0-A 此副本不適用；步驟已記在 CURRENT_TASK #23。#262 的副本 #1 是在藏、封膜未知，可以清點（Claude 唯讀確認）。只改文件。
+- **2026-11-26（Asia/Taipei）**：文件已提交 `6c331e5`（未推送）。Claude 起草 [#35 規劃](docs/relation-list-labels-plan-20261126.md)（**候選**）：`readRelationAdmin` 本來就讀了遊戲與收藏名稱，只是給編輯表單用；清單改顯示「名稱 → 名稱」與中文類型，篩選改成下拉，選項拿掉 `production`。只改顯示層，不改伺服器、不需 Migration。Q131～Q133 待決。只新增文件。
+- **2026-11-26（Asia/Taipei）**：使用者將 Q131～Q133 全部採 A（DECISION_LOG REL-LABEL-Q131～Q133），並追加需求：目標選定後，後續新增的關聯預設帶入相同目標。Claude 核對 `RelationForm.astro`：目前從主遊戲進入時，主遊戲被預設為**來源**，但擴充和配件的關係方向是指向主遊戲，所以方向相反；目標沒有預設，類型預設為「其他」。整理為 Q134（[規劃 §3.1](docs/relation-list-labels-plan-20261126.md)）待確認。
+- **2026-11-26（Asia/Taipei）**：使用者將 Q134 採 A（DECISION_LOG REL-LABEL-Q134）：從本體進入時預設為目標、存檔後沿用目標、依來源類型帶入關聯類型。工作命令已補上允許修改 `bgg-admin-controller.ts`（只限 Q134）與 4 項 Edge 驗收，待授權。
+- **2026-11-26（Asia/Taipei）**：使用者詢問「管理收藏組合關係」還有哪些入口，Claude 整理出 4 個入口和 3 個小問題，使用者決定併入 #35（DECISION_LOG REL-LABEL-Q135）：側欄「收藏」加「收藏組合」；相關採購分頁的系列區一律提供入口連結（帶本體）；英文標籤統一。工作命令已補上允許修改的範圍與驗收，待授權。
+- **2026-11-26（Asia/Taipei）**：使用者授權 `REL-LABEL-20261126-01`（DECISION_LOG REL-LABEL-AUTH），Claude 透過 Codex CLI 外掛交付，回報寫入規劃 §5.4。
