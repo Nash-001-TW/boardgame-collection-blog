@@ -31,7 +31,7 @@ test('BGG mock synchronization and separate relation graphs',async t=>{
  seedBggRelations(f.sqlite);const token=crypto.randomUUID()+crypto.randomUUID(),jwt=await auth.token();
  const bindings={...auth.bindings,DB:f.db,BGG_API_TOKEN:token,NOTBGG_WRITE_LIMITER:{limit:async()=>({success:true})}};
  let mode='success',calls=0,sequence=0;const delays:number[]=[];
- const fetcher:typeof fetch=async(input,init)=>{calls++;const url=new URL(String(input));assert.equal(url.origin,'https://boardgamegeek.com');assert.equal(new Headers(init?.headers).get('Authorization'),'Bearer '+token);assert.equal(init?.redirect,'error');
+ const fetcher:typeof fetch=async(input,init)=>{calls++;const url=new URL(String(input));assert.equal(url.origin,'https://boardgamegeek.com');assert.equal(new Headers(init?.headers).get('Authorization'),'Bearer '+token);assert.equal(init?.redirect,'manual');
   if(mode==='http')return new Response(token,{status:503});if(mode==='xml')return new Response('<items><item>');if(mode==='wrong')return new Response(bggXml(42));if(mode==='echo')return new Response(bggXml(Number(url.searchParams.get('id'))).replace('Fixture description',token));if(mode==='throw')throw new Error(token);if(mode==='timeout')throw new DOMException('timed out','TimeoutError');if(mode==='large')return new Response('x'.repeat(2_000_001));
   const id=Number(url.searchParams.get('id'));return new Response(bggXml(id,id===900002?'boardgameexpansion':'boardgame',id===900002?'<link type="boardgameexpansion" id="900001" value="Base" inbound="true"/>':''));};
  const dependencies={fetcher,sleep:async(ms:number)=>{delays.push(ms);}};

@@ -45,7 +45,9 @@ export async function fetchBggGameXml(
         await (options?.fetcher??fetch)(
             url,
             {
-                signal:options?.signal,redirect:'error',
+                // Workers rejects redirect:'error' (TypeError before any request). 'manual' keeps the
+                // no-follow intent: a 3xx is not ok, so it fails below as BGG API HTTP 3xx.
+                signal:options?.signal,redirect:'manual',
                 headers: {
                     Authorization:
                         `Bearer ${token}`

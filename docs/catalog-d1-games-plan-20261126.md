@@ -225,6 +225,17 @@ Edge 另驗證繁中 768 無整頁橫向捲動，並用 UI 建立一筆 test sco
 
 **上線**：不需要 Migration。依 DEPLOY-01，需要另外授權才能推送部署；部署後由使用者實際操作驗收：在 `/admin/bgg` 同步一款目錄外的遊戲，再到新增收藏搜尋並建立。
 
+### 5.9 部署（2026-11-26，Claude 執行，使用者授權「提交並推送」，DECISION_LOG CAT-D1-DEPLOY）
+
+- 提交 `1ec49da`，台北 10:49:36 推送 `8ac5c29..1ec49da`，共 3 個提交：`ce0c644`、`7812a19`、`1ec49da`。
+- Workers Builds 自動部署為 `157a866c`（100%，台北 10:50:20）。
+- 唯讀抽查 14 條路由，全部符合：
+  - 公開頁 6 條回 200；`/games/bgg/451166` 回 307。
+  - `/admin`、`/admin/collection`、`/admin/collection/new`、`/admin/bgg`、`/admin/notbgg`、`/api/admin/auth-check` 回 302 轉到 Access。
+  - `/dev/ui-kit` 回 404。
+- 遠端操作：推送 1 次、Metadata 輪詢 3 次、HTTP 14 次；D1 查詢與寫入 0。
+- **待做**：由使用者實際操作驗收。先在 `/admin/bgg` 同步一款目錄外的遊戲，再到 `/admin/collection/new` 搜尋並建立收藏。
+
 ### 5.5 禁止事項
 
 同 P0B §7.7：
