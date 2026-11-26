@@ -37,6 +37,7 @@ const submitted = [];
 let nextCommit;
 let blockedCommitKey;
 let rejectStatus = false;
+let rejectCreateCount = false;
 let releaseCommit;
 const timeoutMs = 4_000;
 
@@ -104,6 +105,9 @@ try {
                         res.destroy();
                         return;
                     }
+                } else if (body.action === 'count' && rejectCreateCount) {
+                    rejectCreateCount = false;
+                    response = Response.json({ success: false, error: { code: 'SERVICE_UNAVAILABLE' } }, { status: 503 });
                 } else if (body.action === 'quantity-status' && rejectStatus) {
                     rejectStatus = false;
                     response = Response.json({ success: false, error: { code: 'FORBIDDEN' } }, { status: 403 });
@@ -593,6 +597,143 @@ try {
     'English count dates');
     await captureDate('en-count-dates', 1280);
     pass('count date defaults, future-date guard, in-place save, reload, copy switch and applicability restoration');
+
+    const createForm = '[data-physical-action="create"]';
+    const createName = createForm + ' [name="name"]';
+    const sameExpected = createForm + ' [data-create-match-expected]';
+    const createStatus = '[data-create-status]';
+    const createScreenshots = join(output, 'R06-CC-screenshots');
+    await mkdir(createScreenshots);
+    async function captureCreate(name, selector, widths = [375, 1280]) {
+        for (const width of widths) {
+            await viewport(width, 900);
+            const overflow = await evaluate(async selector => {
+                const target = document.querySelector(selector);
+                target.scrollIntoView({ block: 'center', behavior: 'instant' });
+                await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+                return document.documentElement.scrollWidth > document.documentElement.clientWidth;
+            }, selector);
+            assert.equal(overflow, false, name + ' at ' + width);
+            const { data } = await cdp('Page.captureScreenshot', { format: 'png', fromSurface: true });
+            await writeFile(join(createScreenshots, name + '-' + width + '.png'), Buffer.from(data, 'base64'));
+        }
+    }
+    async function fillCreate(name, actual) {
+        await evaluate((selector, name, actual) => {
+            const form = document.querySelector(selector);
+            form.closest('details').open = true;
+            form.elements.namedItem('name').value = name;
+            form.elements.namedItem('type').value = 'token';
+            form.elements.namedItem('unit').value = 'piece';
+            form.elements.namedItem('expected').value = '5';
+            form.elements.namedItem('expected').dispatchEvent(new Event('input', { bubbles: true }));
+            const input = form.elements.namedItem('actual');
+            if (input) input.value = actual;
+            form.elements.namedItem('confirmed').checked = true;
+        }, createForm, name, actual ?? '');
+    }
+    const createdRow = name => '[data-count-values][data-component-name$=" ' + name + '"]';
+    async function submitCreate(name) {
+        assert.equal(await evaluate(selector => document.querySelector(selector).reportValidity(), createForm), true);
+        await click(createForm + ' [type="submit"]');
+        try {
+            await until(() => visible(createdRow(name)), 'created row ' + name);
+        } catch (error) {
+            throw new Error('Create status: ' + await text(createStatus) + '; create requests: ' + submittedAs('create').length, { cause: error });
+        }
+        assert.equal(await evaluate(selector => {
+            const name = document.querySelector(selector);
+            return window.createNavigationMarker && document.activeElement === name && name.value === '' &&
+                name.closest('details').open && name.form.elements.namedItem('actual').value === '';
+        }, createName), true);
+    }
+    await cdp('Page.navigate', { url: opening });
+    await until(() => evaluate(selector => document.querySelector(selector)?.disabled, sameExpected), 'blank expected');
+    await until(async () => {
+        await useCopy(2);
+        return evaluate(() => new URL(location.href).searchParams.get('copy') === '2');
+    }, 'existing controller switches to the second copy');
+    await cdp('Emulation.setFocusEmulationEnabled', { enabled: true });
+    await evaluate(() => {
+        window.createNavigationMarker = true;
+        const date = document.querySelector('[data-count-date]');
+        date.value = '2026-01-02';
+        date.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    for (const [index, actual] of [0, 5, 3].entries()) {
+        const name = 'Create token ' + (index + 1);
+        await fillCreate(name, index === 1 ? '' : actual);
+        if (index === 1) {
+            assert.equal(await evaluate(selector => {
+                const button = document.querySelector(selector);
+                button.focus();
+                return document.activeElement === button;
+            }, sameExpected), true);
+            await cdp('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: ' ', code: 'Space', windowsVirtualKeyCode: 32 });
+            await cdp('Input.dispatchKeyEvent', { type: 'keyUp', key: ' ', code: 'Space', windowsVirtualKeyCode: 32 });
+            await until(() => evaluate(selector =>
+                document.querySelector(selector).elements.namedItem('actual').value === '5', createForm), 'keyboard matches expected');
+            await captureCreate('zh-filled', createForm, [375, 768, 1280]);
+            const targets = await evaluate(selector => [...document.querySelector(selector).querySelectorAll(
+                'input:not([type="hidden"],[type="checkbox"]), select, button, label:has([type="checkbox"])'
+            )].map(target => Math.min(target.offsetHeight, target.offsetWidth)), createForm);
+            assert.ok(targets.length > 0 && targets.every(size => size >= 44), 'create form touch targets');
+        }
+        await submitCreate(name);
+        assert.equal(await text(createdRow(name) + ' [data-count-current]'), String(actual));
+        assert.equal(await text(createdRow(name) + ' [data-counted-on]'), '2026-01-02');
+        assert.equal(submittedAs('count').at(-1).body.copyId, 2);
+        assert.equal(submittedAs('create').at(-1).body.actual, undefined);
+    }
+    await captureCreate('zh-continuous', createdRow('Create token 3'));
+    pass('three consecutive in-place create and count saves, selected copy, chosen date and keyboard match');
+
+    await fillCreate('Uncounted token');
+    await submitCreate('Uncounted token');
+    assert.equal(await text(createdRow('Uncounted token') + ' [data-count-current]'), '未清點');
+    pass('blank actual creates an uncounted component');
+
+    await fillCreate('Retry token', 4);
+    rejectCreateCount = true;
+    await submitCreate('Retry token');
+    assert.match(await text(createStatus), /組件已建立，但這份副本的清點未儲存/);
+    await captureCreate('zh-partial', createStatus);
+    const retryRow = createdRow('Retry token');
+    await evaluate(selector => {
+        const actual = document.querySelector(selector);
+        actual.value = '4';
+        actual.dispatchEvent(new Event('input', { bubbles: true }));
+    }, retryRow + ' [name="actual"]');
+    await click(retryRow + ' [data-count-save]');
+    await until(async () => await text(retryRow + ' [data-count-current]') === '4', 'supplemental count');
+    await setApplicable(/不適用/);
+    await until(() => excluded(), 'rebound applicability');
+    const newId = submittedAs('count').at(-1).body.definitionId;
+    const newEdit = '[data-physical-action="edit"]:has([name="definitionId"][value="' + newId + '"])';
+    await evaluate(selector => {
+        const form = document.querySelector(selector);
+        form.closest('details').open = true;
+        form.elements.namedItem('name').value = 'Edited retry token';
+    }, newEdit);
+    await click(newEdit + ' [data-quantity-submit]');
+    await until(() => visible(createdRow('Edited retry token')), 'rebound edit');
+    pass('partial failure leaves the component and rebound count, applicability and edit work');
+
+    await cdp('Page.navigate', { url: english });
+    await until(() => visible('[data-component-management] > summary'), 'English form');
+    await fillCreate('English token', 2);
+    assert.equal(await text(sameExpected), 'Same as expected');
+    await captureCreate('en-filled', createForm, [1280]);
+    fixture.sqlite.exec("UPDATE v2_owned_copies SET seal_status = 'sealed' WHERE collection_item_id = 1");
+    for (const [url, language, reason] of [[opening, 'zh', '沒有可清點的在藏未封膜副本'],
+        [english, 'en', 'No eligible unsealed copies are in the collection']]) {
+        await cdp('Page.navigate', { url });
+        await until(async () => (await text(createForm))?.includes(reason), 'no eligible copies');
+        await fillCreate('No count available');
+        assert.equal(await visible(createForm + ' [name="actual"]'), false);
+        await captureCreate(language + '-no-copy', createForm, language === 'en' ? [1280] : [375, 1280]);
+    }
+    pass('bilingual no-copy state and responsive create form');
 
 } finally {
     releaseCommit?.();

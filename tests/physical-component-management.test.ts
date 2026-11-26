@@ -340,6 +340,27 @@ test('physical component workflow through Admin API, real SQLite and Astro rende
                 copyId: 50, revision: 2, actual: 30, countedOn: '2026-01-05' })).status, 503);
             assert.equal(sqlite.prepare('SELECT actual_quantity FROM v2_copy_components').get()?.actual_quantity, 20);
         });
+        await t.test('new definitions can be counted immediately and replay does not duplicate either write', async () => {
+            sqlite.exec("DELETE FROM v2_collection_items WHERE id >= 1001 AND display_name = 'Overflow'");
+            const key = 'test-create-and-count';
+            const command = { ...create, name: 'Immediate count' };
+            const created = await send(command, key);
+            assert.equal(created.status, 201);
+            const definitionId = await resultId(created);
+            const count = { action: 'count', definitionId, definitionRevision: 1,
+                copyId: 50, revision: 0, actual: 0, countedOn: '2026-01-05' };
+            assert.equal((await send(count)).status, 200);
+            const replay = await send(command, key);
+            const { data } = await replay.json() as { data: { id: number; replayed: boolean } };
+            assert.equal(data.id, definitionId);
+            assert.equal(data.replayed, true);
+            assert.equal((await send(count)).status, 409);
+            assert.equal(sqlite.prepare('SELECT COUNT(*) n FROM v2_component_definitions WHERE component_name = ?')
+                .get(command.name)?.n, 1);
+            assert.equal(sqlite.prepare('SELECT COUNT(*) n FROM v2_copy_components WHERE component_definition_id = ?')
+                .get(definitionId)?.n, 1);
+        });
+
     } finally {
         auth.restore();
         sqlite.close();

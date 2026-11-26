@@ -33,7 +33,7 @@ if (manager) {
     }
 
     type RequestState = { body: string; key: string; affected?: number };
-    type Payload = { success?: boolean; data?: { outcome?: string; countedOn?: string }; error?: { code?: string } };
+    type Payload = { success?: boolean; data?: { outcome?: string; countedOn?: string; id?: number; replayed?: boolean }; error?: { code?: string } };
     type QuantityBody = { definitionId: number; name: string; previousExpected: number | null; expected: number | null; reason: string };
     const requests = new WeakMap<HTMLFormElement, RequestState>();
     const busy = new WeakSet<HTMLFormElement>();
@@ -50,11 +50,11 @@ if (manager) {
     const fallback = t('無法儲存，請確認權限或稍後再試。', 'Could not save. Check your access or try again.');
     const storageError = t('無法安全保存原操作識別。未送出新的更正。', 'The original operation ID could not be stored safely. No new correction was sent.');
 
-    function notify(message: string, tone = 'error') {
-        if (!status) return;
-        status.textContent = message;
-        status.dataset.tone = tone;
-        if (tone === 'error') status.focus();
+    function notify(message: string, tone = 'error', target = status) {
+        if (!target) return;
+        target.textContent = message;
+        target.dataset.tone = tone;
+        if (tone === 'error') target.focus();
     }
     function storageKey(form: HTMLFormElement) {
         const id = new FormData(form).get('definitionId');
@@ -158,7 +158,7 @@ if (manager) {
             headers: { 'Content-Type': 'application/json', 'X-NotBGG-Request': '1', 'Idempotency-Key': state.key },
             body: state.body, signal,
         });
-        return { ok: response.ok, payload: await response.json() as Payload | null };
+        return { ok: response.ok, httpStatus: response.status, payload: await response.json() as Payload | null };
     }
     async function sendQuantity(action: string, body: string, key?: string) {
         const controller = new AbortController();
@@ -379,8 +379,9 @@ if (manager) {
         void runQuantity(form, request, false, true);
     });
 
-    async function restoreQuantityOperations() {
-        for (const form of manager!.querySelectorAll<HTMLFormElement>('form[data-physical-action="edit"]')) {
+    async function restoreQuantityOperations(root: HTMLElement) {
+        const forms = root.querySelectorAll<HTMLFormElement>('form[data-physical-action="edit"]');
+        for (const form of forms) {
             syncEdit(form);
             form.addEventListener('input', () => {
                 if (!form.querySelector<HTMLInputElement>('[name="expected"]')?.disabled) syncEdit(form);
@@ -388,7 +389,7 @@ if (manager) {
         }
         // Lock every queued form before awaiting the first read-only status request.
         const queued: { form: HTMLFormElement; pending: RequestState }[] = [];
-        for (const form of manager!.querySelectorAll<HTMLFormElement>('form[data-physical-action="edit"]')) {
+        for (const form of forms) {
             try {
                 const pending = readPending(form, true);
                 if (!pending) continue;
@@ -404,7 +405,7 @@ if (manager) {
             if (await runQuantity(form, pending, true, false, true)) return;
         }
     }
-    void restoreQuantityOperations();
+    void restoreQuantityOperations(manager);
 
     manager.addEventListener('click', event => {
         if (!(event.target instanceof Element)) return;
@@ -426,6 +427,7 @@ if (manager) {
     });
 
     const picker = manager.querySelector('[data-count-copy]');
+    let rebindCountRows: (() => void) | undefined;
     if (picker instanceof HTMLSelectElement) {
         const copyPicker = picker;
         const previous = manager.querySelector<HTMLButtonElement>('[data-count-step="-1"]')!;
@@ -454,7 +456,10 @@ if (manager) {
             next.disabled = saving > 0 || copyPicker.selectedIndex === copyPicker.options.length - 1;
         }
 
-        const rows = Array.from(manager.querySelectorAll<HTMLElement>('[data-count-values]'), row => {
+        function bindCountRows() {
+            return Array.from(manager!.querySelectorAll<HTMLElement>('[data-count-values]'), bindCountRow);
+        }
+        function bindCountRow(row: HTMLElement) {
             type Count = { actual: number | null; revision: number; countedOn: string | null };
             const values = new Map<string, Count>(JSON.parse(row.dataset.countValues!));
             const current = row.querySelector<HTMLElement>('[data-count-current]')!;
@@ -577,7 +582,7 @@ if (manager) {
             reload?.addEventListener('click', () => location.reload());
             const definitionId = form?.querySelector<HTMLInputElement>('[name="definitionId"]')?.value;
             const copyLabel = () => copyPicker.selectedOptions[0].textContent?.trim() ?? selectedCopy;
-            const historyPanel = manager.querySelector<HTMLDetailsElement>(`[data-applicability-history="${definitionId}"]`);
+            const historyPanel = manager!.querySelector<HTMLDetailsElement>(`[data-applicability-history="${definitionId}"]`);
             async function saveApplicability(checkFirst = false) {
                 if (!toggleRequest || !applicabilityMessage || inFlight) return;
                 inFlight = true;
@@ -674,7 +679,8 @@ if (manager) {
             applicabilityRetry?.addEventListener('click', () => void saveApplicability(true));
             applicabilityReload?.addEventListener('click', () => location.reload());
             return { dirty, render, syncRow };
-        });
+        }
+        let rows = bindCountRows();
 
         function syncDate() {
             const invalid = !dateInput.validity.valid;
@@ -712,6 +718,88 @@ if (manager) {
         rememberCopy();
         rows.forEach(row => row.render());
         syncPicker();
+        rebindCountRows = () => {
+            rows = bindCountRows();
+            rows.forEach(row => row.render());
+            syncDate();
+        };
+    }
+
+    const createForm = manager.querySelector<HTMLFormElement>('[data-physical-action="create"]');
+    const createStatus = createForm?.querySelector<HTMLElement>('[data-create-status]');
+    const actualInput = createForm?.querySelector<HTMLInputElement>('[name="actual"]');
+    const expectedInput = createForm?.querySelector<HTMLInputElement>('[name="expected"]');
+    const matchExpected = createForm?.querySelector<HTMLButtonElement>('[data-create-match-expected]');
+    const createDate = manager.querySelector<HTMLInputElement>('[data-count-date]');
+    function syncMatchExpected() {
+        if (matchExpected) matchExpected.disabled = !expectedInput?.value || !expectedInput.validity.valid;
+    }
+    expectedInput?.addEventListener('input', syncMatchExpected);
+    matchExpected?.addEventListener('click', () => {
+        if (actualInput && expectedInput) actualInput.value = expectedInput.value;
+    });
+    syncMatchExpected();
+
+    async function refreshComponentLists() {
+        const url = location.href;
+        const response = await fetch(url, { cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(quantityTimeoutMs) });
+        if (!response.ok) throw new Error('Component list refresh failed');
+        const page = new DOMParser().parseFromString(await response.text(), 'text/html');
+        const countList = manager!.querySelector('[data-count-list]');
+        const componentList = manager!.querySelector('[data-physical-component-list]');
+        const freshCountList = page.querySelector('[data-physical-manager] [data-count-list]');
+        const freshComponentList = page.querySelector<HTMLElement>('[data-physical-manager] [data-physical-component-list]');
+        if (!countList || !componentList || !freshCountList || !freshComponentList) {
+            throw new Error('Component lists missing from refreshed page');
+        }
+        const freshCopies = page.querySelectorAll('[data-physical-manager] [data-count-copy] option');
+        if (picker instanceof HTMLSelectElement &&
+            !Array.from(freshCopies).some(option => option.getAttribute('value') === picker.value)) {
+            throw new Error('Selected copy missing from refreshed page');
+        }
+        componentList.replaceWith(freshComponentList);
+        countList.replaceWith(freshCountList);
+        rebindCountRows?.();
+        void restoreQuantityOperations(freshComponentList);
+    }
+
+    async function completeCreate(form: HTMLFormElement, result: NonNullable<Payload['data']>,
+        count: { actual: number; copyId: number; countedOn: string } | undefined) {
+        let message = t('組件已建立。', 'Component created.');
+        let tone = 'success';
+        if (count) {
+            const notSaved = t('組件已建立，但這份副本的清點未儲存。可在清點清單補存。',
+                'Component created, but the count for this copy was not saved. You can save it in the count list.');
+            message = notSaved;
+            tone = 'error';
+            try {
+                const { ok, httpStatus, payload } = await send({
+                    key: crypto.randomUUID(),
+                    body: JSON.stringify({ action: 'count', definitionId: result.id, definitionRevision: 1, revision: 0, ...count }),
+                }, AbortSignal.timeout(quantityTimeoutMs));
+                if (ok && payload?.success === true) {
+                    message = t('組件已建立並清點。', 'Component created and counted.');
+                    tone = 'success';
+                } else if (result.replayed && httpStatus === 409) {
+                    message = t('這筆組件已建立並清點過。', 'This component was already created and counted.');
+                    tone = 'success';
+                }
+            } catch (error) {
+                logErrorType(error);
+            }
+        }
+        requests.delete(form);
+        form.reset();
+        syncMatchExpected();
+        try {
+            await refreshComponentLists();
+        } catch (error) {
+            logErrorType(error);
+            message += t(' 清單更新失敗，請重新載入以查看最新資料。', ' The lists could not be refreshed. Reload to see the latest records.');
+            tone = 'error';
+        }
+        notify(message, tone, createStatus);
+        form.querySelector<HTMLInputElement>('[name="name"]')?.focus();
     }
 
     manager.addEventListener('submit', async event => {
@@ -723,9 +811,14 @@ if (manager) {
         if (action === 'count') return;
         const data = new FormData(form);
         const body: Record<string, unknown> = { action };
+        let createCount: { actual: number; copyId: number; countedOn: string } | undefined;
+        if (action === 'create' && actualInput && actualInput.value !== '') {
+            if (!(picker instanceof HTMLSelectElement) || !picker.value || !createDate?.reportValidity()) return;
+            createCount = { actual: actualInput.valueAsNumber, copyId: Number(picker.value), countedOn: createDate.value };
+        }
         for (const name of ['name', 'type', 'unit']) if (data.has(name)) body[name] = data.get(name);
         for (const name of ['collectionId', 'definitionId', 'definitionRevision', 'actual', 'copyId', 'requirementId']) {
-            if (data.has(name)) body[name] = Number(data.get(name));
+            if (data.has(name) && !(action === 'create' && name === 'actual')) body[name] = Number(data.get(name));
         }
         if (data.has('expected')) body.expected = data.get('expected') === '' ? null : Number(data.get('expected'));
         if (action === 'create') body.confirmed = data.has('confirmed');
@@ -764,21 +857,30 @@ if (manager) {
             pending = { body: json, key: crypto.randomUUID() };
             requests.set(form, pending);
         }
-        const button = form.querySelector<HTMLButtonElement>(action === 'edit' ? '[data-quantity-submit]' : 'button');
+        const button = form.querySelector<HTMLButtonElement>(action === 'edit' ? '[data-quantity-submit]'
+            : action === 'create' ? '[type="submit"]' : 'button');
         if (button?.disabled) return;
         busy.add(form);
         if (button) button.disabled = true;
-        notify(t('儲存中…', 'Saving…'), 'pending');
+        const target = action === 'create' ? createStatus : status;
+        notify(t('儲存中…', 'Saving…'), 'pending', target);
         try {
-            const { ok, payload } = await send(pending);
+            const { ok, payload } = await send(pending, action === 'create' ? AbortSignal.timeout(quantityTimeoutMs) : undefined);
             if (!ok || payload?.success !== true) {
-                notify(errors[payload?.error?.code ?? ''] ?? fallback);
+                notify(errors[payload?.error?.code ?? ''] ?? fallback, 'error', target);
                 return;
             }
-            saved(action);
+            if (action === 'create') {
+                if (!payload.data || !Number.isSafeInteger(payload.data.id) || Number(payload.data.id) <= 0) {
+                    throw new Error('Missing created component ID');
+                }
+                await completeCreate(form, payload.data, createCount);
+            } else {
+                saved(action);
+            }
         } catch (error) {
             logErrorType(error);
-            notify(t('無法確認儲存結果。請重試或重新載入。', 'Could not confirm the save. Retry or reload.'));
+            notify(t('無法確認儲存結果。請重試或重新載入。', 'Could not confirm the save. Retry or reload.'), 'error', target);
         } finally {
             busy.delete(form);
             if (button) button.disabled = false;

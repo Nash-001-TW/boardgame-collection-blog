@@ -187,12 +187,19 @@ const eventDate = new Intl.DateTimeFormat(en ? 'en' : 'zh-TW', {
                 <h3>{t('新增實體組件', 'Add physical component')}</h3>
                 <form method="post" data-physical-action="create" class="fields">
                     <input type="hidden" name="collectionId" value={collectionId} />
+                    <p data-create-status role="status" aria-live="polite" tabindex="-1"></p>
                     <PhysicalComponentFields en={en} />
+                    {selectedCopy ? <>
+                        <label>{t('這份副本的實際數量（選填）', 'Actual quantity for this copy (optional)')}
+                            <input name="actual" type="number" min="0" max={maxComponentQuantity} step="1" />
+                        </label>
+                        <button type="button" class="admin-button" data-create-match-expected disabled>{t('與預期相同', 'Same as expected')}</button>
+                    </> : <p>{t('沒有可清點的在藏未封膜副本。', 'No eligible unsealed copies are in the collection.')}</p>}
                     <label><input type="checkbox" name="confirmed" required /> {t('我已確認此組件屬於本收藏', 'I verified this physical component belongs to this collection')}</label>
-                    <button class="admin-button primary">{t('新增', 'Add')}</button>
+                    <button type="submit" class="admin-button primary">{t('新增', 'Add')}</button>
                 </form>
             </section>}
-            <section>
+            <section data-physical-component-list>
                 <h3>{t('實體組件清單', 'Physical component list')}</h3>
                 {!definitions.length && <p>{t('尚無由受控流程建立的組件。', 'No components have been created through the managed workflow.')}</p>}
                 {definitions.map(component => {
@@ -281,6 +288,9 @@ const eventDate = new Intl.DateTimeFormat(en ? 'en' : 'zh-TW', {
     nav, .fields { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; }
     .fields { margin: 12px 0; }
     .fields label { display: grid; gap: 4px; }
+    [data-physical-action="create"] :is(input:not([type="checkbox"]), select, button) { min-height: 44px; }
+    [data-physical-action="create"] label:has([type="checkbox"]) { min-height: 44px; }
+    [data-create-status] { flex-basis: 100%; }
     .fields [data-quantity-reason][hidden], .fields [data-quantity-action][hidden] { display: none; }
     .quantity-notice, .quantity-recovery { flex-basis: 100%; padding: 12px; border-radius: 8px; overflow-wrap: anywhere; }
     .quantity-notice { background: #FFE8E4; color: #B42318; }

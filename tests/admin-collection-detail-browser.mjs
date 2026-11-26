@@ -406,7 +406,8 @@ try {
     });
     await until(() => evaluate(() => [...document.querySelectorAll('[data-physical-manager] article')].some(article =>
         article.textContent.includes('Synthetic cards') && article.querySelector('[data-classification=PHYSICAL_COMPONENT]')) &&
-        document.querySelector('[data-physical-status]').dataset.tone === 'success'), 'component saved and classified');
+        // #36 shows the create result inside the form instead of reloading into the page-level status.
+        document.querySelector('[data-create-status]').dataset.tone === 'success'), 'component saved and classified');
     pass('R06 creates a synthetic component through the rendered form');
     await evaluate(() => {
         const card = [...document.querySelectorAll('[data-physical-manager] article')].find(article => article.textContent.includes('Synthetic cards'));
