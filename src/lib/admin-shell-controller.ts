@@ -7,6 +7,7 @@ export const adminNavigation = [
     { id: 'owned', path: '/admin/collection', query: { tab: 'owned' }, zh: '已收藏', en: 'Owned', icon: 'check-circle' },
     { id: 'wishlist', path: '/admin/collection', query: { tab: 'wishlist' }, zh: '願望清單', en: 'Wishlist', icon: 'heart' },
     { id: 'preordered', path: '/admin/collection', query: { tab: 'preordered' }, zh: '預購中', en: 'Preordered', icon: 'calendar' },
+    { id: 'collection-relations', path: '/admin/bgg', query: { view: 'relations', domain: 'collection' }, zh: '收藏組合', en: 'Collection combinations', icon: 'puzzle' },
     { id: 'classification', path: '/admin/collection/components/classification', zh: '組件分類查詢', en: 'Component classification', icon: 'search' },
   ] },
   { id: 'sleeves', zh: '卡套', en: 'Sleeves', icon: 'sleeves', items: [
@@ -42,7 +43,7 @@ export function currentAdminItem(url: URL): NavigationItem['id'] | 'requirements
     if (url.searchParams.get('wishlist') === '1' || status === 'wishlist') return 'wishlist';
     if (status === 'owned' || status === 'preordered') return status;
   }
-  if (path === '/admin/bgg' && url.searchParams.get('view') === 'relations') return 'relations';
+  if (path === '/admin/bgg' && url.searchParams.get('view') === 'relations') return url.searchParams.get('domain') === 'collection' ? 'collection-relations' : 'relations';
   for (const group of adminNavigation) {
     for (const item of group.items) {
       if (!('query' in item) && item.path === path) return item.id;

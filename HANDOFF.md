@@ -348,3 +348,5 @@ node --import tsx --test tests/public-site-data.test.ts tests/public-site-sqlite
 - **2026-11-26（Asia/Taipei）**：使用者將 Q134 採 A（DECISION_LOG REL-LABEL-Q134）：從本體進入時預設為目標、存檔後沿用目標、依來源類型帶入關聯類型。工作命令已補上允許修改 `bgg-admin-controller.ts`（只限 Q134）與 4 項 Edge 驗收，待授權。
 - **2026-11-26（Asia/Taipei）**：使用者詢問「管理收藏組合關係」還有哪些入口，Claude 整理出 4 個入口和 3 個小問題，使用者決定併入 #35（DECISION_LOG REL-LABEL-Q135）：側欄「收藏」加「收藏組合」；相關採購分頁的系列區一律提供入口連結（帶本體）；英文標籤統一。工作命令已補上允許修改的範圍與驗收，待授權。
 - **2026-11-26（Asia/Taipei）**：使用者授權 `REL-LABEL-20261126-01`（DECISION_LOG REL-LABEL-AUTH），Claude 透過 Codex CLI 外掛交付，回報寫入規劃 §5.4。
+- **2026-11-26（Asia/Taipei）**：Codex 完成 #35，但它的環境 Edge 全部逾時、沒有截圖，也沒有跑 build。Claude 審查（[規劃 §5.6](docs/relation-list-labels-plan-20261126.md)）：程式通過，`relation-admin.ts` 沒有修改；Node 34／34；Claude 自己跑 Edge：bgg-sync-admin 5／5（涵蓋 Q131～Q135）、收藏詳細頁 74／74；`admin-shell-browser` 因 Q135 新增側欄項目而斷言過時（F1）；截圖需放進 docs（F2）。兩項都待授權。build 沒有執行。工作樹還沒提交。
+- **2026-11-26（Asia/Taipei）**：依 REL-LABEL-AUTH-02，Claude 完成 #35 收尾（[規劃 §5.7](docs/relation-list-labels-plan-20261126.md)）：更新側欄 Edge 斷言、篩選標籤改為「來源或目標」、篩選按鈕版面修正、5 張截圖放進 `docs/REL-LABEL-screenshots/`。Node 17／17；Edge 關係頁 5／5、側欄 9／9。#35 本機驗證完成，未提交、未部署。

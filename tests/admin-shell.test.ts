@@ -30,6 +30,8 @@ test('Sleeve management, collection tabs, BGG views and NotBGG details select th
   assert.equal(current('/admin/collection/1/purchases'), 'collection');
   assert.ok(!adminNavigation.some(group => group.items.some(item => item.path === '/admin/sleeves' + '/requirements')));
   assert.equal(current('/admin/bgg?view=relations'), 'relations');
+  assert.equal(current('/admin/bgg?view=relations&domain=game'), 'relations');
+  assert.equal(current('/admin/bgg?view=relations&domain=collection&source=401'), 'collection-relations');
   assert.equal(current('/admin/bgg'), 'bgg');
   assert.equal(current('/admin/notbgg/000001/link'), 'notbgg');
   assert.equal(current('/admin/notbgg/000001/relations'), 'notbgg');

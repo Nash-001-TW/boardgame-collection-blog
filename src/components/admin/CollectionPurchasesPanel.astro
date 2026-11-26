@@ -136,6 +136,7 @@ const manageSeries = t('管理收藏組合關係', 'Manage collection relationsh
             {series.members.length === 1 && series.accessories.length === 0 && <p>{t('尚未建立系列關聯。可到', 'No series relationships yet. Open ')}
                 <a href={seriesRelationsLink(series.baseId)}>{manageSeries}</a>{t('新增擴充、配件或同系列關聯。', ' to add expansions, accessories or games in the same series.')}
             </p>}
+            {(series.members.length > 1 || series.accessories.length > 0) && <p><a href={seriesRelationsLink(series.baseId)}>{manageSeries}</a></p>}
             {series.bundles.length > 0 && <div data-series-shared-bundles>
                 <h3>{t('共用禮包', 'Shared bundles')}</h3>
                 <ul class="admin-series-bundles">{series.bundles.map(bundle => <li>

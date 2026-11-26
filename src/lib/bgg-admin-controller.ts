@@ -10,12 +10,35 @@ if(root){
   try{const r=await fetch('/api/admin/bgg',{method:'POST',headers:{'Content-Type':'application/json','X-NotBGG-Request':'1','Idempotency-Key':command.key},body:serialized});const result=await r.json() as {success?:boolean;error?:{code:string};data?:{results?:{bggId:number;status:string;code:string|null}[]}};
    if(!r.ok||!result.success)throw new Error(result.error?.code??'BGG_SERVICE_UNAVAILABLE');
    const message=result.data?.results?.map(item=>'BGG '+item.bggId+' · '+(item.status==='success'?t('成功','Succeeded'):t('失敗','Failed'))+(item.code?' · '+item.code:'')).join(' / ')??t('關聯已儲存。','Relation saved.');
+   if(body.action==='save'&&body.domain==='collection'&&body.id===0){
+    const next=new URL(location.href);
+    next.searchParams.set('relationTarget',String(body.targetId));
+    try{sessionStorage.setItem('bgg-admin-saved:'+next.href,message);}catch{}
+    location.assign(next.href);
+    return;
+   }
    try{sessionStorage.setItem(saved,message);}catch{}location.reload();
   }catch(error){const code=error instanceof Error?error.message:'';status.textContent=code==='BGG_SYNC_BUSY'?t('另一同步正在執行或冷卻中，請稍後重試。','A sync is active or cooling down. Retry shortly.')
    :code==='BGG_AUTH_UNAVAILABLE'?t('伺服器尚未設定 BGG 認證。','BGG server authentication is not configured.')
    :code==='RELATION_DIRECTION_UNVERIFIED'?t('無法驗證關聯方向或角色，請確認主遊戲、擴充、配件或合輯身份。','Relation direction or roles cannot be verified. Check base, expansion, accessory or bundle identities.')
    :t('無法完成。請檢查最多 3 筆不同 ID、關聯、版本及權限後重試。','Could not complete. Check the limit of 3 distinct IDs, relation references, version and access.');status.dataset.tone='error';status.focus();
   }finally{busy=false;root!.querySelectorAll('button').forEach(b=>b.disabled=false);}
+ }
+ const newCollection=root.querySelector<HTMLFormElement>('[data-new-collection-relation]');
+ if(newCollection){
+  const source=newCollection.elements.namedItem('sourceId');
+  const type=newCollection.elements.namedItem('type');
+  if(source instanceof HTMLSelectElement&&type instanceof HTMLSelectElement){
+   let typeEdited=false;
+   type.addEventListener('change',()=>{typeEdited=true;});
+   const suggestType=()=>{
+    if(typeEdited)return;
+    const itemType=source.selectedOptions[0]?.dataset.itemType;
+    type.value=itemType==='expansion'?'expansion_of':itemType==='accessory'?'accessory_for':'other';
+   };
+   source.addEventListener('change',suggestType);
+   suggestType();
+  }
  }
  root.addEventListener('submit',event=>{const form=event.target;if(!(form instanceof HTMLFormElement)||!form.dataset.bggAction)return;event.preventDefault();const data=new FormData(form),action=form.dataset.bggAction;
   if(action==='sync'){void send({action:'sync',ids:String(data.get('ids')).split(',').map(s=>Number(s.trim()))},'sync');return;}

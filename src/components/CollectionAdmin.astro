@@ -27,7 +27,7 @@ const detailError = detailStatus===400?t('資料範圍無效。','Invalid record
 {showEditor && <>
 {edit ? <div class="admin-kit-row admin-detail-section-heading">
 <h2 data-collection-heading>{title}</h2>
-<a class="admin-kit-button" data-variant="secondary" href={'/admin/bgg?view=relations&domain=collection&source='+encodeURIComponent(id)+'&lang='+lang}>{t('管理收藏組合關係','Manage collection combinations')}</a>
+<a class="admin-kit-button" data-variant="secondary" href={'/admin/bgg?view=relations&domain=collection&source='+encodeURIComponent(id)+'&lang='+lang}>{t('管理收藏組合關係','Manage collection relationships')}</a>
 </div> : <>
 <h1 data-collection-heading>{title}</h1>
 <nav aria-label={t('本頁導覽','Page navigation')}>

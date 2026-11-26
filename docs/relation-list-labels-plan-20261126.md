@@ -120,7 +120,99 @@
 
 ### 5.4 Codex 執行回報
 
-（待填）
+**2026-11-26（Asia/Taipei）｜已實作 Q131～Q135。** Node 測試及 Astro 算出的清單、篩選和表單預設已在本機拋棄式 SQLite 驗證。Edge 互動、畫面及截圖驗收仍待完成。
+
+#### 檔案
+
+- 新增 `src/lib/relation-labels.ts`：共用中英關聯類型、來源標籤，以及名稱、識別碼和缺項文字。
+- 新增 `tests/relation-labels.test.ts`：驗證標籤、BGG／NotBGG 識別碼、封存端點，以及 Astro 實際產出的篩選和預設欄位。
+- 修改 `src/pages/admin/bgg/index.astro`、`src/components/admin/RelationForm.astro`：依已載入資料呈現關係和篩選下拉，根據入口或上次目標預設新增欄位。
+- 修改 `src/lib/bgg-admin-controller.ts`：收藏新增表單依來源建議類型，手動更改後保留選擇。新增成功後以網址帶入上次目標。
+- 修改 `src/lib/admin-shell-controller.ts`、`src/components/admin/CollectionPurchasesPanel.astro`、`src/components/CollectionAdmin.astro`：側欄收藏組合與目前位置、系列本體入口、統一英文標籤。
+- 修改 `tests/admin-shell.test.ts`、`tests/bgg-sync-admin-browser.mjs`：加入側欄、清單、連續儲存、方向拒絕、系列入口及截圖檢查。
+- 修改本文件 §5.4。刪除檔案 0。依 §5.1 將交接記錄留在本節。
+
+#### 指令與結果
+
+以下 `$relTemp` 為本次的 repo 外暫存目錄。tsx 在這個 Windows 執行環境呼叫 `os.userInfo()` 遇到 `uv_os_get_passwd ENOMEM`，後續測試使用暫存 preload，僅在這個錯誤出現時提供測試用使用者名稱。
+
+| 指令 | 通過／失敗 | 結束碼 | 結果 |
+| --- | ---: | ---: | --- |
+| `node --import tsx --test tests/relation-labels.test.ts tests/relation-direction.test.ts tests/bgg-sync-admin.test.ts tests/series-spending.test.ts tests/admin-collection-detail.test.ts tests/admin-shell.test.ts tests/purchase-admin.test.ts` | 0／7 | 1 | 7 個測試檔在載入 tsx 時停止 |
+| 同上，加 `--require "$relTemp/user-info.cjs"` | 59／0 | 0 | 新增 Astro 渲染斷言前 |
+| 同上，加 `--require "$relTemp/user-info.cjs"` | 59／1 | 1 | 新增的 Astro 渲染斷言首次執行時，選擇器比對未容許 Astro 輸出的 HTML 屬性 |
+| `node --require "$relTemp/user-info.cjs" --import tsx --test tests/relation-labels.test.ts` | 3／0 | 0 | 放寬新增斷言的 HTML 屬性匹配後通過 |
+| 完整 Node 指令，加 `--require "$relTemp/user-info.cjs"` | 60／0 | 0 | 最終回歸 |
+| `node --require "$relTemp/user-info.cjs" --import tsx tests/bgg-sync-admin-browser.mjs "$relTemp/bgg-sync-admin"` | 0／1 | 1 | `Page.enable` 逾時 |
+| `node --require "$relTemp/user-info.cjs" --import tsx tests/admin-shell-browser.mjs "$relTemp/admin-shell"` | 0／1 | 1 | `Page.enable` 逾時，Edge 診斷記錄 GPU 子程序無法使用 |
+| `node --require "$relTemp/user-info.cjs" --import tsx tests/admin-collection-detail-browser.mjs "$relTemp/admin-collection-detail"` | 0／1 | 1 | `Page.enable` 逾時，Edge 診斷記錄 GPU 子程序無法使用 |
+| `node --require "$relTemp/user-info.cjs" --import tsx tests/purchase-admin-browser.mjs "$relTemp/purchase-admin"` | 0／1 | 1 | `Page.enable` 逾時 |
+| `node --require "$relTemp/user-info.cjs" --require "$relTemp/edge-gpu.cjs" --import tsx tests/bgg-sync-admin-browser.mjs "$relTemp/bgg-retry"` | 0／1 | 1 | 使用暫存設定嘗試在程序內啟動 GPU，仍在 `Page.enable` 逾時。所有 Edge 執行均各自使用新建的空輸出目錄 |
+| `npm run astro -- check`（關閉 telemetry、npm 離線） | 0／1 | 1 | 首次為 12 個 errors，其中 6 個新診斷來自 DOM 型別；修正後重跑兩次，均為基準 6 個 errors、0 warnings、27 hints，結束碼 1 |
+| `node --check tests/bgg-sync-admin-browser.mjs` | 1／0 | 0 | 語法通過 |
+| `git diff --check` | 1／0 | 0 | 差異檢查通過 |
+| `git diff --exit-code -- src/lib/relation-admin.ts src/lib/series-spending.ts` | 1／0 | 0 | 關聯資料層及系列花費計算無差異 |
+
+#### 既有斷言、截圖與未驗收項目
+
+- 既有斷言修改 0 條。新增的 HTML 斷言容許 Astro 附加屬性，仍檢查預設選項和內容。
+- 截圖清單為空。未產出預定的 `collection-zh-375.png`、`collection-zh-1280.png`、`collection-en-1280.png`、`game-zh-1280.png`。
+- Edge 腳本未進入頁面，尚未執行瀏覽器測試驗證。連續儲存三筆、前端錯誤回饋、側欄和採購入口互動、中英及 375／768／1280 寬度仍待瀏覽器驗收。Node 已通過既有的伺服器方向驗證回歸。
+- `npm run build` 尚未執行。現有的 `prebuild` 會呼叫 `wrangler types`，而已安裝版本有載入本機秘密檔的路徑。本工作命令禁止讀取該類檔案。
+- 殘留暫存路徑：`D:/temp/REL-LABEL-20261126-325de1fd-6dae-4157-8ae5-00942a7ce7c7`。執行環境政策拒絕清除該 repo 外目錄，其中包含隔離 Edge profile、測試輸出和兩個暫存 preload。
+
+### 5.6 Claude 審查（2026-11-26）
+
+**結論：程式通過，有兩個收尾項目**（F1 必修，F2 是交付缺口），需要授權後由 Claude 處理（REL-LABEL-AUTH-02）。
+
+**本人驗證**
+
+- Node：`relation-labels`、`admin-shell`、`bgg-sync-admin`、`series-spending`、`admin-collection-detail`、`purchase-line-picker` 共 6 個測試檔，**34 通過、0 失敗**。`git diff --check` 通過。
+- **Edge**：Codex 的環境裡 4 支腳本都在載入頁面前逾時，但在 Claude 的環境可以正常執行（`D1_A3_EDGE_LOCAL_TEST_MODE=1`、`node --import tsx`、全新的空資料夾）：
+  - `bgg-sync-admin-browser.mjs`：**5 項全部通過**。其中「bilingual relation labels, archived fallback, filters, collection entry defaults, three saves, direction rejection and series link」一項涵蓋了：中英標籤、已封存的端點、篩選下拉、從本體進入時預設為目標而且來源空白、依來源帶入類型、手動改過類型就不覆蓋、連續存 3 筆都沿用目標並在 DB 確認方向、方向錯誤被拒、系列區連結與基本資料頁連結一致、側欄「收藏組合」與「遊戲關聯」的目前位置標示；
+  - `admin-collection-detail-browser.mjs`：**74 項通過**；
+  - `admin-shell-browser.mjs`：7 項通過後，**1 項斷言失敗**（見 F1）。
+- 看過的截圖（Claude 執行 Edge 時產生在暫存資料夾）：`collection-zh-1280`、`collection-zh-375`。
+  - 清單標題是「Expansion copy（#402）→ Base copy（#401）」，第二行是「擴充 → 主遊戲 · 手動 · 已確認 · 關聯 #2」；
+  - 對照不到的端點顯示「#403（已封存或找不到）」；
+  - 側欄「收藏」群組有「收藏組合」並標示目前位置；
+  - 375 寬沒有橫向捲動。
+- `astro check` 以 §5.4 為準（6 個基準錯誤）。**build 沒有執行**：Codex 以「prebuild 可能載入本機秘密檔」為由沒跑，Claude 也沒有重跑。這次只改了顯示層的 `.astro`、`.ts`，沒有改建置設定。
+
+**程式核對**
+
+- 伺服器的 `relation-admin.ts` **沒有修改**，名稱對照只用 `readRelationAdmin` 原本就讀取的 `identities` 與 `collections`；中文標籤抽到 `relation-labels.ts`，清單與表單共用。
+- Q134：
+  - 頁面依網址的 `source`（是本體或獨立遊戲時當作目標）與 `relationTarget`（沿用的目標）計算預設值；
+  - 新增收藏關係的表單加了空白的「請選擇」選項，而且是 `required`，沒選來源不能送出；
+  - 類型帶入只在使用者沒改過類型時才作用；
+  - 新增成功後，網址帶上 `relationTarget` 再重新載入；封存、編輯、BGG 同步的流程不變。
+- Q135：側欄新增 `collection-relations` 項目，並依 `domain` 區分目前位置；系列區在「有成員或有配件」時一律提供入口（帶本體 ID）；英文標籤已統一。
+
+**F1（必修）：`tests/admin-shell-browser.mjs` 的側欄項目預期值過時**
+
+這支腳本斷言「收藏」群組的連結是 `['', '?tab=owned', '?tab=wishlist', '?tab=preordered', '']`，但 Q135 刻意新增了 `?view=relations&domain=collection`，所以失敗。這是預期中的行為改變，只要把新項目加進預期值即可。Codex 的環境跑不了 Edge，所以沒發現。這支腳本不在 §5.1 的測試清單裡，需要授權。
+
+**F2（交付缺口）：截圖沒有放進 `docs/REL-LABEL-screenshots/`**
+
+Codex 沒有產生截圖。Claude 執行 Edge 時，截圖已經產生在暫存資料夾，可以複製進 `docs/REL-LABEL-screenshots/`：`collection-zh-1280`、`collection-zh-375`、`collection-en-1280`、`game-zh-1280`、`admin-mobile`。
+
+**小觀察（不擋上線）**
+
+- O1：篩選已經改成下拉選單，但標籤仍是「來源或目標 ID」，可以改成「來源或目標」。
+- O2：1280 寬時，「篩選」按鈕被排成和下拉選單一樣寬的大方塊。功能正常，只是外觀不協調。
+- O3：Codex 的暫存資料夾見 §5.4，需要使用者手動刪除。
+
+### 5.7 收尾（2026-11-26，Claude 執行，DECISION_LOG REL-LABEL-AUTH-02）
+
+- **F1**：`tests/admin-shell-browser.mjs` 第 275 行，「收藏」群組的預期連結加上 `?view=relations&domain=collection`（加註 Q135），其他斷言不變。
+- **O1**：`src/pages/admin/bgg/index.astro` 的篩選標籤由「來源或目標 ID／Source or target ID」改為「來源或目標／Source or target」。
+- **O2**：同一個檔案的篩選表單加上 `relation-filter` class，按鈕靠左、底部對齊、寬度自動，不再被拉成大方塊。
+- **F2**：Edge 產生的 5 張截圖放進 [`docs/REL-LABEL-screenshots/`](REL-LABEL-screenshots/)：`collection-zh-1280.png`、`collection-zh-375.png`、`collection-en-1280.png`、`game-zh-1280.png`、`admin-mobile.png`（都是修正 O1、O2 之後重新產生的）。
+- **驗證**：
+  - Node：`relation-labels`、`admin-shell`、`bgg-sync-admin`，**17 通過、0 失敗**；`git diff --check` 通過。
+  - Edge（全新的空資料夾，`node --import tsx`）：`bgg-sync-admin-browser` **5／5**、`admin-shell-browser` **9／9**，結束碼都是 0。
+- **結論：#35（REL-LABEL-20261126-01）本機驗證完成。** build 沒有執行，原因見 §5.6。
 
 ### 5.5 禁止事項
 
