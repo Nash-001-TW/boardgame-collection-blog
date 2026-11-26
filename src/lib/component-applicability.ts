@@ -62,10 +62,27 @@ export async function readCollectionApplicability(db: D1Database, collectionId: 
     return result.results;
 }
 
+export async function readApplicabilityHistory(db: D1Database, collectionId: number) {
+    const result = await db.prepare(`
+        SELECT a.copy_id AS copyId, a.definition_id AS definitionId, a.revision,
+               a.after_not_applicable AS notApplicable, a.actor, a.occurred_at AS occurredAt,
+               c.copy_label AS copyLabel
+        FROM v2_component_applicability_events a
+        JOIN v2_owned_copies c ON c.id = a.copy_id AND c.collection_item_id = a.collection_id
+        WHERE a.collection_id = ?
+        ORDER BY a.occurred_at DESC, a.revision DESC, a.copy_id
+    `).bind(collectionId).all<{ copyId: number; definitionId: number; revision: number;
+        notApplicable: 0 | 1; actor: string; occurredAt: number; copyLabel: string | null }>();
+    if (!result.success) throw new Error('APPLICABILITY_READ_FAILED');
+    return result.results;
+}
+
 type ApplicabilityChange = ApplicabilityTarget & {
     revision: number;
     next: VerifiedApplicability['status'];
     actor: string;
+    definitionRevision: number;
+    signature: string;
 };
 
 /** The Admin API must authenticate the actor, authorize the target and verify the component's confirmation. */
@@ -73,22 +90,31 @@ export async function changeComponentApplicability(db: D1Database, change: Appli
     if (!change || typeof change !== 'object' || Array.isArray(change)) {
         throw new Error('APPLICABILITY_CHANGE_INVALID');
     }
-    const { collectionId, copyId, definitionId, revision, next, actor } = change;
+    const { collectionId, copyId, definitionId, revision, next, actor, definitionRevision, signature } = change;
     if (!validTarget(change) || !Number.isSafeInteger(revision) || revision < 0
         || revision === Number.MAX_SAFE_INTEGER || (next !== 'applicable' && next !== 'not_applicable')
-        || typeof actor !== 'string' || !actor.trim() || [...actor.trim()].length > 320) {
+        || typeof actor !== 'string' || !actor.trim() || [...actor.trim()].length > 320
+        || !Number.isSafeInteger(definitionRevision) || definitionRevision < 1
+        || typeof signature !== 'string' || !/^[0-9a-f]{64}$/.test(signature)) {
         throw new Error('APPLICABILITY_CHANGE_INVALID');
     }
 
     // The trigger checks the expected previous state and revision. The SQL snapshot supplies
     // the collection generation so unrelated writes do not conflict with this pair's revision.
     const after = Number(next === 'not_applicable');
-    const result = await db.prepare(`
+    const event = await db.prepare(`
         INSERT INTO v2_component_applicability_events
             (collection_id, copy_id, definition_id, revision, before_not_applicable,
              after_not_applicable, actor, origin, before_generation)
-        SELECT ?, ?, ?, ?, ?, ?, ?, 'change',
-            (SELECT generation FROM d1_quantity_collection_generation WHERE collection_id = ?)
-    `).bind(collectionId, copyId, definitionId, revision + 1, 1 - after, after, actor, collectionId).run();
-    if (!result.success) throw new Error('APPLICABILITY_WRITE_FAILED');
+        SELECT p.collection_item_id, c.id, p.id, ?, ?, ?, ?, 'change', g.generation
+        FROM v2_physical_component_candidates p
+        JOIN v2_owned_copies c ON c.id = ? AND c.collection_item_id = p.collection_item_id
+        JOIN d1_quantity_collection_generation g ON g.collection_id = p.collection_item_id
+        WHERE p.collection_item_id = ? AND p.id = ? AND p.physical_revision = ? AND p.signature = ?
+          AND c.inventory_status = 'in_collection' AND c.seal_status <> 'sealed'
+        RETURNING actor, occurred_at AS occurredAt
+    `).bind(revision + 1, 1 - after, after, actor, copyId, collectionId, definitionId, definitionRevision, signature)
+        .first<{ actor: string; occurredAt: number }>();
+    if (!event) throw new Error('APPLICABILITY_STATE_CHANGED');
+    return { status: next, revision: revision + 1, ...event };
 }

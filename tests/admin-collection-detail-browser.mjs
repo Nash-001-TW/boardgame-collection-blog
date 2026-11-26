@@ -760,7 +760,7 @@ try {
         INSERT INTO v2_sleeve_requirements(collection_item_id, size_id, quantity_sheets) VALUES (1,2,12);
     `);
 
-    const r06Screenshots = 'docs/R06-MIN-screenshots';
+    const r06Screenshots = join(output, 'R06-MIN-screenshots');
     await mkdir(r06Screenshots, { recursive: true });
     const captureR06 = async (name, target = '[data-count-picker]') => {
         await evaluate(async selector => {

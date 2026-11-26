@@ -70,6 +70,7 @@ test('physical component workflow through Admin API, real SQLite and Astro rende
         assert.ok(legacyBefore);
         sqlite.exec(read(migration));
         sqlite.exec(read('0023_shared_quantity_commit.sql'));
+        sqlite.exec(read('0024_component_applicability.sql'));
         assert.equal(sqlite.prepare('SELECT COUNT(*) n FROM v2_physical_component_sources').get()?.n, 0);
         assert.equal(sqlite.prepare('SELECT component_definition_id FROM v2_sleeve_requirements WHERE source_key=?')
             .get('historical')?.component_definition_id, legacyBefore.definition);
@@ -95,7 +96,7 @@ test('physical component workflow through Admin API, real SQLite and Astro rende
         const send = (body: object, key = 'test-command-001', token: string | null = jwt, origin = 'http://localhost') =>
             handlePhysicalComponentRequest(new Request(url, { method: 'POST', headers: {
                 Origin: origin, 'Content-Type': 'application/json', 'X-NotBGG-Request': '1',
-                'Idempotency-Key': key, ...(token ? { 'Cf-Access-Jwt-Assertion': token } : {}),
+                ...(key && { 'Idempotency-Key': key }), ...(token ? { 'Cf-Access-Jwt-Assertion': token } : {}),
             }, body: JSON.stringify(body) }), bindings);
         const resultId = async (response: Response) => (await response.json() as { data: { id: number } }).data.id;
         let cardId = 0;
@@ -175,6 +176,63 @@ test('physical component workflow through Admin API, real SQLite and Astro rende
                 type: 'token', unit: 'piece', expected: 20 }, 'test-locked-type');
             assert.equal(locked.status, 409);
             assert.equal((await locked.json() as { error: { code: string } }).error.code, 'PHYSICAL_TYPE_IN_USE');
+        });
+
+        await t.test('applicability guards writes and restores the original count', async () => {
+            const action = { action: 'applicability', definitionId: cardId, definitionRevision: 2,
+                copyId: 50, revision: 0, next: 'not_applicable' };
+            const count = { action: 'count', definitionId: cardId, definitionRevision: 2, copyId: 50, revision: 2, actual: 20 };
+            const stored = () => sqlite.prepare('SELECT * FROM v2_copy_components').all();
+            const before = stored();
+            const checkError = async (body: object, status: number, code: string) => {
+                const result = await send(body);
+                assert.equal(result.status, status);
+                assert.equal((await result.json() as { error: { code: string } }).error.code, code);
+            };
+            await checkError({ ...action, next: 'invalid' }, 400, 'INVALID_COMPONENT_INPUT');
+            await checkError({ ...action, definitionId: 99 }, 409, 'COMPONENT_INELIGIBLE');
+            await checkError({ ...action, definitionRevision: 1 }, 409, 'COMPONENT_STATE_CHANGED');
+            await checkError({ ...action, copyId: 51 }, 409, 'COMPONENT_STATE_CHANGED');
+            sqlite.exec("UPDATE v2_owned_copies SET seal_status = 'sealed' WHERE id = 50");
+            await checkError(action, 409, 'COMPONENT_STATE_CHANGED');
+            sqlite.exec("UPDATE v2_owned_copies SET seal_status = 'unsealed' WHERE id = 50");
+            sqlite.exec('SAVEPOINT archived_applicability');
+            try {
+                sqlite.prepare(`INSERT INTO v2_collection_management(collection_item_id, archived_at) VALUES (?, '2026-11-26')
+                    ON CONFLICT(collection_item_id) DO UPDATE SET archived_at = excluded.archived_at`).run(collectionId);
+                assert.equal((await send(action)).status, 409);
+                assert.equal(sqlite.prepare('SELECT COUNT(*) n FROM v2_component_applicability_events').get()?.n, 0);
+            } finally {
+                sqlite.exec('ROLLBACK TO archived_applicability; RELEASE archived_applicability');
+            }
+            const preview = { action: 'quantity-preview', definitionId: cardId, definitionRevision: 2,
+                previousExpected: 20, expected: 25, name: 'Renamed cards', type: 'card', unit: 'card', reason: 'Synthetic correction' };
+            const previewBody = async () => {
+                const response = await send(preview, '');
+                assert.equal(response.status, 200);
+                return (await response.json() as { data: { operationId: string; baseline: object; previewToken: string;
+                    impact: { classification: { not_applicable: number } } } }).data;
+            };
+            const oldPreview = await previewBody();
+            const response = await send(action);
+            assert.equal(response.status, 200);
+            const applied = (await response.json() as { data: { status: string; revision: number; actor: string } }).data;
+            assert.equal(applied.status, 'not_applicable');
+            assert.equal(applied.revision, 1);
+            assert.ok(applied.actor);
+            await checkError(action, 409, 'COMPONENT_STATE_CHANGED');
+            await checkError(count, 409, 'COMPONENT_NOT_APPLICABLE');
+            assert.deepEqual(stored(), before);
+            assert.equal((await previewBody()).impact.classification.not_applicable, 1);
+            const rejected = await send({ ...preview, action: 'quantity-commit', baseline: oldPreview.baseline,
+                previewToken: oldPreview.previewToken }, oldPreview.operationId);
+            assert.equal(rejected.status, 409);
+            assert.equal((await send({ ...action, revision: 1, next: 'applicable' })).status, 200);
+            assert.deepEqual(stored(), before);
+            sqlite.exec('SAVEPOINT restored_count');
+            assert.equal((await send(count)).status, 200);
+            sqlite.exec('ROLLBACK TO restored_count; RELEASE restored_count');
+            assert.equal(sqlite.prepare('SELECT COUNT(*) n FROM v2_component_applicability_events').get()?.n, 2);
         });
 
         await t.test('assignment is card-only and preserves quantities, old assignments and stock', async () => {

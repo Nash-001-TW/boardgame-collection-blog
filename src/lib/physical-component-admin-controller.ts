@@ -457,19 +457,35 @@ if (manager) {
             const save = form?.querySelector<HTMLButtonElement>('[data-count-save]');
             const retry = form?.querySelector<HTMLButtonElement>('[data-count-retry]');
             const reload = form?.querySelector<HTMLButtonElement>('[data-count-reload]');
+            type Pair = { revision: number; excluded: boolean };
+            const pairs = new Map<string, Pair>(JSON.parse(row.dataset.applicabilityValues!));
+            const applicableCount = row.querySelector<HTMLElement>('[data-applicable-count]')!;
+            const excluded = row.querySelector<HTMLElement>('[data-applicability-excluded]')!;
+            const toggle = row.querySelector<HTMLButtonElement>('[data-applicability-toggle]');
+            const applicabilityMessage = row.querySelector<HTMLElement>('[data-applicability-status]');
+            const applicabilityRetry = row.querySelector<HTMLButtonElement>('[data-applicability-retry]');
+            const applicabilityReload = row.querySelector<HTMLButtonElement>('[data-applicability-reload]');
+            let toggleRequest: RequestState | undefined;
+            let toggleBlocked = false;
             let pending: RequestState | undefined;
             let blocked = false;
             let inFlight = false;
 
             const count = () => values.get(selectedCopy)!;
+            const pair = () => pairs.get(selectedCopy)!;
             const dirty = () => !!input && (input.validity.badInput ||
                 (input.value === '' ? null : Number(input.value)) !== count().actual);
             function syncRow() {
                 if (input && save && retry && reload) {
-                    input.disabled = inFlight || !!pending || blocked;
+                    input.disabled = inFlight || !!pending || blocked || pair().excluded || !!toggleRequest || toggleBlocked;
                     save.disabled = input.disabled || !dirty() || !input.validity.valid;
                     retry.hidden = inFlight || !pending;
                     reload.hidden = !blocked;
+                }
+                if (toggle && applicabilityRetry && applicabilityReload) {
+                    toggle.disabled = inFlight || !!pending || blocked || !!toggleRequest || toggleBlocked;
+                    applicabilityRetry.hidden = inFlight || !toggleRequest;
+                    applicabilityReload.hidden = !toggleBlocked;
                 }
             }
 
@@ -483,6 +499,16 @@ if (manager) {
                 }
                 pending = undefined;
                 blocked = false;
+                toggleRequest = undefined;
+                toggleBlocked = false;
+                if (applicabilityMessage) applicabilityMessage.textContent = '';
+                const isExcluded = pair().excluded;
+                applicableCount.hidden = isExcluded;
+                excluded.hidden = !isExcluded;
+                row.closest('[data-count-row]')?.classList.toggle('count-excluded', isExcluded);
+                if (toggle) toggle.textContent = isExcluded
+                    ? t('恢復適用', 'Restore applicability')
+                    : t('此副本不適用', 'Mark not applicable to this copy');
                 syncRow();
             }
 
@@ -504,7 +530,9 @@ if (manager) {
                     } else if (code && code !== 'SERVICE_UNAVAILABLE') {
                         pending = undefined;
                         blocked = true;
-                        message.textContent = errors[code] ?? fallback;
+                        message.textContent = code === 'COMPONENT_NOT_APPLICABLE'
+                            ? t('此副本已設為不適用，無法清點。', 'This component is not applicable to this copy and cannot be counted.')
+                            : errors[code] ?? fallback;
                     } else {
                         message.textContent = t('儲存失敗，可重試。', 'Save failed. You can retry.');
                     }
@@ -533,6 +561,104 @@ if (manager) {
             });
             retry?.addEventListener('click', () => void saveCount());
             reload?.addEventListener('click', () => location.reload());
+            const definitionId = form?.querySelector<HTMLInputElement>('[name="definitionId"]')?.value;
+            const copyLabel = () => copyPicker.selectedOptions[0].textContent?.trim() ?? selectedCopy;
+            const historyPanel = manager.querySelector<HTMLDetailsElement>(`[data-applicability-history="${definitionId}"]`);
+            async function saveApplicability(checkFirst = false) {
+                if (!toggleRequest || !applicabilityMessage || inFlight) return;
+                inFlight = true;
+                saving++;
+                syncPicker();
+                syncRow();
+                applicabilityMessage.textContent = t('儲存中…', 'Saving…');
+                const requested = JSON.parse(toggleRequest.body) as { revision: number; next: string };
+                const nextPair = { revision: requested.revision + 1, excluded: requested.next === 'not_applicable' };
+                function complete() {
+                    pairs.set(selectedCopy, nextPair);
+                    render();
+                    applicabilityMessage!.textContent = nextPair.excluded
+                        ? t('已設為不適用。', 'Marked not applicable.')
+                        : t('已恢復適用。', 'Applicability restored.');
+                }
+                function reject(code: string) {
+                    toggleRequest = undefined;
+                    toggleBlocked = true;
+                    applicabilityMessage!.textContent = errors[code] ?? fallback;
+                }
+                try {
+                    if (checkFirst) {
+                        // Resolve a lost response using the current server-rendered pair revision before retrying.
+                        const response = await fetch(location.href, { cache: 'no-store', signal: AbortSignal.timeout(quantityTimeoutMs) });
+                        if (!response.ok) throw new Error('Applicability refresh failed');
+                        const page = new DOMParser().parseFromString(await response.text(), 'text/html');
+                        const freshRow = page.querySelector(`[data-count-values]:has([name="definitionId"][value="${definitionId}"])`);
+                        if (!freshRow) return reject('COMPONENT_STATE_CHANGED');
+                        const freshPair = new Map<string, Pair>(JSON.parse(freshRow.getAttribute('data-applicability-values')!)).get(selectedCopy);
+                        if (freshPair?.revision === nextPair.revision && freshPair.excluded === nextPair.excluded) {
+                            const freshHistory = page.querySelector(`[data-applicability-history="${definitionId}"]`);
+                            if (freshHistory && historyPanel) historyPanel.replaceChildren(...freshHistory.childNodes);
+                            return complete();
+                        }
+                        if (freshPair?.revision !== requested.revision) return reject('COMPONENT_STATE_CHANGED');
+                    }
+                    const { ok, payload } = await send(toggleRequest, AbortSignal.timeout(quantityTimeoutMs));
+                    const data = payload?.data as { status?: string; revision?: number; actor?: string; occurredAt?: number } | undefined;
+                    if (ok && payload?.success === true && data?.revision === nextPair.revision && data.status === requested.next
+                        && typeof data.actor === 'string' && typeof data.occurredAt === 'number') {
+                        if (historyPanel) {
+                            const item = document.createElement('li');
+                            const time = document.createElement('time');
+                            const date = new Date(data.occurredAt * 1000);
+                            time.dateTime = date.toISOString();
+                            time.textContent = new Intl.DateTimeFormat(en ? 'en' : 'zh-TW', {
+                                timeZone: 'Asia/Taipei', dateStyle: 'medium', timeStyle: 'medium',
+                            }).format(date);
+                            item.appendChild(time);
+                            item.appendChild(document.createTextNode(' · ' + copyLabel() + ' · ' + (nextPair.excluded
+                                ? t('適用 → 不適用', 'Applicable → Not applicable')
+                                : t('不適用 → 適用', 'Not applicable → Applicable')) + ' · ' + data.actor));
+                            const list = historyPanel.querySelector('ul');
+                            list?.insertBefore(item, list.firstChild);
+                            historyPanel.querySelector<HTMLElement>('[data-applicability-empty]')!.hidden = true;
+                        }
+                        complete();
+                    } else if (payload?.error?.code && payload.error.code !== 'SERVICE_UNAVAILABLE') {
+                        reject(payload.error.code);
+                    } else {
+                        throw new Error('Applicability result unknown');
+                    }
+                } catch (error) {
+                    logErrorType(error);
+                    applicabilityMessage.textContent = t('儲存失敗，可重試。', 'Save failed. You can retry.');
+                } finally {
+                    inFlight = false;
+                    saving--;
+                    syncPicker();
+                    syncRow();
+                    if (toggleBlocked) applicabilityReload?.focus();
+                    else if (toggleRequest) applicabilityRetry?.focus();
+                    else toggle?.focus();
+                }
+            }
+            toggle?.addEventListener('click', () => {
+                if (!form || toggle.disabled) return;
+                const currentPair = pair();
+                const label = copyLabel();
+                const name = row.dataset.componentName;
+                const prompt = currentPair.excluded
+                    ? t(`恢復 ${label} 的「${name}」適用性？`, `Restore “${name}” for ${label}?`)
+                    : t(`${label} 不適用「${name}」？之後可恢復。`, `Mark “${name}” not applicable to ${label}? You can restore it later.`);
+                if (!window.confirm(prompt + (dirty() ? t(' 未儲存的實點會捨棄。', ' The unsaved count will be discarded.') : ''))) return;
+                const definitionRevision = form.querySelector<HTMLInputElement>('[name="definitionRevision"]')!.value;
+                toggleRequest = { key: crypto.randomUUID(), body: JSON.stringify({
+                    action: 'applicability', definitionId: Number(definitionId), definitionRevision: Number(definitionRevision),
+                    copyId: Number(selectedCopy), revision: currentPair.revision,
+                    next: currentPair.excluded ? 'applicable' : 'not_applicable',
+                }) };
+                void saveApplicability();
+            });
+            applicabilityRetry?.addEventListener('click', () => void saveApplicability(true));
+            applicabilityReload?.addEventListener('click', () => location.reload());
             return { dirty, render };
         });
 

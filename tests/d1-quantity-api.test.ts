@@ -10,7 +10,7 @@ import { sqliteD1 } from './helpers/sqlite-d1.ts';
 
 const secret = 'synthetic isolated quantity API signing key';
 const actor = 'verified-admin-subject';
-const migrations = readdirSync('migrations').filter(name => /^00(?:0[1-9]|1[0-9]|2[0-3])_.*\.sql$/.test(name)).sort();
+const migrations = readdirSync('migrations').filter(name => /^00(?:0[1-9]|1[0-9]|2[0-4])_.*\.sql$/.test(name)).sort();
 const previewBody = { action: 'quantity-preview', definitionId: 1, definitionRevision: 1,
     previousExpected: 103, expected: 100, name: 'Cards', type: 'card', unit: 'card', reason: 'Synthetic correction' };
 
@@ -110,7 +110,7 @@ function expectOutcome(result: Awaited<ReturnType<Awaited<ReturnType<typeof fixt
     assert.equal(result.error?.code, code);
 }
 
-test('A2 authorized quantity API with 0023 only', async t => {
+test('A2 authorized quantity API with the current applicability schema', async t => {
     const auth = await accessFixture();
     t.after(auth.restore);
     await t.test('D1-01/04/10 read-only preview, shortage 4 to 1, surplus and checked count preserved', async t => {

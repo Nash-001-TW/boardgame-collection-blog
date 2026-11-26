@@ -10,7 +10,7 @@ const output = process.argv[2];
 if (!output) throw new Error('A disposable artifact directory is required');
 // A4 validation leaves the reviewed A3 screenshots intact.
 const screenshots = join(output, 'D1-A3-screenshots');
-const historyScreenshots = 'docs/D1-A4-screenshots';
+const historyScreenshots = join(output, 'D1-A4-screenshots');
 await mkdir(output, { recursive: true });
 
 // Resolve the fixture's extensionless TypeScript imports without changing the authorized Node command.
@@ -434,7 +434,108 @@ try {
     await until(async () => await field('name') === 'Ordinary browser rename' && (await status()).includes('已儲存'), 'ordinary edit');
     assert.equal(history(), 4);
     pass('ordinary edit saves without a quantity receipt');
-    console.log('12 browser checks passed; 4 A4 screenshots and 14 temporary A3 screenshots saved.');
+    const p0aScreenshots = join(output, 'P0A-screenshots');
+    const row = '[data-count-row]:has(form[data-physical-action="count"] [name="definitionId"][value="' + fixture.cardId + '"])';
+    const toggle = row + ' [data-applicability-toggle]';
+    const trail = '[data-applicability-history="' + fixture.cardId + '"]';
+    const countForm = row + ' form[data-physical-action="count"]';
+    const opening = origin + '/admin/collection/1/components?copy=1';
+    const english = opening + '&lang=en';
+    const snapshot = async (name, selector, width) => {
+        await viewport(width, 950);
+        await evaluate(async selector => {
+            const node = document.querySelector(selector);
+            assertVisible(node);
+            node.scrollIntoView({ block: 'center', behavior: 'instant' });
+            await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+            function assertVisible(element) {
+                if (!element?.getClientRects().length) throw new Error('Missing screenshot target: ' + selector);
+            }
+        }, selector);
+        assert.ok(await evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
+        const { data } = await cdp('Page.captureScreenshot', { format: 'png', fromSurface: true });
+        await mkdir(p0aScreenshots, { recursive: true });
+        await writeFile(join(p0aScreenshots, name + '-' + width + '.png'), Buffer.from(data, 'base64'), { flag: 'wx' });
+    };
+    const setApplicable = async prompt => {
+        const opened = new Promise(resolve => {
+            const listener = ({ data }) => {
+                const event = JSON.parse(data);
+                if (event.method !== 'Page.javascriptDialogOpening') return;
+                ws.removeEventListener('message', listener);
+                resolve(event.params);
+            };
+            ws.addEventListener('message', listener);
+        });
+        const clicked = click(toggle);
+        const event = await Promise.race([opened, clicked.then(() => { throw new Error('Missing confirmation dialog'); })]);
+        assert.equal(event.type, 'confirm');
+        assert.match(event.message, prompt);
+        await cdp('Page.handleJavaScriptDialog', { accept: true });
+        await clicked;
+    };
+    const excluded = () => visible(row + ' [data-applicability-excluded]');
+    const useCopy = id => evaluate(id => {
+        const picker = document.querySelector('[data-count-copy]');
+        picker.value = String(id);
+        picker.dispatchEvent(new Event('change', { bubbles: true }));
+    }, id);
+    const showTrail = async () => evaluate(selector => {
+        const history = document.querySelector(selector);
+        for (let parent = history; parent; parent = parent.parentElement) {
+            if (parent instanceof HTMLDetailsElement) parent.open = true;
+        }
+    }, trail);
+
+    await cdp('Page.navigate', { url: opening });
+    await until(async () => await text(row + ' [data-count-current]') === '29', 'original count');
+    await evaluate(() => { window.applicabilityNavigationMarker = true; });
+    for (const width of [375, 768, 1280]) await snapshot('zh-before-confirm', toggle, width);
+    await setApplicable(/#1 Open box 不適用.*Ordinary browser rename/);
+    await until(excluded, 'excluded copy');
+    assert.equal(await evaluate(() => window.applicabilityNavigationMarker), true);
+    assert.equal(await evaluate(selector => document.querySelector(selector).classList.contains('count-excluded'), row), true);
+    assert.equal(await visible(countForm), false);
+    for (const width of [375, 768, 1280]) await snapshot('zh-after-confirm', toggle, width);
+    pass('applicability fades only the selected row without navigation');
+
+    await cdp('Page.reload');
+    await until(async () => await excluded() && !await evaluate(() => window.applicabilityNavigationMarker), 'persisted exclusion after reload');
+    await preview(35);
+    assert.match(await text('[data-d1-excluded]'), /不列入 1 盒/);
+    await click('[data-d1-cancel]');
+    pass('D1 preview includes the inapplicable copy in the exclusion count');
+
+    await useCopy(2);
+    await until(() => visible(countForm), 'other copy count form');
+    await evaluate(selector => {
+        const input = document.querySelector(selector + ' [name="actual"]');
+        input.value = '27';
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+    }, countForm);
+    await click(countForm + ' [data-count-save]');
+    await until(async () => await text(row + ' [data-count-current]') === '27', 'other copy count saved');
+    await useCopy(1);
+    await until(excluded, 'first copy still excluded');
+    await cdp('Page.navigate', { url: english });
+    await until(async () => /Restore applicability/i.test(await text(toggle) ?? ''), 'English excluded row');
+    await snapshot('en-excluded', toggle, 1280);
+    await setApplicable(/Restore|applicable/i);
+    await until(async () => await visible(countForm) && await text(row + ' [data-count-current]') === '29', 'restored original count');
+    await snapshot('en-restored', toggle, 1280);
+    await showTrail();
+    await until(async () => await evaluate(selector => document.querySelectorAll(selector + ' li').length, trail) === 2, 'two applicability events');
+    assert.match(await text(trail), /Applicable → Not applicable/i);
+    assert.match(await text(trail), /Not applicable → Applicable/i);
+    await snapshot('en-history', trail, 1280);
+    await cdp('Page.navigate', { url: opening });
+    await until(async () => /適用性歷史/.test(await text(trail) ?? ''), 'persistent Chinese history');
+    await showTrail();
+    assert.equal(await evaluate(selector => document.querySelectorAll(selector + ' li').length, trail), 2);
+    for (const width of [375, 768, 1280]) await snapshot('zh-history', trail, width);
+    pass('reload, independent count, restore original count and persisted bilingual history');
+
+    console.log('15 browser checks passed, including three applicability checks.');
 } finally {
     releaseCommit?.();
     ws?.close();

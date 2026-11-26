@@ -55,9 +55,11 @@ type SnapshotRow = {
 
 export function projectQuantitySnapshot(snapshot: { items: SnapshotRow[] },
     baseline: Pick<QuantityBaseline, 'collectionId' | 'generation'>,
-    edit: Pick<QuantityEdit, 'definitionId' | 'beforeQuantity' | 'afterQuantity'>) {
+    edit: Pick<QuantityEdit, 'definitionId' | 'beforeQuantity' | 'afterQuantity'>,
+    applicability = new Map<number, { notApplicable: 0 | 1; revision: number }>()) {
     const rows: QuantityImpactRow[] = snapshot.items.map(item => ({
-        applicability: { status: 'applicable', revision: 0, generation: baseline.generation,
+        applicability: { status: applicability.get(item.copyId)?.notApplicable === 1 ? 'not_applicable' : 'applicable',
+            revision: applicability.get(item.copyId)?.revision ?? 0, generation: baseline.generation,
             collectionId: baseline.collectionId, copyId: item.copyId, definitionId: item.definitionId },
         inventory: item.inventory, inspection: item.inspection ?? 'unchecked', actual: item.actual,
         evidence: item.evidenceStatus === 'OBSERVED_CURRENT_COUNT'
@@ -79,7 +81,11 @@ export async function previewSharedQuantity(db: D1Database, secret: unknown, act
         SELECT e.epoch AS databaseEpoch, p.collection_item_id AS collectionId, p.record_scope AS recordScope,
                CAST(g.generation AS TEXT) AS generation, p.physical_revision AS revision,
                d.expected_quantity AS expected, p.classification_rows AS classificationRows,
-               ${quantityEvidenceEnvelope} AS evidence
+               ${quantityEvidenceEnvelope} AS evidence,
+               (SELECT json_group_array(json_object('copyId', a.copy_id,
+                   'notApplicable', a.not_applicable, 'revision', a.revision))
+                FROM v2_component_applicability_current a
+                WHERE a.collection_id = p.collection_item_id AND a.definition_id = p.id) AS applicability
         FROM d1_quantity_admission p
         JOIN v2_component_definitions d ON d.id = p.id
         LEFT JOIN d1_quantity_collection_generation g ON g.collection_id = p.collection_item_id
@@ -88,7 +94,7 @@ export async function previewSharedQuantity(db: D1Database, secret: unknown, act
     `).bind(edit.beforeQuantity, edit.afterQuantity, edit.definitionId, sourceSignature).first<{
         databaseEpoch: string | null; collectionId: number; recordScope: QuantityBaseline['recordScope'];
         generation: string | null; revision: number; expected: number | null;
-        classificationRows: number; evidence: string | null;
+        classificationRows: number; evidence: string | null; applicability: string;
     }>();
     if (!row) throw new HttpError(409, 'COMPONENT_INELIGIBLE');
     if (!row.databaseEpoch || !epochPattern.test(row.databaseEpoch) || !row.generation
@@ -105,7 +111,9 @@ export async function previewSharedQuantity(db: D1Database, secret: unknown, act
         generation: row.generation, evidenceVersion: 1, evidenceDigest: await quantitySha256(row.evidence), sourceSignature,
     };
     const snapshot: { items: SnapshotRow[] } = JSON.parse(row.evidence);
-    const impact = projectQuantitySnapshot(snapshot, baseline, edit);
+    // The generation pins applicability without changing the commit evidence envelope.
+    const pairs: { copyId: number; notApplicable: 0 | 1; revision: number }[] = JSON.parse(row.applicability);
+    const impact = projectQuantitySnapshot(snapshot, baseline, edit, new Map(pairs.map(pair => [pair.copyId, pair])));
     if (impact.status !== 'READY') throw new HttpError(503, 'EVIDENCE_UNAVAILABLE');
     const operationId = await createQuantityOperationId(actor, edit, baseline);
     const previewToken = await signPhysicalValue(key, previewMessage(actor, operationId, edit, baseline));

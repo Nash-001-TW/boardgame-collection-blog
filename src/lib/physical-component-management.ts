@@ -6,6 +6,7 @@ import { commitSharedQuantity, confirmedQuantityOperationStatus, logQuantityErro
 import { currentQuantityEpoch, parseQuantityBaseline, previewSharedQuantity, verifyQuantityPreview } from './shared-quantity-preview';
 
 import { componentTypes, componentUnits, maxComponentQuantity } from './physical-component-values';
+import { changeComponentApplicability } from './component-applicability';
 
 const evidenceSize = `(
     (SELECT COUNT(*) FROM v2_component_definitions) +
@@ -141,7 +142,7 @@ export function writePhysicalComponent(
 ): Promise<StandardComponentWrite>;
 export function writePhysicalComponent(
     db: D1Database, secret: unknown, actor: string, key: string | null, body: Record<string, unknown>,
-): Promise<StandardComponentWrite | QuantityComponentWrite>;
+): Promise<StandardComponentWrite | QuantityComponentWrite | Awaited<ReturnType<typeof changeComponentApplicability>>>;
 export async function writePhysicalComponent(
     db: D1Database, secret: unknown, actor: string, key: string | null, body: Record<string, unknown>,
 ) {
@@ -177,6 +178,29 @@ export async function writePhysicalComponent(
         const execute = action === 'quantity-commit' ? commitSharedQuantity : confirmedQuantityOperationStatus;
         return execute(db, actor, key, edit, baseline,
             () => verifyQuantityPreview(secret, actor, key, edit, baseline, body.previewToken));
+    }
+    if (action === 'applicability') {
+        fields(body, ['action', 'definitionId', 'definitionRevision', 'copyId', 'revision', 'next']);
+        const definitionId = integer(body.definitionId, 1);
+        const definitionRevision = integer(body.definitionRevision, 1);
+        const copyId = integer(body.copyId, 1);
+        const revision = integer(body.revision, 0, Number.MAX_SAFE_INTEGER - 1);
+        const next = body.next;
+        if (next !== 'applicable' && next !== 'not_applicable') throw new HttpError(400, 'INVALID_COMPONENT_INPUT');
+        const { signature } = await verifiedPhysicalProof(db, definitionId, secret, false);
+        const collectionId = await db.prepare('SELECT collection_item_id FROM v2_component_definitions WHERE id = ?')
+            .bind(definitionId).first<number>('collection_item_id');
+        if (!collectionId) throw new HttpError(409, 'COMPONENT_STATE_CHANGED');
+        try {
+            return await changeComponentApplicability(db, { collectionId, copyId, definitionId, definitionRevision,
+                signature, revision, next, actor });
+        } catch (error) {
+            if (/APPLICABILITY_(STATE_CHANGED|GENERATION_CHANGED|TARGET_INVALID)/.test(String(error))) {
+                throw new HttpError(409, 'COMPONENT_STATE_CHANGED');
+            }
+            if (String(error).includes('APPLICABILITY_CHANGE_INVALID')) throw new HttpError(400, 'INVALID_COMPONENT_INPUT');
+            throw error;
+        }
     }
     if (action !== 'edit' && action !== 'count' && action !== 'assign') throw new HttpError(400, 'INVALID_COMPONENT_ACTION');
     const common = ['action', 'definitionId', 'definitionRevision'];
@@ -226,7 +250,7 @@ export async function writePhysicalComponent(
     if (action === 'count') {
         const copyId = integer(body.copyId, 1);
         const actual = integer(body.actual, 0, maxComponentQuantity);
-        return writeOne(db, db.prepare(`
+        const statement = db.prepare(`
             INSERT INTO v2_copy_components
                 (owned_copy_id, component_definition_id, actual_quantity, inspection_status, last_checked_at, count_revision)
             SELECT c.id, p.id, ?, 'checked', CURRENT_TIMESTAMP, 1 FROM (${candidate}) p
@@ -234,11 +258,24 @@ export async function writePhysicalComponent(
             WHERE c.inventory_status = 'in_collection' AND c.seal_status <> 'sealed'
               AND COALESCE((SELECT count_revision FROM v2_copy_components
                 WHERE owned_copy_id = c.id AND component_definition_id = p.id), 0) = ?
+              AND NOT EXISTS (SELECT 1 FROM v2_component_applicability_current a
+                WHERE a.collection_id = p.collection_item_id AND a.copy_id = c.id
+                  AND a.definition_id = p.id AND a.not_applicable = 1)
             ON CONFLICT(owned_copy_id, component_definition_id) DO UPDATE SET
                 actual_quantity = excluded.actual_quantity, inspection_status = excluded.inspection_status,
                 last_checked_at = excluded.last_checked_at, count_revision = v2_copy_components.count_revision + 1
             RETURNING id
-        `).bind(actual, ...proof, copyId, revision));
+        `).bind(actual, ...proof, copyId, revision);
+        try {
+            return await writeOne(db, statement);
+        } catch (error) {
+            if (error instanceof HttpError && error.code === 'COMPONENT_STATE_CHANGED'
+                && await db.prepare(`SELECT 1 FROM v2_component_applicability_current
+                    WHERE copy_id = ? AND definition_id = ? AND not_applicable = 1`).bind(copyId, definitionId).first()) {
+                throw new HttpError(409, 'COMPONENT_NOT_APPLICABLE');
+            }
+            throw error;
+        }
     }
 
     const requirementId = integer(body.requirementId, 1);

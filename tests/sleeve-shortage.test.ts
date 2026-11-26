@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { writePhysicalComponent } from '../src/lib/physical-component-management';
 import { readSleeveShortage } from '../src/lib/sleeve-shortage';
 import { readSleeveAdmin } from '../src/lib/sleeve-admin';
 import { readAdminDashboardSummary } from '../src/lib/admin-dashboard-summary';
@@ -26,6 +27,32 @@ test('expands each requirement, includes loaned copies, limits specified copies 
     assert.equal(result.rows.find(row => row.id === 1)?.pending, 200);
     assert.equal(result.rows.find(row => row.id === 3)?.pending, 100);
     assert.equal(result.rows.find(row => row.id === 2)?.requirementCount, 0);
+});
+
+test('applicability excludes linked requirements per copy and leaves unlinked demand intact', async t => {
+    const { db, sqlite } = fixture(t, 'shortage');
+    const secret = 'synthetic sleeve applicability signing key';
+    const actor = 'fixture';
+    const card = await writePhysicalComponent(db, secret, actor, 'sleeve-applicability-create', {
+        action: 'create', collectionId: 1, name: 'Confirmed cards', type: 'card', unit: 'card',
+        expected: 30, confirmed: true,
+    });
+    assert.ok('id' in card);
+    sqlite.exec("UPDATE v2_owned_copies SET seal_status='unsealed' WHERE id=1");
+    sqlite.exec("INSERT INTO v2_owned_copies(id,collection_item_id,copy_label,inventory_status) VALUES (2,1,'Loaned','loaned')");
+    sqlite.prepare('UPDATE v2_sleeve_requirements SET component_definition_id=? WHERE collection_item_id=1 AND size_id IN (1,3)').run(card.id);
+    sqlite.exec('UPDATE v2_sleeve_requirements SET owned_copy_id=1 WHERE collection_item_id=1 AND size_id=3');
+    sqlite.exec(`INSERT INTO v2_sleeve_inventory_transactions(product_id,transaction_type,transaction_date,quantity_sheets)
+        VALUES (2,'OPENING_BALANCE','2026-11-25',10)`);
+    sqlite.prepare(`INSERT INTO v2_component_applicability_events
+        (collection_id, copy_id, definition_id, revision, before_not_applicable, after_not_applicable, actor, origin, before_generation)
+        SELECT 1, 1, ?, 1, 0, 1, ?, 'change', generation
+        FROM d1_quantity_collection_generation WHERE collection_id=1`).run(card.id, actor);
+    const result = await readSleeveShortage(db);
+    assert.equal(result.rows.find(row => row.id === 1)?.pending, 30);
+    assert.equal(result.rows.find(row => row.id === 3)?.pending, 0);
+    assert.equal(result.rows.find(row => row.id === 3)?.status, 'none');
+    assert.equal(result.rows.find(row => row.id === 4)?.pending, 60);
 });
 
 test('two collections needing 80 each with 100 available have a global gap of 60', async t => {

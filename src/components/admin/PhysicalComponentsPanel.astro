@@ -6,6 +6,7 @@ import D1QuantityHistory from './D1QuantityHistory.astro';
 import { readQuantityHistory, type QuantityHistory } from '../../lib/d1-quantity-history';
 import { classifyStoredComponents } from '../../lib/component-classifier-adapter';
 import { maxComponentQuantity } from '../../lib/physical-component-values';
+import { readApplicabilityHistory } from '../../lib/component-applicability';
 
 interface Props { collectionId: number; scope: 'production' | 'test'; lang: 'en' | 'zh-TW'; }
 const { collectionId, scope, lang } = Astro.props;
@@ -33,6 +34,7 @@ let counts: Count[] = [];
 let classifications = new Map<number, Awaited<ReturnType<typeof classifyStoredComponents>>[number]>();
 let error = '';
 let history: QuantityHistory = { status: 'unavailable' };
+let applicabilityHistory: Awaited<ReturnType<typeof readApplicabilityHistory>> = [];
 try {
     const db = env.DB;
     collection = await db.prepare(`
@@ -67,6 +69,7 @@ try {
         classifications = new Map((await classifyStoredComponents(db, definitions.map(row => row.id), { secret }))
             .map(result => [result.definitionId, result]));
         history = await readQuantityHistory(db, collectionId, en);
+        applicabilityHistory = await readApplicabilityHistory(db, collectionId);
     }
 } catch {
     Astro.response.status = 503;
@@ -85,6 +88,14 @@ const copyLink = '/admin/collection/' + collectionId + '/copies?' + new URLSearc
     scope, ...(en ? { lang: 'en' } : {}),
 });
 const unassigned = requirements.filter(row => row.component_definition_id === null);
+const applicabilityByPair = new Map<string, typeof applicabilityHistory[number]>();
+for (const event of applicabilityHistory) {
+    const key = event.definitionId + ':' + event.copyId;
+    if ((applicabilityByPair.get(key)?.revision ?? 0) < event.revision) applicabilityByPair.set(key, event);
+}
+const eventDate = new Intl.DateTimeFormat(en ? 'en' : 'zh-TW', {
+    timeZone: 'Asia/Taipei', dateStyle: 'medium', timeStyle: 'medium',
+});
 ---
 
     <div class="physical-manager" data-physical-manager data-lang={lang}>
@@ -120,14 +131,22 @@ const unassigned = requirements.filter(row => row.component_definition_id === nu
                     const componentCounts = countsByDefinition.get(component.id);
                     const current = selectedCopy && componentCounts?.get(selectedCopy.id);
                     const actual = current ? current.actual_quantity : null;
-                    return <article data-count-row>
+                    const componentName = '#' + component.id + ' ' + component.component_name;
+                    const pair = selectedCopy && applicabilityByPair.get(component.id + ':' + selectedCopy.id);
+                    const excluded = verified && pair?.notApplicable === 1;
+                    return <article data-count-row class:list={{ 'count-excluded': excluded }}>
                         <h4>#{component.id} {component.component_name}</h4>
                         <p>{t('預期數量', 'Expected quantity')} {component.expected_quantity ?? '—'} ({component.quantity_unit})</p>
                         {!verified ? <p>{t('待確認，不可清點。來源證據不可用或有衝突。', 'Pending verification. Counting is unavailable because source evidence is unavailable or conflicting.')}</p>
                             : selectedCopy && <div data-count-values={JSON.stringify(copies.map(copy => {
                                 const count = componentCounts?.get(copy.id);
                                 return [String(copy.id), { actual: count?.actual_quantity ?? null, revision: count?.count_revision ?? 0 }];
-                            }))}>
+                            }))} data-applicability-values={JSON.stringify(copies.map(copy => {
+                                const event = applicabilityByPair.get(component.id + ':' + copy.id);
+                                return [String(copy.id), { revision: event?.revision ?? 0, excluded: event?.notApplicable === 1 }];
+                            }))} data-component-name={componentName}>
+                                <p data-applicability-excluded hidden={!excluded}>{t('此副本不適用', 'Not applicable to this copy')}</p>
+                                <div data-applicable-count hidden={excluded}>
                                 <p>{t('目前實點', 'Current count')} <span data-count-current>{actual ?? t('未清點', 'Uncounted')}</span></p>
                                 {canWrite && <form method="post" data-physical-action="count" class="count-controls">
                                     <input type="hidden" name="definitionId" value={component.id} />
@@ -142,6 +161,15 @@ const unassigned = requirements.filter(row => row.component_definition_id === nu
                                     <button type="button" class="admin-button" data-count-retry hidden>{t('重試', 'Retry')}</button>
                                     <button type="button" class="admin-button" data-count-reload hidden>{t('重新載入', 'Reload')}</button>
                                 </form>}
+                                </div>
+                                {canWrite && <div class="count-controls">
+                                    <button type="button" class="admin-button" data-applicability-toggle>
+                                        {excluded ? t('恢復適用', 'Restore applicability') : t('此副本不適用', 'Mark not applicable to this copy')}
+                                    </button>
+                                    <p data-applicability-status role="status" aria-live="polite"></p>
+                                    <button type="button" class="admin-button" data-applicability-retry hidden>{t('重試', 'Retry')}</button>
+                                    <button type="button" class="admin-button" data-applicability-reload hidden>{t('重新載入', 'Reload')}</button>
+                                </div>}
                             </div>}
                     </article>;
                 })}
@@ -197,6 +225,21 @@ const unassigned = requirements.filter(row => row.component_definition_id === nu
                             </details>
                         </>}
                         <D1QuantityHistory en={en} history={history} definitionId={component.id} />
+                        <details data-applicability-history={component.id}>
+                            <summary>{t('適用性歷史', 'Applicability history')}</summary>
+                            <p data-applicability-empty hidden={applicabilityHistory.some(event => event.definitionId === component.id)}>
+                                {t('尚無適用性紀錄', 'No applicability records yet')}
+                            </p>
+                            <ul>{applicabilityHistory.filter(event => event.definitionId === component.id).map(event =>
+                                <li>
+                                    <time datetime={new Date(event.occurredAt * 1000).toISOString()}>{eventDate.format(event.occurredAt * 1000)}</time>
+                                    {' · #' + event.copyId + ' ' + (event.copyLabel ?? '') + ' · '}
+                                    {event.notApplicable ? t('適用 → 不適用', 'Applicable → Not applicable')
+                                        : t('不適用 → 適用', 'Not applicable → Applicable')}
+                                    {' · ' + event.actor}
+                                </li>
+                            )}</ul>
+                        </details>
                         {canWrite && verified && <>
                             {result.canAssignToSleeves && (unassigned.length ? <form method="post" data-physical-action="assign" class="fields">
                                 <input type="hidden" name="definitionId" value={component.id} />
@@ -249,4 +292,8 @@ const unassigned = requirements.filter(row => row.component_definition_id === nu
     [data-component-management] { margin-top: 20px; }
     [data-component-management] > summary { align-content: center; }
     [data-count-row] { overflow-wrap: anywhere; }
+    .count-excluded { background-color: color-mix(in srgb, currentColor 5%, transparent); }
+    [data-applicable-count][hidden], [data-applicability-excluded][hidden],
+    [data-applicability-empty][hidden] { display: none; }
+    [data-applicability-history] summary { min-height: 44px; cursor: pointer; }
 </style>

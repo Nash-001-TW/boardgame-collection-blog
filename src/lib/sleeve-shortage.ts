@@ -1,5 +1,7 @@
 type Size = { id: number; width_tenth_mm: number; height_tenth_mm: number };
-type Requirement = { id: number; collection_item_id: number; owned_copy_id: number | null; size_id: number; quantity_sheets: number };
+type Requirement = { id: number; collection_item_id: number; owned_copy_id: number | null; size_id: number;
+    quantity_sheets: number; component_definition_id: number | null };
+type Exclusion = { collection_id: number; copy_id: number; definition_id: number };
 type Copy = { id: number; collection_item_id: number; inventory_status: string };
 type Product = { size_id: number; is_active: number; balance: number | null; unsafe_quantity: number };
 type Application = { requirement_id: number | null; owned_copy_id: number; collection_item_id: number; size_id: number | null; quantity_sheets: number };
@@ -44,11 +46,12 @@ async function readSnapshot(db: D1Database) {
 
 export async function readSleeveShortage(db: D1Database) {
     const results = await readSnapshot(db);
-    if (results.length !== 5 || results.some(result => !result.success || !Array.isArray(result.results))) {
+    if (results.length !== 6 || results.some(result => !result.success || !Array.isArray(result.results))) {
         throw new Error('Sleeve shortage read failed');
     }
-    const [sizes, requirements, copies, products, applications] = results.map(result => result.results) as
-        [Size[], Requirement[], Copy[], Product[], Application[]];
+    const [sizes, requirements, copies, products, applications, exclusions] = results.map(result => result.results) as
+        [Size[], Requirement[], Copy[], Product[], Application[], Exclusion[]];
+    const excluded = new Set(exclusions.map(a => `${a.collection_id}:${a.copy_id}:${a.definition_id}`));
     const rows = new Map<number, SleeveShortageRow>();
     for (const size of sizes) {
         integer(size.width_tenth_mm);
@@ -114,7 +117,13 @@ export async function readSleeveShortage(db: D1Database) {
         const quantity = integer(requirement.quantity_sheets);
         const row = sizeRow(requirement.size_id);
         row.requirementCount++;
-        const collectionCopies = copiesByCollection.get(integer(requirement.collection_item_id)) ?? [];
+        const allCopies = copiesByCollection.get(integer(requirement.collection_item_id)) ?? [];
+        const isExcluded = (copyId: number) => requirement.component_definition_id !== null
+            && excluded.has(`${requirement.collection_item_id}:${copyId}:${requirement.component_definition_id}`);
+        if (requirement.owned_copy_id !== null && isExcluded(requirement.owned_copy_id)) continue;
+        if (requirement.owned_copy_id === null && allCopies.some(applicable)
+            && allCopies.every(copy => (!applicable(copy) && copy.inventory_status !== 'unknown') || isExcluded(copy.id))) continue;
+        const collectionCopies = allCopies.filter(copy => !isExcluded(copy.id));
         const eligible = collectionCopies.filter(applicable);
         const unknownCopy = collectionCopies.some(copy => copy.inventory_status === 'unknown');
         const legacy = legacyScopes.has(`${requirement.collection_item_id}:${row.id}`);
@@ -173,7 +182,8 @@ export async function readSleeveShortage(db: D1Database) {
 function dbStatements(db: D1Database) {
     return [
         db.prepare('SELECT id, width_tenth_mm, height_tenth_mm FROM v2_sleeve_sizes'),
-        db.prepare(`SELECT item.id, item.collection_item_id, item.owned_copy_id, item.size_id, item.quantity_sheets
+        db.prepare(`SELECT item.id, item.collection_item_id, item.owned_copy_id, item.size_id, item.quantity_sheets,
+                item.component_definition_id
             FROM v2_sleeve_requirements item ${production} WHERE ${eligibleCollection}`),
         db.prepare(`SELECT item.id, item.collection_item_id, item.inventory_status
             FROM v2_owned_copies item ${production} WHERE ${eligibleCollection}`),
@@ -187,5 +197,7 @@ function dbStatements(db: D1Database) {
             LEFT JOIN v2_sleeve_inventory_transactions t ON t.id = a.inventory_transaction_id
             LEFT JOIN v2_sleeve_products p ON p.id = t.product_id
             WHERE ${eligibleCollection}`),
+        db.prepare(`SELECT collection_id, copy_id, definition_id
+            FROM v2_component_applicability_current WHERE not_applicable = 1`),
     ];
 }

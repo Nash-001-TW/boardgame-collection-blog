@@ -10,6 +10,7 @@ import { sqliteD1 } from './helpers/sqlite-d1.ts';
 
 const target = { collectionId: 1, copyId: 1, definitionId: 1 };
 const actor = 'synthetic-admin';
+const proof = { definitionRevision: 1, signature: '3'.padStart(64, '0') };
 const history = 'v2_component_applicability_events';
 const eventColumns = '(collection_id, copy_id, definition_id, revision, before_not_applicable, after_not_applicable, actor, origin, before_generation)';
 
@@ -50,7 +51,7 @@ function fixture(t: TestContext, productionOrder = false) {
     const events = () => sql.prepare(`SELECT * FROM ${history} ORDER BY copy_id, definition_id, revision`).all();
     const read = () => readComponentApplicability(db, target);
     const change = (revision: number, next: 'applicable' | 'not_applicable', copyId = 1) =>
-        changeComponentApplicability(db, { ...target, copyId, revision, next, actor });
+        changeComponentApplicability(db, { ...target, ...proof, copyId, revision, next, actor });
     return { sql, db, generation, events, read, change };
 }
 
@@ -93,8 +94,8 @@ test('cross-collection and non-candidate targets are rejected by reads and write
         { ...target, collectionId: 99 }]) {
         assert.deepEqual(await readComponentApplicability(f.db, invalid),
             { ...invalid, status: 'unknown', reason: 'TARGET_INVALID' });
-        await assert.rejects(changeComponentApplicability(f.db, { ...invalid, revision: 0, next: 'not_applicable', actor }),
-            /APPLICABILITY_TARGET_INVALID/);
+        await assert.rejects(changeComponentApplicability(f.db, { ...invalid, ...proof, revision: 0, next: 'not_applicable', actor }),
+            /APPLICABILITY_STATE_CHANGED/);
     }
     assert.deepEqual(f.events(), []);
     assert.equal(f.generation(), generation);
@@ -109,6 +110,25 @@ test('initial history and stale generation are rejected even for direct SQL', t 
     assert.throws(() => insert.run(actor, 'change', String(BigInt(generation) + 1n)), /APPLICABILITY_GENERATION_CHANGED/);
     assert.deepEqual(f.events(), []);
     assert.equal(f.generation(), generation);
+});
+
+test('changes after proof verification reject the entire event write', async t => {
+    for (const [name, mutation] of [
+        ['definition revision', 'UPDATE v2_component_definitions SET physical_revision = 2 WHERE id = 1'],
+        ['source signature', `DROP TRIGGER v2_physical_source_no_update;
+            UPDATE v2_physical_component_sources SET signature = printf('%064x', 7) WHERE definition_id = 1`],
+        ['inventory status', "UPDATE v2_owned_copies SET inventory_status = 'loaned' WHERE id = 1"],
+        ['seal status', "UPDATE v2_owned_copies SET seal_status = 'sealed' WHERE id = 1"],
+    ]) {
+        await t.test(name, async t => {
+            const f = fixture(t);
+            f.sql.exec(mutation);
+            const generation = f.generation();
+            await assert.rejects(f.change(0, 'not_applicable'), /APPLICABILITY_STATE_CHANGED/);
+            assert.deepEqual(f.events(), []);
+            assert.equal(f.generation(), generation);
+        });
+    }
 });
 
 test('multi-row INSERT SELECT rolls back a valid first event under all conflict policies', t => {
@@ -144,7 +164,7 @@ test('existing history cannot be updated, deleted, replaced or ignored', async t
 test('actor length is enforced in the library and under direct INSERT OR IGNORE', async t => {
     const f = fixture(t);
     const generation = f.generation();
-    const change = { ...target, revision: 0, next: 'not_applicable' as const };
+    const change = { ...target, ...proof, revision: 0, next: 'not_applicable' as const };
     for (const invalid of ['   ', 'a'.repeat(321)]) {
         await assert.rejects(changeComponentApplicability(f.db, { ...change, actor: invalid }), /APPLICABILITY_CHANGE_INVALID/);
         assert.throws(() => f.sql.prepare(`INSERT OR IGNORE INTO ${history} ${eventColumns}
@@ -189,7 +209,9 @@ test('read failures reject and a missing generation fails closed for a valid tar
     // Simulate a damaged generation table in this disposable database.
     f.sql.exec('DROP TRIGGER d1_generation_no_delete; DELETE FROM d1_quantity_collection_generation WHERE collection_id = 1');
     await assert.rejects(f.read(), /APPLICABILITY_GENERATION_CHANGED/);
-    await assert.rejects(f.change(0, 'not_applicable'), /APPLICABILITY_GENERATION_CHANGED/);
+    // The guarded INSERT now rejects a missing generation as a zero-row write.
+    await assert.rejects(f.change(0, 'not_applicable'), /APPLICABILITY_STATE_CHANGED/);
+    assert.deepEqual(f.events(), []);
 });
 
 test('collection read returns only current exclusions with their pair revisions', async t => {
@@ -199,7 +221,7 @@ test('collection read returns only current exclusions with their pair revisions'
     await f.change(1, 'applicable');
     await f.change(2, 'not_applicable');
     await changeComponentApplicability(f.db, { collectionId: 2, copyId: 2, definitionId: 3,
-        revision: 0, next: 'not_applicable', actor });
+        ...proof, signature: '5'.padStart(64, '0'), revision: 0, next: 'not_applicable', actor });
     const exclusions = async (collectionId: number) =>
         (await readCollectionApplicability(f.db, collectionId)).map(row => ({ ...row }));
     assert.deepEqual(await exclusions(1), [

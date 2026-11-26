@@ -225,6 +225,8 @@ test('each distinct 0023 RAISE message is exercised', async t => {
 
 test('R06 and v2 service results and persisted business fields agree with 0022', async t => {
     async function exercise(sql: DatabaseSync) {
+        // The count service requires the 0024 view in both arms. Neither arm writes applicability.
+        sql.exec(readFileSync('migrations/0024_component_applicability.sql', 'utf8'));
         const db = sqliteD1(sql);
         const writer = new CollectionV2Writer(db);
         const context = { actor, scope: 'production' as const };
