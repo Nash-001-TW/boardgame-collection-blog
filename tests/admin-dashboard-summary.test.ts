@@ -4,6 +4,30 @@ import test from 'node:test';
 import { readAdminDashboardSummary } from '../src/lib/admin-dashboard-summary';
 import { r01Fixture } from './helpers/admin-dashboard-preview';
 
+// The sleeve shortage batch also has six statements since P0A-APP added the applicability read,
+// so tests identify the R10 purchase batch by its SQL instead of by batch length.
+function onPurchaseBatch(
+    fixture: ReturnType<typeof r01Fixture>,
+    edit: (statements: D1PreparedStatement[], prepare: (sql: string) => D1PreparedStatement) => D1PreparedStatement[],
+    after: (results: D1Result<unknown>[]) => void = () => {},
+) {
+    const sqlOf = new WeakMap<D1PreparedStatement, string>();
+    const prepare = fixture.db.prepare.bind(fixture.db);
+    fixture.db.prepare = (sql: string) => {
+        const statement = prepare(sql);
+        sqlOf.set(statement, sql);
+        return statement;
+    };
+    const batch = fixture.db.batch.bind(fixture.db);
+    fixture.db.batch = async <T>(statements: D1PreparedStatement[]) => {
+        const purchase = statements.some(statement => (sqlOf.get(statement) ?? '').includes('v2_purchase'));
+        if (!purchase) return batch<T>(statements);
+        const results = await batch<T>(edit(statements, prepare));
+        after(results as D1Result<unknown>[]);
+        return results;
+    };
+}
+
 test('R01 keeps existing collection and source counts and scopes related records to production', async t => {
     const fixture = r01Fixture();
     t.after(() => fixture.sqlite.close());
@@ -29,7 +53,8 @@ test('R01 reads purchases in exactly one batch of six statements', async t => {
         return batch<T>(statements);
     };
     assert.ok((await readAdminDashboardSummary(fixture.db)).purchases);
-    assert.deepEqual(batchSizes, [5, 6]);
+    // Sleeve shortage batch (6 since P0A-APP's applicability read), then the R10 purchase batch (6).
+    assert.deepEqual(batchSizes, [6, 6]);
 });
 
 test('Failure at any position in the purchase batch leaves other R01 sections intact', async t => {
@@ -37,27 +62,26 @@ test('Failure at any position in the purchase batch leaves other R01 sections in
     t.after(() => baseline.sqlite.close());
     const expected = { ...await readAdminDashboardSummary(baseline.db), purchases: null };
     for (let index = 0; index < 6; index++) {
-        const fixture = r01Fixture('normal', index);
+        const fixture = r01Fixture();
         t.after(() => fixture.sqlite.close());
+        onPurchaseBatch(fixture, (statements, prepare) => statements.map((statement, position) =>
+            position === index ? prepare('SELECT * FROM synthetic_missing_batch_table') : statement));
         assert.deepEqual(await readAdminDashboardSummary(fixture.db), expected, `Batch position ${index}`);
     }
 });
 
 test('R01 rejects unsuccessful batch results and unsafe purchase amounts or order IDs', async t => {
-    const fixture = r01Fixture();
-    t.after(() => fixture.sqlite.close());
-    const batch = fixture.db.batch.bind(fixture.db);
-    const expected = { ...await readAdminDashboardSummary(fixture.db), purchases: null };
+    const baseline = r01Fixture();
+    t.after(() => baseline.sqlite.close());
+    const expected = { ...await readAdminDashboardSummary(baseline.db), purchases: null };
     for (const invalid of [
         { success: false, results: [] },
         { success: true, results: [{ amount: Number.MAX_SAFE_INTEGER + 1, order_id: 0 }] },
         { success: true, results: [{ amount: 0, order_id: Number.MAX_SAFE_INTEGER + 1 }] },
     ]) {
-        fixture.db.batch = async <T>(statements: D1PreparedStatement[]) => {
-            const results = await batch<T>(statements);
-            if (statements.length === 6) Object.assign(results[5], invalid);
-            return results;
-        };
+        const fixture = r01Fixture();
+        t.after(() => fixture.sqlite.close());
+        onPurchaseBatch(fixture, statements => statements, results => Object.assign(results[5], invalid));
         assert.deepEqual(await readAdminDashboardSummary(fixture.db), expected);
     }
 });

@@ -694,14 +694,25 @@ try {
           (9003,'Synthetic expansion','expansion'),(9004,'Synthetic accessory','accessory'),
           (9005,'Synthetic shared bundle','bundle'),(9006,'Synthetic standalone','base'),
           (9007,'Synthetic ambiguous expansion','expansion'),(9008,'Synthetic first base','base'),
-          (9009,'Synthetic second base','base'),(9010,'Synthetic bundle-only game','base');
+          (9009,'Synthetic second base','base'),(9010,'Synthetic bundle-only game','base'),
+          (9011,'Synthetic accessory without costs','accessory'),(9012,'Synthetic zero-cost accessory','accessory');
         INSERT INTO v2_collection_relations(source_item_id,target_item_id,relation_type) VALUES
           (9003,1,'expansion_of'),(9004,1,'accessory_for'),(9005,1,'bundle_contains'),(9005,9003,'bundle_contains'),(9005,9010,'bundle_contains'),
-          (9007,9008,'expansion_of'),(9007,9009,'requires_base');
+          (9007,9008,'expansion_of'),(9007,9009,'requires_base'),
+          (9012,1,'accessory_for');
+        INSERT INTO v2_games(id,primary_name,game_type) VALUES (9011,'Synthetic compatible accessory','accessory');
+        UPDATE v2_collection_items SET game_id=9011 WHERE id=9011;
+        INSERT INTO notbgg_ids(seq,request_key,request_hash) VALUES(9011,'series-accessory','series-accessory');
+        BEGIN;
+        INSERT INTO notbgg_games(seq,game_id,name,type) VALUES (9011,9011,'Synthetic compatible accessory','boardgameaccessory');
+        INSERT INTO notbgg_game_revisions(seq,revision,snapshot_json,actor) VALUES(9011,1,'{}','fixture');
+        COMMIT;
+        INSERT INTO site_game_relations(source_game_id,target_game_id,relation_type,created_by)
+          VALUES (9011,1,'compatible_with','fixture');
         INSERT INTO v2_purchase_orders(id,currency_code,item_subtotal_minor,status) VALUES
-          (301,'USD',1200,'paid'),(302,'TWD',2400,'completed');
+          (301,'USD',1200,'paid'),(302,'TWD',2400,'completed'),(303,'TWD',350,'paid');
         INSERT INTO v2_purchase_allocations(purchase_order_id,collection_item_id,allocated_minor) VALUES
-          (301,9003,1200),(302,9005,2400);
+          (301,9003,1200),(302,9005,2400),(303,9004,350),(303,9012,0);
     `);
     const captureSeries = async (name, selector, width) => {
         const clip = await evaluate((selector, width) => {
@@ -715,7 +726,7 @@ try {
     for (const width of [375,768,1280]) {
         await resize(width);
         for (const [name,id,pattern] of [
-            ['series',1,'Synthetic accessory.*尚未記錄成本.*合計.*TWD · 1500.*USD · 1275.*其中 1 款尚未記錄成本'],
+            ['series',1,'合計.*TWD · 1500.*USD · 1275.*其中 0 款尚未記錄成本.*相關配件.*Synthetic accessory.*尚未記錄成本'],
             ['expansion',9003,'Synthetic collection.*本體.*Synthetic expansion.*目前'],
             ['shared-bundle',1,'共用禮包.*Synthetic shared bundle.*共 3 款，其中 2 款在此系列.*TWD · 2400'],
             ['standalone',9006,'尚未建立系列關聯'],
@@ -733,15 +744,50 @@ try {
             assert.match(view.text,/系列花費合計/);
             assert.match(view.text,new RegExp(pattern));
             assert.ok(view.fits);
-            if (name === 'series') assert.ok(view.links.includes('/admin/collection/9003/purchases?lang=zh-TW'));
-            if (name === 'standalone') assert.ok(view.links.includes('/admin/bgg?view=relations&domain=collection&source=9006&lang=zh-TW'));
+            if (name === 'series') {
+                assert.ok(view.links.includes('/admin/collection/9003/purchases?lang=zh-TW'));
+                const accessories = await evaluate(() => {
+                    const section = document.querySelector('[data-series-accessories]');
+                    return {
+                        heading: section.querySelector('h4').textContent,
+                        rows: [...section.querySelectorAll('tbody tr')].map(row => row.innerText.replace(/\s+/g,' ')),
+                        subtotal: section.querySelector('ul').innerText,
+                        missing: section.querySelector('p').innerText,
+                        members: document.querySelector('[aria-label="系列成員"]').innerText,
+                    };
+                });
+                assert.equal(accessories.heading, '配件小計（不併入系列合計）');
+                assert.deepEqual(accessories.rows, [
+                    'Synthetic accessory 專用 TWD · 350',
+                    'Synthetic accessory without costs 相容 尚未記錄成本',
+                    'Synthetic zero-cost accessory 專用 TWD · 0',
+                ]);
+                assert.equal(accessories.subtotal, 'TWD · 350');
+                assert.equal(accessories.missing, '其中 1 款配件尚未記錄成本');
+                assert.doesNotMatch(accessories.members, /Synthetic accessory/);
+            }
+            if (name === 'standalone') {
+                assert.ok(view.links.includes('/admin/bgg?view=relations&domain=collection&source=9006&lang=zh-TW'));
+                assert.equal(await evaluate(() => document.querySelector('[data-series-accessories]') === null), true);
+            }
             if (name === 'multiple-bases') assert.ok(view.links.includes('/admin/collection/9009/purchases?lang=zh-TW'));
             await captureSeries(name, name === 'shared-bundle' ? '[data-series-shared-bundles]' : '[data-series-spending]', width);
             pass('Series spending ' + name + ' at ' + width + ' px');
         }
     }
+    await navigate('/admin/collection/1/purchases?scope=production&lang=en');
+    assert.match(await evaluate(() => document.querySelector('[data-series-accessories]').innerText.replace(/\s+/g,' ')),
+        /Related accessories.*Dedicated.*TWD · 350.*Compatible.*No recorded costs.*TWD · 0.*Accessory subtotal \(excluded from series total\).*TWD · 350.*1 accessory without recorded costs/);
+    await captureSeries('accessories-en', '[data-series-spending]', 1280);
+    pass('English accessories, separate subtotal and zero-cost row');
+    await navigate('/admin/collection/9004/purchases'+query);
+    assert.match(await evaluate(() => document.querySelector('[data-series-accessories] tbody tr').innerText.replace(/\s+/g,' ')),
+        /Synthetic accessory · 目前收藏.*專用.*TWD · 350/);
+    assert.ok(await evaluate(() => document.querySelector('[aria-label="系列成員"] a[href^="/admin/collection/1/purchases"]')));
+    await captureSeries('current-accessory-zh', '[data-series-spending]', 1280);
+    pass('Accessory detail finds the base and marks the current collection');
     const seriesBatch = db.batch.bind(db);
-    db.batch = statements => statements.length === 5
+    db.batch = statements => statements.length === 5 || statements.length === 6
         ? Promise.reject(new Error('Synthetic series read failure')) : seriesBatch(statements);
     assert.equal((await fetch(origin+purchasePath+query)).status,200);
     await navigate(purchasePath+query);

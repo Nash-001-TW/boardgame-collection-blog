@@ -55,7 +55,7 @@ const seriesRelationsLink = (id: number) => '/admin/bgg?' + new URLSearchParams(
 });
 const relationLabels = new Map([
     ['expansion_of', t('擴充', 'Expansion')], ['requires_base', t('需要本體', 'Requires base game')],
-    ['accessory_for', t('配件', 'Accessory')], ['compatible_with', t('相容配件', 'Compatible accessory')],
+    ['accessory_for', t('專用', 'Dedicated')], ['compatible_with', t('相容', 'Compatible')],
     ['same_series', t('同系列', 'Same series')], ['standalone_related', t('獨立相關', 'Related standalone')],
     ['integrates_with', t('可整合', 'Integrates with')],
 ]);
@@ -106,11 +106,34 @@ const manageSeries = t('管理收藏組合關係', 'Manage collection relationsh
                     <td role="cell">{member.costs.length ? member.costs.map(cost => <div>{cost.currency_code} · {cost.allocated_minor}</div>) : missingCost}</td>
                 </tr>)}</tbody>
             </table>
-            {series.truncated && <p>{t('最多顯示並計算 100 款成員，含目前收藏。', 'Showing and totaling up to 100 members, including the current collection.')}</p>}
+            {series.truncated && <p>{series.accessories.length
+                ? t('系列成員與相關配件共顯示並計算最多 100 款，含目前收藏。', 'Showing and totaling up to 100 members and accessories combined, including the current collection.')
+                : t('最多顯示並計算 100 款成員，含目前收藏。', 'Showing and totaling up to 100 members, including the current collection.')}</p>}
             <h3>{t('合計', 'Total')}</h3>
             {series.totals.length ? <ul>{series.totals.map(cost => <li>{cost.currency_code} · {cost.allocated_minor}</li>)}</ul> : <p>{missingCost}</p>}
             <p>{t(`其中 ${series.missing} 款尚未記錄成本`, `${series.missing} members without recorded costs`)}</p>
-            {series.members.length === 1 && <p>{t('尚未建立系列關聯。可到', 'No series relationships yet. Open ')}
+            {series.accessories.length > 0 && <section data-series-accessories>
+                <h3>{t('相關配件', 'Related accessories')}</h3>
+                <table class="admin-series-table" role="table" aria-label={t('相關配件', 'Related accessories')}>
+                    <thead role="rowgroup"><tr role="row">
+                        <th role="columnheader" scope="col">{t('名稱', 'Name')}</th>
+                        <th role="columnheader" scope="col">{t('關係', 'Relationship')}</th>
+                        <th role="columnheader" scope="col">{t('已記錄成本', 'Recorded costs')}</th>
+                    </tr></thead>
+                    <tbody role="rowgroup">{series.accessories.map(accessory => <tr role="row">
+                        <th role="rowheader" scope="row"><a href={seriesMemberLink(accessory.id)}>{accessory.display_name}</a>
+                            {accessory.id === collectionId && <> · {t('目前收藏', 'Current collection')}</>}
+                        </th>
+                        <td role="cell">{relationLabels.get(accessory.relation_type)}</td>
+                        <td role="cell">{accessory.costs.length ? accessory.costs.map(cost => <div>{cost.currency_code} · {cost.allocated_minor}</div>) : missingCost}</td>
+                    </tr>)}</tbody>
+                </table>
+                <h4>{t('配件小計（不併入系列合計）', 'Accessory subtotal (excluded from series total)')}</h4>
+                {series.accessoryTotals.length ? <ul>{series.accessoryTotals.map(cost => <li>{cost.currency_code} · {cost.allocated_minor}</li>)}</ul> : <p>{missingCost}</p>}
+                <p>{t(`其中 ${series.accessoryMissing} 款配件尚未記錄成本`,
+                    series.accessoryMissing === 1 ? '1 accessory without recorded costs' : `${series.accessoryMissing} accessories without recorded costs`)}</p>
+            </section>}
+            {series.members.length === 1 && series.accessories.length === 0 && <p>{t('尚未建立系列關聯。可到', 'No series relationships yet. Open ')}
                 <a href={seriesRelationsLink(series.baseId)}>{manageSeries}</a>{t('新增擴充、配件或同系列關聯。', ' to add expansions, accessories or games in the same series.')}
             </p>}
             {series.bundles.length > 0 && <div data-series-shared-bundles>

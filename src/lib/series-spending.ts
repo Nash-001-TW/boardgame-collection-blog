@@ -78,8 +78,11 @@ export async function readSeriesSpending(db: D1Database, collectionId: number) {
     // Keep the requested collection visible even if its ID falls beyond the display limit.
     const visible = sorted.slice(0, limit - 1);
     if (item.id !== base.id && !visible.some(row => row.id === item.id)) visible[limit - 2] = related.get(item.id)!;
-    const members = [{ ...base, relation_type: null }, ...visible];
+    // Both groups share the existing cap, including its reserved slot for the current collection.
+    const accessories = visible.filter(isAccessory);
+    const members = [{ ...base, relation_type: null }, ...visible.filter(row => !isAccessory(row))];
     const ids = JSON.stringify(members.map(row => row.id));
+    const accessoryIds = JSON.stringify(accessories.map(row => row.id));
     const memberIds = '(SELECT value FROM json_each(?1))';
     const sharedBundles = `SELECT c.id,c.display_name,COUNT(*) AS included,
             COUNT(CASE WHEN r.target_item_id IN ${memberIds} THEN 1 END) AS in_series
@@ -90,7 +93,7 @@ export async function readSeriesSpending(db: D1Database, collectionId: number) {
           AND r.relation_type='bundle_contains' AND r.archived_at IS NULL
           AND target.record_scope='production' AND tm.archived_at IS NULL
         GROUP BY c.id,c.display_name HAVING in_series>0`;
-    const [costRows, bundles, bundleCosts, applied, gifts] = await readBatch(db, [
+    const [costRows, bundles, bundleCosts, applied, gifts, accessoryCostRows = []] = await readBatch(db, [
         costQuery(db, memberIds, ids),
         db.prepare(sharedBundles + ' ORDER BY c.id').bind(ids),
         costQuery(db, `(SELECT id FROM (${sharedBundles}))`, ids),
@@ -101,27 +104,40 @@ export async function readSeriesSpending(db: D1Database, collectionId: number) {
             FROM v2_sleeve_inventory_transactions t
             LEFT JOIN v2_purchase_order_lines l ON l.id=t.purchase_order_line_id
             WHERE t.transaction_type='GIFT' AND COALESCE(t.collection_item_id,l.collection_item_id) IN ${memberIds}`).bind(ids),
-    ]) as [CostRow[], Bundle[], CostRow[], { sheets: number }[], { sheets: number }[]];
+        ...(accessories.length ? [costQuery(db, memberIds, accessoryIds)] : []),
+    ]) as [CostRow[], Bundle[], CostRow[], { sheets: number }[], { sheets: number }[], CostRow[]?];
 
     const costs = groupCosts(costRows);
+    const accessoryCosts = groupCosts(accessoryCostRows);
     const sharedCosts = groupCosts(bundleCosts);
-    const totals = new Map<string, bigint>();
-    for (const row of costRows) {
-        const prior = totals.get(row.currency_code) ?? 0n;
-        totals.set(row.currency_code, prior + BigInt(row.allocated_minor));
-    }
     return {
         status: 'ready',
         baseId: base.id,
         members: members.map(row => ({ ...row, costs: costs.get(row.id) ?? [] })),
-        totals: [...totals].sort(([a], [b]) => a.localeCompare(b))
-            .map(([currency_code, amount]) => ({ currency_code, allocated_minor: exact(Number(amount)) })),
+        totals: sumCosts(costRows),
         missing: members.length - costs.size,
+        accessories: accessories.map(row => ({ ...row, costs: accessoryCosts.get(row.id) ?? [] })),
+        accessoryTotals: sumCosts(accessoryCostRows),
+        accessoryMissing: accessories.length - accessoryCosts.size,
         bundles: bundles.map(row => ({ ...row, costs: sharedCosts.get(row.id) ?? [] })),
         applied: exact(applied[0].sheets),
         gifts: exact(gifts[0].sheets),
         truncated,
     } as const;
+}
+
+function isAccessory(row: Relation) {
+    return row.relation_type === 'accessory_for' || row.relation_type === 'compatible_with';
+}
+
+function sumCosts(costRows: CostRow[]) {
+    const totals = new Map<string, bigint>();
+    for (const row of costRows) {
+        const prior = totals.get(row.currency_code) ?? 0n;
+        totals.set(row.currency_code, prior + BigInt(row.allocated_minor));
+    }
+    return [...totals].sort(([a], [b]) => a.localeCompare(b))
+        .map(([currency_code, amount]) => ({ currency_code, allocated_minor: exact(Number(amount)) }));
 }
 
 function costQuery(db: D1Database, idsSql: string, ids: string) {

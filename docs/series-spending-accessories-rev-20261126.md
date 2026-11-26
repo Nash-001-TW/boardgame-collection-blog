@@ -98,7 +98,111 @@
 
 ### 4.4 Codex 執行回報
 
-（待填）
+**2026-11-26（Asia/Taipei）** — `SERIES-ACC-20261126-01`（`SERIES-ACC-AUTH`）已授權、已實作。TC01～TC14 的本機驗證與整組回歸結果如下。
+
+#### 檔案
+
+- 修改 `src/lib/series-spending.ts`。沿用原始關係搜尋、優先序、去重與截斷，在保留目前收藏的 100 款清單內拆分。系列及配件各自查採購分攤，同一批次讀取。系列的卡套、缺成本及共用禮包統計只使用系列成員。任一查詢失敗會讓整次系列讀取失敗。
+- 修改 `src/components/admin/CollectionPurchasesPanel.astro`。新增中英相關配件、關係類型、各自成本、分幣別小計及缺成本筆數。配件詳細頁標示目前收藏。
+- 修改 `tests/series-spending.test.ts`、`tests/admin-collection-detail-browser.mjs`。增加 SQLite 與 Edge 驗證。`tests/admin-collection-detail.test.ts` 原樣執行。
+- 修改本節。新增下列四張合成截圖。刪除 0 個專案檔案。
+
+#### 執行指令與結果
+
+Node 的 `$fallback` 是程序限定的 data URL preload。只在 Windows `os.userInfo()` 回傳 `uv_os_get_passwd ENOMEM` 時提供合成帳號名稱，其他錯誤照常拋出。Edge 每次以新的空白 `$edgeOut` 執行，使用暫存 Edge profile，設定 `D1_A3_EDGE_LOCAL_TEST_MODE=1`、`LOCALAPPDATA=$edgeOut`，並沿用腳本的本機代理限制。
+
+| 指令 | 通過／失敗、結束碼及結果 |
+| --- | --- |
+| `node --import tsx --test tests/series-spending.test.ts tests/admin-collection-detail.test.ts tests/purchase-admin.test.ts tests/admin-dashboard.test.ts tests/admin-dashboard-summary.test.ts` | 首次 0／5，結束碼 1。5 檔均在載入 tsx 時遇到 Windows ENOMEM，未進入測試案例。 |
+| `node --import $fallback --import tsx --test tests/series-spending.test.ts tests/admin-collection-detail.test.ts tests/purchase-admin.test.ts tests/admin-dashboard.test.ts tests/admin-dashboard-summary.test.ts` | 兩次開發中執行各 34／4，結束碼均為 1。各有 3 項既有 R01 摘要失敗，另有 1 項新 fixture 問題，依序為未登記的 R16 目標識別及 R01 查詢誤套系列 SELECT 守衛。最終版 **35／3**，結束碼 1。系列 9／0、收藏詳細 6／0、採購 10／0、R01 頁面 5／0、R01 摘要 5／3。 |
+| `node --import $fallback --import tsx --test tests/series-spending.test.ts` | 開發中執行 8／1，結束碼 1。修正合成訂單的淨額後，最終整組中的系列測試 9／0。 |
+| `node --import $fallback --import tsx --test tests/admin-dashboard-summary.test.ts` | 單獨重現 **5／3**，結束碼 1。測試預期批次長度 `[5, 6]`，現行卡套與採購各有 6 條語句，實際為 `[6, 6]`。另兩項故障注入按長度匹配，連帶命中卡套批次。此測試的執行路徑不載入本單程式，修正超出 §4.1。 |
+| `node tests/admin-collection-detail-browser.mjs $edgeOut` | 第一次 47／1，結束碼 1，fixture 把 `compatible_with` 放到不支援該類型的收藏關係表，後續案例未執行。以合法 R16 關係重跑，**74／0**，結束碼 0。包含既有驗收、375／768／1280 無整頁橫捲、英文、目前收藏及錯誤隔離。 |
+| `npm run astro -- check` | 隔離副本執行兩次，各掃描 375 檔，結束碼均為 1。兩次各 6 個基準錯誤、0 個新增錯誤、0 警告、25 提示。診斷為兩支 controller 的 `root` 重複宣告、`shared-quantity-commit.test.ts` 的 D1 型別轉換及 `tests/major03-d1/worker.ts` 三處型別不相容。Astro 未提供測試案例通過／失敗數。 |
+| `npm run build` | 前兩次各 0／1，結束碼 1。封閉代理也攔到 Astro 的 loopback 預渲染。第三次用只接受 loopback 的暫存代理，0／1、結束碼 1，Miniflare 寫入使用者層 Wrangler registry 遭 EPERM。第四次沿用該代理，將 Wrangler registry 與日誌導向隔離副本，**1／0、結束碼 0**。本機 prebuild、server bundle 與 4 條靜態路由均完成。最後兩次以 `node loopback-build.mjs $npmPath` 在隔離副本內呼叫同一個 npm build 指令。 |
+| `git diff --check` | **1／0，結束碼 0**。 |
+
+#### TC01～TC14 對照
+
+下表的「配件統計測試」指 `tests/series-spending.test.ts` 中的 `TC01–TC09 and TC12–TC14: accessory allocations, relationships and series statistics remain separate`。
+
+| 案例 | 已通過的驗證 |
+| --- | --- |
+| TC01 | 配件統計測試，同一配件經收藏、遊戲及 R16 三種來源只出一列，TWD 320 與 USD 50 各計一次。另驗證四種獨立來源的配件可被帶入。 |
+| TC02 | 配件統計測試，兩個系列分別顯示共用配件成本，採購總額逐列比對一致。 |
+| TC03 | 配件統計測試與原採購分攤測試，擴充關係優先，同一收藏不出現在配件清單。 |
+| TC04 | 配件統計測試保留有效零元成本，Edge 第 48、53、58、63 項顯示 `TWD · 0`。 |
+| TC05 | 配件統計測試分別核對系列與配件缺成本筆數，Edge 第 48、53、58、63 項核對畫面。 |
+| TC06 | 配件統計測試核對三種有效狀態的分幣別成本，未付款和取消分攤均未入小計。 |
+| TC07 | 配件統計測試，同一訂單的系列與配件分攤各自計入。 |
+| TC08 | 配件統計測試驗證配件的套用及附贈均未計入系列，並驗證僅含配件的禮包不出現、混合禮包的系列款數只計系列成員。 |
+| TC09 | 配件統計測試驗證多本體候選按 ID 排序。Edge 第 64 項驗證單一本體及「目前收藏」標記。 |
+| TC10 | `TC10: mixed relationships share the original cap and reserve the current accessory slot`，驗證兩組 ID 共 100 款、以目前配件取代原末位、排除截掉的分攤。原純成員上限測試也通過。 |
+| TC11 | `an isolated collection has itself as base and no recorded amounts` 保留原欄位期望並確認三個配件欄位為空或零。Edge 第 51、56、61 項確認無配件區塊，並保留原提示與管理連結。 |
+| TC12 | 配件統計測試封存有 TWD 10 分攤的關係，確認配件消失、小計扣除該額，採購讀取資料逐列相同。 |
+| TC13 | 配件統計測試從同一 SQLite 比較系列讀取及關係封存前後的採購全站總額與 R01 採購摘要，並核對 R01 有效成本 TWD 630、USD 50。 |
+| TC14 | 配件統計測試讓第六條、即配件分攤查詢回傳失敗，整次讀取拋出錯誤。Edge 第 65 項驗證失敗提示及訂單／卡套附贈隔離。 |
+
+#### 修改的既有斷言
+
+- `one-hop collection, game and NotBGG ascent with direct membership and deterministic labels`。從系列成員期望移出 `[4,'compatible_with']`，在 `accessories` 保留對應的 ID 與類型斷言。
+- `eligible allocations roll up by currency while shared bundle costs are separate`。系列成員期望由 `[1,2,8]` 改為 `[1,2]`、系列缺成本由 1 改為 0。增加配件 ID `[8]` 及缺成本 1 的等價斷言，保留原幣別合計、擴充優先、禮包與封存斷言。
+- Edge 既有 `series` 的文字樣式改核對相同系列合計、系列缺成本 0，以及配件區塊的缺成本文字。新增精確斷言，核對配件的個別成本、零元、缺成本筆數、小計及分組。原系列讀取失敗斷言不變，故障注入增加匹配有配件時的第六條查詢所屬批次。
+
+#### 截圖
+
+- [中文 375 px](SERIES-ACC-screenshots/series-375.png)
+- [中文 1280 px](SERIES-ACC-screenshots/series-1280.png)
+- [英文 1280 px](SERIES-ACC-screenshots/accessories-en-1280.png)
+- [從配件收藏開啟，中文 1280 px](SERIES-ACC-screenshots/current-accessory-zh-1280.png)
+
+#### 未執行與暫存
+
+- 正式環境驗收、正式寫入、Migration 部署、外網、遠端操作及 Git commit／push 未執行。最終建置過程有一筆非 loopback CONNECT 被本機代理在轉送前拒絕，未建立外部連線。交接僅記在本節，`HANDOFF.md` 不在 §4.1。
+- 執行環境的政策拒絕本工作暫存目錄的遞迴清理命令。經唯讀確認，仍有以下三個路徑。
+  - `D:\temp\series-acc-edge-caae6d7b-b750-4831-8cea-01de2da6a251`（第一次 Edge）
+  - `D:\temp\series-acc-edge-c0d5b57b-e36e-4609-8729-27a4a2fe665a`（第二次 Edge）
+  - `D:\temp\series-acc-astro-284866f7-4742-4715-aaf8-b2d5f3364382`（隔離副本、日誌及本機建置產物）
+
+### 4.6 Claude 審查（2026-11-26）
+
+**結論：`SERIES-ACC-20261126-01` 通過。** 不需要修改。
+
+**本人驗證**
+
+- Node：`series-spending`、`admin-collection-detail`、`purchase-admin`、`admin-dashboard`、`sleeve-shortage`、`physical-component-management`、`catalog-d1-games` 共 7 個測試檔，**63 通過、0 失敗**。
+- Edge：`admin-collection-detail-browser.mjs`，使用全新的空輸出資料夾，**74 通過**，結束碼 0。
+- `git diff --check` 通過。`astro check` 和 build 沒有重跑，以 §4.4 為準（6 個基準錯誤、build 通過）。
+- 看過的截圖：`series-1280`、`current-accessory-zh-1280`。系列合計只含本體與擴充；「相關配件」列出專用、相容、零元、尚未記錄的配件；小計標示「不併入系列合計」；從配件打開時，該配件標示「目前收藏」。
+
+**程式核對**
+
+- 拆分位置正確：先依既有邏輯排序並截成 100 款（含保留目前收藏的位置），**之後**才用 `isAccessory` 分成系列成員與配件，兩者共用同一個上限（符合 §5.1）。
+- 分開計算在資料層完成：系列合計、尚未記錄筆數、卡套張數、共用禮包判定，都只用系列成員的 ID；配件成本用同一個 `costQuery`（同樣的訂單狀態與幣別規則）另外查詢，放在同一個 batch 裡，任何一條失敗整次就失敗（TC14）。沒有配件時，不送出配件查詢。
+- 判定規則：最後歸類的關係類型是 `accessory_for` 或 `compatible_with` 才算配件；同時有擴充關係的成員，依既有優先順序仍歸為擴充（TC03）。
+- 沒有使用複合 SELECT；沒有修改 Migration 和其他禁止修改的檔案。
+- 畫面上原本的關係標籤「配件／相容配件」改成「專用／相容」，因為現在只出現在「相關配件」表裡，意思更清楚，可以接受。
+
+**R01 摘要測試的 3 項失敗（和本工作命令無關，是 P0A 造成的回歸）**
+
+- `tests/admin-dashboard-summary.test.ts` 第 32 行預期 R01 的兩個批次長度是 `[5, 6]`，實際是 `[6, 6]`；另外兩項故障注入是依批次長度配對，所以也跟著失敗。
+- 這支測試沒有引用 `series-spending.ts`，`admin-dashboard-summary.ts` 也沒有被修改。原因是 **P0A-APP（`8a0a9f7`）在 `sleeve-shortage.ts` 的批次讀取裡加了第 6 條適用性查詢**，但這支測試的預期值沒有一起更新。
+- Claude 審查 P0A 時跑的測試清單**沒有包含這個檔案**，所以當時沒有發現，這是審查的疏漏。正式環境的 R01 功能正常（P0A 驗收時 R01 卡套狀況顯示正常），只是測試的預期值過時。
+- 修正方式：把預期值改成 `[6, 6]`，並調整故障注入的批次配對方式。這只改測試，不在本工作命令的允許範圍內，需要另外授權。
+
+**小觀察（不擋上線）**
+
+- O1：區塊開頭的說明文字「合計排除維修等其他費用、卡套金額與另列的共用禮包」沒有提到相關配件。不過配件小計的標題已經寫了「不併入系列合計」，意思足夠清楚；之後可以順手補上。
+- O2：Codex 留下的 3 個暫存資料夾（`D:\temp\series-acc-*`），環境政策不允許它刪除，需要使用者手動刪除。
+
+**上線**：不需要 Migration。依 §5.2，正式環境目前沒有任何配件關係，上線後畫面不會改變。推送部署需要依 DEPLOY-01 另外授權。
+
+### 4.7 R01 摘要測試修正（2026-11-26，Claude 執行，DECISION_LOG TEST-R01-SLV-02）
+
+- 只改 `tests/admin-dashboard-summary.test.ts`，沒有修改程式，也沒有改共用的 `tests/helpers/admin-dashboard-preview.ts`（其他 4 支測試也會用到它）：
+  - 批次長度預期由 `[5, 6]` 改為 `[6, 6]`，並加註原因：P0A-APP 讓卡套不足批次也變成 6 條。
+  - 新增測試內的輔助函式 `onPurchaseBatch`：以「SQL 含 `v2_purchase`」辨識 R10 採購批次，取代原本「批次長度 = 6」的配對方式（卡套不足的 SQL 不含 `v2_purchase`）。「任一位置失敗」與「拒絕不成功或不安全的結果」兩項測試都改用它，只對採購批次注入故障；原本要驗證的意思不變：採購區塊失敗時是 `null`，其他區塊完整。
+- 驗證：`admin-dashboard-summary`、`admin-dashboard`、`sleeve-shortage`、`series-spending`、`purchase-admin` 共 5 個檔案，**47 通過、0 失敗**（R01 摘要由 5／3 變成 8／0）。`git diff --check` 通過。
 
 ### 4.5 禁止事項
 
