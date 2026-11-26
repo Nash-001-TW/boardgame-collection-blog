@@ -12,6 +12,12 @@ interface Props { collectionId: number; scope: 'production' | 'test'; lang: 'en'
 const { collectionId, scope, lang } = Astro.props;
 const en = lang === 'en';
 const t = (zh: string, english: string) => en ? english : zh;
+// Same unit wording as PhysicalComponentFields, so the count list never shows raw codes such as "piece".
+const unitLabels: Record<string, string> = {
+    piece: t('件', 'piece'), card: t('張', 'card'), tile: t('塊', 'tile'), die: t('顆', 'die'),
+    sheet: t('頁', 'sheet'), box: t('盒', 'box'), pack: t('包', 'pack'), set: t('組', 'set'), other: t('其他', 'other'),
+};
+const unitLabel = (unit: string) => unitLabels[unit] ?? unit;
 const countToday = todayInTaipei();
 const title = t('管理實體組件', 'Manage physical components');
 const secret = (env as unknown as Record<string, unknown>).PHYSICAL_COMPONENT_SIGNING_KEY;
@@ -138,11 +144,12 @@ const eventDate = new Intl.DateTimeFormat(en ? 'en' : 'zh-TW', {
                     const current = selectedCopy && componentCounts?.get(selectedCopy.id);
                     const actual = current ? current.actual_quantity : null;
                     const componentName = '#' + component.id + ' ' + component.component_name;
+                    const expectedText = t('預期', 'Expected') + ' ' + (component.expected_quantity ?? '—') + ' ' + unitLabel(component.quantity_unit);
                     const pair = selectedCopy && applicabilityByPair.get(component.id + ':' + selectedCopy.id);
                     const excluded = verified && pair?.notApplicable === 1;
                     return <article data-count-row class:list={{ 'count-excluded': excluded }}>
                         <h4>#{component.id} {component.component_name}</h4>
-                        <p>{t('預期數量', 'Expected quantity')} {component.expected_quantity ?? '—'} ({component.quantity_unit})</p>
+                        {(!verified || !selectedCopy) && <p class="count-meta">{expectedText}</p>}
                         {!verified ? <p>{t('待確認，不可清點。來源證據不可用或有衝突。', 'Pending verification. Counting is unavailable because source evidence is unavailable or conflicting.')}</p>
                             : selectedCopy && <div data-count-values={JSON.stringify(copies.map(copy => {
                                 const count = componentCounts?.get(copy.id);
@@ -151,10 +158,10 @@ const eventDate = new Intl.DateTimeFormat(en ? 'en' : 'zh-TW', {
                                 const event = applicabilityByPair.get(component.id + ':' + copy.id);
                                 return [String(copy.id), { revision: event?.revision ?? 0, excluded: event?.notApplicable === 1 }];
                             }))} data-component-name={componentName}>
+                                <p class="count-meta">{expectedText}<span class="count-meta-counts">{' · '}{t('實點', 'Count')}{' '}<span data-count-current>{actual ?? t('未清點', 'Uncounted')}</span>{' · '}{t('清點日期', 'Count date')}{' '}<span data-counted-on>{current?.counted_on ?? t('未記錄', 'Not recorded')}</span></span></p>
                                 <p data-applicability-excluded hidden={!excluded}>{t('此副本不適用', 'Not applicable to this copy')}</p>
+                                <div class="count-actions">
                                 <div data-applicable-count hidden={excluded}>
-                                <p>{t('目前實點', 'Current count')} <span data-count-current>{actual ?? t('未清點', 'Uncounted')}</span></p>
-                                <p>{t('清點日期：', 'Count date: ')}<span data-counted-on>{current?.counted_on ?? t('未記錄', 'Not recorded')}</span></p>
                                 {canWrite && <form method="post" data-physical-action="count" class="count-controls">
                                     <input type="hidden" name="definitionId" value={component.id} />
                                     <input type="hidden" name="definitionRevision" value={component.physical_revision} />
@@ -177,6 +184,7 @@ const eventDate = new Intl.DateTimeFormat(en ? 'en' : 'zh-TW', {
                                     <button type="button" class="admin-button" data-applicability-retry hidden>{t('重試', 'Retry')}</button>
                                     <button type="button" class="admin-button" data-applicability-reload hidden>{t('重新載入', 'Reload')}</button>
                                 </div>}
+                                </div>
                             </div>}
                     </article>;
                 })}
@@ -311,6 +319,19 @@ const eventDate = new Intl.DateTimeFormat(en ? 'en' : 'zh-TW', {
     }
     .count-controls [hidden] { display: none; }
     [data-count-status] { flex-basis: 100%; margin: 0; }
+    /* Compact count rows: one info line, then the quantity, save and applicability controls on one line. */
+    [data-count-row] h4 { margin-bottom: 4px; }
+    .count-meta { margin: 0 0 8px; }
+    [data-count-values]:has([data-applicable-count][hidden]) .count-meta-counts { display: none; }
+    .count-actions { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; min-width: 0; }
+    .count-actions [data-applicable-count]:not([hidden]) { display: contents; }
+    /* More specific than the global .admin-app input (width: 100%) and .admin-page label (10px margins). */
+    /* The count form sits inside [data-applicable-count] (display: contents), so use descendant selectors. */
+    .count-actions, .count-actions .count-controls { align-items: center; }
+    .count-actions .count-controls { margin: 0; }
+    .count-actions form.count-controls > label { display: flex; align-items: center; gap: 8px; margin: 0; }
+    .count-actions form.count-controls input[name="actual"][type="number"] { width: 9ch; }
+    [data-count-status]:empty, [data-applicability-status]:empty { display: none; }
     [data-component-management] { margin-top: 20px; }
     [data-component-management] > summary { align-content: center; }
     [data-count-row] { overflow-wrap: anywhere; }

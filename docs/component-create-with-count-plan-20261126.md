@@ -164,6 +164,13 @@ Astro 檢查及建置在無機密的專案外暫存副本執行，npm 採離線�
   - `git diff --check` 通過。
 - **結論：#36（R06-CREATE-COUNT-20261126-01）通過，本機驗證完成。** O1（提示位置）不擋上線，可之後再調整。build 以 §5.4 為準（Codex 回報本機建置成功）。
 
+### 5.8 部署（2026-11-26，Claude 執行，DECISION_LOG R06-CC-DEPLOY）
+
+- 提交 `0585a75`，台北 22:00:53 推送 `f2820cc..0585a75`，共 2 個提交：`152e31c`、`0585a75`。
+- Workers Builds 自動部署為 `be49b3b1`（100%，台北 22:02:19）。
+- 唯讀抽查 8 條路由全部符合：公開頁 3 條 200；`/admin`、`/admin/collection/262/components`、`/api/admin/collection/components`、`/admin/bgg?view=relations&domain=collection` 回 302 轉到 Access；`/dev/ui-kit` 404。
+- 實際驗收：搭配 #23 暫緩的組件清點驗收，由使用者在 #262 操作。
+
 ### 5.5 禁止事項
 
 - 網路存取、任何遠端或正式操作、commit、push；
@@ -173,3 +180,22 @@ Astro 檢查及建置在無機密的專案外暫存副本執行，npm 採離線�
 - 讀取 `.env`、`.dev.vars`、`backups/`、`*.sql` 備份。
 
 暫存資料放在 repo 外，結束前清除；刪不掉時回報路徑。
+
+## 6. 後續：清點清單精簡版面（2026-11-26，Claude 實作，DECISION_LOG R06-COMPACT-B）
+
+**緣起**：#36 上線後，使用者在正式環境截圖指出，每個組件卡片把「預期數量」「目前實點」「清點日期」各放一行，太浪費空間，單位也顯示英文代碼 `(piece)`。使用者選方案 B，交由 Claude 實作。
+
+**修改**（只改 `src/components/admin/PhysicalComponentsPanel.astro`）：
+- 資訊合成一行：「預期 30 張 · 實點 30 · 清點日期 2026-11-01」；未清點時顯示「實點 未清點 · 清點日期 未記錄」。設為不適用時，實點與日期會隱藏（用 CSS `:has` 判斷，`[data-applicable-count]` 被隱藏時一起隱藏）。待確認或沒有選副本的組件只顯示「預期 N 單位」。
+- 操作合成一行：「實際數量 [ ] 儲存 此副本不適用」。手機寬度時，「此副本不適用」自動換到下一行。
+- 單位依語言顯示（件、張、塊、顆、頁、盒、包、組、其他），英文維持英文，用字和 `PhysicalComponentFields.astro` 一致。
+- `data-count-current`、`data-counted-on`、`data-applicable-count`、`data-applicability-excluded` 等前端與測試依賴的標記都保留，controller 沒有修改。
+- 樣式陷阱：全域的 `.admin-app input`（寬度 100%）與 `.admin-page label`（上下外距）優先權相同而且較晚載入；清點表單在 DOM 裡包在 `[data-applicable-count]`（`display: contents`）裡面，所以必須用較具體的後代選擇器才能生效。
+
+**驗證**：
+- Node：`physical-component-management`、`admin-collection-detail`，**17／17**；`git diff --check` 通過。
+- Edge（全新的空資料夾）：`admin-collection-detail-browser.mjs` **74／74**、`physical-quantity-browser.mjs` **20／20**。
+- 截圖放在 [`docs/R06-COMPACT-screenshots/`](R06-COMPACT-screenshots/)（中文 1280、768、375，英文 1280，儲存成功 1280）。1280 寬時，每個組件卡片高度由約 336px 降到約 158px。
+
+**狀態**：本機驗證完成，等使用者看過截圖後再授權部署；不需要 Migration。
+
