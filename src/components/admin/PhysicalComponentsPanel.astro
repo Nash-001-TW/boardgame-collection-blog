@@ -5,13 +5,14 @@ import D1QuantityPreviewDialog from './D1QuantityPreviewDialog.astro';
 import D1QuantityHistory from './D1QuantityHistory.astro';
 import { readQuantityHistory, type QuantityHistory } from '../../lib/d1-quantity-history';
 import { classifyStoredComponents } from '../../lib/component-classifier-adapter';
-import { maxComponentQuantity } from '../../lib/physical-component-values';
+import { earliestCountDate, maxComponentQuantity, todayInTaipei } from '../../lib/physical-component-values';
 import { readApplicabilityHistory } from '../../lib/component-applicability';
 
 interface Props { collectionId: number; scope: 'production' | 'test'; lang: 'en' | 'zh-TW'; }
 const { collectionId, scope, lang } = Astro.props;
 const en = lang === 'en';
 const t = (zh: string, english: string) => en ? english : zh;
+const countToday = todayInTaipei();
 const title = t('管理實體組件', 'Manage physical components');
 const secret = (env as unknown as Record<string, unknown>).PHYSICAL_COMPONENT_SIGNING_KEY;
 const signingConfigured = typeof secret === 'string' && new TextEncoder().encode(secret).length >= 32;
@@ -26,7 +27,7 @@ interface Requirement {
     id: number; component_definition_id: number | null; quantity_sheets: number;
     assignment_revision: number; width: number; height: number;
 }
-interface Count { owned_copy_id: number; component_definition_id: number; actual_quantity: number | null; count_revision: number; }
+interface Count { owned_copy_id: number; component_definition_id: number; actual_quantity: number | null; count_revision: number; counted_on: string | null; }
 let definitions: Definition[] = [];
 let copies: Copy[] = [];
 let requirements: Requirement[] = [];
@@ -55,7 +56,7 @@ try {
                         s.width_tenth_mm AS width, s.height_tenth_mm AS height
                         FROM v2_sleeve_requirements r JOIN v2_sleeve_sizes s ON s.id = r.size_id
                         WHERE r.collection_item_id = ? ORDER BY r.id`).bind(collectionId).all<Requirement>(),
-            db.prepare(`SELECT k.owned_copy_id, k.component_definition_id, k.actual_quantity, k.count_revision
+            db.prepare(`SELECT k.owned_copy_id, k.component_definition_id, k.actual_quantity, k.count_revision, k.counted_on
                         FROM v2_copy_components k JOIN v2_owned_copies c ON c.id = k.owned_copy_id
                         JOIN v2_component_definitions d ON d.id = k.component_definition_id
                         WHERE c.collection_item_id = ? AND d.collection_item_id = c.collection_item_id
@@ -119,9 +120,14 @@ const eventDate = new Intl.DateTimeFormat(en ? 'en' : 'zh-TW', {
                     </label>
                     <button type="button" class="admin-button" data-count-step="-1" disabled={selectedCopy.id === copies[0].id}>{t('上一個', 'Previous')}</button>
                     <button type="button" class="admin-button" data-count-step="1" disabled={selectedCopy.id === copies.at(-1)?.id}>{t('下一個', 'Next')}</button>
+                    <label>{t('清點日期', 'Count date')}
+                        <input type="date" data-count-date required min={earliestCountDate} max={countToday}
+                            value={countToday} aria-describedby="count-date-status" disabled={!canWrite} />
+                    </label>
                 </div> : <p>{t('沒有可清點的在藏未封膜副本。', 'No eligible unsealed copies are in the collection.')}
                     {' '}<a href={copyLink}>{t('副本與品況', 'Copies and condition')}</a>
                 </p>}
+                <p id="count-date-status" data-count-date-status role="status" hidden></p>
             </section>
             <section data-count-list aria-labelledby="count-list-heading">
                 <h3 id="count-list-heading">{t('清點清單', 'Count list')}</h3>
@@ -140,7 +146,7 @@ const eventDate = new Intl.DateTimeFormat(en ? 'en' : 'zh-TW', {
                         {!verified ? <p>{t('待確認，不可清點。來源證據不可用或有衝突。', 'Pending verification. Counting is unavailable because source evidence is unavailable or conflicting.')}</p>
                             : selectedCopy && <div data-count-values={JSON.stringify(copies.map(copy => {
                                 const count = componentCounts?.get(copy.id);
-                                return [String(copy.id), { actual: count?.actual_quantity ?? null, revision: count?.count_revision ?? 0 }];
+                                return [String(copy.id), { actual: count?.actual_quantity ?? null, revision: count?.count_revision ?? 0, countedOn: count?.counted_on ?? null }];
                             }))} data-applicability-values={JSON.stringify(copies.map(copy => {
                                 const event = applicabilityByPair.get(component.id + ':' + copy.id);
                                 return [String(copy.id), { revision: event?.revision ?? 0, excluded: event?.notApplicable === 1 }];
@@ -148,6 +154,7 @@ const eventDate = new Intl.DateTimeFormat(en ? 'en' : 'zh-TW', {
                                 <p data-applicability-excluded hidden={!excluded}>{t('此副本不適用', 'Not applicable to this copy')}</p>
                                 <div data-applicable-count hidden={excluded}>
                                 <p>{t('目前實點', 'Current count')} <span data-count-current>{actual ?? t('未清點', 'Uncounted')}</span></p>
+                                <p>{t('清點日期：', 'Count date: ')}<span data-counted-on>{current?.counted_on ?? t('未記錄', 'Not recorded')}</span></p>
                                 {canWrite && <form method="post" data-physical-action="count" class="count-controls">
                                     <input type="hidden" name="definitionId" value={component.id} />
                                     <input type="hidden" name="definitionRevision" value={component.physical_revision} />
@@ -287,6 +294,11 @@ const eventDate = new Intl.DateTimeFormat(en ? 'en' : 'zh-TW', {
     .count-controls :is(button, input, select), [data-component-management] > summary { min-height: 44px; }
     .count-controls :is(input, select) { max-width: 100%; }
     .count-controls input[type="number"] { width: 10ch; }
+    [data-count-picker] input[data-count-date]:enabled { border-color: var(--ink-muted); }
+    [data-count-picker] input[data-count-date]:focus {
+        outline: 3px solid var(--brand-purple);
+        outline-offset: 3px;
+    }
     .count-controls [hidden] { display: none; }
     [data-count-status] { flex-basis: 100%; margin: 0; }
     [data-component-management] { margin-top: 20px; }

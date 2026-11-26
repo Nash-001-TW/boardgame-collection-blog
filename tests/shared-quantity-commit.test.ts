@@ -29,8 +29,8 @@ function scenario(expected: number | null = 103) {
         VALUES (1, 1, 'production', '${'b'.repeat(64)}', '${actor}', '${'c'.repeat(64)}', '${signature}');
         INSERT INTO v2_owned_copies(id, collection_item_id, edition) VALUES (1, 1, 'A');
         INSERT INTO v2_copy_components(owned_copy_id, component_definition_id, actual_quantity,
-            inspection_status, last_checked_at, count_revision)
-        VALUES (1, 1, 99, 'checked', '2026-01-01 01:02:03', 1);
+            inspection_status, last_checked_at, count_revision, counted_on)
+        VALUES (1, 1, 99, 'checked', '2026-01-01 01:02:03', 1, '2026-01-01');
     `);
     const db = sqliteD1(sql);
     const generation = () => String(sql.prepare(

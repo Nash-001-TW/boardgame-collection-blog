@@ -816,6 +816,12 @@ try {
     assert.equal(await evaluate(() => document.activeElement.dataset.countStep), '1');
     await cdp('Input.dispatchKeyEvent', {type: 'keyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9});
     await cdp('Input.dispatchKeyEvent', {type: 'keyUp', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9});
+    assert.ok(await evaluate(() => document.activeElement.matches('[data-count-date]')));
+    // Edge tabs through the native date input segments before leaving the field.
+    for (let tab = 0; tab < 5 && await evaluate(() => document.activeElement.matches('[data-count-date]')); tab++) {
+        await cdp('Input.dispatchKeyEvent', {type: 'keyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9});
+        await cdp('Input.dispatchKeyEvent', {type: 'keyUp', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9});
+    }
     assert.equal(await evaluate(() => document.activeElement.name), 'actual');
     pass('R06 scenario 1: server-selected copy, default URL, panel order and pending row');
 
@@ -941,7 +947,7 @@ try {
     await until(async () => (await rowState())[0].status === 'Confirmed', 'English success');
     await captureR06('count-success-en-1280', '[data-count-row]');
     physicalFixture.sqlite.prepare(`
-        UPDATE v2_copy_components SET actual_quantity=23, count_revision=count_revision+1
+        UPDATE v2_copy_components SET actual_quantity=23, counted_on='2026-01-05', count_revision=count_revision+1
         WHERE owned_copy_id=1 AND component_definition_id=?
     `).run(physicalFixture.cardId);
     await setCount(0, '22', true);

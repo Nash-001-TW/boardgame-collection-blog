@@ -410,7 +410,7 @@ try {
         const response = await fetch('/api/admin/collection/components', {
             method: 'POST', headers: { 'Content-Type': 'application/json', 'X-NotBGG-Request': '1' },
             body: JSON.stringify({ action: 'count', definitionId, definitionRevision: Number(data.get('definitionRevision')),
-                copyId: Number(data.get('copyId')), revision: Number(data.get('revision')), actual: 29 }),
+                copyId: Number(data.get('copyId')), revision: Number(data.get('revision')), actual: 29, countedOn: '2026-01-05' }),
         });
         return response.status;
     }, fixture.cardId);
@@ -536,6 +536,64 @@ try {
     pass('reload, independent count, restore original count and persisted bilingual history');
 
     console.log('15 browser checks passed, including three applicability checks.');
+
+    const datePicker = '[data-count-date]';
+    const savedDate = row + ' [data-counted-on]';
+    const saveCount = countForm + ' [data-count-save]';
+    const historical = '2026-01-04';
+    const dateShots = join(output, 'P0B-screenshots');
+    const taipeiToday = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Taipei',
+        year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+    const initial = await evaluate(selector => {
+        const input = document.querySelector(selector);
+        return [input.value, input.min, input.max, input.labels[0].textContent.trim(), input.offsetHeight];
+    }, datePicker);
+    assert.deepEqual(initial.slice(0, 4), [taipeiToday, '2000-01-01', taipeiToday, '清點日期']);
+    assert.ok(initial[4] >= 44);
+    assert.equal(await text(savedDate), '2026-01-05', 'restoring applicability preserves the date');
+    const setField = (selector, value) => evaluate(([selector, value]) => {
+        const input = document.querySelector(selector);
+        input.value = value;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+    }, [selector, value]);
+    await setField(datePicker, '9999-01-01');
+    assert.equal(await evaluate(selector => document.querySelector(selector).disabled, saveCount), true);
+    assert.match(await text('[data-count-date-status]'), /有效日期/);
+    await setField(datePicker, historical);
+    await evaluate(() => { window.countDateNavigationMarker = true; });
+    await click(saveCount);
+    await until(async () => await text(savedDate) === historical, 'historical date rendered without reload');
+    assert.equal(await evaluate(() => window.countDateNavigationMarker), true);
+    assert.equal(await text(row + ' [data-count-current]'), '29');
+
+    await mkdir(dateShots, { recursive: true });
+    const captureDate = async (name, width) => {
+        await viewport(width, 1250);
+        await evaluate(() => {
+            document.querySelector('[data-count-picker]').scrollIntoView({ block: 'start', behavior: 'instant' });
+        });
+        assert.ok(await evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
+        const { data } = await cdp('Page.captureScreenshot', { format: 'png', fromSurface: true });
+        await writeFile(join(dateShots, name + '-' + width + '.png'), Buffer.from(data, 'base64'), { flag: 'wx' });
+    };
+    await captureDate('zh-saved', 1280);
+    await useCopy(2);
+    await until(async () => await text(savedDate) === taipeiToday, 'other copy date');
+    assert.equal(await evaluate(selector => document.querySelector(selector).value, datePicker), historical);
+    await useCopy(1);
+    await until(async () => await text(savedDate) === historical, 'original copy date');
+    await cdp('Page.reload');
+    await until(async () => await text(savedDate) === historical && !await evaluate(() => window.countDateNavigationMarker),
+        'historical date persisted after reload');
+    assert.ok(await evaluate(() => [...document.querySelectorAll('[data-counted-on]')].some(node => node.textContent === '未記錄')));
+    for (const width of [375, 768, 1280]) await captureDate('zh-count-dates', width);
+    await cdp('Page.navigate', { url: english });
+    await until(async () => await text(savedDate) === historical
+        && await evaluate(() => [...document.querySelectorAll('[data-counted-on]')].some(node => node.textContent === 'Not recorded')),
+    'English count dates');
+    await captureDate('en-count-dates', 1280);
+    pass('count date defaults, future-date guard, in-place save, reload, copy switch and applicability restoration');
+
 } finally {
     releaseCommit?.();
     ws?.close();

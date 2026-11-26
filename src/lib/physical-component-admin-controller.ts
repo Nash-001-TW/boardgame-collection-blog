@@ -33,7 +33,7 @@ if (manager) {
     }
 
     type RequestState = { body: string; key: string; affected?: number };
-    type Payload = { success?: boolean; data?: { outcome?: string }; error?: { code?: string } };
+    type Payload = { success?: boolean; data?: { outcome?: string; countedOn?: string }; error?: { code?: string } };
     type QuantityBody = { definitionId: number; name: string; previousExpected: number | null; expected: number | null; reason: string };
     const requests = new WeakMap<HTMLFormElement, RequestState>();
     const busy = new WeakSet<HTMLFormElement>();
@@ -430,6 +430,13 @@ if (manager) {
         const copyPicker = picker;
         const previous = manager.querySelector<HTMLButtonElement>('[data-count-step="-1"]')!;
         const next = manager.querySelector<HTMLButtonElement>('[data-count-step="1"]')!;
+        const dateInput = manager.querySelector<HTMLInputElement>('[data-count-date]')!;
+        const dateStatus = manager.querySelector<HTMLElement>('[data-count-date-status]')!;
+        const dateError = t('清點日期須為 2000-01-01 到今天之間的有效日期',
+            'Count date must be a valid date between 2000-01-01 and today.');
+        // An explicit date selection can correct the date even when the quantity is unchanged.
+        let dateEdited = false;
+        const unrecorded = t('未記錄', 'Not recorded');
         const uncounted = t('未清點', 'Uncounted');
         let selectedCopy = copyPicker.value;
         let saving = 0;
@@ -448,9 +455,10 @@ if (manager) {
         }
 
         const rows = Array.from(manager.querySelectorAll<HTMLElement>('[data-count-values]'), row => {
-            type Count = { actual: number | null; revision: number };
+            type Count = { actual: number | null; revision: number; countedOn: string | null };
             const values = new Map<string, Count>(JSON.parse(row.dataset.countValues!));
             const current = row.querySelector<HTMLElement>('[data-count-current]')!;
+            const countedOn = row.querySelector<HTMLElement>('[data-counted-on]')!;
             const form = row.querySelector<HTMLFormElement>('form');
             const input = form?.querySelector<HTMLInputElement>('[name="actual"]');
             const message = form?.querySelector<HTMLElement>('[data-count-status]');
@@ -478,7 +486,9 @@ if (manager) {
             function syncRow() {
                 if (input && save && retry && reload) {
                     input.disabled = inFlight || !!pending || blocked || pair().excluded || !!toggleRequest || toggleBlocked;
-                    save.disabled = input.disabled || !dirty() || !input.validity.valid;
+                    const dateChanged = dateEdited && dateInput.value !== count().countedOn;
+                    save.disabled = input.disabled || (!dirty() && !dateChanged)
+                        || !input.validity.valid || !dateInput.validity.valid;
                     retry.hidden = inFlight || !pending;
                     reload.hidden = !blocked;
                 }
@@ -491,6 +501,7 @@ if (manager) {
 
             function render() {
                 current.textContent = String(count().actual ?? uncounted);
+                countedOn.textContent = count().countedOn ?? unrecorded;
                 if (form && input && message) {
                     form.querySelector<HTMLInputElement>('[name="copyId"]')!.value = selectedCopy;
                     form.querySelector<HTMLInputElement>('[name="revision"]')!.value = String(count().revision);
@@ -522,11 +533,14 @@ if (manager) {
                 try {
                     const { ok, payload } = await send(pending, AbortSignal.timeout(quantityTimeoutMs));
                     const code = payload?.error?.code;
-                    if (ok && payload?.success === true) {
+                    if (ok && payload?.success === true && typeof payload.data?.countedOn === 'string') {
                         const { actual, revision } = JSON.parse(pending.body);
-                        values.set(selectedCopy, { actual, revision: revision + 1 });
+                        values.set(selectedCopy, { actual, revision: revision + 1, countedOn: payload.data.countedOn });
                         render();
                         message.textContent = t('已確認', 'Confirmed');
+                    } else if (code === 'INVALID_COUNT_DATE') {
+                        pending = undefined;
+                        message.textContent = dateError;
                     } else if (code && code !== 'SERVICE_UNAVAILABLE') {
                         pending = undefined;
                         blocked = true;
@@ -552,7 +566,7 @@ if (manager) {
                 if (!save || save.disabled) return;
                 const data = new FormData(form);
                 const body = Object.fromEntries(Array.from(data, ([name, value]) => [name, Number(value)]));
-                pending = { body: JSON.stringify({ action: 'count', ...body }), key: crypto.randomUUID() };
+                pending = { body: JSON.stringify({ action: 'count', ...body, countedOn: dateInput.value }), key: crypto.randomUUID() };
                 void saveCount();
             });
             input?.addEventListener('input', () => {
@@ -659,8 +673,21 @@ if (manager) {
             });
             applicabilityRetry?.addEventListener('click', () => void saveApplicability(true));
             applicabilityReload?.addEventListener('click', () => location.reload());
-            return { dirty, render };
+            return { dirty, render, syncRow };
         });
+
+        function syncDate() {
+            const invalid = !dateInput.validity.valid;
+            dateInput.setAttribute('aria-invalid', String(invalid));
+            dateStatus.hidden = !invalid;
+            dateStatus.textContent = invalid ? dateError : '';
+            rows.forEach(row => row.syncRow());
+        }
+        dateInput.addEventListener('input', () => {
+            dateEdited = true;
+            syncDate();
+        });
+        syncDate();
 
         function switchCopy(copy: string) {
             if (copy === selectedCopy) return;

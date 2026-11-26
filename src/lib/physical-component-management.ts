@@ -5,7 +5,7 @@ import { commitSharedQuantity, confirmedQuantityOperationStatus, logQuantityErro
     recoverQuantityResult } from './shared-quantity-commit';
 import { currentQuantityEpoch, parseQuantityBaseline, previewSharedQuantity, verifyQuantityPreview } from './shared-quantity-preview';
 
-import { componentTypes, componentUnits, maxComponentQuantity } from './physical-component-values';
+import { componentTypes, componentUnits, maxComponentQuantity, isCountDate } from './physical-component-values';
 import { changeComponentApplicability } from './component-applicability';
 
 const evidenceSize = `(
@@ -205,7 +205,7 @@ export async function writePhysicalComponent(
     if (action !== 'edit' && action !== 'count' && action !== 'assign') throw new HttpError(400, 'INVALID_COMPONENT_ACTION');
     const common = ['action', 'definitionId', 'definitionRevision'];
     fields(body, [...common, ...(action === 'edit' ? ['name', 'type', 'unit', 'expected', 'previousExpected', 'reason']
-        : action === 'count' ? ['copyId', 'revision', 'actual'] : ['requirementId', 'revision'])]);
+        : action === 'count' ? ['copyId', 'revision', 'actual', 'countedOn'] : ['requirementId', 'revision'])]);
     const definitionId = integer(body.definitionId, 1);
     const definitionRevision = integer(body.definitionRevision, 1);
     const edit = action === 'edit' ? editAttributes(body) : null;
@@ -250,10 +250,12 @@ export async function writePhysicalComponent(
     if (action === 'count') {
         const copyId = integer(body.copyId, 1);
         const actual = integer(body.actual, 0, maxComponentQuantity);
+        const countedOn = body.countedOn;
+        if (!isCountDate(countedOn)) throw new HttpError(400, 'INVALID_COUNT_DATE');
         const statement = db.prepare(`
             INSERT INTO v2_copy_components
-                (owned_copy_id, component_definition_id, actual_quantity, inspection_status, last_checked_at, count_revision)
-            SELECT c.id, p.id, ?, 'checked', CURRENT_TIMESTAMP, 1 FROM (${candidate}) p
+                (owned_copy_id, component_definition_id, actual_quantity, inspection_status, last_checked_at, count_revision, counted_on)
+            SELECT c.id, p.id, ?, 'checked', CURRENT_TIMESTAMP, 1, ? FROM (${candidate}) p
             JOIN v2_owned_copies c ON c.id = ? AND c.collection_item_id = p.collection_item_id
             WHERE c.inventory_status = 'in_collection' AND c.seal_status <> 'sealed'
               AND COALESCE((SELECT count_revision FROM v2_copy_components
@@ -263,12 +265,14 @@ export async function writePhysicalComponent(
                   AND a.definition_id = p.id AND a.not_applicable = 1)
             ON CONFLICT(owned_copy_id, component_definition_id) DO UPDATE SET
                 actual_quantity = excluded.actual_quantity, inspection_status = excluded.inspection_status,
-                last_checked_at = excluded.last_checked_at, count_revision = v2_copy_components.count_revision + 1
+                last_checked_at = excluded.last_checked_at, count_revision = v2_copy_components.count_revision + 1,
+                counted_on = excluded.counted_on
             RETURNING id
-        `).bind(actual, ...proof, copyId, revision);
+        `).bind(actual, countedOn, ...proof, copyId, revision);
         try {
-            return await writeOne(db, statement);
+            return { ...await writeOne(db, statement), countedOn };
         } catch (error) {
+            if (String(error).includes('COUNT_DATE_INVALID')) throw new HttpError(400, 'INVALID_COUNT_DATE');
             if (error instanceof HttpError && error.code === 'COMPONENT_STATE_CHANGED'
                 && await db.prepare(`SELECT 1 FROM v2_component_applicability_current
                     WHERE copy_id = ? AND definition_id = ? AND not_applicable = 1`).bind(copyId, definitionId).first()) {

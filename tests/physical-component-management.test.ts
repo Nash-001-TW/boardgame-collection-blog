@@ -4,8 +4,20 @@ import { DatabaseSync, type SQLInputValue } from 'node:sqlite';
 import test from 'node:test';
 import { classifyStoredComponents } from '../src/lib/component-classifier-adapter.ts';
 import { handlePhysicalComponentRequest } from '../src/lib/physical-component-admin-api.ts';
+import { isCountDate, todayInTaipei } from '../src/lib/physical-component-values.ts';
 import { accessFixture } from './helpers/notbgg-access-fixture.ts';
 import { dashboardPreview } from './helpers/admin-dashboard-preview.ts';
+
+test('count date changes at Taipei midnight and validates Gregorian dates', () => {
+    const before = todayInTaipei(new Date('2026-11-25T15:59:00Z'));
+    const after = todayInTaipei(new Date('2026-11-25T16:00:00Z'));
+    assert.equal(before, '2026-11-25');
+    assert.equal(after, '2026-11-26');
+    assert.equal(isCountDate('2026-11-26', before), false);
+    assert.equal(isCountDate('2026-11-26', after), true);
+    assert.equal(isCountDate('2024-02-29', after), true);
+    assert.equal(isCountDate('2025-02-29', after), false);
+});
 
 function d1ForSqlite(sqlite: DatabaseSync) {
     function prepare(sql: string, args: SQLInputValue[] = []) {
@@ -71,6 +83,7 @@ test('physical component workflow through Admin API, real SQLite and Astro rende
         sqlite.exec(read(migration));
         sqlite.exec(read('0023_shared_quantity_commit.sql'));
         sqlite.exec(read('0024_component_applicability.sql'));
+        sqlite.exec(read('0026_count_date.sql'));
         assert.equal(sqlite.prepare('SELECT COUNT(*) n FROM v2_physical_component_sources').get()?.n, 0);
         assert.equal(sqlite.prepare('SELECT component_definition_id FROM v2_sleeve_requirements WHERE source_key=?')
             .get('historical')?.component_definition_id, legacyBefore.definition);
@@ -161,16 +174,46 @@ test('physical component workflow through Admin API, real SQLite and Astro rende
         });
 
         await t.test('copy counts enforce revision, quantity, same collection and rollback', async () => {
-            const count = { action: 'count', definitionId: cardId, definitionRevision: 2, copyId: 50, revision: 0, actual: 0 };
+            const count = { action: 'count', definitionId: cardId, definitionRevision: 2, copyId: 50, revision: 0, actual: 0, countedOn: '2026-01-05' };
             assert.equal((await send({ ...count, actual: -1 })).status, 400);
             assert.equal((await send({ ...count, copyId: 51 })).status, 409);
             sqlite.exec("CREATE TRIGGER reject_count BEFORE INSERT ON v2_copy_components BEGIN SELECT RAISE(ABORT, 'test rollback'); END");
             assert.equal((await send(count)).status, 503);
             assert.equal(sqlite.prepare('SELECT COUNT(*) n FROM v2_copy_components').get()?.n, 0);
             sqlite.exec('DROP TRIGGER reject_count');
-            assert.equal((await send(count)).status, 200);
-            assert.equal((await send({ ...count, actual: 10 })).status, 409);
-            assert.equal((await send({ ...count, revision: 1, actual: 20 })).status, 200);
+            for (const countedOn of [undefined, '9999-01-01', '1999-12-31', '2026-1-05', '2026-02-30', 20260105]) {
+                const rejected = await send({ ...count, countedOn });
+                assert.equal(rejected.status, 400);
+                assert.equal((await rejected.json() as { error: { code: string } }).error.code, 'INVALID_COUNT_DATE');
+                assert.equal(sqlite.prepare('SELECT COUNT(*) n FROM v2_copy_components').get()?.n, 0);
+            }
+            sqlite.exec("CREATE TRIGGER reject_count_date BEFORE INSERT ON v2_copy_components BEGIN SELECT RAISE(ABORT, 'COUNT_DATE_INVALID'); END");
+            const invalidAtWrite = await send(count);
+            assert.equal(invalidAtWrite.status, 400);
+            assert.equal((await invalidAtWrite.json() as { error: { code: string } }).error.code, 'INVALID_COUNT_DATE');
+            assert.equal(sqlite.prepare('SELECT COUNT(*) n FROM v2_copy_components').get()?.n, 0);
+            sqlite.exec('DROP TRIGGER reject_count_date');
+            const result = await send(count);
+            assert.equal(result.status, 200);
+            assert.equal((await result.json() as { data: { countedOn: string } }).data.countedOn, count.countedOn);
+            const target = () => sqlite.prepare('SELECT counted_on, last_checked_at FROM v2_copy_components WHERE owned_copy_id=50').get();
+            assert.equal(target()?.counted_on, count.countedOn);
+            assert.match(String(target()?.last_checked_at), /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
+            assert.equal((await send({ ...count, actual: 10, countedOn: '2026-01-06' })).status, 409);
+            assert.equal(target()?.counted_on, count.countedOn);
+            // Isolate the sibling row so the existing downstream workflow retains its original fixture.
+            sqlite.exec('SAVEPOINT count_date_sibling');
+            try {
+                sqlite.exec("INSERT INTO v2_owned_copies(id, collection_item_id) SELECT 52, collection_item_id FROM v2_owned_copies WHERE id=50");
+                assert.equal((await send({ ...count, copyId: 52, countedOn: '2026-01-04' })).status, 200);
+                assert.equal((await send({ ...count, revision: 1, actual: 20, countedOn: '2026-01-03' })).status, 200);
+                assert.equal(target()?.counted_on, '2026-01-03');
+                assert.equal(sqlite.prepare('SELECT counted_on FROM v2_copy_components WHERE owned_copy_id=52').get()?.counted_on, '2026-01-04');
+            } finally {
+                sqlite.exec('ROLLBACK TO count_date_sibling; RELEASE count_date_sibling');
+            }
+            assert.equal((await send({ ...count, revision: 1, actual: 20, countedOn: '2026-01-03' })).status, 200);
+            assert.equal(target()?.counted_on, '2026-01-03');
             assert.equal(sqlite.prepare('SELECT actual_quantity FROM v2_copy_components').get()?.actual_quantity, 20);
             const locked = await send({ action: 'edit', definitionId: cardId, definitionRevision: 2, name: 'Renamed cards',
                 type: 'token', unit: 'piece', expected: 20 }, 'test-locked-type');
@@ -181,7 +224,7 @@ test('physical component workflow through Admin API, real SQLite and Astro rende
         await t.test('applicability guards writes and restores the original count', async () => {
             const action = { action: 'applicability', definitionId: cardId, definitionRevision: 2,
                 copyId: 50, revision: 0, next: 'not_applicable' };
-            const count = { action: 'count', definitionId: cardId, definitionRevision: 2, copyId: 50, revision: 2, actual: 20 };
+            const count = { action: 'count', definitionId: cardId, definitionRevision: 2, copyId: 50, revision: 2, actual: 20, countedOn: '2026-01-05' };
             const stored = () => sqlite.prepare('SELECT * FROM v2_copy_components').all();
             const before = stored();
             const checkError = async (body: object, status: number, code: string) => {
@@ -294,7 +337,7 @@ test('physical component workflow through Admin API, real SQLite and Astro rende
             assert.equal(result.reason, 'EVIDENCE_UNAVAILABLE');
             assert.equal((await send({ ...create, name: 'Overflow component' }, 'test-command-003')).status, 503);
             assert.equal((await send({ action: 'count', definitionId: cardId, definitionRevision: 2,
-                copyId: 50, revision: 2, actual: 30 })).status, 503);
+                copyId: 50, revision: 2, actual: 30, countedOn: '2026-01-05' })).status, 503);
             assert.equal(sqlite.prepare('SELECT actual_quantity FROM v2_copy_components').get()?.actual_quantity, 20);
         });
     } finally {

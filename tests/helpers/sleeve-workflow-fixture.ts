@@ -22,6 +22,6 @@ export async function sleeveWorkflowFixture(){
  const db=sqliteD1(sqlite),secret=crypto.randomUUID()+crypto.randomUUID();
  const card=await writePhysicalComponent(db,secret,'fixture','fixture-card-create',{action:'create',collectionId:1,name:'Real cards',type:'card',unit:'card',expected:30,confirmed:true});
  const token=await writePhysicalComponent(db,secret,'fixture','fixture-token-create',{action:'create',collectionId:1,name:'Tokens',type:'token',unit:'piece',expected:10,confirmed:true});
- for(const copyId of [1,2])await writePhysicalComponent(db,secret,'fixture',null,{action:'count',definitionId:card.id,definitionRevision:1,copyId,revision:0,actual:30});
+ for(const copyId of [1,2])await writePhysicalComponent(db,secret,'fixture',null,{action:'count',definitionId:card.id,definitionRevision:1,copyId,revision:0,actual:30,countedOn:'2026-11-01'});
  return {sqlite,db,secret,cardId:card.id,tokenId:token.id,bggId};
 }

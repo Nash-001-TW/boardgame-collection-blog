@@ -159,7 +159,52 @@
 
 ### 7.6 Codex 執行回報
 
-（待填）
+**2026-11-26（Asia/Taipei）｜0026、count API 與 R06 日期欄位已實作。完整回歸尚未通過。**
+
+- 新增 `migrations/0026_count_date.sql`、`tests/migration-0026.test.ts`。
+- 修改 `src/lib/physical-component-values.ts`、`src/lib/physical-component-management.ts`、`src/components/admin/PhysicalComponentsPanel.astro`、`src/lib/physical-component-admin-controller.ts`，以及下列測試和本節。
+- 0026 SHA-256：`e16f8b33f7c5d8f5af03c2844b3eb1cb4409446ca63fcd489df9b8a97a0ac2fe`。CHECK 使用 `date(counted_on, '+0 days') IS counted_on`，以拒絕會正規化成其他日期的輸入及 `date()` 回傳 NULL 的非日期文字。未回填舊列。
+- 日期與數量以同一筆條件式寫入提交，保留原本守衛及系統儲存時間。畫面另允許使用者明確改選日期後，儲存原實點與補登日期。
+
+**測試指令與結果**
+
+| 指令 | 實際結果 |
+| --- | --- |
+| `node --import tsx --test tests/admin-collection-detail.test.ts tests/admin-component-classification.test.ts tests/admin-dashboard.test.ts tests/component-applicability.test.ts tests/component-classifier-adapter.test.ts tests/component-classifier.test.ts tests/d1-0023-review.test.ts tests/d1-quantity-api.test.ts tests/d1-quantity-history.test.ts tests/d1-quantity-preview-view.test.ts tests/physical-component-management.test.ts tests/physical-quantity-impact.test.ts tests/release-migration-chain.test.ts tests/shared-quantity-commit.test.ts tests/sleeve-admin.test.ts tests/sleeve-shortage.test.ts tests/sleeve-workflow.test.ts tests/migration-0026.test.ts` | 首輪 193 通過／8 失敗。補齊測試資料庫的 0026 前置，並將 CHECK 合法性測試與觸發器分開後，重跑 200 通過／1 失敗。唯一失敗是 `sleeve-workflow.test.ts` 的共用 fixture。 |
+| `node --import tsx --test tests/migration-0026.test.ts tests/physical-component-management.test.ts` | 12 通過／0 失敗。涵蓋正式歷史順序與檔名順序、日期與 NULL、觸發器、0023／0024／0025、台北日界、錯誤碼、回滾與副本隔離。兩個順序的 `foreign_key_check` 都是 0 筆，`integrity_check` 都是 `ok`。 |
+| `node tests/physical-quantity-browser.mjs <暫存輸出>` | 結束碼 1，進入瀏覽器案例前，共用 fixture 回 400 `INVALID_COUNT_DATE`。 |
+| `node tests/admin-collection-detail-browser.mjs <暫存輸出>` | 結束碼 1，執行至需初始化清點資料時，共用 fixture 回 400 `INVALID_COUNT_DATE`。 |
+| `node tests/admin-dashboard-browser.mjs <暫存輸出>` | 7 項通過，結束碼 0。 |
+| `node tests/sleeve-shortage-browser.mjs <暫存輸出>` | 8 項通過，結束碼 0。 |
+| `node --import <Edge 本機參數預載> --import tsx tests/sleeve-workflow-browser.mjs <暫存輸出>` | 結束碼 1，共用 fixture 回 400 `INVALID_COUNT_DATE`。 |
+| `npm run astro -- check` | 在無機密隔離目錄完整執行（含同步），最終 372 檔、6 個基準錯誤、0 個新增錯誤、0 個警告、25 個提示，結束碼 1。首輪新增測試的三個 JSON 型別診斷已修正。 |
+| `npm run build` | 最終結束碼 0，四條靜態路由已預渲染。首輪代理誤攔本機預渲染，第一次重試的 Windows 預載路徑解析失敗，修正路徑並限制 fetch 為 loopback 後通過。 |
+| `node <暫存隔離副本>/node_modules/.p0b-count-date.mjs <暫存輸出>` | 獨立合成 SQLite 的日期專項通過，涵蓋台北今天預設、歷史日期原地儲存、重整、切換副本、未記錄日期、未來日期停用與雙語。首次專項重用的前置資料覆寫實點，移除該前置後通過。焦點診斷首次未聚焦 Edge 分頁，啟用分頁焦點模擬後通過。 |
+| `git diff --check` | 通過。Git 提示既有 CRLF 轉換設定。 |
+
+Edge 使用 `D1_A3_EDGE_LOCAL_TEST_MODE=1`、repo 外暫存 profile、本機 loopback 與拋棄式 SQLite。Astro 關閉遙測、Cloudflare CF 資料抓取與 Wrangler metrics。程式和測試都在本機執行。
+
+**既有測試及 fixture 異動**
+
+- `tests/physical-component-management.test.ts` 的 SQLite fixture 增加 0026，三個既有清點請求補上 `countedOn`。保留原有 revision、數量、適用性和回滾斷言，再加驗無效日期、衝突保留日期、日期回傳、系統儲存時間、較早日期覆寫及副本隔離。
+- `tests/d1-0023-review.test.ts` 的兩個比較分支都套用 0026，既有清點請求補上 `countedOn`，讓兩個比較分支可用同一版 count API。
+- `tests/shared-quantity-commit.test.ts` 的一筆 revision 1 合成 INSERT 增加 `counted_on`，通過 0026 的 INSERT 守衛。
+- `tests/admin-collection-detail-browser.mjs` 的並行修改 fixture 同時寫入 `counted_on` 與遞增 revision，保留原有競態情境。
+- `tests/physical-quantity-browser.mjs` 的既有直接 POST 補上 `countedOn`，保留 15 項檢查並追加日期專項情境。
+- 上述未刪除既有斷言。共用 `tests/helpers/sleeve-workflow-fixture.ts` 的合成清點請求缺 `countedOn`。該檔未列入 §7.2，維持原樣，待範圍確認。
+
+**截圖與可存取性**
+
+新增五張 1250 px 高的合成資料截圖。中文 [375](P0B-screenshots/zh-count-dates-375.png)、[768](P0B-screenshots/zh-count-dates-768.png)、[1280](P0B-screenshots/zh-count-dates-1280.png)，英文 [1280](P0B-screenshots/en-count-dates-1280.png)，以及 [中文儲存成功 1280](P0B-screenshots/zh-saved-1280.png)。已驗證 375／768／1280／1440 寬度無整頁橫向捲動、日期欄位有標籤、欄高至少 44 px。Edge 測得日期文字、框線、焦點環與欄位底色的對比分別為 10.37:1、5.93:1、7.77:1。
+
+**未執行或未完成**
+
+- 卡套單元流程的後續案例、三支 Edge 腳本被共用 fixture 擋住的後續情境（含既有 15 項 R06 檢查及同一條流程的適用性恢復畫面）。專項驗證使用獨立資料，原共用 fixture 回歸仍待授權。
+- 正式 Migration、正式 D1、部署、commit、push 與遠端操作均未執行。
+
+**殘留暫存路徑**
+
+無。已清除本工作單專用的系統暫存目錄。
 
 ### 7.7 禁止事項
 
@@ -170,3 +215,121 @@
 - 讀取或複製 `.env`、`.dev.vars`、`backups/`、`*.sql` 備份。
 
 暫存資料放在 repo 外的系統暫存目錄，結束前自行清除；刪不掉時回報路徑。
+
+### 7.8 Claude 審查（2026-11-26）
+
+**結論：程式與 0026 通過，有一個條件。** 共用測試 fixture `tests/helpers/sleeve-workflow-fixture.ts` 第 25 行的清點請求缺少 `countedOn`，這個檔案不在 §7.2 允許範圍內（Claude 起草範圍時漏列），所以卡套流程單元測試和 3 支 Edge 腳本的回歸還沒跑完。補上一個欄位，需要使用者授權（P0B-AUTH-02）。
+
+**本人驗證**
+
+- Node：§7.6 同一組 18 個測試檔合跑，**200 通過、1 失敗**（`sleeve-workflow.test.ts`，原因就是上面那個 fixture），和 Codex 回報一致。
+- `git diff --check` 通過；0026 SHA-256 `e16f8b33…c2fe` 本人複核相同。Edge、`astro check`、build 沒有重跑，以 §7.6 為準。
+- 看過的截圖：`zh-count-dates-375`、`zh-saved-1280`、`en-count-dates-1280`。日期欄位在副本選擇區；已清點的列顯示日期，沒清點的列顯示「未記錄」／「Not recorded」；儲存後原地顯示「已確認」和新日期；375 寬沒有橫向捲動。
+
+**逐項核對**
+
+- **0026**：
+  - CHECK 用 `date(counted_on, '+0 days') IS counted_on`，比規格寫的 `date(counted_on) = counted_on` 更嚴格，可以擋掉 SQLite 會自動正規化的不存在日期（例如 2026-02-30）和非日期文字，接受。
+  - 兩個觸發器符合 §7.3 第 2、3 點。`count_revision = 0` 的既有 fixture 和舊資料不受影響。
+  - 沒有回填，也沒動 `last_checked_at`。
+- **伺服器**：
+  - `countedOn` 必填，以台北日界驗證範圍和實際存在的日期，錯了就回 400 `INVALID_COUNT_DATE`。
+  - 日期在既有的同一筆條件式寫入裡寫入，revision、適用性、在藏、封膜等守衛都沒變。
+  - 觸發器的 `COUNT_DATE_INVALID`（例如跨過午夜）也對應到同一個 400。成功時回傳 `countedOn`。
+  - 其他動作逐字保留。
+- **畫面**：
+  - 整頁共用日期，預設台北今天，`min`／`max` 正確；日期無效時所有儲存按鈕停用，並以 `role="status"` 提示。
+  - 換副本時日期不重設；切換副本時顯示各副本自己的日期；日期錯誤時可以修正後重送，不會鎖住該列。
+  - 實點輸入是 `required`，所以沒清點的列不會因為改了日期就被送出 0。
+- **Codex 的額外行為**：使用者**主動改過日期**後，數量沒變的列也可以儲存，等於用新日期重新確認同一個數量。這符合補登 C（新的成功清點取代目前數量和日期），而且只有使用者明確改日期時才會開放，接受。
+
+**小觀察（不擋上線）**
+
+- O1：日期欄位夾在副本下拉選單和「上一個／下一個」之間，把副本選擇和它的切換按鈕隔開了。放到兩個按鈕後面會比較順。
+- O2：頁面如果開著跨過午夜，日期欄位的 `max` 還是昨天，要重新整理才能選新的今天。伺服器和觸發器都正確，所以只是不方便。
+- O3：日期顯示是 `YYYY-MM-DD`，沒有依語言格式化，和適用性歷史的格式不同。可以接受，以後統一即可。
+
+**待授權（P0B-AUTH-02）**
+
+- 允許修改 `tests/helpers/sleeve-workflow-fixture.ts` 第 25 行：在合成清點請求補上 `countedOn`（固定日期，例如 `'2026-11-01'`），其他內容不變。
+- 修好後重跑：`sleeve-workflow.test.ts`、`physical-quantity-browser.mjs`（既有 15 項）、`admin-collection-detail-browser.mjs`、`sleeve-workflow-browser.mjs`。
+- 建議由 Claude 直接做，比照 P0A-0024-AUTH-02。
+
+### 7.9 P0B-AUTH-02 執行結果（2026-11-26，Claude）
+
+- 修改 `tests/helpers/sleeve-workflow-fixture.ts` 第 25 行：合成清點請求補上 `countedOn:'2026-11-01'`，其他內容不變。
+- Node：§7.6 那 18 個測試檔合跑，**208 通過、0 失敗**。`sleeve-workflow.test.ts` 原本被擋住的子案例現在都通過。
+- Edge（`D1_A3_EDGE_LOCAL_TEST_MODE=1`，每次用 scratchpad 裡全新的空輸出資料夾）：
+  - `physical-quantity-browser.mjs`：既有 15 項，加上日期專項 1 項，全部通過，結束碼 0。
+  - `sleeve-workflow-browser.mjs`（`node --import tsx`）：4 項通過，結束碼 0。
+  - `admin-collection-detail-browser.mjs`：**63 項通過後，在第 816 行失敗**（結束碼 1）。
+    - 這是「R06 情境 1」的鍵盤順序斷言：預期從副本選單按 Tab 會到「下一個」按鈕，但新的日期欄位放在副本選單和上一個／下一個之間，Tab 先到了日期欄位（`countStep` 是 `undefined`）。
+    - 這是版面改動造成的**預期內**變化，不是程式缺陷，也就是 §7.8 的 O1。後面的情境因此沒有執行。
+    - 另外兩次重跑因為重複使用同一個輸出資料夾而觸發 `EEXIST`，那是我的執行方式造成的，和程式無關。
+
+**建議修正（P0B-AUTH-03，需要授權）**
+
+1. `PhysicalComponentsPanel.astro`：把「清點日期」移到「上一個／下一個」後面（順便解決 O1），只搬位置，屬性不變。
+2. `tests/admin-collection-detail-browser.mjs` 第 816～819 行的鍵盤順序斷言改成新順序：副本選單 → 下一個 → 清點日期 → 實際數量。斷言的意圖不變（鍵盤可以依序到達副本、切換、輸入）。
+3. 修完後用全新的資料夾重跑 `admin-collection-detail-browser.mjs` 和 `physical-quantity-browser.mjs`，並重拍 `docs/P0B-screenshots/` 裡受影響的 5 張截圖。
+
+**2026-11-26**：使用者授權 P0B-AUTH-03，交 Codex 執行上面 3 點。Codex 回報請寫入 §7.10。
+
+### 7.10 Codex 執行回報（P0B-AUTH-03）
+
+**2026-11-26（Asia/Taipei）｜P0B-AUTH-03 已實作、已驗證。**
+
+- 修改 `src/components/admin/PhysicalComponentsPanel.astro`，將「清點日期」整組移到「上一個／下一個」之後。欄位內容與屬性保持原樣。
+- 修改 `tests/admin-collection-detail-browser.mjs` 的 R06 鍵盤斷言，驗證「副本選單 → 下一個 → 清點日期 → 實際數量」。Edge 可在原生日期欄位內將焦點移過多個分段，測試允許這些內部焦點，並驗證離開日期欄位後的第一個焦點為實際數量。
+- 修改本節，並更新下列五張既有截圖。
+
+| 測試指令 | 通過 | 失敗 | 結束碼 |
+| --- | ---: | ---: | ---: |
+| `node tests/admin-collection-detail-browser.mjs <全新空目錄>` 首次 | 63 | 1 | 1 |
+| `node tests/admin-collection-detail-browser.mjs <另一個全新空目錄>` | 72 | 0 | 0 |
+| `node tests/physical-quantity-browser.mjs <全新空目錄>` | 16 | 0 | 0 |
+
+每次執行都使用 `D1_A3_EDGE_LOCAL_TEST_MODE=1`、獨立空輸出目錄、暫存 Edge profile 及本機 loopback。首次收藏詳情測試在退出日期欄位的斷言失敗，因為單次 Tab 仍停在日期欄位的內部分段。修正斷言後重跑通過。數量測試涵蓋既有 15 項與日期專項 1 項。`git diff --check` 通過。
+
+**重拍截圖（由實際數量回歸腳本輸出，1250 px 高）**
+
+- [中文 375](P0B-screenshots/zh-count-dates-375.png)
+- [中文 768](P0B-screenshots/zh-count-dates-768.png)
+- [中文 1280](P0B-screenshots/zh-count-dates-1280.png)
+- [英文 1280](P0B-screenshots/en-count-dates-1280.png)
+- [中文儲存成功 1280](P0B-screenshots/zh-saved-1280.png)
+
+本輪未重跑 Node 單元測試、其他 Edge 腳本、Astro check 或 build。未執行正式 Migration、部署、commit、push 或遠端操作。
+
+### 7.11 Claude 結案審查（2026-11-26）
+
+**結論：`P0B-20261126-01`（含 AUTH-02、AUTH-03）通過，本機驗證完成。**
+
+**本人驗證**
+- Node：18 個測試檔合跑，**208 通過、0 失敗**。
+- Edge：每支都用全新的空輸出資料夾，並設 `D1_A3_EDGE_LOCAL_TEST_MODE=1`，**共 107 項全部通過、結束碼都是 0**：
+
+  | 腳本 | 通過 |
+  | --- | --- |
+  | `physical-quantity-browser` | 16 |
+  | `admin-collection-detail-browser` | 72 |
+  | `admin-dashboard-browser` | 7 |
+  | `sleeve-shortage-browser` | 8 |
+  | `sleeve-workflow-browser` | 4 |
+
+- `git diff --check` 通過；0026 SHA-256 `e16f8b33…c2fe`，和 §7.6 相同。
+- `astro check` 和 build 沒有重跑，以 §7.6 第一輪為準（6 個基準錯誤、build 通過）。AUTH-03 只搬了一段標記的位置，不影響型別。
+
+**AUTH-03 核對**
+- 日期欄位已經移到「上一個／下一個」後面，屬性沒變，O1 已解決。
+- 鍵盤斷言改成「副本選單 → 下一個 → 清點日期 → 實際數量」。Edge 的原生日期欄位內部有年／月／日分段會各吃一次 Tab，所以斷言允許最多 5 次分段跳轉，再確認離開日期欄位後的焦點在「實際數量」。這是合理的等價斷言。
+- 看過重拍的 `zh-count-dates-375`、`zh-count-dates-1280`：桌面版是「副本、上一個、下一個、清點日期」一列排開。
+
+**剩下的小觀察（不擋上線）**
+- O2：頁面開著跨過午夜時，日期欄位的 `max` 停在前一天。
+- O3：日期顯示是 `YYYY-MM-DD`，沒有依語言格式化。
+- O4（新）：375 寬時按鈕換行，「上一個」和副本選單在同一行，「下一個」和日期欄位在下一行，兩個切換按鈕被拆開。可以考慮讓兩個按鈕成組不換行。
+
+**上線前提**
+- 程式依賴 0026。**0026 正式套用前不得推送 `main`**；一推送就會自動部署，清點會被舊資料庫拒絕（不認得 `counted_on`），回 503 或 500。
+- 正式套用流程比照 0024 §8：A1 唯讀預檢 → A2 Export 備份與本機預演 → A3 套用（唯一一次正式寫入）→ A4 對帳 → 推送部署 → 登入驗收。每一步都要另外授權。

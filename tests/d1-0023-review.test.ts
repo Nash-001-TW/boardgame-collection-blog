@@ -225,8 +225,9 @@ test('each distinct 0023 RAISE message is exercised', async t => {
 
 test('R06 and v2 service results and persisted business fields agree with 0022', async t => {
     async function exercise(sql: DatabaseSync) {
-        // The count service requires the 0024 view in both arms. Neither arm writes applicability.
+        // Both comparison arms use the same count service, including its view and date column.
         sql.exec(readFileSync('migrations/0024_component_applicability.sql', 'utf8'));
+        sql.exec(readFileSync('migrations/0026_count_date.sql', 'utf8'));
         const db = sqliteD1(sql);
         const writer = new CollectionV2Writer(db);
         const context = { actor, scope: 'production' as const };
@@ -235,7 +236,7 @@ test('R06 and v2 service results and persisted business fields agree with 0022',
         const definitionId = created.id;
         const rename = { action: 'edit', definitionId, definitionRevision: 1, name: 'Renamed',
             type: 'card', unit: 'card' };
-        const count = { action: 'count', definitionId, definitionRevision: 2, copyId: 1, revision: 0, actual: 18 };
+        const count = { action: 'count', definitionId, definitionRevision: 2, copyId: 1, revision: 0, actual: 18, countedOn: '2026-01-05' };
         const results = [
             created,
             await physical(sql, 'review-create', createBody),
