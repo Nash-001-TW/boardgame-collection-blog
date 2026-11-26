@@ -1,23 +1,28 @@
 // Real Edge + compiled Astro pages + actual JWT boundary + disposable SQLite only.
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
-import {readFile,mkdtemp,mkdir,writeFile} from 'node:fs/promises';
+import {readFile,mkdtemp,mkdir,readdir,writeFile} from 'node:fs/promises';
 import {spawn} from 'node:child_process';
 import {build} from 'esbuild';
 import {sleeveWorkflowFixture} from './helpers/sleeve-workflow-fixture.ts';
 import {accessFixture} from './helpers/notbgg-access-fixture.ts';
 import {dashboardPreview} from './helpers/admin-dashboard-preview.ts';
 import {handlePurchaseAdminRequest} from '../src/lib/purchase-admin-api.ts';
+import {handleCollectionAdminRequest} from '../src/lib/collection-admin-api.ts';
 import {handleCollectionCopiesRequest} from '../src/lib/collection-copies-api.ts';
 import {handlePublicGameCollection} from '../src/lib/public-game-collection.ts';
 import {createLocalGamesPreview} from '../scripts/lib/local-games-preview.ts';
 import {getGames} from '../src/lib/games.ts';
 
 const out=process.argv[2];if(!out)throw new Error('An artifact directory is required');await mkdir(out,{recursive:true});
+assert.deepEqual(await readdir(out),[],'Edge output directory must start empty');
 const f=await sleeveWorkflowFixture(),auth=await accessFixture();let server,browser,ws;
+let failSearch=false;
+let fourLinePayload;
 async function until(check,label){const end=Date.now()+15000;while(Date.now()<end){try{const value=await check();if(value)return value;}catch{}await new Promise(r=>setTimeout(r,70));}throw new Error('Timeout: '+label);}
 try{
  f.sqlite.exec("INSERT INTO v2_owned_copies(id,collection_item_id) VALUES(4,1)");
+ f.sqlite.exec("INSERT INTO v2_collection_items(id,display_name) VALUES(3,'Archived collection'); INSERT INTO v2_collection_management(collection_item_id,archived_at) VALUES(3,'2026-11-26')");
  const bindings={...auth.bindings,DB:f.db,PHYSICAL_COMPONENT_SIGNING_KEY:f.secret,NOTBGG_WRITE_LIMITER:{limit:async()=>({success:true})}};
  const preview=await dashboardPreview(bindings),publicPreview=await createLocalGamesPreview();
  const bundles={};for(const [name,entry]of Object.entries({'purchase':'src/lib/purchase-admin-controller.ts','copies':'src/lib/collection-copies-controller.ts'}))bundles[name]=(await build({entryPoints:[entry],bundle:true,write:false,platform:'browser',format:'iife'})).outputFiles[0].text;
@@ -25,7 +30,14 @@ try{
  server=createServer(async(req,res)=>{try{
   const url=new URL(req.url,'http://'+req.headers.host),chunks=[];for await(const c of req)chunks.push(c);
   const request=new Request(url,{method:req.method,headers:req.headers,body:['POST','PATCH'].includes(req.method)?Buffer.concat(chunks):undefined});let response;
-  if(url.pathname==='/api/admin/purchases')response=await handlePurchaseAdminRequest(request,bindings);
+  if(url.pathname==='/api/admin/purchases'){
+   if(req.method==='POST'){
+    const body=await request.clone().json();
+    if(body.reference==='PICKER_FOUR_LINES')fourLinePayload=body;
+   }
+   response=await handlePurchaseAdminRequest(request,bindings);
+  }
+  else if(url.pathname==='/api/admin/collection')response=failSearch?new Response('{}',{status:503}):await handleCollectionAdminRequest(request,bindings);
   else if(url.pathname.startsWith('/api/admin/collection/'))response=await handleCollectionCopiesRequest(request,bindings);
   else if(url.pathname.startsWith('/api/public/collection/'))response=await handlePublicGameCollection(request,bindings,decodeURIComponent(url.pathname.split('/').at(-1)));
   else if(url.pathname==='/purchase.js'||url.pathname==='/copies.js')response=new Response(bundles[url.pathname.slice(1,-3)],{headers:{'Content-Type':'text/javascript'}});
@@ -39,7 +51,7 @@ try{
   res.writeHead(response.status,Object.fromEntries(headers));res.end(body);
  }catch(error){console.error(error);res.writeHead(500);res.end('Fixture error');}});
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const origin='http://127.0.0.1:'+server.address().port;
- browser=spawn('C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',['--headless=new','--disable-gpu','--no-first-run','--disable-extensions','--disable-background-networking','--disable-component-update','--disable-sync','--proxy-server=http://127.0.0.1:9','--remote-debugging-port=0','--user-data-dir='+await mkdtemp(out+'/edge-'),'about:blank'],{windowsHide:true,stdio:'ignore'});
+ browser=spawn('C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',['--headless=new','--disable-gpu','--disable-crashpad','--no-first-run','--disable-extensions','--disable-background-networking','--disable-component-update','--disable-sync','--proxy-server=http://127.0.0.1:9','--remote-debugging-port=0','--user-data-dir='+await mkdtemp(out+'/edge-'),'about:blank'],{windowsHide:true,stdio:'ignore'});
  // The last argument before about:blank is the isolated profile.
  const profile=browser.spawnargs.find(a=>a.startsWith('--user-data-dir=')).slice('--user-data-dir='.length);
  const port=await until(async()=>Number((await readFile(profile+'/DevToolsActivePort','utf8')).split('\n')[0]),'Edge debugging');
@@ -53,14 +65,31 @@ try{
  async function goto(path){await send('Page.navigate',{url:origin+path});await text(path.includes('/copies')?'h2':'h1',path.includes('/purchases')?(path.includes('lang=en')?'Purchases':'採購'):path.includes('/copies')?(path.includes('lang=en')?'Collection copies, languages and editions':'收藏副本、語言與版本'):'');}
  async function fill(selector,values){await evaluate((selector,values)=>{const form=document.querySelector(selector);form.closest('details')?.setAttribute('open','');for(const [name,value]of Object.entries(values)){const input=form.querySelector('[name='+name+']');if(input.type==='checkbox')input.checked=value;else input.value=String(value);input.dispatchEvent(new Event('change',{bubbles:true}));}},selector,values);}
  async function submit(selector){const box=await evaluate(selector=>{const button=document.querySelector(selector+' button:not([type=button])');button.scrollIntoView({block:'center'});const r=button.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};},selector);await send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...box});await send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...box});}
+ const line=n=>'[data-purchase-line]:nth-child('+n+')';
+ const click=selector=>evaluate(selector=>document.querySelector(selector).click(),selector);
+ const key=async key=>{for(const type of ['keyDown','keyUp'])await send('Input.dispatchKeyEvent',{type,key,windowsVirtualKeyCode:{Tab:9,ArrowDown:40,ArrowUp:38,Enter:13,Escape:27}[key]});};
+ const search=(n,value)=>evaluate((selector,value)=>{
+  const input=document.querySelector(selector+' [data-picker-query]');
+  input.focus();input.value=value;input.dispatchEvent(new Event('input',{bubbles:true}));
+ },line(n),value);
+ const option=(n,id)=>line(n)+' [role=option][id$="-'+id+'"]';
+ const waitVisible=selector=>until(()=>evaluate(selector=>!!document.querySelector(selector)?.getClientRects().length,selector),selector);
+ async function choose(n,id){
+  await search(n,String(id));await waitVisible(option(n,id));await click(option(n,id));
+ }
+ async function capture(name,selector){
+  await evaluate(selector=>document.querySelector(selector).scrollIntoView({block:'center'}),selector);
+  const shot=await send('Page.captureScreenshot',{format:'png'});
+  await writeFile(out+'/'+name+'.png',Buffer.from(shot.data,'base64'));
+ }
  await send('Page.enable');await send('Runtime.enable');await send('Network.enable');
  await send('Network.setExtraHTTPHeaders',{headers:{'Cf-Access-Jwt-Assertion':jwt}});await width(1440);
  await goto('/admin/purchases?lang=en');await evaluate(()=>document.querySelector('a[href*="new=1"]').click());await until(()=>evaluate(()=>!!document.querySelector('[data-purchase-form]')),'new purchase form');
  const form='[data-purchase-form]';
  await fill(form,{date:'2026-11-12',merchant:'Browser merchant',reference:'PRIVATE_BROWSER_ORDER',currency:'TWD',status:'paid',shipping:1,method:'weighted',notes:'PRIVATE_BROWSER_NOTE'});
- await fill('[data-purchase-line]',{collectionId:1,description:'Cards',quantity:1,price:100});
+ await choose(1,1);await fill('[data-purchase-line]',{description:'Cards',quantity:1,price:100});
  await evaluate(()=>document.querySelector('[data-add-line]').click());
- await fill('[data-purchase-line]:nth-child(2)',{collectionId:2,description:'Tokens',quantity:1,price:200});
+ await choose(2,2);await fill('[data-purchase-line]:nth-child(2)',{description:'Tokens',quantity:1,price:200});
  await text('[data-money-preview]','300 / 301 / 0');await submit(form);await text('[data-purchase-status]','Purchase saved.');
  const id=Number(f.sqlite.prepare("SELECT id FROM v2_purchase_orders WHERE order_reference='PRIVATE_BROWSER_ORDER'").get().id);
  assert.equal(f.sqlite.prepare('SELECT paid_minor FROM v2_purchase_order_reconciliation WHERE purchase_order_id=?').get(id).paid_minor,301);
@@ -70,9 +99,52 @@ try{
  await text('main','Allocation incomplete');
  console.log('PASS browser multi-item purchase creation, proportional rounding, edit, incomplete allocation and no automatic copies');
  await goto('/admin/purchases?new=1&lang=en');
- await fill(form,{date:'2026-11-12',merchant:'Browser merchant',currency:'USD',status:'paid',method:'direct'});await fill('[data-purchase-line]',{collectionId:1,description:'Second purchase',price:100,allocated:100});await submit(form);await text('[data-purchase-status]','Purchase saved.');
+ await fill(form,{date:'2026-11-12',merchant:'Browser merchant',currency:'USD',status:'paid',method:'direct'});await choose(1,1);await fill('[data-purchase-line]',{description:'Second purchase',price:100,allocated:100});await submit(form);await text('[data-purchase-status]','Purchase saved.');
  await goto('/admin/purchases?year=2026&merchant=Browser&collection=1&lang=en');await text('main','TWD');await text('main','USD');
  console.log('PASS repeated collection purchase, independent currencies and year/merchant/collection filters');
+ await goto('/admin/purchases?new=1&collection=1&lang=zh-TW');
+ await text('[data-picker-label]','Synthetic collection (#1)');
+ await click('[data-picker-change]');
+ await search(1,'collection');await waitVisible(option(1,3));
+ await text(option(1,3),'已封存，不能記採購');
+ await click(option(1,3));
+ assert.equal(await evaluate(()=>document.querySelector('[name=collectionId]').value),'');
+ for(const n of [375,768,1280]){
+  await width(n);
+  assert.ok(await evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth));
+  assert.ok(await evaluate(()=>[...document.querySelectorAll('[data-picker-query], [data-picker-results] [role=option]')]
+   .every(control=>control.getBoundingClientRect().height>=44)));
+  if(n!==768)await capture('search-zh-'+n,'[data-purchase-picker]');
+ }
+ await key('Escape');
+ assert.equal(await evaluate(()=>document.querySelector('[data-picker-results]').hidden),true);
+ await key('ArrowDown');await key('ArrowUp');await key('ArrowUp');await key('Enter');
+ await text('[data-picker-label]','Synthetic collection (#1)');
+ assert.equal(await evaluate(()=>document.querySelector('[name=description]').value),'Synthetic collection');
+ await key('Tab');assert.equal(await evaluate(()=>document.activeElement.name),'description');
+ for(const n of [375,1280]){await width(n);await capture('selected-zh-'+n,'[data-purchase-picker]');}
+ await click('[data-picker-change]');
+ await fill(line(1),{description:'Custom fixture description'});
+ await choose(1,2);
+ assert.equal(await evaluate(()=>document.querySelector('[name=description]').value),'Custom fixture description');
+ await click('[data-add-line]');await choose(2,1);
+ await click('[data-add-line]');await choose(3,2);
+ await click('[data-add-line]');failSearch=true;
+ await search(4,'1');await text(line(4)+' [data-picker-status]','暫時無法搜尋');
+ await key('Enter');failSearch=false;
+ await fill(line(4),{description:'Fallback fixture line'});
+ await fill(form,{reference:'PICKER_FOUR_LINES',date:'2026-11-26'});
+ await submit(form);await text('[data-purchase-status]','採購已儲存');
+ assert.deepEqual(fourLinePayload.lines.map(row=>row.collectionId),[2,1,2,1]);
+ const fourLineId=f.sqlite.prepare("SELECT id FROM v2_purchase_orders WHERE order_reference='PICKER_FOUR_LINES'").get().id;
+ assert.deepEqual(f.sqlite.prepare('SELECT collection_item_id FROM v2_purchase_order_lines WHERE purchase_order_id=? ORDER BY line_number').all(fourLineId).map(row=>row.collection_item_id),[2,1,2,1]);
+ await text(line(4)+' [data-picker-label]','Synthetic collection (#1)');
+ for(const n of [375,1280]){await width(n);await capture('edit-zh-'+n,'[data-purchase-lines]');}
+ await goto('/admin/purchases?new=1&lang=en');
+ await search(1,'Synthetic');await waitVisible(option(1,1));await capture('search-en-1280','[data-purchase-picker]');
+ await click(option(1,1));await capture('selected-en-1280','[data-purchase-picker]');
+ await goto('/admin/purchases?id='+fourLineId+'&lang=en');await capture('edit-en-1280','[data-purchase-lines]');
+ console.log('PASS collection picker, prefill, keyboard, archived rows, custom description, fallback and four-line purchase');
  const condition='[data-copy-id="4"] [data-copy-action=condition]';
  await goto('/admin/collection/1/copies?lang=en');await fill(condition,{seal:'sealed',inspection:'unchecked',trade:'new',details:'PRIVATE_BROWSER_CONDITION'});
  await evaluate(selector=>{document.querySelector(selector+' [name=tags][value=sealed]').checked=true;},condition);await submit(condition);await text('[data-copy-status]','Copy saved.');

@@ -339,3 +339,4 @@ node --import tsx --test tests/public-site-data.test.ts tests/public-site-sqlite
 - **2026-11-26（Asia/Taipei）**：使用者開始做 #23（克蘇魯套組）。Claude 列出步驟，並唯讀查詢確認 404893 是一般版 Tiny Epic Cthulhu，不是使用者買的 Deluxe Edition。使用者指出採購明細只能輸入收藏 ID 數字，Claude 起草 [#34 規劃](docs/purchase-line-collection-search-plan-20261126.md)（**候選**）：沿用 R06 收藏選擇器的搜尋 API 與純函式，改成搜尋下拉，既有明細顯示名稱，不需要 Migration。Q127～Q130 待決。只新增文件。
 - **2026-11-26（Asia/Taipei）**：使用者將 Q127～Q130 全部採 A（DECISION_LOG PUR-PICK-Q127～Q130）；工作命令 `PUR-PICK-20261126-01` 待授權。
 - **2026-11-26（Asia/Taipei）**：使用者授權 `PUR-PICK-20261126-01`（DECISION_LOG PUR-PICK-AUTH），Claude 透過 Codex CLI 外掛交付，回報寫入規劃 §5.4。
+- **2026-11-26（Asia/Taipei）**：Codex 完成 #34，Claude 審查**通過**（[規劃 §5.6](docs/purchase-line-collection-search-plan-20261126.md)）：伺服器只改 `readPurchase` 讀取名稱；送出仍是數字 `collectionId`；還沒選收藏時無法送出；搜尋重用 R06 選擇器的純函式與 API。Node 41／41、採購 Edge 5／5（要用 `node --import tsx` 執行）、收藏詳細頁 Edge 74／74。R06 舊選擇器腳本會逾時，因為舊入口已改為轉址，是早就過時的腳本。待授權推送部署。工作樹還沒提交。

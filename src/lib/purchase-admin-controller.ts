@@ -1,4 +1,4 @@
-export {};
+import {collectionPickerNumeric,collectionPickerOutcome,collectionPickerRequests,mergeCollectionPickerPages} from './collection-picker';
 const root=document.querySelector<HTMLElement>('[data-purchase-admin]');
 if(root){
  const en=root.dataset.lang==='en',t=(zh:string,english:string)=>en?english:zh,status=root.querySelector<HTMLElement>('[data-purchase-status]')!;
@@ -6,7 +6,138 @@ if(root){
  const form=root.querySelector<HTMLFormElement>('[data-purchase-form]');
  if(form){
   const lines=form.querySelector<HTMLElement>('[data-purchase-lines]')!;
-  form.querySelector('[data-add-line]')?.addEventListener('click',()=>{if(lines.children.length>=30)return;lines.appendChild(form.querySelector<HTMLTemplateElement>('[data-line-template]')!.content.cloneNode(true));preview();});
+  let pickerNumber=0;
+  function setupPicker(picker:HTMLElement){
+   const query=picker.querySelector<HTMLInputElement>('[data-picker-query]')!;
+   const id=picker.querySelector<HTMLInputElement>('[name=collectionId]')!;
+   const search=picker.querySelector<HTMLElement>('[data-picker-search]')!;
+   const results=picker.querySelector<HTMLElement>('[data-picker-results]')!;
+   const selection=picker.querySelector<HTMLElement>('[data-picker-selection]')!;
+   const feedback=picker.querySelector<HTMLElement>('[data-picker-status]')!;
+   const manual=picker.querySelector<HTMLButtonElement>('[data-picker-manual]')!;
+   const change=picker.querySelector<HTMLButtonElement>('[data-picker-change]')!;
+   results.id='purchase-collection-results-'+(++pickerNumber);
+   query.setAttribute('aria-controls',results.id);
+   let active=-1, options:HTMLElement[]=[];
+   let timer:ReturnType<typeof setTimeout>|undefined, pending:AbortController|undefined;
+   const selectionRequired=t('請先選擇收藏。','Select a collection first.');
+   query.setCustomValidity(selectionRequired);
+   function close(){
+    clearTimeout(timer);
+    pending?.abort();
+    pending=undefined;
+    active=-1;
+    results.hidden=true;
+    query.setAttribute('aria-expanded','false');
+    query.removeAttribute('aria-activedescendant');
+    options.forEach(option=>option.setAttribute('aria-selected','false'));
+   }
+   function select(value:number,name?:string){
+    close();
+    id.value=String(value);
+    picker.querySelector('[data-picker-label]')!.textContent=name?`${name} (#${value})`:`#${value}`;
+    const description=picker.closest('[data-purchase-line]')!.querySelector<HTMLInputElement>('[name=description]')!;
+    if(name&&!description.value.trim())description.value=name.slice(0,description.maxLength);
+    query.disabled=true;
+    search.hidden=true;
+    selection.hidden=false;
+    change.focus();
+   }
+   function message(value:string){
+    feedback.textContent=value;
+    feedback.hidden=!value;
+   }
+   function schedule(){
+    close();
+    results.replaceChildren();
+    options=[];
+    manual.hidden=true;
+    message('');
+    const value=query.value.trim();
+    if(!value)return;
+    const request=new AbortController();
+    pending=request;
+    timer=setTimeout(async()=>{
+     const timeout=setTimeout(()=>request.abort('timeout'),8000);
+     try{
+      const pages=await Promise.all(collectionPickerRequests(value,0).map(async requestSpec=>{
+       const response=await fetch(requestSpec.url,{signal:request.signal});
+       return {request:requestSpec,page:collectionPickerOutcome(response.ok,await response.json())};
+      }));
+      if(pending!==request||!picker.isConnected)return;
+      const {rows}=mergeCollectionPickerPages(pages);
+      for(const row of rows){
+       const option=document.createElement('div');
+       option.id=results.id+'-'+row.id;
+       option.setAttribute('role','option');
+       option.setAttribute('aria-selected','false');
+       option.textContent=`${row.name} (#${row.id})`;
+       if(row.archived){
+        option.setAttribute('aria-disabled','true');
+        option.textContent+=' · '+t('已封存，不能記採購','Archived, unavailable for purchases');
+       }else{
+        options.push(option);
+        option.addEventListener('click',()=>select(row.id,row.name));
+       }
+       results.appendChild(option);
+      }
+      results.hidden=!rows.length;
+      query.setAttribute('aria-expanded',String(!!rows.length));
+      if(!rows.length)message(t('找不到符合的收藏。','No matching collections.'));
+     }catch{
+      if(pending!==request||!picker.isConnected)return;
+      request.abort();
+      message(t('暫時無法搜尋。你可以直接輸入收藏 ID。','Search is temporarily unavailable. You can enter a collection ID directly.'));
+      manual.hidden=!collectionPickerNumeric(value)||!Number.isSafeInteger(Number(value))||Number(value)<1;
+     }finally{
+      clearTimeout(timeout);
+     }
+    },200);
+   }
+   query.addEventListener('input',schedule);
+   query.addEventListener('focus',schedule);
+   results.addEventListener('mousedown',event=>event.preventDefault());
+   picker.addEventListener('focusout',event=>{
+    if(!(event.relatedTarget instanceof Node)||!picker.contains(event.relatedTarget))close();
+   });
+   query.addEventListener('keydown',event=>{
+    if(event.isComposing)return;
+    if(event.key==='Escape'){
+     event.preventDefault();
+     close();
+    }else if(event.key==='Enter'){
+     event.preventDefault();
+     if(!results.hidden)options[Math.max(0,active)]?.click();
+     else if(!manual.hidden)manual.click();
+    }else if((event.key==='ArrowDown'||event.key==='ArrowUp')&&options.length){
+     event.preventDefault();
+     results.hidden=false;
+     query.setAttribute('aria-expanded','true');
+     const step=event.key==='ArrowDown'?1:-1;
+     active=(active<0?(step>0?0:options.length-1):(active+step+options.length)%options.length);
+     options.forEach((option,index)=>option.setAttribute('aria-selected',String(index===active)));
+     query.setAttribute('aria-activedescendant',options[active].id);
+     options[active].scrollIntoView({block:'nearest'});
+    }
+   });
+   manual.addEventListener('click',()=>select(Number(query.value.trim())));
+   change.addEventListener('click',()=>{
+    id.value='';
+    query.value='';
+    selection.hidden=true;
+    search.hidden=false;
+    query.disabled=false;
+    query.focus();
+   });
+  }
+  lines.querySelectorAll<HTMLElement>('[data-purchase-picker]').forEach(setupPicker);
+  form.querySelector('[data-add-line]')?.addEventListener('click',()=>{
+   if(lines.children.length>=30)return;
+   const line=form.querySelector<HTMLTemplateElement>('[data-line-template]')!.content.cloneNode(true) as DocumentFragment;
+   setupPicker(line.querySelector<HTMLElement>('[data-purchase-picker]')!);
+   lines.appendChild(line);
+   preview();
+  });
   form.addEventListener('click',event=>{const target=event.target;if(target instanceof HTMLElement&&target.closest('[data-remove-line]')){target.closest('[data-purchase-line]')?.remove();preview();}});
   function input(){
    const body:Record<string,unknown>={};const data=new FormData(form!);

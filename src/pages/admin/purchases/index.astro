@@ -6,8 +6,12 @@ import {readPurchases,readPurchase} from '../../../lib/purchase-admin';
 const params=Astro.url.searchParams,lang=params.get('lang')==='en'?'en':'zh-TW',t=(zh:string,en:string)=>lang==='en'?en:zh;
 export const prerender=false;
 const id=Number(params.get('id')||0),creating=params.get('new')==='1';
+const prefillId=Number(params.get('collection'))||undefined;
+let prefillName:string|null=null;
 let data:Awaited<ReturnType<typeof readPurchases>>|undefined,detail:Awaited<ReturnType<typeof readPurchase>>|undefined,error='';
-try{data=await readPurchases(env.DB,params);if(id)detail=await readPurchase(env.DB,id);}catch{Astro.response.status=503;error=t('無法載入採購資料。請檢查篩選條件或稍後重試。','Could not load purchases. Check filters or retry later.');}
+try{data=await readPurchases(env.DB,params);if(id)detail=await readPurchase(env.DB,id);
+ if(creating&&prefillId)prefillName=(await env.DB.prepare('SELECT display_name FROM v2_collection_items WHERE id=?').bind(prefillId).first<{display_name:string}>())?.display_name??null;
+}catch{Astro.response.status=503;error=t('無法載入採購資料。請檢查篩選條件或稍後重試。','Could not load purchases. Check filters or retry later.');}
 const editable=creating||detail?.order.admin_managed===1&&!detail.locked;
 const order=detail?.order;
 const fields=[['merchant','商店或來源','Merchant / source','merchant_name',200],['reference','訂單編號','Order reference','order_reference',200],['currency','幣別代碼','Currency code','currency_code',3]] as const;
@@ -37,7 +41,7 @@ const link=(changes:Record<string,string|null>)=>{const p=new URLSearchParams(pa
     <label>{t('私人備註','Private notes')}<textarea name="notes" maxlength="3000">{String(order?.notes??'')}</textarea></label>
    </div>
    <p>{t('商品金額為各明細「數量 × 單價 − 本項折扣」合計；淨支付額再加運費、稅費與費用，扣訂單折扣及退款。比例分攤以最大餘數法分配最後的最小貨幣單位。','Item subtotal is quantity × price − line discount. Net payment adds shipping, tax and fees, then subtracts order discount and refunds. Proportional allocation uses largest remainders for the final minor units.')}</p>
-   <div data-purchase-lines>{creating?<PurchaseLine lang={lang} collectionId={Number(params.get('collection'))||undefined}/>:detail!.lines.map(line=><PurchaseLine lang={lang} row={line} existing allocated={detail!.allocations.filter(a=>a.purchase_order_line_id===line.id).reduce((sum,a)=>sum+Number(a.allocated_minor),0)}/>)}</div>
+   <div data-purchase-lines>{creating?<PurchaseLine lang={lang} collectionId={prefillId} collectionName={prefillName}/>:detail!.lines.map(line=><PurchaseLine lang={lang} row={line} existing allocated={detail!.allocations.filter(a=>a.purchase_order_line_id===line.id).reduce((sum,a)=>sum+Number(a.allocated_minor),0)}/>)}</div>
    <template data-line-template><PurchaseLine lang={lang}/></template>
    <button type="button" class="admin-button" data-add-line>{t('增加明細','Add line')}</button>
    <p data-money-preview aria-live="polite"></p>

@@ -141,3 +141,4 @@
 | 2026-11-26 | SERIES-ACC-DEPLOY | 依 DEPLOY-01 授權提交並推送 `main`，部署系列花費配件改版（SERIES-ACC-20261126-01）與 R01 摘要測試修正（TEST-R01-SLV-02）；不需 Migration | 使用者 | Claude Code 對話「提交並推送」 | 已授權 |
 | 2026-11-26 | PUR-PICK-Q127～Q130 | 採購明細用關鍵字選收藏（#34）規劃全採 A（[規劃 §3](docs/purchase-line-collection-search-plan-20261126.md)）：Q127 收藏欄位改成搜尋下拉，最多列 20 筆，點選或按 Enter 選定，選定後顯示「名稱（#ID）」並附「更換」；Q128 商品說明是空的時候自動帶入收藏名稱，之後可以修改，已經有內容就不覆蓋；Q129 已封存或不能記採購的收藏照樣列出，但標示並停用；Q130 編輯既有採購時，明細顯示「名稱（#ID）」，由伺服器讀取時帶出名稱 | 使用者 | Claude Code 對話「全部採 A」 | 已採納 |
 | 2026-11-26 | PUR-PICK-AUTH | 授權執行工作命令 `PUR-PICK-20261126-01`（#34：採購明細的收藏欄位改成搜尋下拉，重用 R06 收藏選擇器的搜尋邏輯；`readPurchase` 讀取時帶出收藏名稱；本機實作與測試），範圍以 [規劃 §5](docs/purchase-line-collection-search-plan-20261126.md) 為準；不需要 Migration；推送部署另依 DEPLOY-01 授權 | 使用者 | Claude Code 對話「批准，交 Codex」 | 已授權 |
+| 2026-11-26 | PUR-PICK-DEPLOY | 依 DEPLOY-01 授權提交並推送 `main`，部署 #34（採購明細用關鍵字選收藏）；不需 Migration | 使用者 | Claude Code 對話「提交並推送」 | 已授權 |

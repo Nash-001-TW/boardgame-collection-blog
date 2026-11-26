@@ -96,7 +96,8 @@ export async function readPurchase(db:D1Database,id:number){
  const order=await db.prepare(`SELECT o.*,r.paid_minor,r.allocated_minor,r.unallocated_minor FROM v2_purchase_orders o JOIN v2_purchase_order_reconciliation r ON r.purchase_order_id=o.id WHERE o.id=?`).bind(id).first<Record<string,unknown>>();
  if(!order)throw new HttpError(404,'PURCHASE_NOT_FOUND');
  const [lines,allocations,dependencies]=await Promise.all([
-  db.prepare('SELECT * FROM v2_purchase_order_lines WHERE purchase_order_id=? ORDER BY line_number').bind(id).all<Record<string,unknown>>(),
+  db.prepare(`SELECT l.*, c.display_name AS collection_name FROM v2_purchase_order_lines l
+   LEFT JOIN v2_collection_items c ON c.id=l.collection_item_id WHERE l.purchase_order_id=? ORDER BY l.line_number`).bind(id).all<Record<string,unknown>>(),
   db.prepare('SELECT * FROM v2_purchase_allocations WHERE purchase_order_id=? ORDER BY id').bind(id).all<Record<string,unknown>>(),
   db.prepare(`SELECT (SELECT COUNT(*) FROM v2_acquisitions WHERE purchase_order_line_id IN(SELECT id FROM v2_purchase_order_lines WHERE purchase_order_id=?))+
    (SELECT COUNT(*) FROM v2_sleeve_inventory_transactions WHERE purchase_order_line_id IN(SELECT id FROM v2_purchase_order_lines WHERE purchase_order_id=?)) n`).bind(id,id).first<{n:number}>()]);

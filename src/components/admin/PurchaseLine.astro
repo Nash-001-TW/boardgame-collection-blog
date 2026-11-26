@@ -1,11 +1,29 @@
 ---
-interface Props {row?:Record<string,unknown>;allocated?:number;collectionId?:number;existing?:boolean;lang:'en'|'zh-TW'}
-const {row,allocated=0,collectionId,existing=false,lang}=Astro.props,t=(zh:string,en:string)=>lang==='en'?en:zh;
+interface Props {row?:Record<string,unknown>;allocated?:number;collectionId?:number;collectionName?:string|null;existing?:boolean;lang:'en'|'zh-TW'}
+const {row,allocated=0,collectionId,collectionName,existing=false,lang}=Astro.props,t=(zh:string,en:string)=>lang==='en'?en:zh;
+const selectedId=Number(row?.collection_item_id??collectionId)||undefined;
+const selectedName=collectionName??row?.collection_name;
+const selectedLabel=selectedName?`${selectedName} (#${selectedId})`:`#${selectedId}`;
 ---
 <fieldset data-purchase-line>
  <legend>{t('採購明細','Purchase line')}</legend>
  <div class="fields">
- <label>{t('收藏 ID','Collection ID')}<input name="collectionId" type="number" min="1" step="1" required value={Number(row?.collection_item_id??collectionId)||undefined}/></label>
+ <div data-purchase-picker>
+  <input name="collectionId" type="hidden" value={selectedId}/>
+  <div data-picker-search hidden={!!selectedId}>
+   <label>{t('搜尋收藏','Search collections')}
+    <input data-picker-query type="text" role="combobox" aria-autocomplete="list" aria-expanded="false"
+     autocomplete="off" placeholder={t('名稱或 ID','Name or ID')} disabled={!!selectedId} required/>
+   </label>
+   <div data-picker-results role="listbox" aria-label={t('收藏搜尋結果','Collection search results')} hidden></div>
+   <p data-picker-status role="status" hidden></p>
+   <button class="admin-button" type="button" data-picker-manual hidden>{t('直接使用此收藏 ID','Use this collection ID')}</button>
+  </div>
+  <div data-picker-selection hidden={!selectedId}>
+   <span data-picker-label>{selectedId&&selectedLabel}</span>
+   <button class="admin-button" type="button" data-picker-change>{t('更換','Change')}</button>
+  </div>
+ </div>
  <label>{t('商品說明','Description')}<input name="description" required maxlength="200" value={String(row?.description??'')}/></label>
  <label>{t('數量','Quantity')}<input name="quantity" type="number" min="1" max="10000" step="1" required value={Number(row?.quantity??1)}/></label>
  <label>{t('單價（最小貨幣單位）','Unit price (minor units)')}<input name="price" type="number" min="0" max="1000000000000" step="1" required value={Number(row?.unit_price_minor??0)}/></label>
@@ -14,3 +32,14 @@ const {row,allocated=0,collectionId,existing=false,lang}=Astro.props,t=(zh:strin
  </div>
  {!existing&&<button type="button" class="admin-button" data-remove-line>{t('移除此新增明細','Remove new line')}</button>}
 </fieldset>
+<style>
+ [data-purchase-picker]{min-width:0;overflow-wrap:anywhere}
+ [data-purchase-picker] [hidden]{display:none}
+ [data-picker-query], [data-purchase-picker] button{min-height:44px}
+ [data-picker-query]{width:100%;min-width:0}
+ [data-picker-results]{max-height:16rem;overflow:auto;border:1px solid var(--admin-border);border-radius:6px}
+ [data-picker-results] :global([role=option]){min-height:44px;padding:8px;display:flex;align-items:center;cursor:pointer}
+ [data-picker-results] :global([aria-selected=true]){outline:2px solid currentColor;outline-offset:-2px}
+ [data-picker-results] :global([aria-disabled=true]){cursor:default;opacity:.7}
+ [data-picker-selection]:not([hidden]){display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+</style>
