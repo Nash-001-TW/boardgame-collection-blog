@@ -7,6 +7,8 @@ import { readQuantityHistory, type QuantityHistory } from '../../lib/d1-quantity
 import { classifyStoredComponents } from '../../lib/component-classifier-adapter';
 import { earliestCountDate, maxComponentQuantity, todayInTaipei } from '../../lib/physical-component-values';
 import { readApplicabilityHistory } from '../../lib/component-applicability';
+import AdminIcon from './AdminIcon.astro';
+import ComponentPhotoDialog from './ComponentPhotoDialog.astro';
 
 interface Props { collectionId: number; scope: 'production' | 'test'; lang: 'en' | 'zh-TW'; }
 const { collectionId, scope, lang } = Astro.props;
@@ -89,6 +91,38 @@ for (const count of counts) {
     countsByDefinition.set(count.component_definition_id, rows);
 }
 const canWrite = signingConfigured && !error && collection?.archived_at === null;
+interface Photo { id: number; definition_id: number; object_key: string; thumb_key: string; revision: number; is_public: number; }
+const photos = new Map<number, Photo>();
+const photoUrl = '/api/admin/collection/component-photos/';
+let photoUnavailable = false;
+if (!error && definitions.length) {
+    try {
+        const result = await env.DB.prepare(`SELECT p.id,p.definition_id,p.object_key,p.thumb_key,p.revision,p.is_public
+            FROM v2_component_photos p JOIN v2_component_definitions d ON d.id=p.definition_id
+            WHERE d.collection_item_id=? AND p.language_code IS NULL`).bind(collectionId).all<Photo>();
+        if (!result.success) throw new Error('Photo metadata unavailable');
+        for (const photo of result.results) photos.set(photo.definition_id, photo);
+    } catch {
+        photoUnavailable = true;
+        console.warn('Component photo metadata unavailable');
+    }
+}
+const photoLabel = t('設定照片', 'Component photo');
+const photoButton = (component: Definition, verified: boolean) => {
+    const photo = photos.get(component.id);
+    const writable = canWrite && verified && !photoUnavailable;
+    return {
+        'data-component-photo-open': component.id,
+        'data-photo-name': component.component_name,
+        'data-photo-writable': writable ? '1' : '0',
+        'data-photo-id': photo?.id,
+        'data-photo-revision': photo?.revision,
+        'data-photo-public': photo?.is_public,
+        'data-photo-full': photo?.object_key,
+        'data-photo-thumb': photo?.thumb_key,
+        disabled: !photo && !writable,
+    };
+};
 const requestedCopy = Astro.url.searchParams.get('copy');
 const selectedCopy = copies.find(copy => String(copy.id) === requestedCopy) ?? copies[0];
 const copyLink = '/admin/collection/' + collectionId + '/copies?' + new URLSearchParams({
@@ -106,6 +140,8 @@ const eventDate = new Intl.DateTimeFormat(en ? 'en' : 'zh-TW', {
 ---
 
     <div class="physical-manager" data-physical-manager data-lang={lang}>
+        <ComponentPhotoDialog en={en} />
+        {photoUnavailable && <p role="status">{t('目前無法讀取照片資料。', 'Photo data is unavailable.')}</p>}
         <nav>
             <a href={'/admin/collection/components/classification' + (en ? '?lang=en' : '')}>{t('組件分類', 'Component classification')}</a>
         </nav>
@@ -148,6 +184,13 @@ const eventDate = new Intl.DateTimeFormat(en ? 'en' : 'zh-TW', {
                     const pair = selectedCopy && applicabilityByPair.get(component.id + ':' + selectedCopy.id);
                     const excluded = verified && pair?.notApplicable === 1;
                     return <article data-count-row class:list={{ 'count-excluded': excluded }}>
+                        <button type="button" class="component-thumb" data-component-thumb {...photoButton(component, verified)}
+                            aria-label={photoLabel + ' · ' + component.component_name}>
+                            {photos.has(component.id)
+                                ? <img src={photoUrl + photos.get(component.id)!.thumb_key} alt="" loading="lazy" />
+                                : <AdminIcon name="puzzle" size={32} />}
+                        </button>
+                        <div class="count-row-body">
                         <h4>#{component.id} {component.component_name}</h4>
                         {(!verified || !selectedCopy) && <p class="count-meta">{expectedText}</p>}
                         {!verified ? <p>{t('待確認，不可清點。來源證據不可用或有衝突。', 'Pending verification. Counting is unavailable because source evidence is unavailable or conflicting.')}</p>
@@ -186,6 +229,7 @@ const eventDate = new Intl.DateTimeFormat(en ? 'en' : 'zh-TW', {
                                 </div>}
                                 </div>
                             </div>}
+                        </div>
                     </article>;
                 })}
             </section>
@@ -216,6 +260,10 @@ const eventDate = new Intl.DateTimeFormat(en ? 'en' : 'zh-TW', {
                     const assigned = requirements.filter(row => row.component_definition_id === component.id);
                     return <article>
                         <h4>#{component.id} {component.component_name}</h4>
+                        <button type="button" class="admin-button component-photo-manage" {...photoButton(component, verified)}>
+                            {photos.has(component.id) && <img src={photoUrl + photos.get(component.id)!.thumb_key} alt="" loading="lazy" />}
+                            {photoLabel}
+                        </button>
                         <p><span class="status-badge" data-classification={verified ? 'PHYSICAL_COMPONENT' : 'UNKNOWN'}>{verified ? t('已確認實體組件', 'Confirmed physical component') : t('待確認', 'Pending verification')}</span>
                            {' · '}{t('預期數量', 'Expected quantity')} {component.expected_quantity ?? '—'} ({component.quantity_unit})</p>
                         {!verified && <p role="alert">{t('來源證據不可用或有衝突。', 'Source evidence is unavailable or conflicting.')}</p>}
@@ -319,6 +367,22 @@ const eventDate = new Intl.DateTimeFormat(en ? 'en' : 'zh-TW', {
     }
     .count-controls [hidden] { display: none; }
     [data-count-status] { flex-basis: 100%; margin: 0; }
+    /* Count-card thumbnail, sized to the card's three lines (title, info line, controls line).
+       Selectors are qualified with [data-count-row] because the global `.admin-page button` padding and
+       `.admin-page img { height: auto }` otherwise win over this component's scoped rules. */
+    [data-count-row] { display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 16px; align-items: start; }
+    [data-count-row] button.component-thumb { width: 112px; height: 112px; min-height: 0; padding: 0; border-radius: 8px;
+        display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); place-items: center;
+        background: color-mix(in srgb, currentColor 6%, transparent); border: 1px dashed color-mix(in srgb, currentColor 25%, transparent);
+        color: color-mix(in srgb, currentColor 55%, transparent); overflow: hidden; }
+    [data-count-row] button.component-thumb :global(img) { width: 100%; height: 100%; max-width: none; object-fit: cover; place-self: stretch; }
+    .physical-manager button.component-photo-manage { display: inline-flex; align-items: center; gap: .5rem; min-height: 44px; }
+    .physical-manager button.component-photo-manage :global(img) { width: 44px; height: 44px; object-fit: cover; border-radius: 4px; }
+    .count-row-body { min-width: 0; }
+    @media (max-width: 480px) {
+        [data-count-row] { grid-template-columns: 80px minmax(0, 1fr); column-gap: 12px; }
+        [data-count-row] button.component-thumb { width: 80px; height: 80px; }
+    }
     /* Compact count rows: one info line, then the quantity, save and applicability controls on one line. */
     [data-count-row] h4 { margin-bottom: 4px; }
     .count-meta { margin: 0 0 8px; }

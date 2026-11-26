@@ -869,6 +869,10 @@ try {
         await cdp('Input.dispatchKeyEvent', {type: 'keyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9});
         await cdp('Input.dispatchKeyEvent', {type: 'keyUp', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9});
     }
+    // The first count row's thumbnail is now the photo-dialog button (PHOTO-P1), so it precedes the quantity input.
+    assert.ok(await evaluate(() => document.activeElement.matches('[data-count-row] [data-component-thumb]')));
+    await cdp('Input.dispatchKeyEvent', {type: 'keyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9});
+    await cdp('Input.dispatchKeyEvent', {type: 'keyUp', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9});
     assert.equal(await evaluate(() => document.activeElement.name), 'actual');
     pass('R06 scenario 1: server-selected copy, default URL, panel order and pending row');
 

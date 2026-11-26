@@ -4,20 +4,23 @@ import { spawn } from 'node:child_process';
 import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { createServer } from 'node:http';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { build } from 'esbuild';
 const output = process.argv[2];
+const photoMode = process.argv[3] === '--photos';
 if (!output) throw new Error('A disposable artifact directory is required');
 // A4 validation leaves the reviewed A3 screenshots intact.
 const screenshots = join(output, 'D1-A3-screenshots');
 const historyScreenshots = join(output, 'D1-A4-screenshots');
-await mkdir(output, { recursive: true });
+await mkdir(output, { recursive: !photoMode });
 
 // Resolve the fixture's extensionless TypeScript imports without changing the authorized Node command.
 const harness = await build({
     stdin: {
         resolveDir: process.cwd(),
         contents: 'export { handlePhysicalComponentRequest } from "./src/lib/physical-component-admin-api.ts";' +
+            'export { adminPhotoPath, handleComponentPhotoRead, handleComponentPhotoWrite } from "./src/lib/component-photo-api.ts";' +
+            'export { memoryPhotoStore } from "./tests/helpers/component-photo-store.ts";' +
             'export { dashboardPreview } from "./tests/helpers/admin-dashboard-preview.ts";' +
             'export { accessFixture } from "./tests/helpers/notbgg-access-fixture.ts";' +
             'export { sleeveWorkflowFixture } from "./tests/helpers/sleeve-workflow-fixture.ts";',
@@ -29,7 +32,8 @@ const loaded = { exports: {} };
 new Function('require', 'module', 'exports', harness.outputFiles[0].text)(
     createRequire(import.meta.url), loaded, loaded.exports,
 );
-const { handlePhysicalComponentRequest, dashboardPreview, accessFixture, sleeveWorkflowFixture } = loaded.exports;
+const { handlePhysicalComponentRequest, dashboardPreview, accessFixture, sleeveWorkflowFixture,
+    adminPhotoPath, handleComponentPhotoRead, handleComponentPhotoWrite, memoryPhotoStore } = loaded.exports;
 const fixture = await sleeveWorkflowFixture();
 const auth = await accessFixture();
 let server, browser, ws;
@@ -58,7 +62,7 @@ async function until(check, label) {
 
 try {
     const bindings = { ...auth.bindings, DB: fixture.db, PHYSICAL_COMPONENT_SIGNING_KEY: fixture.secret,
-        NOTBGG_WRITE_LIMITER: { limit: async () => ({ success: true }) } };
+        NOTBGG_WRITE_LIMITER: { limit: async () => ({ success: true }) }, COMPONENT_PHOTOS: memoryPhotoStore() };
     const renderPage = await dashboardPreview(bindings);
     const token = await auth.token();
     const entry = 'src/lib/physical-component-admin-controller.ts';
@@ -115,6 +119,12 @@ try {
                     if (body.action === 'quantity-status' && key === blockedCommitKey) blockedCommitKey = undefined;
                     response = await handlePhysicalComponentRequest(request, bindings);
                 }
+            } else if (photoMode && url.pathname === adminPhotoPath) {
+                response = await handleComponentPhotoWrite(request, bindings);
+            } else if (photoMode && url.pathname.startsWith(adminPhotoPath + '/')) {
+                response = await handleComponentPhotoRead(request, bindings, url.pathname.split('/').at(-1), true);
+            } else if (photoMode && url.pathname.startsWith('/media/components/')) {
+                response = await handleComponentPhotoRead(request, bindings, url.pathname.split('/').at(-1), false);
             } else if (url.pathname === '/physical-controller.js') {
                 response = new Response(script, { headers: { 'Content-Type': 'text/javascript' } });
             } else {
@@ -125,7 +135,7 @@ try {
             const headers = new Headers(response.headers);
             headers.delete('Content-Length');
             res.writeHead(response.status, Object.fromEntries(headers));
-            res.end(await response.text());
+            res.end(Buffer.from(await response.arrayBuffer()));
         } catch (error) {
             res.writeHead(500);
             res.end(String(error));
@@ -263,6 +273,119 @@ try {
     await viewport(1440, 1000);
     await cdp('Page.navigate', { url: origin + '/admin/collection/1/components' });
     await until(async () => await field('previousExpected') === '30', 'R06 edit form');
+
+    if (photoMode) {
+        const photoDialog = '[data-component-photo-dialog]';
+        const opener = '[data-component-photo-open="' + fixture.cardId + '"]';
+        const count = '[data-component-thumb]' + opener;
+        const manage = '[data-physical-component-list] ' + opener;
+        const previewImage = '[data-photo-preview]';
+        const getPhoto = () => fixture.sqlite.prepare('SELECT * FROM v2_component_photos WHERE definition_id=?').get(fixture.cardId);
+        await cdp('DOM.enable');
+        async function choose(color, name) {
+            const png = await evaluate(color => {
+                const canvas = document.createElement('canvas');
+                canvas.width = 1800;
+                canvas.height = 900;
+                const context = canvas.getContext('2d');
+                context.fillStyle = color;
+                context.fillRect(0, 0, 1800, 900);
+                return canvas.toDataURL('image/png').split(',')[1];
+            }, color);
+            const imagePath = resolve(output, name + '.png');
+            await writeFile(imagePath, Buffer.from(png, 'base64'));
+            const { root } = await cdp('DOM.getDocument');
+            const { nodeId } = await cdp('DOM.querySelector', { nodeId: root.nodeId, selector: '[data-photo-input="file"]' });
+            assert.ok(nodeId);
+            await cdp('DOM.setFileInputFiles', { nodeId, files: [imagePath] });
+            await until(() => evaluate(selector => {
+                const image = document.querySelector(selector);
+                return !image.hidden && image.complete && image.naturalWidth === 1600 && image.naturalHeight === 800;
+            }, previewImage), 'encoded photo preview');
+        }
+        async function photoScreenshots(name, target) {
+            for (const width of [1280, 375]) {
+                await viewport(width, 900);
+                await evaluate(async selector => {
+                    const element = document.querySelector(selector);
+                    element.scrollIntoView({ block: 'center' });
+                    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+                }, target);
+                const size = await evaluate(selector => Math.round(document.querySelector(selector).getBoundingClientRect().width), count);
+                assert.equal(size, width === 1280 ? 112 : 80);
+                const { data } = await cdp('Page.captureScreenshot', { format: 'png' });
+                await writeFile(join(output, name + '-zh-' + width + '.png'), Buffer.from(data, 'base64'));
+            }
+            await viewport(1280, 900);
+        }
+        const readPublic = key => fetch(origin + '/media/components/' + key);
+        await evaluate(() => { document.querySelector('[data-component-management]').open = true; });
+        await click(manage);
+        assert.equal(await visible(photoDialog), true);
+        assert.match(await text(photoDialog), /照片會套用到所有副本/);
+        assert.equal(await evaluate(() => document.querySelector('[data-photo-input="camera"]').getAttribute('capture')), 'environment');
+        await choose('#3069a8', 'fixture-blue');
+        assert.equal(getPhoto(), undefined);
+        await photoScreenshots('preview', photoDialog);
+        pass('management entry, camera field, file picker and preview before upload');
+        await click('[data-photo-save]');
+        await until(async () => getPhoto()?.revision === 1 && await visible(count + ' img')
+            && await evaluate(selector => document.querySelector(selector)?.naturalWidth === 224, count + ' img'), 'first thumbnail');
+        const first = getPhoto();
+        assert.equal(first.width, 1600);
+        assert.equal((await readPublic(first.object_key)).status, 200);
+        await photoScreenshots('count-photo', count);
+        pass('confirmed upload and responsive R06 thumbnail');
+
+        await click(count);
+        await until(() => evaluate(() => document.querySelector('[data-photo-current]')?.naturalWidth === 1600), 'full photo from count card');
+        await choose('#b74639', 'fixture-red');
+        assert.equal(getPhoto().revision, 1);
+        await click('[data-photo-private]');
+        await click('[data-photo-save]');
+        await until(async () => getPhoto()?.revision === 2 && await evaluate((selector, key) =>
+            document.querySelector(selector)?.src.endsWith('/' + key), count + ' img', getPhoto().thumb_key), 'replacement thumbnail');
+        const second = getPhoto();
+        assert.notEqual(first.object_key, second.object_key);
+        assert.equal(second.is_public, 0);
+        assert.equal((await readPublic(first.object_key)).status, 404);
+        assert.equal((await readPublic(second.object_key)).status, 404);
+        pass('count entry opens full photo and replaces it with a private photo');
+
+        await click(count);
+        await until(() => evaluate(() => document.querySelector('[data-photo-current]')?.naturalWidth === 1600
+            && document.querySelector('[data-photo-private]').checked), 'private photo in Admin');
+        const cache = await evaluate(async selector => {
+            const response = await fetch(document.querySelector(selector).src);
+            return [response.status, response.headers.get('Cache-Control')];
+        }, '[data-photo-current]');
+        assert.equal(cache[0], 200);
+        assert.match(cache[1], /no-store/);
+        await click('[data-photo-private]');
+        await click('[data-photo-save]');
+        await until(async () => getPhoto()?.revision === 3 && await evaluate((selector, key) =>
+            document.querySelector(selector)?.src.endsWith('/' + key), count + ' img', getPhoto().thumb_key), 'visibility-only save');
+        const third = getPhoto();
+        assert.equal((await readPublic(third.object_key)).status, 200);
+        pass('private Admin read and visibility-only save rotate the URLs');
+
+        await click(count);
+        const confirmOpened = new Promise(resolve => {
+            ws.addEventListener('message', function onMessage({ data }) {
+                if (JSON.parse(data).method !== 'Page.javascriptDialogOpening') return;
+                ws.removeEventListener('message', onMessage);
+                resolve();
+            });
+        });
+        await evaluate(() => { setTimeout(() => document.querySelector('[data-photo-remove]').click(), 0); });
+        await confirmOpened;
+        await cdp('Page.handleJavaScriptDialog', { accept: true });
+        await until(async () => !getPhoto() && await visible(count + ' svg') && !await visible(photoDialog), 'photo removal');
+        assert.equal((await readPublic(third.object_key)).status, 404);
+        assert.equal(fixture.sqlite.prepare('SELECT COUNT(*) AS n FROM v2_component_photo_orphans').get().n, 6);
+        await photoScreenshots('removed', count);
+        pass('removal restores the generic icon and queues all six old R2 objects');
+    } else {
 
     await change(30);
     assert.equal(await visible(select + ' [data-quantity-reason]'), false);
@@ -734,6 +857,7 @@ try {
         await captureCreate(language + '-no-copy', createForm, language === 'en' ? [1280] : [375, 1280]);
     }
     pass('bilingual no-copy state and responsive create form');
+    }
 
 } finally {
     releaseCommit?.();

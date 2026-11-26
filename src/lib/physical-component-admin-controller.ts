@@ -1,3 +1,4 @@
+import { initComponentPhotoDialog } from './component-photo-controller';
 import { quantityPreviewView } from './d1-quantity-preview-view';
 import type { previewSharedQuantity } from './shared-quantity-preview';
 
@@ -6,6 +7,7 @@ type QuantityPreview = Awaited<ReturnType<typeof previewSharedQuantity>>;
 
 const manager = document.querySelector<HTMLElement>('[data-physical-manager]');
 if (manager) {
+    initComponentPhotoDialog(manager);
     const en = manager.dataset.lang === 'en';
     const t = (zh: string, english: string) => en ? english : zh;
     const status = manager.querySelector<HTMLElement>('[data-physical-status]');

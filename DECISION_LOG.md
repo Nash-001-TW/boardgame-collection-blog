@@ -154,3 +154,10 @@
 | 2026-11-26 | R06-CC-DEPLOY | 依 DEPLOY-01 授權提交並推送 `main`，部署 #36（新增組件時順便清點）；不需 Migration | 使用者 | Claude Code 對話「提交並推送」 | 已授權 |
 | 2026-11-26 | R06-COMPACT-B | R06 清點清單精簡版面採方案 B，由 Claude 實作：每個組件卡片的資訊合成一行「預期 N 單位 · 實點 N · 清點日期 YYYY-MM-DD」，操作（實際數量、儲存、此副本不適用）合成一行，手機寬度自動換行；單位依語言顯示（中文例如「件」「張」）；未清點顯示「實點 未清點 · 清點日期 未記錄」；只改 `PhysicalComponentsPanel.astro` 清點清單的排版、單位文字與相關測試的等價斷言，清點、儲存、適用性的行為不變，不需 Migration；改完先給使用者看截圖，部署另行授權 | 使用者 | Claude Code 對話「採用方案 B，由你修」 | 已授權 |
 | 2026-11-26 | R06-COMPACT-DEPLOY | 使用者看過截圖後，依 DEPLOY-01 授權提交並推送 `main`，部署 R06 清點清單精簡版面（R06-COMPACT-B）；不需 Migration | 使用者 | Claude Code 對話「提交並推送」 | 已授權 |
+| 2026-11-26 | R06-THUMB-SLOT | 使用者要求在 R06 清點清單每個組件卡片預留小圖示空間，將來放組件或配件的完整照片。由 Claude 實作：卡片左側加固定大小的縮圖預留區（`data-component-thumb`，目前顯示通用圖示，對螢幕閱讀器隱藏），右側為原有內容；只改 `PhysicalComponentsPanel.astro` 的排版。照片的上傳、儲存與顯示（需要決定存放位置，例如 R2 或 artifact 資產，可能還需要 Migration）不在這次範圍，另行規劃 | 使用者 | Claude Code 對話 | 已授權（版面預留） |
+| 2026-11-26 | PHOTO-37-DIR | 使用者對實體組件照片（#37）的方向：一個組件暫時一張圖；不同語言版本可能內容物不同，需提出處理方式；公開網站可顯示；支援手機直接拍照上傳；設定位置依 Claude 建議放在組件管理。Claude 起草規劃與 Q127～Q136 | 使用者 | Claude Code 對話 | 候選 |
+| 2026-11-26 | PHOTO-37-Q | #37 實體組件照片 Q127～Q136 全部採建議：Q127 A、Q128 A（R2）、Q129 A、Q130 B、Q131 A、Q132 A、Q133 A、Q134 A、Q135 B、Q136 A（詳見 docs/component-photo-plan-20261126.md §8）。實作、R2 bucket、`wrangler.json` binding、Migration 0027 另行授權 | 使用者 | Claude Code 對話「全部採建議」 | 已採納 |
+| 2026-11-26 | PHOTO-P1-AUTH | 使用者批准 #37 組件照片 P1 交給 Codex 實作（工作命令 PHOTO-P1-20261126-01，規劃 §9）。授權範圍只限本機：修改 `wrangler.json`（加 R2 binding `COMPONENT_PHOTOS`）、撰寫 Migration 0027、API／UI／測試。不含建立正式 R2 bucket、正式 D1 套用、部署、提交、推送 | 使用者 | Claude Code 對話「批准交給 Codex」 | 已授權 |
+| 2026-11-26 | PHOTO-R2-BUCKET | 使用者授權 Claude 用 Wrangler 建立正式 R2 bucket `boardgame-component-photos`（預設設定、不開公開存取）。只授權建立 bucket，不包含 0027 正式套用、提交或推送 | 使用者 | Claude Code 對話「授權，建立 bucket」 | 已授權 |
+| 2026-11-26 | PHOTO-0027-A34 | 使用者授權 0027 正式套用 A3（用 `wrangler d1 execute --remote --file` 執行組合檔 1 次）與 A4 唯讀對帳。不包含提交、推送或部署 | 使用者 | Claude Code 對話「只做 A3＋A4」 | 已授權 |
+| 2026-11-26 | PHOTO-DEPLOY | 使用者依 DEPLOY-01 授權提交並推送 `main`，部署 #37 組件照片 P1（含 R06 三行高度縮圖與照片對話框美化）。0027 已在正式環境套用，R2 bucket 已建立 | 使用者 | Claude Code 對話「提交並推送」 | 已授權 |

@@ -197,5 +197,26 @@ Astro 檢查及建置在無機密的專案外暫存副本執行，npm 採離線�
 - Edge（全新的空資料夾）：`admin-collection-detail-browser.mjs` **74／74**、`physical-quantity-browser.mjs` **20／20**。
 - 截圖放在 [`docs/R06-COMPACT-screenshots/`](R06-COMPACT-screenshots/)（中文 1280、768、375，英文 1280，儲存成功 1280）。1280 寬時，每個組件卡片高度由約 336px 降到約 158px。
 
-**狀態**：本機驗證完成，等使用者看過截圖後再授權部署；不需要 Migration。
+**狀態**：本機驗證完成；使用者看過截圖後授權部署（DECISION_LOG R06-COMPACT-DEPLOY）。提交 `85277a8`，台北 22:18:29 推送，自動部署為 `14a30a3e`（100%，22:19:48）；唯讀抽查 7 條路由全部符合（公開 3 條 200、Admin 與組件 API 3 條 302、`/dev/ui-kit` 404）。不需要 Migration。
 
+## 7. 後續：清點卡片預留縮圖空間（2026-11-26，Claude 實作，DECISION_LOG R06-THUMB-SLOT）
+
+**緣起**：使用者要求在 R06 清點清單每個組件卡片預留小圖示空間，將來放組件或配件的完整照片。
+
+**修改**（只改 `src/components/admin/PhysicalComponentsPanel.astro`）：
+- 卡片改成兩欄：左側是固定大小的縮圖預留區 `data-component-thumb`（桌面 56px、寬度 480px 以下為 44px，虛線框加通用拼圖圖示，對螢幕閱讀器隱藏）；右側是原本的標題、資訊行與操作行。
+- 預留區已準備好放照片：裡面放 `<img>` 時會自動填滿並裁切（`object-fit: cover`）。
+- 清點、儲存、適用性的行為與所有 `data-*` 標記都不變；controller 沒有修改。
+
+**驗證**：
+- Node：`physical-component-management`、`admin-collection-detail`，**17／17**；`git diff --check` 通過。
+- Edge：`admin-collection-detail-browser` **74／74**、`physical-quantity-browser` **20／20**。
+- 截圖已更新到 `docs/R06-COMPACT-screenshots/`。
+
+**取捨**：375 寬時，縮圖佔掉約 56px，「儲存」會換到輸入框下一行，卡片比沒有縮圖時高一些；桌面寬度不受影響。
+
+**不在這次範圍**：照片的上傳、儲存與顯示。需要決定照片放哪裡（例如 Cloudflare R2）、資料怎麼存（可能需要 Migration），以及要不要給公開網站用，日後另行規劃。
+
+**狀態**：本機驗證完成，等使用者看過截圖後授權部署。
+
+**2026-11-26 調整（使用者要求）**：縮圖放在卡片最左邊、文字在右，大小等於卡片三行（標題、資訊行、操作行）的高度。桌面改為 112px 正方形（圖示 32px），寬度 480px 以下為 80px。1280 寬時三行內容高度與縮圖一致；375 寬時文字欄變窄，資訊行與操作按鈕會換行，卡片會比原本高。Node 17／17、Edge 74／74 與 20／20，截圖已更新到 `docs/R06-COMPACT-screenshots/`。

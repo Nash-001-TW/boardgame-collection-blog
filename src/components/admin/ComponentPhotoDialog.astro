@@ -1,0 +1,77 @@
+---
+import AdminIcon from './AdminIcon.astro';
+
+interface Props { en: boolean; }
+const { en } = Astro.props;
+const t = (zh: string, english: string) => en ? english : zh;
+---
+<dialog class="photo-dialog" data-component-photo-dialog aria-labelledby="component-photo-title">
+    <header class="photo-header">
+        <h3 id="component-photo-title" data-photo-title>{t('設定照片', 'Component photo')}</h3>
+        <button type="button" class="photo-close" data-photo-close aria-label={t('關閉', 'Close')}>
+            <AdminIcon name="x" size={20} />
+        </button>
+    </header>
+    <p class="photo-note"><AdminIcon name="info" size={16} />{t('照片會套用到所有副本。', 'This photo applies to all copies.')}</p>
+    <div class="photo-stage">
+        <img data-photo-current hidden alt={t('目前的組件照片', 'Current component photo')} />
+        <img data-photo-preview hidden alt={t('上傳預覽', 'Upload preview')} />
+        <span class="photo-empty"><AdminIcon name="puzzle" size={32} />{t('尚未設定照片', 'No photo yet')}</span>
+    </div>
+    <div class="photo-controls" data-photo-controls>
+        <div class="photo-sources">
+            <button type="button" class="admin-kit-button" data-variant="secondary" data-photo-pick="camera">{t('拍照', 'Take photo')}</button>
+            <button type="button" class="admin-kit-button" data-variant="secondary" data-photo-pick="file">{t('選擇檔案', 'Choose file')}</button>
+        </div>
+        <input type="file" accept="image/*" capture="environment" data-photo-input="camera" hidden />
+        <input type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" data-photo-input="file" hidden />
+        <label class="photo-private">
+            <input type="checkbox" data-photo-private />
+            <span>{t('不公開', 'Keep private')}<small>{t('勾選後只在後台顯示', 'Shown in Admin only')}</small></span>
+        </label>
+        <div class="photo-actions">
+            <button type="button" class="admin-kit-button" data-variant="danger" data-photo-remove hidden>{t('移除照片', 'Remove photo')}</button>
+            <button type="button" class="admin-kit-button" data-variant="primary" data-photo-save disabled>{t('確認儲存', 'Confirm save')}</button>
+        </div>
+    </div>
+    <p class="photo-status" role="status" aria-live="polite" data-photo-status></p>
+</dialog>
+<style>
+    /* Selectors start with dialog[...] so they outrank the global `.admin-page button|label|img` rules. */
+    dialog[data-component-photo-dialog] { width: min(34rem, calc(100% - 2rem)); max-height: calc(100% - 2rem); overflow: auto;
+        box-sizing: border-box; padding: var(--space-6, 1.5rem); border: 1px solid var(--border-strong); border-radius: var(--radius-lg);
+        background: var(--bg-surface); color: var(--ink); box-shadow: var(--shadow-raised); }
+    dialog[data-component-photo-dialog]::backdrop { background: rgb(43 25 20 / .52); }
+    dialog[data-component-photo-dialog] [hidden] { display: none; }
+    dialog[data-component-photo-dialog] .photo-header { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-2); }
+    dialog[data-component-photo-dialog] h3 { flex: 1; min-width: 0; margin: 0; font: var(--text-title); overflow-wrap: anywhere; }
+    dialog[data-component-photo-dialog] button.photo-close { display: grid; place-items: center; width: 44px; height: 44px; min-height: 44px;
+        padding: 0; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--ink-muted); flex: none; }
+    dialog[data-component-photo-dialog] button.photo-close:hover { background: var(--wood-soft); color: var(--ink); }
+    dialog[data-component-photo-dialog] .photo-note { display: flex; align-items: center; gap: var(--space-2); margin: 0 0 var(--space-4);
+        padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); background: var(--info-soft); color: var(--info); font: var(--text-small); }
+    dialog[data-component-photo-dialog] .photo-stage { position: relative; display: grid; place-items: center; aspect-ratio: 4 / 3;
+        border-radius: var(--radius-md); background: var(--bg-surface-sunken); overflow: hidden; }
+    dialog[data-component-photo-dialog] .photo-stage img { grid-area: 1 / 1; width: 100%; height: 100%; max-width: none; object-fit: contain; }
+    dialog[data-component-photo-dialog] .photo-empty { grid-area: 1 / 1; display: grid; justify-items: center; gap: var(--space-2);
+        color: var(--ink-muted); font: var(--text-small); }
+    /* Show the placeholder only while neither the current photo nor a preview is visible. */
+    dialog[data-component-photo-dialog] .photo-stage:has(img:not([hidden])) .photo-empty { display: none; }
+    dialog[data-component-photo-dialog] .photo-controls { display: grid; gap: var(--space-4); margin-top: var(--space-4); }
+    dialog[data-component-photo-dialog] .photo-sources { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+    dialog[data-component-photo-dialog] .photo-sources .admin-kit-button { width: 100%; }
+    dialog[data-component-photo-dialog] label.photo-private { display: flex; align-items: center; gap: var(--space-3); margin: 0;
+        min-height: 44px; font: var(--text-body); color: var(--ink-body); cursor: pointer; }
+    dialog[data-component-photo-dialog] label.photo-private input { width: 20px; height: 20px; margin: 0; flex: none; accent-color: var(--brand-purple); }
+    dialog[data-component-photo-dialog] label.photo-private span { display: grid; }
+    dialog[data-component-photo-dialog] label.photo-private small { color: var(--ink-muted); font: var(--text-small); }
+    dialog[data-component-photo-dialog] .photo-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-3);
+        padding-top: var(--space-4); border-top: 1px solid var(--border-soft); }
+    /* Remove sits on the left, away from the primary save action. */
+    dialog[data-component-photo-dialog] .photo-actions [data-photo-remove] { margin-inline-end: auto; }
+    dialog[data-component-photo-dialog] .photo-status { margin: var(--space-3) 0 0; font: var(--text-small); color: var(--ink-body); }
+    dialog[data-component-photo-dialog] .photo-status:empty { display: none; }
+    @media (max-width: 480px) {
+        dialog[data-component-photo-dialog] { padding: var(--space-4, 1rem); }
+    }
+</style>

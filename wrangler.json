@@ -27,6 +27,12 @@
       "migrations_dir": "./migrations"
     }
   ],
+  "r2_buckets": [
+    {
+      "binding": "COMPONENT_PHOTOS",
+      "bucket_name": "boardgame-component-photos"
+    }
+  ],
   "kv_namespaces": [
     {
       "binding": "SESSION",
