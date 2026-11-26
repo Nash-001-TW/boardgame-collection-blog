@@ -340,3 +340,6 @@ node --import tsx --test tests/public-site-data.test.ts tests/public-site-sqlite
 - **2026-11-26（Asia/Taipei）**：使用者將 Q127～Q130 全部採 A（DECISION_LOG PUR-PICK-Q127～Q130）；工作命令 `PUR-PICK-20261126-01` 待授權。
 - **2026-11-26（Asia/Taipei）**：使用者授權 `PUR-PICK-20261126-01`（DECISION_LOG PUR-PICK-AUTH），Claude 透過 Codex CLI 外掛交付，回報寫入規劃 §5.4。
 - **2026-11-26（Asia/Taipei）**：Codex 完成 #34，Claude 審查**通過**（[規劃 §5.6](docs/purchase-line-collection-search-plan-20261126.md)）：伺服器只改 `readPurchase` 讀取名稱；送出仍是數字 `collectionId`；還沒選收藏時無法送出；搜尋重用 R06 選擇器的純函式與 API。Node 41／41、採購 Edge 5／5（要用 `node --import tsx` 執行）、收藏詳細頁 Edge 74／74。R06 舊選擇器腳本會逾時，因為舊入口已改為轉址，是早就過時的腳本。待授權推送部署。工作樹還沒提交。
+- **2026-11-26（Asia/Taipei）**：#34 已部署（使用者授權）：提交 `a451682`，15:31:38 推送，自動部署為 `3735aada`（100%，15:33:03）；唯讀抽查 9 條路由全部符合。實際驗收併 #23。
+- **2026-11-26（Asia/Taipei）**：#23 進度（正式資料，Claude 唯讀查詢確認）：使用者建立收藏 #262 豪華版（base）、#263 混亂教團（expansion）、#264 遊戲墊、#265 玩家桌墊（accessory）；收藏關係 #1～#3 方向都正確（擴充 → 主遊戲、配件 → 適用遊戲）；採購 #1（跳蚤二手，TWD 2038，完成）依 Claude 建議手動把 2038 全部分攤到 #262，其他三項 0。使用者反映關係管理頁只顯示英文代碼與 ID，新增 CURRENT_TASK #35（待規劃）。
+- **2026-11-26（Asia/Taipei）**：使用者確認 #262 的系列花費顯示正確，系列花費改版在正式環境驗收通過。**組件清點的驗收使用者決定暫緩、之後補做**，包括 D1 G7、P0-B 清點日期、P0-A 此副本不適用；步驟已記在 CURRENT_TASK #23。#262 的副本 #1 是在藏、封膜未知，可以清點（Claude 唯讀確認）。只改文件。

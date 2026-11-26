@@ -177,6 +177,13 @@ Edge 每次執行都傳入全新的空 `$pickOut`，存放個別暫存 profile�
 
 **上線**：不需要 Migration。依 DEPLOY-01 另行授權推送部署；上線後使用者用克蘇魯套組的採購實際驗收（併 #23）。
 
+### 5.7 部署（2026-11-26，Claude 執行，DECISION_LOG PUR-PICK-DEPLOY）
+
+- 提交 `a451682`，台北 15:31:38 推送 `f3cdbb6..a451682`，共 2 個提交：`cc6c246`、`a451682`。
+- Workers Builds 自動部署為 `3735aada`（100%，台北 15:33:03）。
+- 唯讀抽查 9 條路由全部符合：公開頁 3 條 200；`/admin`、`/admin/purchases`、`/admin/purchases?new=1`、`/api/admin/purchases`、`/api/admin/collection` 回 302 轉到 Access；`/dev/ui-kit` 404。
+- 實際驗收：使用者記錄克蘇魯套組的採購時一併確認（併 #23）。
+
 ### 5.5 禁止事項
 
 - 網路存取、任何遠端或正式操作、commit、push；
