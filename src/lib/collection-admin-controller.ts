@@ -339,7 +339,32 @@ export function initializeCollectionAdmin(root:HTMLElement){
  });});
  find<HTMLButtonElement>('[data-archive]')?.addEventListener('click',()=>void run(async()=>{if(!confirm(t('封存收藏？不刪除遊戲、實體副本、購買資料或歷史。','Archive collection? Game, physical copies, purchases and history are retained.')))return;await api(path('/'+id+'/archive'),'POST',{expectedRevision:revision});if(refreshDetailHeader(t('已封存','Archived')))return;await load();message(t('已封存','Archived'));}));
  find<HTMLFormElement>('[data-picker-form]')?.addEventListener('submit',event=>{event.preventDefault();void run(search);});
- async function search(){const q=(find<HTMLInputElement>('[data-picker-form] [name=q]')!).value,rows=await api(path('/search')+'&q='+encodeURIComponent(q)),list=find<HTMLElement>('[data-game-results]')!;list.replaceChildren();for(const r of rows){const b=node('button',`${r.name} · ${r.type} · ${gameCatalogKey(r.ref)}`) as HTMLButtonElement;b.type='button';b.onclick=()=>{selected=r.ref;field('displayName')!.value=r.name;message(t('已選擇 ','Selected ')+gameCatalogKey(r.ref));};list.appendChild(b);}if(!rows.length)list.textContent=t('找不到可用遊戲','No available game');}
+ async function search() {
+  const q = find<HTMLInputElement>('[data-picker-form] [name=q]')!.value;
+  const list = find<HTMLElement>('[data-game-results]')!;
+  const empty = find<HTMLElement>('[data-game-search-empty]')!;
+  empty.hidden = true;
+  list.replaceChildren();
+  const rows: {ref: GameRef; name: string; type: string; synced?: true}[] = await api(path('/search')+'&q='+encodeURIComponent(q));
+  for (const row of rows) {
+   const button = node('button', `${row.name} · ${row.type} · ${gameCatalogKey(row.ref)}`) as HTMLButtonElement;
+   button.type = 'button';
+   if (row.synced) {
+    const badge = node('span', t('已同步', 'Synced'));
+    badge.dataset.gameSynced = '';
+    button.appendChild(document.createTextNode(' '));
+    button.appendChild(badge);
+   }
+   button.onclick = () => {
+    selected = row.ref;
+    field('displayName')!.value = row.name;
+    message(t('已選擇 ', 'Selected ')+gameCatalogKey(row.ref));
+   };
+   list.appendChild(button);
+  }
+  empty.hidden = rows.length !== 0;
+  message('');
+ }
  find<HTMLFormElement>('[data-relation-form]')?.addEventListener('submit',event=>{event.preventDefault();void run(async()=>{const f=event.target as HTMLFormElement;await api(`/api/admin/notbgg/${encodeURIComponent(id)}/relations`,'POST',{target:deserializeGameRef((f.elements.namedItem('target') as HTMLInputElement).value.trim()),relationType:(f.elements.namedItem('relationType') as unknown as HTMLSelectElement).value,notes:(f.elements.namedItem('notes') as HTMLTextAreaElement).value||null});await load();message(t('關聯已新增','Relation added'));});});
  reload.onclick=()=>{if(!dirty||confirm(t('放棄未儲存變更並重新載入？','Discard unsaved changes and reload?')))void run(load);};
  scopeSelect.onchange=()=>{if(dirty&&!confirm(t('放棄未儲存變更？','Discard unsaved changes?'))){scopeSelect.value=scope;return;}const url=new URL(location.href);url.searchParams.set('scope',scopeSelect.value);dirty=false;location.assign(url);};

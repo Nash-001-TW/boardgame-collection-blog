@@ -5,6 +5,7 @@ import type { GameRef } from './game-identity';
 import { adminOwnedSql } from './admin-dashboard-summary';
 import { publicMetadataRegistry, publicStaticMetadataSql, publicBggMetadataSql, publicBggPresentationSql, publicNotBggPresentationSql } from './public-site-data';
 import { safeImage } from './notbgg-public';
+import { readSyncedBggGame, searchSyncedBggGames } from './bgg-d1-catalog';
 export class CollectionWriteError extends Error { constructor(public code:string){super(code);} }
 export type CollectionScope='production'|'test';
 export const collectionStatuses=['owned','preordered','wishlist','not_owned','sold','gifted_away','unknown'] as const;
@@ -396,9 +397,13 @@ export class CollectionV2Writer {
   return {item,copies,purchases,sleeves};
  }
  async search(q:string){if(q.length>200)throw new CollectionWriteError('VALIDATION');const keyword=q.trim().toLowerCase();
-  const bgg=getGames().filter(g=>g.bgg&&(!keyword||`bgg:${g.bggId}`===keyword||`#${g.bggId}`===keyword||g.name.toLowerCase().includes(keyword))).slice(0,20).map(g=>({ref:{source:'bgg' as const,bggId:g.bggId},name:g.name,type:g.bgg!.gameType}));
+  const bgg=getGames().filter(g=>g.bgg&&(!keyword||`bgg:${g.bggId}`===keyword||`#${g.bggId}`===keyword||g.name.toLowerCase().includes(keyword))).map(g=>({ref:{source:'bgg' as const,bggId:g.bggId},name:g.name,type:g.bgg!.gameType}));
+  const synced = (await searchSyncedBggGames(this.db, keyword))
+   .map(game => ({ref:{source:'bgg' as const,bggId:game.bggId},name:game.name,type:game.bgg.gameType,synced:true as const}));
+  const syncedIds = new Set(synced.map(game => game.ref.bggId));
   const rows=await this.db.prepare(`SELECT seq,name,type FROM notbgg_games WHERE archived_at IS NULL AND (instr(lower(name),?)>0 OR lower(printf('NotBGG:%06d',seq))=?) ORDER BY seq LIMIT 20`).bind(keyword,keyword).all<{seq:number;name:string;type:string}>();
-  return [...bgg,...rows.results.map(n=>({ref:parseGameRef({source:'notbgg',notBggId:`NotBGG:${String(n.seq).padStart(6,'0')}`}),name:n.name,type:n.type}))];
+  const bggResults = [...synced,...bgg.filter(game => !syncedIds.has(game.ref.bggId))].slice(0,20);
+  return [...bggResults,...rows.results.map(n=>({ref:parseGameRef({source:'notbgg',notBggId:`NotBGG:${String(n.seq).padStart(6,'0')}`}),name:n.name,type:n.type}))];
  }
  async create(refInput:GameRef,input:unknown,context:{actor:string;idempotencyKey:string;scope:CollectionScope;createCopy:boolean}){
   const ref=parseGameRef(refInput),data=validateCollectionInput(input),scope=scopeCheck(context.scope);
@@ -409,7 +414,7 @@ export class CollectionV2Writer {
   if(existing){if(existing.request_hash!==fingerprint)throw new CollectionWriteError('IDEMPOTENCY_CONFLICT');return {collectionId:existing.collection_item_id,replayed:true};}
   const statements:D1PreparedStatement[]=[];let gameSql:string,gameArg:number,type:string;
   if(ref.source==='bgg'){
-   const g=getGames().find(g=>g.bggId===ref.bggId&&g.bgg);if(!g)throw new CollectionWriteError('INVALID_REFERENCE');
+   const g=getGames().find(g=>g.bggId===ref.bggId&&g.bgg) ?? await readSyncedBggGame(this.db,ref.bggId);if(!g)throw new CollectionWriteError('INVALID_REFERENCE');
    type=getCatalogGameType(g.bgg!.gameType);
    statements.push(this.db.prepare("INSERT INTO v2_games(bgg_id,primary_name,game_type,catalog_source) VALUES (?,?,?,'bgg') ON CONFLICT(bgg_id) DO NOTHING").bind(g.bggId,g.name,type));gameSql='SELECT id FROM v2_games WHERE bgg_id=?';gameArg=ref.bggId;
   }else{const n=await this.db.prepare('SELECT game_id,type FROM notbgg_games WHERE seq=? AND archived_at IS NULL').bind(Number(ref.notBggId.slice(7))).first<{game_id:number;type:string}>();if(!n)throw new CollectionWriteError('INVALID_REFERENCE');type=n.type==='boardgame'?'base':n.type==='boardgameexpansion'?'expansion':'accessory';gameSql='SELECT game_id FROM notbgg_games WHERE seq=? AND archived_at IS NULL';gameArg=Number(ref.notBggId.slice(7));}

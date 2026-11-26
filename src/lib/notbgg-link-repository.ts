@@ -5,19 +5,20 @@ import type { NotBggId } from './game-identity';
 import { NotBggRepository } from './notbgg-repository';
 import { getCatalogGameType } from './game-content';
 import { bggGameViewModel,notBggGameViewModel } from './game-view-model';
+import { readSyncedBggGame } from './bgg-d1-catalog';
 export class LinkCommandError extends Error {constructor(public code:string){super(code);}}
 type LinkRow={id:number;seq:number;candidate_bgg_id:number;status:'pending'|'linked'|'revoked';primary_source:'notbgg'|'bgg'};
 export type LinkCommand={action:'propose'|'confirm'|'primary'|'revoke';expectedEventId:number;expectedProfileRevision:number;reason:string;bggId?:number;linkId?:number;primarySource?:'notbgg'|'bgg'};
 /** Backend-only commands. The caller supplies an independently verified administrator subject. */
 export class NotBggLinkRepository {
  constructor(private db:D1Database,private games:readonly Game[]=getGames()){}
- target(id:unknown){if(!isBggId(id))throw new LinkCommandError('INVALID_BGG_ID');const game=this.games.find(g=>g.bggId===id&&g.bgg);if(!game)throw new LinkCommandError('TARGET_NOT_FOUND');return game;}
+ async target(id:unknown){if(!isBggId(id))throw new LinkCommandError('INVALID_BGG_ID');const game=this.games.find(g=>g.bggId===id&&g.bgg) ?? await readSyncedBggGame(this.db,id);if(!game)throw new LinkCommandError('TARGET_NOT_FOUND');return game;}
  async state(id:NotBggId){if(!isNotBggId(id))throw new LinkCommandError('INVALID_ID');const seq=Number(id.slice(7)),original=await new NotBggRepository(this.db).getByNotBggId(id);if(!original)throw new LinkCommandError('NOT_FOUND');
   const link=await this.db.prepare("SELECT id,seq,candidate_bgg_id,status,primary_source FROM notbgg_bgg_links WHERE seq=? AND status IN ('pending','linked')").bind(seq).first<LinkRow>();
   const event=await this.db.prepare('SELECT COALESCE(MAX(e.id),0) id FROM notbgg_link_events e JOIN notbgg_bgg_links l ON l.id=e.link_id WHERE l.seq=?').bind(seq).first<{id:number}>();
   return {original,link,state:link?.status==='pending'?'candidate':link?.status==='linked'?'linked':'unlinked',expectedEventId:event?.id??0};
  }
- async comparison(id:NotBggId,bggId:number){const state=await this.state(id),target=this.target(bggId);return {originalRevision:state.original.revision,notbgg:notBggGameViewModel(state.original),bgg:bggGameViewModel(target),compatible:state.original.type===target.bgg!.gameType};}
+ async comparison(id:NotBggId,bggId:number){const state=await this.state(id),target=await this.target(bggId);return {originalRevision:state.original.revision,notbgg:notBggGameViewModel(state.original),bgg:bggGameViewModel(target),compatible:state.original.type===target.bgg!.gameType};}
  async history(id:NotBggId,after=0,limit=20){if(!isNotBggId(id)||!Number.isSafeInteger(after)||after<0||!Number.isInteger(limit)||limit<1||limit>100)throw new LinkCommandError('VALIDATION');return (await this.db.prepare('SELECT e.id,e.link_id,l.candidate_bgg_id,e.action,e.actor,e.reason,e.created_at,e.state_json FROM notbgg_link_events e JOIN notbgg_bgg_links l ON l.id=e.link_id WHERE l.seq=? AND e.id>? ORDER BY e.id LIMIT ?').bind(Number(id.slice(7)),after,limit).all()).results;}
  async execute(id:NotBggId,command:LinkCommand,actor:string){
   if(!actor||!['propose','confirm','primary','revoke'].includes(command.action)||!Number.isSafeInteger(command.expectedProfileRevision)||command.expectedProfileRevision<1||!Number.isSafeInteger(command.expectedEventId)||command.expectedEventId<0||typeof command.reason!=='string'||!command.reason.trim()||command.reason.length>3000)throw new LinkCommandError('VALIDATION');
@@ -28,7 +29,7 @@ export class NotBggLinkRepository {
   if(original.archivedAt&&command.action!=='revoke')throw new LinkCommandError('ARCHIVED');
   const statements:D1PreparedStatement[]=[],now=new Date().toISOString();let eventAction:string,status:string,primarySource:string,linkSql:string,linkArgs:(number|string)[]=[];
   if(command.action==='propose'){
-   if(link)throw new LinkCommandError('INVALID_TRANSITION');const target=this.target(command.bggId);
+   if(link)throw new LinkCommandError('INVALID_TRANSITION');const target=await this.target(command.bggId);
    statements.push(this.db.prepare("INSERT INTO notbgg_bgg_links(seq,candidate_bgg_id,created_by,created_at) VALUES (?,?,?,?)").bind(seq,target.bggId,actor,now));
    eventAction='proposed';status='pending';primarySource='notbgg';linkSql='last_insert_rowid()';
   }else{
@@ -38,7 +39,7 @@ export class NotBggLinkRepository {
     eventAction='revoked';status='revoked';primarySource=link.primary_source;
     statements.push(this.db.prepare("UPDATE notbgg_bgg_links SET status='revoked',revoked_by=?,revoked_at=?,revoke_reason=? WHERE id=? AND status IN ('pending','linked')").bind(actor,now,command.reason.trim(),link.id));
    }else{
-    const target=command.action==='confirm'||command.primarySource==='bgg'?this.target(link.candidate_bgg_id):null;
+    const target=command.action==='confirm'||command.primarySource==='bgg'?await this.target(link.candidate_bgg_id):null;
     if(target&&original.type!==target.bgg!.gameType)throw new LinkCommandError('TYPE_MISMATCH');
     if(command.action==='confirm'){
      if(link.status!=='pending')throw new LinkCommandError('INVALID_TRANSITION');

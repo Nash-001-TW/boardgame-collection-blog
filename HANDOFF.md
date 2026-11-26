@@ -310,3 +310,5 @@ node --import tsx --test tests/public-site-data.test.ts tests/public-site-sqlite
 - **2026-11-26（Asia/Taipei）**：P0C1 工作命令暫停（仍是候選、未授權），因為使用者要先在正式後台新增收藏（#23）。使用者發現新增收藏只能選靜態 BGG 目錄（815 款），在 `/admin/bgg` 同步成功的遊戲也不能選；Claude 先前回答「到 BGG 同步加進來」是錯的，已更正。Claude 起草 [#30 規劃](docs/catalog-d1-games-plan-20261126.md)（**候選**）：補上新增收藏搜尋、建立和 NotBGG 連結目標這 3 處，讓它們也接受同步成功的 D1 遊戲；公開網站已經支援。Q94～Q96 待決。只新增文件。
 - **2026-11-26（Asia/Taipei）**：使用者將 Q94～Q96 全部採 A（DECISION_LOG CAT-D1-Q94～Q96）；工作命令 `CAT-D1-20261126-01` 待授權。
 - **2026-11-26（Asia/Taipei）**：使用者授權 `CAT-D1-20261126-01`（DECISION_LOG CAT-D1-AUTH），交 Codex 實作，回報寫入規劃 §5.4。
+- **2026-11-26（Asia/Taipei）**：Claude 透過 Codex CLI 外掛（`codex:codex-rescue`）直接交付 CAT-D1；Codex 已實作並回報。Claude 審查結果為**有條件通過**（[規劃 §5.6](docs/catalog-d1-games-plan-20261126.md)）：Node 94／94；4 項既有 NotBGG 失敗和這次改動無關。必修 F1：搜尋把整份清單截成 20 筆，BGG 命中多時 NotBGG 結果會消失。建議修正 F2：可選條件多了 `sync_status != failed`，和公開網站不一致。待授權 CAT-D1-AUTH-02。工作樹還沒提交。
+- **2026-11-26（Asia/Taipei）**：使用者授權 CAT-D1-AUTH-02，交 Codex 修正。Claude 結案審查**通過**（[規劃 §5.8](docs/catalog-d1-games-plan-20261126.md)）：F1、F2 都已修正；Node 95／95；`astro check` 6 個基準錯誤、新增 0。不需要 Migration，待授權推送部署。工作樹還沒提交。

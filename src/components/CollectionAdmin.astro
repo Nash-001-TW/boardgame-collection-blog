@@ -44,7 +44,9 @@ const detailError = detailStatus===400?t('資料範圍無效。','Invalid record
 <form data-relation-form><label>{t('目標身份（BGG:205637 或 NotBGG:000001）','Target identity (BGG:205637 or NotBGG:000001)')}<input name="target" required maxlength="40"/></label>
 <label>{t('關聯類型','Relation type')}<select name="relationType"><option value="accessory_for">{t('專用配件','Accessory for')}</option><option value="compatible_with">{t('相容配件','Compatible with')}</option></select></label><label>{t('管理備註（不公開）','Private relation notes')}<textarea name="notes" maxlength="3000"/></label><button data-save>{t('新增關聯','Add relation')}</button></form><div data-relation-list></div>
 </>:<>
-<section data-game-picker><h2>{t('選擇既有遊戲','Choose an existing game')}</h2><form data-picker-form><label>{t('名稱、BGG:ID 或 NotBGG:ID','Name, BGG:ID or NotBGG:ID')}<input name="q" type="search" maxlength="200"/></label><button>{t('搜尋','Search')}</button></form><div data-game-results></div></section>
+<section data-game-picker><h2>{t('選擇既有遊戲','Choose an existing game')}</h2><form data-picker-form><label>{t('名稱、BGG:ID 或 NotBGG:ID','Name, BGG:ID or NotBGG:ID')}<input name="q" type="search" maxlength="200"/></label><button>{t('搜尋','Search')}</button></form><div data-game-results></div>
+<p data-game-search-empty hidden>{t('找不到可用遊戲。','No available game.')} <a href={'/admin/bgg?lang='+lang}>{t('先到 BGG 同步輸入 BGG ID','Enter the BGG ID on the BGG sync page first')}</a></p>
+</section>
 <p data-system></p><form data-collection-form class={edit?'admin-kit-panel admin-detail-panel':undefined}>
 <div class="fields">{fields.map(([key,zh,english,type])=><label>{t(zh,english)}{key==='displayName'?' *':''}<input name={key} type={type} required={key==='displayName'||key==='currency'} maxlength={type==='text'?300:undefined} min={type==='number'?0:undefined} max={key==='personalRating'?10:undefined} step={key==='personalRating'?'0.1':type==='number'?'1':undefined} value={key==='currency'?'TWD':undefined}/></label>)}
 <label>{t('擁有／收藏狀態','Acquisition status')}<select name="acquisitionStatus">{collectionStatuses.map(s=><option value={s} selected={s==='owned'}>{s}</option>)}</select></label>
@@ -58,3 +60,8 @@ const detailError = detailStatus===400?t('資料範圍無效。','Invalid record
 </>}
 </>}
 </main><script>import {initializeCollectionAdmin} from '../lib/collection-admin-controller';document.querySelectorAll<HTMLElement>('[data-collection-admin]').forEach(initializeCollectionAdmin);</script></AdminLayout>
+<style>
+  [data-game-results] { display: flex; flex-wrap: wrap; gap: .5rem; }
+  [data-game-results] :global(button) { max-inline-size: 100%; white-space: normal; overflow-wrap: anywhere; }
+  [data-game-results] :global([data-game-synced]) { margin-inline-start: .5em; font-weight: 600; }
+</style>
