@@ -335,3 +335,7 @@ node --import tsx --test tests/public-site-data.test.ts tests/public-site-sqlite
 - **2026-11-26（Asia/Taipei）**：使用者授權 `SERIES-ACC-20261126-01`（DECISION_LOG SERIES-ACC-AUTH），Claude 透過 Codex CLI 外掛交付，回報寫入規劃 §4.4。
 - **2026-11-26（Asia/Taipei）**：Codex 完成 SERIES-ACC，Claude 審查**通過**（[規劃 §4.6](docs/series-spending-accessories-rev-20261126.md)）：在 100 款截斷之後才拆分；分開計算在資料層完成；Node 63／63、Edge 74／74。另外發現 `tests/admin-dashboard-summary.test.ts` 有 3 項失敗，是 **P0A-APP（`8a0a9f7`）** 在卡套不足批次讀取加了第 6 條查詢、測試預期值沒更新所造成；Claude 審查 P0A 時沒有跑這支測試，屬審查疏漏。正式功能正常，修正只需改測試，待授權。工作樹還沒提交。
 - **2026-11-26（Asia/Taipei）**：依 TEST-R01-SLV-02，Claude 修正 `tests/admin-dashboard-summary.test.ts`：批次長度預期改為 `[6, 6]`；故障注入改用 SQL 內容（`v2_purchase`）辨識採購批次，不再依長度配對；共用 helper 沒有修改。5 個相關測試檔 47／47 通過（[規劃 §4.7](docs/series-spending-accessories-rev-20261126.md)）。工作樹還沒提交。
+- **2026-11-26（Asia/Taipei）**：系列花費改版已部署（使用者授權）：提交 `f3cdbb6`，14:37:26 推送 3 個提交，自動部署為 `15ee5ddc`（100%，14:38:14）；唯讀抽查 9 條路由全部符合。正式環境沒有配件關係，畫面不變；實際驗收併入 #23。
+- **2026-11-26（Asia/Taipei）**：使用者開始做 #23（克蘇魯套組）。Claude 列出步驟，並唯讀查詢確認 404893 是一般版 Tiny Epic Cthulhu，不是使用者買的 Deluxe Edition。使用者指出採購明細只能輸入收藏 ID 數字，Claude 起草 [#34 規劃](docs/purchase-line-collection-search-plan-20261126.md)（**候選**）：沿用 R06 收藏選擇器的搜尋 API 與純函式，改成搜尋下拉，既有明細顯示名稱，不需要 Migration。Q127～Q130 待決。只新增文件。
+- **2026-11-26（Asia/Taipei）**：使用者將 Q127～Q130 全部採 A（DECISION_LOG PUR-PICK-Q127～Q130）；工作命令 `PUR-PICK-20261126-01` 待授權。
+- **2026-11-26（Asia/Taipei）**：使用者授權 `PUR-PICK-20261126-01`（DECISION_LOG PUR-PICK-AUTH），Claude 透過 Codex CLI 外掛交付，回報寫入規劃 §5.4。

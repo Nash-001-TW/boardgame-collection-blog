@@ -204,6 +204,13 @@ Node 的 `$fallback` 是程序限定的 data URL preload。只在 Windows `os.us
   - 新增測試內的輔助函式 `onPurchaseBatch`：以「SQL 含 `v2_purchase`」辨識 R10 採購批次，取代原本「批次長度 = 6」的配對方式（卡套不足的 SQL 不含 `v2_purchase`）。「任一位置失敗」與「拒絕不成功或不安全的結果」兩項測試都改用它，只對採購批次注入故障；原本要驗證的意思不變：採購區塊失敗時是 `null`，其他區塊完整。
 - 驗證：`admin-dashboard-summary`、`admin-dashboard`、`sleeve-shortage`、`series-spending`、`purchase-admin` 共 5 個檔案，**47 通過、0 失敗**（R01 摘要由 5／3 變成 8／0）。`git diff --check` 通過。
 
+### 4.8 部署（2026-11-26，Claude 執行，DECISION_LOG SERIES-ACC-DEPLOY）
+
+- 提交 `f3cdbb6`，台北 14:37:26 推送 `891f93d..f3cdbb6`，共 3 個提交：`c81434e`、`42b8c77`、`f3cdbb6`。
+- Workers Builds 自動部署為 `15ee5ddc`（100%，台北 14:38:14）。
+- 唯讀抽查 9 條路由全部符合：公開頁 4 條 200；`/admin`、`/admin/collection/102/purchases`、`/admin/purchases`、`/admin/collection/new` 回 302 轉到 Access；`/dev/ui-kit` 404。
+- 正式環境沒有配件關係（§5.2），所以畫面不會改變；實際驗收等第一次建立配件收藏並設定關係時再做（併 #23）。
+
 ### 4.5 禁止事項
 
 - 網路存取、任何遠端或正式操作、commit、push；
