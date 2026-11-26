@@ -293,3 +293,57 @@ Edge 以 `node tests/<檔名> <絕對暫存路徑>` 執行，使用暫存 profil
 - 這次的改動讓 R06 頁、清點寫入、D1 預覽與卡套不足（R01 卡片、卡套尺寸頁）都要讀 `v2_component_applicability_current`。**0024 沒有正式套用前就部署，這幾頁都會回 503**。推送 `main` 會自動部署，所以順序必須是：提交（不推送）→ 0024 正式套用並對帳 → 推送部署 → 正式驗收。
 - `main` 目前比 `origin/main` 多 4 個提交（含 `83cc6bf`）。工作樹變更還沒提交。
 - Codex 殘留兩個暫存資料夾（`D:/TEMP/p0a-2f914a1c-…`、`D:/TEMP/p0a-astro-dc4a746b-…`），由使用者決定刪除方式。
+
+## 8. 正式套用 0024（P0A-APPLY，比照 0025 §9，每步另行授權）
+
+### 8.1 A0 本機提交
+
+`83cc6bf`（0024 修訂）與 `8a0a9f7`（P0A-APP 程式）已在本機提交，未推送（2026-11-26）。
+
+### 8.2 A1 唯讀預檢（2026-11-26，Claude 執行，使用者授權）
+
+遠端操作：Metadata 1 次（`wrangler deployments status`）、唯讀 SELECT 2 次（第一次用 `--file`，不回傳結果列；第二次用 `--command` 跑同一查詢），寫入 0。查詢檔放在 scratchpad，不加入 repo。
+
+| 項目 | 預期 | 實際 | 結果 |
+| --- | --- | --- | --- |
+| 流量版本 | 目前 `origin/main`（`0c47b36`）的部署 | `91ef7459`（100%，建立於台北 2026-11-25 23:37），即 #12 R06-MIN 部署 | 符合 |
+| `d1_migrations` | 24 筆，最後一筆是 0025，沒有 0024 | 24 筆，最後 `0025_sleeve_gift_and_ledger_locks.sql`，0024 為 0 筆 | 符合 |
+| 0024 物件（表、2 個索引、view、4 個觸發器，加上舊的 coverage 表名） | 0 個存在 | 0 | 符合 |
+| 依賴物件（`d1_quantity_collection_generation`、`v2_owned_copies`、`v2_component_definitions`、`v2_collection_items`、view `v2_physical_component_candidates`） | 5 個存在 | 5 | 符合 |
+| 資料筆數 | — | 收藏 256、副本 0、組件定義 178、實體組件候選 0、清點列 0、世代列 256、卡套需求 786、卡套交易 0、卡套產品 0 | 副本 0，所以套用不會碰到任何既有資料 |
+| 使用者確認期間沒有其他更新 | 使用者在對話中回答 | 使用者回答「確認沒有」（2026-11-26） | 符合 |
+
+**A1 全數通過。**
+
+註：CURRENT_TASK 頂端的「正式環境現況」寫的是 `13f7be9b`，但之後 #12 已部署 `91ef7459`，以實際查到的為準。D1 大小 1.93 MB，共 51 張表。
+
+### 8.3 A2 備份與本機預演（2026-11-26，Claude 執行，使用者授權）
+
+- **官方 Export 1 次**（唯讀）：`wrangler d1 export boardgame-collection-db --remote` → `D:/CodexHome/private-0024-backup-9621f3d7540a/boardgame-collection-db-before-0024.sql`。資料夾在專案外，停用繼承，只有目前網域使用者有 FullControl，沒有加入 Git。檔案 2,145,132 bytes，SHA-256 `1783b36c5918aab185f4fe66dc85f3ae05527286b89dbb24721f0a92dd18fb69`。wrangler 輸出的一小時有效下載連結沒有記錄。內容沒有輸出，只解析了 schema 語句的開頭，用來診斷還原順序。
+- **組合檔**：0024 原檔（SHA-256 `1684b36a…f540`，和審查時相同）加上 `INSERT INTO d1_migrations(name) VALUES ('0024_component_applicability.sql');`，組合檔 SHA-256 `a37db0c4f147bd110c5cc7a8bc8e0f7f644c401a2e78e3042689ab8ed48d882d`。放在 scratchpad，不加入 repo。
+- **本機預演**（`node:sqlite` 記憶體資料庫，scratchpad 腳本只輸出計數）：
+  - 還原時先關閉外鍵檢查。匯出檔會在 `collection_components` 建立前就插入 `sleeve_requirements` 的子列，`node:sqlite` 預設開啟外鍵檢查，第一次還原因此失敗，還沒執行到 0024。之後在開啟外鍵的狀態下，把組合檔放進一筆交易執行。
+  - 還原後的數值和 A1 正式查詢完全相同：ledger 24、最後一筆 0025、0024 物件 0、收藏 256、副本 0、定義 178、清點 0、世代列 256、卡套需求 786、卡套交易 0、卡套產品 0。
+  - 套用組合檔**成功**：ledger 25 筆、最後一筆 `0024_component_applicability.sql`；0024 物件 8／8；schema 物件 270 → 278（正好增加 8）；所有資料筆數不變；世代總和 256，沒有變；事件 0、目前值 0。
+  - `PRAGMA foreign_key_check` 0 筆違規；`integrity_check` 回 `ok`。
+- 遠端操作：Export 1 次，寫入 0。**A2 全數通過。**
+
+### 8.4 A3 正式套用（2026-11-26，Claude 執行，使用者授權「只做 A3＋A4」）
+
+- 執行前複核：0024 SHA-256 `1684b36a…f540`、組合檔 SHA-256 `a37db0c4…882d`，都和審查、預演時相同；`migrations/` 和 HEAD 沒有差異。
+- 台北 2026-11-26 08:18:06～08:18:15，執行 `wrangler d1 execute boardgame-collection-db --remote --json --yes --file <組合檔>`，**正式寫入只有這 1 次**；沒有使用 `migrations apply`。
+- 結果：結束碼 0、`success: true`、`changed_db: true`、執行 9 個查詢、寫入 13 列、`last_row_id` 25；資料表 51 → 52；D1 大小 1.94 MB。
+
+### 8.5 A4 套用後唯讀對帳（2026-11-26，台北 08:18:31 起）
+
+- 唯讀 SELECT 2 次：對帳 1 次，加上 1 次確認 D1 內部表。
+  - ledger 25 筆，最後一筆是 `0024_component_applicability.sql`，比 A1 多 1 筆。
+  - 0024 物件 8／8；coverage 表 0。
+  - 事件 0、目前值 0。
+  - 收藏 256、副本 0、定義 178、清點 0、世代列 256、世代總和 256、卡套需求 786、交易 0、產品 0，都和 A1 相同。
+  - `pragma_foreign_key_check` 0 筆違規。
+  - schema 物件正式 279 筆、預演 278 筆，差的 1 筆是 D1 內部表 `_cf_KV`（匯出檔不包含），所以兩者一致。
+- 正式網站唯讀抽查 9 條，全部符合：公開頁 `/`、`/collection`、`/games`、`/about/` 回 200；`/admin`、`/admin/sleeves?view=sizes`、`/admin/collection/102/components`、`/api/admin/sleeves` 回 302 轉到 Access；`/dev/ui-kit` 回 404。
+- **A3＋A4 全數通過。** 0024 已在正式環境就位。正式環境目前跑的程式仍是 `91ef7459`，它不讀 0024 的物件，所以新增這些物件沒有影響。
+- 遠端操作合計（A1～A4）：Metadata 1、SELECT 5（A1 2、A4 2，另有 1 次 `_cf_` 確認算在 A4 內）、Export 1、正式寫入 1、HTTP 抽查 9。
+- **還沒做**：推送 `main`（自動部署 `8a0a9f7` 等 P0A-APP 程式）和登入後的正式驗收，依 DEPLOY-01 需要另外授權。`migrations/` 已經沒有未套用的檔案。是否改回使用 `wrangler d1 migrations apply`，之後另行決定（§5 第 4 步）。
