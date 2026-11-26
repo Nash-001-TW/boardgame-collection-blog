@@ -350,3 +350,7 @@ node --import tsx --test tests/public-site-data.test.ts tests/public-site-sqlite
 - **2026-11-26（Asia/Taipei）**：使用者授權 `REL-LABEL-20261126-01`（DECISION_LOG REL-LABEL-AUTH），Claude 透過 Codex CLI 外掛交付，回報寫入規劃 §5.4。
 - **2026-11-26（Asia/Taipei）**：Codex 完成 #35，但它的環境 Edge 全部逾時、沒有截圖，也沒有跑 build。Claude 審查（[規劃 §5.6](docs/relation-list-labels-plan-20261126.md)）：程式通過，`relation-admin.ts` 沒有修改；Node 34／34；Claude 自己跑 Edge：bgg-sync-admin 5／5（涵蓋 Q131～Q135）、收藏詳細頁 74／74；`admin-shell-browser` 因 Q135 新增側欄項目而斷言過時（F1）；截圖需放進 docs（F2）。兩項都待授權。build 沒有執行。工作樹還沒提交。
 - **2026-11-26（Asia/Taipei）**：依 REL-LABEL-AUTH-02，Claude 完成 #35 收尾（[規劃 §5.7](docs/relation-list-labels-plan-20261126.md)）：更新側欄 Edge 斷言、篩選標籤改為「來源或目標」、篩選按鈕版面修正、5 張截圖放進 `docs/REL-LABEL-screenshots/`。Node 17／17；Edge 關係頁 5／5、側欄 9／9。#35 本機驗證完成，未提交、未部署。
+- **2026-11-26（Asia/Taipei）**：#35 已部署（使用者授權）：提交 `f2820cc`，20:40:47 推送 3 個提交，自動部署為 `f471ce75`（100%，20:43:07）；唯讀抽查 9 條路由全部符合。待使用者打開 #262 的「管理收藏組合關係」實際確認。
+- **2026-11-26（Asia/Taipei）**：使用者反映 R06 實體組件管理不順（新增後整頁重新載入，還要再回去清點）。Claude 起草 [#36 規劃](docs/component-create-with-count-plan-20261126.md)（**候選**）：新增表單加選填的實際數量，前端依序呼叫既有的 `create`、`count`（不改高敏感區的伺服器），存檔後只替換清單區塊。Q136～Q139 待決。只新增文件。
+- **2026-11-26（Asia/Taipei）**：使用者將 Q136～Q139 全部採 A（DECISION_LOG R06-CC-Q136～Q139）。Claude 寫好工作命令 `R06-CREATE-COUNT-20261126-01`（[規劃 §5](docs/component-create-with-count-plan-20261126.md)），只改 R06 面板的新增表單與前端 controller 的新增流程，`physical-component-management.ts` 不得修改；待授權。
+- **2026-11-26（Asia/Taipei）**：使用者授權 `R06-CREATE-COUNT-20261126-01`（DECISION_LOG R06-CC-AUTH），Claude 透過 Codex CLI 外掛交付，回報寫入規劃 §5.4。

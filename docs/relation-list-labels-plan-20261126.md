@@ -214,6 +214,13 @@ Codex 沒有產生截圖。Claude 執行 Edge 時，截圖已經產生在暫存�
   - Edge（全新的空資料夾，`node --import tsx`）：`bgg-sync-admin-browser` **5／5**、`admin-shell-browser` **9／9**，結束碼都是 0。
 - **結論：#35（REL-LABEL-20261126-01）本機驗證完成。** build 沒有執行，原因見 §5.6。
 
+### 5.8 部署（2026-11-26，Claude 執行，DECISION_LOG REL-LABEL-DEPLOY）
+
+- 提交 `f2820cc`，台北 20:40:47 推送 `a451682..f2820cc`，共 3 個提交：`6c331e5`、`e3ca678`、`f2820cc`。
+- Workers Builds 自動部署為 `f471ce75`（100%，台北 20:43:07）。
+- 唯讀抽查 9 條路由全部符合：公開頁 3 條 200；`/admin`、`/admin/bgg?view=relations&domain=collection`、`/admin/bgg?view=relations`、`/admin/collection/262/purchases`、`/api/admin/bgg` 回 302 轉到 Access；`/dev/ui-kit` 404。
+- 實際驗收：使用者打開 #262 的「管理收藏組合關係」確認清單與預設值。
+
 ### 5.5 禁止事項
 
 同 #34 §5.5：
