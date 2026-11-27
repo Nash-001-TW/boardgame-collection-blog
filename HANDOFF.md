@@ -409,3 +409,5 @@ node --import tsx --test tests/public-site-data.test.ts tests/public-site-sqlite
 - **2026-11-27（Asia/Taipei）**：「更換」改成圖示按鈕加提示，「紀錄 N」改由伺服器直接輸出，不再延遲（DECISION_LOG RELINK-ICON，[規劃 §10.3](docs/collection-game-relink-plan-20261127.md)）。修改 `CollectionDetailHeader.astro`、`collection-relink-controller.ts`、`collection-v2-management.ts`（頁首查詢）和瀏覽器測試。Node 44／44，Edge 9／9、74／74、9／9。尚未提交。
 - **2026-11-27（Asia/Taipei）**：RELINK-ICON 已部署：`59a3819` → Worker `4b2bfe4c`（台北 10:32:25），唯讀抽查 8 條都符合。待使用者確認滑鼠提示，以及各分頁的「紀錄 N」；此紀錄尚未提交。
 - **2026-11-27（Asia/Taipei）**：修正收藏頁首封面只顯示一部分的問題（DECISION_LOG HEADER-COVER-FIX）：只改 `src/styles/admin-theme.css` 一條規則。用 400×200 的橫式圖驗證，圖片填滿 72×96 方框，完整顯示，上下用底色補齊。Edge 9／9、74／74、Shell 9／9。尚未提交。
+- **2026-11-27（Asia/Taipei）**：HEADER-COVER-FIX 已部署：`24ba7c0` → Worker `8ed684a2`（台北 10:43:58），唯讀抽查 6 條都符合。此紀錄尚未提交。
+- **2026-11-27（Asia/Taipei）**：整理文件：更新 CURRENT_TASK 的日期與正式環境現況；#30、#34、#35、#36 原本誤寫為「候選」，改為已完成或已部署；新增 #37（照片）、#38（卡套頁改版）、#39（更換對應遊戲）的結案狀態，以及 #40～#44（Access 過期提示、Access 時效、R2 孤兒清理、過時測試、使用者手動清理）；#20 完成：`docs/current-progress.md` 改為入口頁，2026-11-18 的內容保留為歷史快照。只在本機提交，未推送。

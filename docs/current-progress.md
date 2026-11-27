@@ -1,6 +1,24 @@
 # 目前進度與後續協作紀錄
 
-更新日期：2026-11-18（Asia/Taipei）。本文件保存本次已確認結果，不代表每次開啟工作都要重新驗證。
+更新日期：2026-11-27（Asia/Taipei）。
+
+## 現在請看這裡（2026-11-27 起）
+
+這份文件已改成入口頁。最新狀態不再寫在這裡，請依序閱讀：
+
+1. [AGENTS.md](../AGENTS.md)：長期有效的規則與授權邊界。
+2. [HANDOFF.md](../HANDOFF.md)：帶日期的工程交接紀錄（最新的在最後面）。
+3. [CURRENT_TASK.md](../CURRENT_TASK.md)：全部待辦、正式環境現況（Worker 版本、已套用的 Migration）。
+4. [DECISION_LOG.md](../DECISION_LOG.md)：決策與授權台帳。
+5. 各功能的規劃文件（`docs/*-plan-*.md`），例如 [組件照片](component-photo-plan-20261126.md)、[卡套頁改版](sleeve-workflow-compact-plan-20261127.md)、[更換對應遊戲](collection-game-relink-plan-20261127.md)；正式 D1 套用與部署的逐步紀錄都在對應規劃的「正式套用」章節。
+
+協作方式（2026-11-27）：Claude Code 擔任技術主管與審查者，Codex 實作；正式 D1、遠端與部署由 Claude 依使用者逐次授權執行（推送 `main` 會自動部署，見 DECISION_LOG DEPLOY-01）。下方「移交 ChatGPT」等安排已失效。
+
+---
+
+## 歷史快照（2026-11-18，以下內容已過時，只保留作為紀錄）
+
+原更新日期：2026-11-18（Asia/Taipei）。本節保存當時已確認的結果，不代表現況。
 
 ## 最新交接（2026-11-18）
 
