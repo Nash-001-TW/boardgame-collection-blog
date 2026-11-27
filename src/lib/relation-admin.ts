@@ -1,5 +1,8 @@
 import {HttpError} from './notbgg-admin-api';
 import {getGames} from './games';
+import {formatNotBggId} from './game-identity';
+import {publicIdentityIndex} from './identity-resolution';
+import {bggGameRelations,effectiveGameRelations,readBggRelationCaches,readRelationCaches,readStoredGameRelations,type GameRelationEdge} from './effective-game-relations';
 export const gameRelationTypes=['requires_base','expansion_of','standalone_related','same_series','integrates_with','compilation_of','accessory_for','other'] as const;
 export const collectionRelationTypes=['requires_base','expansion_of','standalone_related','same_series','integrates_with','bundle_contains','accessory_for','other'] as const;
 const symmetric=['standalone_related','same_series','integrates_with'];
@@ -63,9 +66,59 @@ export async function writeRelation(db:D1Database,actor:string,key:string|null,b
 }
 export async function readRelationAdmin(db:D1Database,params:URLSearchParams){
  const domain=params.get('domain')??'game',m=model(domain),after=Number(params.get('after')||0),source=Number(params.get('source')||0);integer(after);integer(source);
- const result=await db.prepare(`SELECT * FROM ${m.table} WHERE id>? AND (?=0 OR ${m.source}=? OR ${m.target}=?) ORDER BY id LIMIT 21`).bind(after,source,source,source).all<Record<string,unknown>>();
- const identities=await db.prepare(`SELECT g.id,g.primary_name,g.bgg_id,g.game_type,n.seq FROM v2_games g LEFT JOIN notbgg_games n ON n.game_id=g.id WHERE n.archived_at IS NULL AND (g.bgg_id IS NOT NULL OR n.seq IS NOT NULL) ORDER BY g.id`).all<Record<string,unknown>>();
+ // Collection combinations use their existing read contract and ignore origin.
+ const origin=domain==='game'?params.get('origin')??'manual':'manual';
+ if(!['all','bgg','manual'].includes(origin))throw new HttpError(400,'INVALID_RELATION');
+ const result=origin==='manual'?await db.prepare(`SELECT * FROM ${m.table} WHERE id>? AND (?=0 OR ${m.source}=? OR ${m.target}=?) ORDER BY id LIMIT 21`).bind(after,source,source,source).all<Record<string,unknown>>():null;
+ const identities=await db.prepare(`SELECT g.id,g.primary_name,g.bgg_id,g.game_type,n.seq FROM v2_games g LEFT JOIN notbgg_games n ON n.game_id=g.id WHERE n.archived_at IS NULL AND (g.bgg_id IS NOT NULL OR n.seq IS NOT NULL) ORDER BY g.id`).all<{id:number;primary_name:string;bgg_id:number|null;game_type:string;seq:number|null}>();
  const collections=await db.prepare(`SELECT c.id,c.display_name,c.item_type,c.record_scope FROM v2_collection_items c LEFT JOIN v2_collection_management m ON m.collection_item_id=c.id WHERE m.archived_at IS NULL ORDER BY c.id`).all<Record<string,unknown>>();
- if(!result.success||!identities.success||!collections.success)throw new HttpError(503,'DATABASE_UNAVAILABLE');
- return {domain,rows:result.results.slice(0,20),nextCursor:result.results.length>20?Number(result.results[19].id):null,identities:identities.results,collections:collections.results};
+ if((result&&!result.success)||!identities.success||!collections.success)throw new HttpError(503,'DATABASE_UNAVAILABLE');
+ const options:{identities:Record<string,unknown>[];collections:Record<string,unknown>[]}=
+  {identities:identities.results,collections:collections.results};
+ if(result)return {domain,rows:result.results.slice(0,20),nextCursor:result.results.length>20?Number(result.results[19].id):null,...options};
+
+ const [cacheRows,typeRows]=await readBggRelationCaches(db);
+ const games=identities.results;
+ const aliases=await publicIdentityIndex(db,[],[...cacheRows.map(row=>row.bgg_id),...games.flatMap(game=>game.bgg_id?[game.bgg_id]:[])]);
+ const localByBgg=new Map(games.filter(game=>game.bgg_id!==null).map(game=>[game.bgg_id,game]));
+ const selected=games.find(game=>game.id===source);
+ const selectedBgg=selected?.bgg_id??(selected?.seq?aliases.byNotBgg.get(formatNotBggId(selected.seq))?.bggId:undefined);
+ const bgg=bggGameRelations(readRelationCaches(cacheRows,new Map(),typeRows),typeRows)
+  .filter(link=>(localByBgg.has(link.sourceBggId)||localByBgg.has(link.targetBggId))&&
+   (!source||link.sourceBggId===selectedBgg||link.targetBggId===selectedBgg))
+  // External sources have no local ID. Their BGG ID breaks ties within the requested sort key.
+  .sort((a,b)=>(localByBgg.get(a.sourceBggId)?.id??0)-(localByBgg.get(b.sourceBggId)?.id??0)||
+   a.targetBggId-b.targetBggId||a.kind.localeCompare(b.kind)||a.sourceBggId-b.sourceBggId);
+ if(bgg.length>1000)throw new HttpError(503,'RELATION_SCOPE_TOO_BROAD');
+ type Manual=GameRelationEdge & Record<string,unknown>;
+ const [manual,site]=origin==='all'?await readStoredGameRelations<Manual>(db,'1',[],false):[[],[]];
+ manual.sort((a,b)=>Number(a.id)-Number(b.id));
+ const rows:Record<string,unknown>[]=[];
+ for(const row of effectiveGameRelations(bgg,manual,site,games,aliases,edge=>Boolean(edge.archived_at))){
+  const stored=row.manual??row.site;
+  if(stored){
+   if(!row.bgg&&source&&stored.source_game_id!==source&&stored.target_game_id!==source)continue;
+   rows.push({...stored,relation_source:row.manual?'manual':'notbgg',sources:row.sources});
+   continue;
+  }
+  const link=row.bgg!;
+  rows.push({
+   relation_type:link.kind,relation_source:'bgg',sources:row.sources,
+   source_game_id:localByBgg.get(link.sourceBggId)?.id,target_game_id:localByBgg.get(link.targetBggId)?.id,
+   source_bgg_id:link.sourceBggId,target_bgg_id:link.targetBggId,
+   source_name:link.sourceName,target_name:link.targetName,direction_confirmed:link.role!=='unconfirmed',
+  });
+ }
+ return {domain,rows:rows.slice(after,after+20),nextCursor:rows.length>after+20?after+20:null,total:rows.length,...options};
+}
+
+// The page can navigate backwards without extending the manual API response.
+export async function readManualGameRelationPage(db:D1Database, after:number, source:number) {
+ const predicate = 'id<=? AND (?=0 OR source_game_id=? OR target_game_id=?)';
+ const args = [after,source,source,source];
+ const result = await db.prepare(`SELECT COUNT(*) AS count,
+  (SELECT id FROM v2_game_relations WHERE ${predicate} ORDER BY id DESC LIMIT 1 OFFSET 20) AS previous
+  FROM v2_game_relations WHERE ${predicate}`).bind(...args,...args).first<{count:number;previous:number|null}>();
+ if(!result)throw new HttpError(503,'RELATIONS_UNAVAILABLE');
+ return {page:Math.floor(result.count/20)+1,previous:result.previous??0};
 }

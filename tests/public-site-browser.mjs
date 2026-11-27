@@ -17,6 +17,7 @@ import {handleCollectionCopiesRequest} from '../src/lib/collection-copies-api.ts
 import {handlePublicGameCollection} from '../src/lib/public-game-collection.ts';
 import {createLocalGamesPreview} from '../scripts/lib/local-games-preview.ts';
 import {getGames} from '../src/lib/games.ts';
+import {seedXrelB} from './helpers/xrel-b-fixture.ts';
 
 const out=process.argv[2];if(!out)throw new Error('An artifact directory is required');await mkdir(out,{recursive:true});
 const f=await sleeveWorkflowFixture(),auth=await accessFixture();let server,browser,ws;
@@ -44,7 +45,7 @@ try{
   res.writeHead(response.status,Object.fromEntries(headers));res.end(body);
  }catch(error){console.error(error);res.writeHead(500);res.end('Fixture error');}});
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const origin='http://127.0.0.1:'+server.address().port;
- browser=spawn('C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',['--headless=new','--disable-gpu','--no-first-run','--disable-extensions','--disable-background-networking','--disable-component-update','--disable-sync','--proxy-server=http://127.0.0.1:9','--remote-debugging-port=0','--user-data-dir='+await mkdtemp(out+'/edge-'),'about:blank'],{windowsHide:true,stdio:'ignore'});
+ browser=spawn('C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',['--headless=new',...(process.env.D1_A3_EDGE_LOCAL_TEST_MODE==='1'?['--no-sandbox']:[]),'--disable-gpu','--no-first-run','--disable-extensions','--disable-background-networking','--disable-component-update','--disable-sync','--proxy-server=http://127.0.0.1:9','--remote-debugging-port=0','--user-data-dir='+await mkdtemp(out+'/edge-'),'about:blank'],{windowsHide:true,stdio:'ignore'});
  // The last argument before about:blank is the isolated profile.
  const profile=browser.spawnargs.find(a=>a.startsWith('--user-data-dir=')).slice('--user-data-dir='.length);
  const port=await until(async()=>Number((await readFile(profile+'/DevToolsActivePort','utf8')).split('\n')[0]),'Edge debugging');
@@ -91,5 +92,35 @@ try{
  await goto('/en/games/bgg/900001');await width(320);await until(()=>evaluate(()=>document.querySelector('[data-public-requirements-body]')?.textContent.includes('No managed')),'sleeve empty state');
  assert.ok(!await evaluate(()=>document.body.textContent.includes('PRIVATE')));image=await send('Page.captureScreenshot',{format:'png'});await writeFile(out+'/bgg-mobile.png',Buffer.from(image.data,'base64'));
  const xml=await(await fetch(origin+'/sitemap.xml')).text();assert.ok(xml.includes('<sitemapindex'));assert.ok(!xml.includes('/admin'));
+ const screenshots=process.argv[3];
+ if(screenshots){
+  await mkdir(screenshots,{recursive:true});
+  seedXrelB(f.sqlite);
+  await width(1440);
+  await goto('/games/bgg/404893');
+  await text('[data-live-relation-body]','BGG＋管理員');
+  const relations=await evaluate(()=>[...document.querySelectorAll('[data-live-relation-body] li')].map(row=>row.textContent));
+  assert.equal(relations.length,2);
+  assert.equal(relations.filter(row=>row.includes('Cult of Chaos')).length,1);
+  assert.ok(relations.some(row=>row.includes('Deluxe Edition')&&row.includes('方向待確認')));
+  await text('[data-live-relations] h2','相關遊戲 · 共 2 款');
+  await text('[data-live-relations] h3','擴充內容');
+  await text('[data-live-relations] h3','合輯關聯');
+  await text('[data-live-relations]','BGG:408254');
+  await text('[data-live-relations]','關聯資料來自 BGG 及已確認的站內關聯。');
+  for(const n of [1440,375]){
+   await width(n);
+   await evaluate(()=>document.querySelector('[data-live-relations]').scrollIntoView({block:'center'}));
+   await until(()=>evaluate(()=>[...document.querySelectorAll('[data-live-relations] li')].every(row=>row.querySelector('.relation-placeholder'))),'cover load failure fallback');
+   assert.ok(await evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth));
+   const {cssContentSize:{height:h}}=await send('Page.getLayoutMetrics');
+   const screenshot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true,clip:{x:0,y:0,width:n,height:h,scale:1}});
+   await writeFile(screenshots+'/public-bgg-404893-'+n+'.png',Buffer.from(screenshot.data,'base64'));
+  }
+  await goto('/en/games/bgg/404893');
+  await text('[data-live-relations] h2','Related games - 2 total');
+  await text('[data-live-relations]','Relation data comes from BGG and confirmed on-site relations.');
+  console.log('PASS XREL-B merged public row, unconfirmed compilation and BGG:404893 screenshot');
+ }
  assert.deepEqual(jsErrors,[]);console.log('PASS bilingual five-width checks for home / catalog / collection / BGG / NotBGG, mobile menu and forms, sleeve / relation blocks, SEO and privacy');
 }finally{ws?.close();browser?.kill();if(server)await new Promise(r=>server.close(r));f.sqlite.close();auth.restore();}

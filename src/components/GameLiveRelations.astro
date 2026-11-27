@@ -1,12 +1,32 @@
 ---
-interface Props{gameKey:string;lang:'en'|'zh-TW'}
-const{gameKey,lang}=Astro.props,en=lang==='en';
+import {getGames} from '../lib/games';
+interface Props { gameKey: string; lang: 'en' | 'zh-TW' }
+const {gameKey, lang} = Astro.props;
+const en = lang === 'en';
+// The public DTO keeps its existing canonical URLs, including catalog slugs.
+const bggSlugs = JSON.stringify(Object.fromEntries(getGames().filter(game => game.bgg).map(game => [game.slug, game.bggId])));
 ---
-<section class="live-relations" data-live-relations data-key={gameKey} data-lang={lang}>
- <h2>{en?'Current game relations':'即時遊戲關聯'}</h2>
- <p>{en?'BGG evidence and confirmed site relations; ownership is independent.':'BGG 證據與已確認站內關聯；是否收藏另行判定。'}</p>
- <div data-live-relation-body aria-live="polite">{en?'Loading…':'載入中…'}</div>
- <button type="button" data-live-relation-retry hidden>{en?'Retry relations':'重試關聯查詢'}</button>
+<section class="live-relations" data-live-relations data-key={gameKey} data-lang={lang} data-bgg-slugs={bggSlugs}>
+  <h2>{en ? 'Related games' : '相關遊戲'}</h2>
+  <div data-live-relation-body aria-live="polite">{en ? 'Loading…' : '載入中…'}</div>
+  <button type="button" data-live-relation-retry hidden>{en ? 'Retry relations' : '重試關聯查詢'}</button>
+  <p class="relation-note">{en ? 'Relation data comes from BGG and confirmed on-site relations.' : '關聯資料來自 BGG 及已確認的站內關聯。'}</p>
 </section>
 <script>import '../lib/public-live-relations-controller';</script>
-<style>.live-relations{min-width:0;padding:22px;border:1px solid #e3e4e4;border-radius:14px;background:white;margin:18px 0}.live-relations h2{font-size:1.1rem}.live-relations p,.live-relations :global(li){font-size:.85rem;line-height:1.8;overflow-wrap:anywhere}.live-relations :global(ul){padding-left:20px}.live-relations button{min-height:44px;padding:10px;border:1px solid #ccd5de;border-radius:7px;background:white;cursor:pointer}.live-relations button:hover{background:#eef4f9;border-color:#8fb0c9}@media(max-width:680px){.live-relations{padding:17px}}</style>
+<style>
+  .live-relations { min-width: 0; padding: 20px; border: 1px solid #e3e4e4; border-radius: 14px; background: white; margin: 18px 0; overflow-wrap: anywhere; }
+  .live-relations h2 { margin: 0 0 .6rem; font-size: 1.1rem; }
+  .live-relations :global(h3) { margin: .7rem 0 .25rem; font-size: .92rem; }
+  .live-relations :global(ul) { list-style: none; margin: 0; padding: 0; }
+  .live-relations :global(li) { display: grid; grid-template-columns: 42px minmax(0, 1fr); align-items: center; gap: .6rem; padding: .35rem 0; }
+  .live-relations :global(li a) { font-weight: 650; color: #263d53; }
+  .live-relations :global(li img), .live-relations :global(.relation-placeholder) { display: grid; place-items: center; width: 42px; height: 55px; object-fit: contain; background: #f0f3f6; border-radius: 5px; color: #647382; }
+  .live-relations :global(.live-relation-details) { display: flex; flex-wrap: wrap; gap: .2rem .5rem; font-size: .78rem; color: #526474; }
+  .live-relations :global(.live-relation-owned), .live-relations :global(.live-relation-pending) { padding-inline: .35rem; border-radius: 5px; }
+  .live-relations :global(.live-relation-owned) { color: #20613b; background: #e3f5e9; }
+  .live-relations :global(.live-relation-pending) { color: #764800; background: #fff0cd; }
+  .relation-note { margin: .7rem 0 0; font-size: .8rem; color: #526474; }
+  .live-relations button { min-height: 44px; padding: 10px; border: 1px solid #ccd5de; border-radius: 7px; background: white; cursor: pointer; }
+  .live-relations button:hover { background: #eef4f9; border-color: #8fb0c9; }
+  @media (max-width: 680px) { .live-relations { padding: 12px; } }
+</style>

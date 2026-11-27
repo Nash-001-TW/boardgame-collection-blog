@@ -6,7 +6,7 @@
 
 排序原則：先處理會擋住後續工作的缺陷與授權；需要使用者決策、可立即推進的提前；成本低但風險高的提前。級別名稱用「第 N 級」，避免與 R06-P0-A～C 等工作 ID 混淆。狀態用語依 AGENTS.md 6.2。來源：本檔、[PROJECT_STATUS.md](PROJECT_STATUS.md)、[專案整體檢查報告](docs/Project-Review-20261123.md)（F1～F9）、[V2 UI／UX 設計規範](docs/UI/V2-UI-Design-System.md)。
 
-> **正式環境現況（2026-11-27）**：Worker 版本 `2ebac4d8`（提交 `4a8afdd`，2026-11-27 台北 11:14；推送 `main` 即自動部署，見 #8、DECISION_LOG DEPLOY-01）；D1 已套用 0001～0028（0024 於 2026-11-26 台北 08:18、0026 於 09:40、0027 於 23:37，0028 於 2026-11-27 09:47 套用）；Workers Logs 已在設定中開啟。紀錄見 [Release-04](docs/V2-Release-04-preflight.md)。
+> **正式環境現況（2026-11-27）**：Worker 版本 `ec4c0693`（提交 `3943cca`，2026-11-27 台北 11:45；推送 `main` 即自動部署，見 #8、DECISION_LOG DEPLOY-01）；D1 已套用 0001～0028（0024 於 2026-11-26 台北 08:18、0026 於 09:40、0027 於 23:37，0028 於 2026-11-27 09:47 套用）；Workers Logs 已在設定中開啟。紀錄見 [Release-04](docs/V2-Release-04-preflight.md)。
 >
 > 已解決：F4（成果未提交）已由 `dd133d3` 提交並推送。F1／F2 已修正並部署。
 
@@ -65,7 +65,7 @@
 | 42 | 維運 | R2 孤兒照片清理：`v2_component_photo_orphans` 只記錄待刪的鍵值，還沒有實際刪除 R2 物件的工具；需要可重試的清理工具或排程 | Claude 規劃 | — |
 | 43 | 程式品質 | 過時的測試：R06 舊選擇器腳本、NotBGG 4 項、bgg-static-alias 5 項（後者執行時會改寫 `docs/d7a-local-evidence.json`，跑完要還原） | Codex | — |
 | 44 | 使用者手動 | 刪除舊的暫存資料夾 `D:\TEMP\p0a-*`、`D:\TEMP\CAT-D1-*`、`D:\temp\series-acc-*`、`D:\temp\r06-cc-*`；正式 D1 備份在 `D:\CodexHome\private-0024～0028-backup-*`（含正式資料，請自行決定保留期限） | 使用者 | — |
-06-cc-*`；正式 D1 備份在 `D:\CodexHome\private-0024～0028-backup-*`（含正式資料，請自行決定保留期限） | 使用者 | — |
+| 46 | 功能規劃 | 收藏組合與遊戲關聯跨層整合（Q169～Q190 已採納 2026-11-27，[規劃](docs/cross-layer-relation-plan-20261127.md)）：遊戲層有效關聯檢視與公開頁去重（#263 目前重複顯示）、收藏組合對應狀態與帶入建議、同時建立／補建遊戲關聯；分 B、C、D 階段，B 階段工作命令 XREL-B-20261127-01 已實作並審查（§14）；B-UI（§15）已實作並審查，等使用者看截圖後一起部署 | Claude 規劃 | — |
 
 ### 第 4 級：整理與文件
 

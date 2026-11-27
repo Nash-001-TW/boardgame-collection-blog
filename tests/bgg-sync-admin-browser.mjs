@@ -15,6 +15,7 @@ import {handlePublicGameCollection} from '../src/lib/public-game-collection.ts';
 import {createLocalGamesPreview} from '../scripts/lib/local-games-preview.ts';
 import {relationPageContext} from '../src/lib/relation-page-context.ts';
 import {getGames} from '../src/lib/games.ts';
+import {seedXrelB} from './helpers/xrel-b-fixture.ts';
 
 const out=process.argv[2];if(!out)throw new Error('An artifact directory is required');await mkdir(out,{recursive:true});
 const f=await sleeveWorkflowFixture(),auth=await accessFixture();let server,browser,ws;
@@ -101,7 +102,7 @@ try{
  await until(()=>evaluate(()=>{const body=document.querySelector('[data-live-relation-body]');return body&&!body.textContent.includes('Loading')&&!body.textContent.includes('could not');}),'public relations loaded');
  assert.equal(await evaluate(()=>[...document.querySelectorAll('[data-live-relation-body] a')].some(a=>a.href.endsWith('/900001'))),false);
  await goto('/admin/bgg?view=relations&domain=game&lang=en');
- await text('.relation-endpoints','Base (BGG:900001)');
+ await text('.relation-endpoints small','BGG:900001');
  await width(1280);await openEditor(id);await shot('game-en-edit-1280');await fill(create,{confirmed:true});await submit(create);await text('[data-bgg-status]','Relation saved.');
  assert.equal(f.sqlite.prepare('SELECT admin_revision FROM v2_game_relations WHERE id=?').get(id).admin_revision,2);
  await goto('/en/games/'+getGames().find(g=>g.bggId===f.bggId).slug);await text('[data-live-relation-body]','Admin');await text('[data-live-relation-body]','Base');
@@ -266,6 +267,95 @@ try{
  assert.deepEqual(await evaluate(()=>[...document.querySelector('#relation-editor [name=sourceId]').options].filter(o=>o.value&&!o.hidden&&!o.selected).map(o=>o.value)),['402']);
  console.log('PASS domain rules, mobile navigation, empty list, search and '+layouts.length+' responsive checks');
  for(const prefix of ['','/en']){await goto(prefix+'/games/'+getGames().find(g=>g.bggId===f.bggId).slug);await text('[data-live-relation-body]',prefix?'Admin':'管理員');for(const n of [1440,375,320]){await width(n);assert.ok(await evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth));}}
+ const screenshots=process.argv[3];
+ if(screenshots){
+  await mkdir(screenshots,{recursive:true});
+  // Existing regressions above work on a separate set of identities.
+  f.sqlite.exec("UPDATE v2_game_relations SET id=id+100 WHERE id>0");
+  seedXrelB(f.sqlite);
+  const path=gamePath+'&domain=game&source=231&lang=zh-TW';
+  f.sqlite.prepare('UPDATE v2_games SET primary_name=? WHERE id=228').run('Tiny Epic Cthulhu: Cult of Chaos — Collector’s Edition ' + 'LongUnbrokenExpansionName'.repeat(2));
+  await goto(path);
+  assert.equal(await evaluate(()=>document.querySelector('[data-relation-origin-filter][aria-pressed=true]').value),'manual');
+  const measurements=[];
+  const activate=async selector=>{
+   await evaluate(selector=>document.querySelector(selector).focus(),selector);
+   await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Enter',code:'Enter',text:'\r',unmodifiedText:'\r',windowsVirtualKeyCode:13,nativeVirtualKeyCode:13});
+   await send('Input.dispatchKeyEvent',{type:'keyUp',key:'Enter',code:'Enter',windowsVirtualKeyCode:13});
+  };
+  for(const filter of ['manual','bgg','all']){
+   if(filter!=='manual'){
+    await activate('[data-relation-origin-filter][value='+filter+']');
+    await until(()=>evaluate(value=>new URL(location.href).searchParams.get('origin')===value&&document.readyState==='complete',filter),'origin '+filter);
+   }
+   const observed=await evaluate(()=>[...document.querySelectorAll('[data-relation-row]')].map(row=>({
+    id:row.dataset.id??null, origin:[...row.querySelectorAll('[data-source-badge]')].map(badge=>badge.textContent).join('＋'),
+    actions:row.querySelectorAll('[data-relation-edit],[data-relation-archive]').length,
+   })));
+   const manual={id:'1',origin:filter==='all'?'BGG 原始＋手動':'手動',actions:2};
+   const raw={id:null,origin:'BGG 原始',actions:0};
+   assert.deepEqual(observed,filter==='manual'?[manual]:filter==='bgg'?[raw,raw]:[manual,raw]);
+   for(const n of [1440,375,320]){
+    await width(n);
+    await evaluate(async()=>{
+     window.scrollTo({top:0,behavior:'instant'});
+     await document.fonts.ready;
+     await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+    });
+    assert.ok(await evaluate(()=>scrollY===0&&document.documentElement.scrollWidth<=document.documentElement.clientWidth));
+    const firstRowY=await evaluate(()=>document.querySelector('[data-relation-row]').getBoundingClientRect().top);
+    measurements.push({filter,width:n,firstRowY});
+    if(n<768){
+     assert.ok(firstRowY>=0&&firstRowY<=300,JSON.stringify(measurements.at(-1)));
+     assert.ok(await evaluate(()=>[...document.querySelectorAll('.relation-heading-actions button,.relation-actions summary,[data-relation-origin-filter],[data-relation-filter-toggle],.relation-filter-tags a')].every(el=>{const r=el.getBoundingClientRect();return r.width>=44&&r.height>=44;})));
+    }
+    const image=await send('Page.captureScreenshot',{format:'png'});
+    await writeFile(screenshots+'/game-relations-'+filter+'-'+n+'.png',Buffer.from(image.data,'base64'));
+   }
+  }
+  await writeFile(screenshots+'/admin-first-row-y.json',JSON.stringify(measurements,null,2));
+  await send('Page.reload');
+  await until(()=>evaluate(()=>document.readyState==='complete'&&document.querySelector('[data-relation-origin-filter][aria-pressed=true]')?.value==='all'),'reload origin');
+  await text('.relation-filter-tags','全部關聯');
+  await text('.relation-state','方向待確認');
+  await text('.relation-state','方向已判定');
+  assert.ok(await evaluate(()=>['規則說明','新增關聯'].every(name=>document.querySelector('.relation-heading-actions button[aria-label="'+name+'"]'))));
+  await activate('[data-relation-filter-toggle]');
+  assert.equal(await evaluate(()=>document.querySelector('[data-relation-filter-toggle]').getAttribute('aria-expanded')),'true');
+  await activate('.relation-filter-tags a[aria-label^=移除資料來源]');
+  await until(()=>evaluate(()=>document.querySelector('[data-relation-origin-filter][aria-pressed=true]')?.value==='manual'),'remove origin');
+  await goto(path.replace('source=231','source=999999'));
+  await text('[data-relation-empty]','沒有符合的關聯');
+
+  const insert=f.sqlite.prepare("INSERT INTO v2_game_relations(source_game_id,target_game_id,relation_type,archived_at) VALUES(?,231,'other',CURRENT_TIMESTAMP)");
+  const game=f.sqlite.prepare("INSERT INTO v2_games(id,primary_name,game_type) VALUES(?,?,'base')");
+  for(let i=0;i<21;i++){
+   game.run(1000+i,'Page fixture '+i);
+   insert.run(1000+i);
+  }
+  for(const filter of ['manual','all']){
+   await goto(path+'&origin='+filter);
+   await text('.game-relation-pagination',filter==='manual'?'第 1 頁':'第 1–20 筆，共 23 筆');
+   await activate('.game-relation-pagination [rel=next]');
+   await text('.game-relation-pagination',filter==='manual'?'第 2 頁':'第 21–23 筆，共 23 筆');
+   await activate('.game-relation-pagination [rel=prev]');
+   await text('.game-relation-pagination',filter==='manual'?'第 1 頁':'第 1–20 筆，共 23 筆');
+  }
+  const links=Array.from({length:21},(_,i)=>({id:510000+i,name:'BGG page fixture '+i}));
+  f.sqlite.prepare("UPDATE bgg_games SET cache_json=json_set(cache_json,'$.implementations',json(?)) WHERE bgg_id=404893").run(JSON.stringify(links));
+  await goto(path+'&origin=bgg');
+  await text('.game-relation-pagination','第 1–20 筆，共 23 筆');
+  await activate('.game-relation-pagination [rel=next]');
+  await text('.game-relation-pagination','第 21–23 筆，共 23 筆');
+  await activate('.game-relation-pagination [rel=prev]');
+  await text('.game-relation-pagination','第 1–20 筆，共 23 筆');
+  console.log('PASS B-UI mobile row position, touch targets, keyboard, removable filters and multi-page pagination');
+  f.sqlite.exec("UPDATE bgg_games SET cache_json='invalid fixture JSON' WHERE bgg_id=404893");
+  await goto(path+'&origin=all');
+  await text('main [role=alert]','無法載入資料');
+  assert.equal(await evaluate(()=>document.querySelector('[data-relation-empty]')),null);
+  console.log('PASS XREL-B origin switching, read-only controls, read error and nine responsive screenshots');
+ }
  await send('Network.setExtraHTTPHeaders',{headers:{}});assert.equal(await evaluate(async()=>{const r=await fetch('/api/admin/bgg',{method:'POST',headers:{'Content-Type':'application/json','X-NotBGG-Request':'1'},body:'{}'});return r.status;}),401);
  await send('Network.setExtraHTTPHeaders',{headers:{'Cf-Access-Jwt-Assertion':await auth.token({email:'viewer@example.test'})}});assert.equal(await evaluate(async()=>{const r=await fetch('/api/admin/bgg',{method:'POST',headers:{'Content-Type':'application/json','X-NotBGG-Request':'1'},body:'{}'});return r.status;}),403);
  assert.deepEqual(jsErrors,[]);console.log('PASS bilingual responsive admin / public relations and authorization; no external BGG API or remote D1');

@@ -87,7 +87,13 @@ test('BGG mock synchronization and separate relation graphs',async t=>{
   assert.equal((await send({...relation('collection'),id:first,revision:1})).status,409);
  });
  await t.test('public relation sources, base/expansion roles, ownership and private field exclusion',async()=>{
-  const base=await readPublicLiveRelations(f.db,'BGG:900001','en');assert.ok(base.relations.some(r=>r.source==='bgg'&&r.role==='expansion'&&r.owned));assert.ok(base.relations.some(r=>r.source==='manual'&&r.kind==='expansion_of'));
+  const base=await readPublicLiveRelations(f.db,'BGG:900001','en');
+  const expansionRows=base.relations.filter(r=>r.role==='expansion');
+  assert.equal(expansionRows.length,1);
+  assert.equal(expansionRows[0].source,'bgg');
+  assert.equal(expansionRows[0].kind,'expansion_of');
+  assert.equal(expansionRows[0].owned,true);
+  assert.deepEqual(expansionRows[0].sources,['bgg','manual']);
   const expansion=await readPublicLiveRelations(f.db,'BGG:900002','zh-TW');assert.ok(expansion.relations.some(r=>r.role==='base'));
   assert.ok(!JSON.stringify(base).includes('PRIVATE'));assert.ok(!JSON.stringify(base).includes(token));assert.ok(!JSON.stringify(base).includes('last_attempt'));
   const failedDb={prepare:()=>{throw new Error(token);}} as unknown as D1Database;const failed=await handlePublicLiveRelations(new Request('http://localhost/api/public/relations/BGG:900001'),failedDb,'BGG:900001');assert.equal(failed.status,503);assert.ok(!(await failed.text()).includes(token));

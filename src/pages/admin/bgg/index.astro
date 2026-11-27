@@ -4,7 +4,7 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
 import RelationRules from '../../../components/admin/RelationRules.astro';
 import RelationManager from '../../../components/admin/RelationManager.astro';
 import {readBggSync} from '../../../lib/bgg-sync-admin';
-import {readRelationAdmin} from '../../../lib/relation-admin';
+import {readManualGameRelationPage,readRelationAdmin} from '../../../lib/relation-admin';
 import {relationPageContext} from '../../../lib/relation-page-context';
 export const prerender=false;
 const context=relationPageContext(Astro.url);
@@ -12,7 +12,14 @@ const {lang,title,breadcrumb,domain}=context;
 const params=Astro.url.searchParams,t=(zh:string,en:string)=>lang==='en'?en:zh;
 const relations=domain!==null;
 let cache:Awaited<ReturnType<typeof readBggSync>>|undefined,edges:Awaited<ReturnType<typeof readRelationAdmin>>|undefined,error='';
-try{if(relations)edges=await readRelationAdmin(env.DB,params);else cache=await readBggSync(env.DB,params);}catch{Astro.response.status=503;error=t('無法載入資料，請檢查篩選或稍後重試。','Could not load data. Check filters or retry later.');}
+const after=Number(params.get('after')||0);
+let manualPage={page:1,previous:0};
+try{
+ if(relations){
+  edges=await readRelationAdmin(env.DB,params);
+  if(domain==='game'&&after&&!('total' in edges))manualPage=await readManualGameRelationPage(env.DB,after,Number(params.get('source')||0));
+ }else cache=await readBggSync(env.DB,params);
+}catch{edges=undefined;Astro.response.status=503;error=t('無法載入資料，請檢查篩選或稍後重試。','Could not load data. Check filters or retry later.');}
 const link=(changes:Record<string,string|null>)=>{const q=new URLSearchParams(params);for(const[k,v]of Object.entries(changes))v===null?q.delete(k):q.set(k,v);return '?'+q;};
 const states:Record<string,string>={unknown:t('時間／狀態未建立','Time / status not established'),success:t('同步成功','Sync succeeded'),failed:t('同步失敗／中斷','Sync failed / interrupted'),syncing:t('同步中','Syncing')};
 const game=domain==='game';
@@ -24,14 +31,16 @@ const entryIsTarget=entryType==='base'||entryType==='standalone';
 const retainedTarget=Number(params.get('relationTarget')||0);
 const hasRetainedTarget=!game&&byId.has(retainedTarget);
 const defaultSource=entryIsTarget||hasRetainedTarget?0:filterId;
+const total=edges&&'total' in edges?edges.total:undefined;
+const previous=total===undefined?manualPage.previous:Math.max(0,after-20);
 const defaultTarget=hasRetainedTarget?retainedTarget:entryIsTarget?filterId:0;
 ---
 <AdminLayout lang={lang} title={title}>
-<main id="editor-content" class="admin-page relation-admin-page" data-bgg-admin data-lang={lang}>
+<main id="editor-content" class:list={["admin-page relation-admin-page", {"game-relations-page":game}]} data-bgg-admin data-lang={lang}>
  <nav aria-label={t('目前位置','Current location')} data-relation-breadcrumb><span>{breadcrumb[0]} / <span aria-current="page">{breadcrumb[1]}</span></span></nav>
  <header class="relation-page-heading"><h1>{title}</h1><div class="relation-heading-actions">
- <button type="button" class="admin-button" data-relation-open="relation-rules">{t('規則說明','Rules')}</button>
- {edges&&domain&&<button type="button" class="admin-button primary" data-relation-open="relation-editor">{t('＋ 新增關聯','＋ Add relation')}</button>}
+ <button type="button" class="admin-button" data-relation-open="relation-rules" aria-label={t('規則說明','Rules')}><span class="relation-heading-label">{t('規則說明','Rules')}</span>{game&&<span class="relation-heading-icon" aria-hidden="true">?</span>}</button>
+ {edges&&domain&&<button type="button" class="admin-button primary" data-relation-open="relation-editor" aria-label={t('新增關聯','Add relation')}><span class="relation-heading-label">{t('＋ 新增關聯','＋ Add relation')}</span>{game&&<span class="relation-heading-icon" aria-hidden="true">＋</span>}</button>}
  </div></header>
  <RelationRules context={context}/>
  <p role="status" aria-live="polite" tabindex="-1" data-bgg-status></p>
@@ -45,7 +54,12 @@ const defaultTarget=hasRetainedTarget?retainedTarget:entryIsTarget?filterId:0;
   {cache?.rows.map(row=><article class="bgg-panel"><label><input type="checkbox" data-sync-select value={String(row.bgg_id)}/> BGG {String(row.bgg_id)} · {String(row.name)}</label><p>{states[String(row.sync_status)]} · {t('最後成功','Last success')}: {String(row.last_success_at??'—')}</p><p>{t('最後嘗試','Last attempt')}: {String(row.last_attempt_at??'—')} · {String(row.last_error_code??'')}</p><button type="button" class="admin-button" data-sync-id={String(row.bgg_id)}>{row.sync_status==='failed'?t('重試','Retry'):t('同步此筆','Sync this ID')}</button><details><summary>{t('BGG 原始關聯證據（不推估方向）','Raw BGG relation evidence (no inferred direction)')}</summary><ul>{(row.evidence as {id:number;name:string;kind:string;inbound:boolean|null}[]).map(e=><li>BGG {e.id} · {e.name} · {e.kind} · inbound={e.inbound===null?'unknown':String(e.inbound)}</li>)}</ul></details></article>)}
  </>}
  {edges&&domain&&<RelationManager domain={domain} choices={choices} rows={edges.rows} source={defaultSource} target={defaultTarget} filter={filterId} lang={lang}/>}
- <nav class="relation-pagination" aria-label={t('分頁','Pagination')}><a class="admin-button" href={link({after:null})}>{t('第一頁','First page')}</a>{(cache?.nextCursor??edges?.nextCursor)!=null&&<a class="admin-button" href={link({after:String(cache?.nextCursor??edges?.nextCursor)})}>{t('下一頁','Next page')}</a>}</nav>
+ {game ? edges&&<nav class="relation-pagination game-relation-pagination" aria-label={t('分頁','Pagination')}>
+   <span>{total===undefined ? t(`第 ${manualPage.page} 頁`,`Page ${manualPage.page}`) :
+    t(`第 ${edges.rows.length?after+1:0}–${edges.rows.length?after+edges.rows.length:0} 筆，共 ${total} 筆`,`${edges.rows.length?after+1:0}-${edges.rows.length?after+edges.rows.length:0} of ${total}`)}</span>
+   {after>0&&<a class="admin-button" rel="prev" href={link({after:previous?String(previous):null})}>{t('上一頁','Previous page')}</a>}
+   {edges.nextCursor!=null&&<a class="admin-button" rel="next" href={link({after:String(edges.nextCursor)})}>{t('下一頁','Next page')}</a>}
+ </nav> : <nav class="relation-pagination" aria-label={t('分頁','Pagination')}><a class="admin-button" href={link({after:null})}>{t('第一頁','First page')}</a>{(cache?.nextCursor??edges?.nextCursor)!=null&&<a class="admin-button" href={link({after:String(cache?.nextCursor??edges?.nextCursor)})}>{t('下一頁','Next page')}</a>}</nav>}
 </main>
 </AdminLayout>
 <script>import '../../../lib/bgg-admin-controller';</script>
@@ -64,4 +78,25 @@ const defaultTarget=hasRetainedTarget?retainedTarget:entryIsTarget?filterId:0;
     color: var(--admin-danger, #9b3026);
   }
   .relation-admin-page :global(dialog.admin-kit-dialog) { max-height: calc(100dvh - 1.5rem); }
+</style>
+
+<style>
+  .relation-heading-icon { display: none; }
+  .admin-page.game-relations-page { padding-top: 16px; }
+  .game-relations-page [data-bgg-status]:empty { margin: 0; }
+  .game-relations-page .relation-page-heading h1 { font-size: 1.7rem; }
+  .game-relations-page .relation-heading-actions .primary { background: #6536a5; color: white; }
+  .game-relation-pagination { align-items: center; }
+  @media (max-width: 767px) {
+    .admin-page.game-relations-page { padding-top: 8px; }
+    .game-relations-page [data-relation-breadcrumb] { display: none; }
+    .game-relations-page .relation-page-heading { flex-wrap: nowrap; gap: .25rem; }
+    .game-relations-page .relation-page-heading h1 { font-size: 1.3rem; }
+    .game-relations-page .relation-heading-actions { flex-wrap: nowrap; }
+    .game-relations-page .relation-heading-label { display: none; }
+    .game-relations-page .relation-heading-icon { display: inline; font-size: 1.2rem; }
+    .admin-page.game-relations-page .relation-heading-actions button {
+      min-width: 44px; min-height: 44px; padding: 0;
+    }
+  }
 </style>

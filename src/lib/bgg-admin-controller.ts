@@ -7,6 +7,27 @@ function connect(root: HTMLElement) {
   const en = root.dataset.lang === 'en';
   const t = (zh: string, english: string) => en ? english : zh;
   const status = root.querySelector<HTMLElement>('[data-bgg-status]')!;
+  const toolbar = root.querySelector<HTMLFormElement>('[data-game-relation-toolbar]');
+  const filterToggle = toolbar?.querySelector<HTMLButtonElement>('[data-relation-filter-toggle]');
+  function setFilterOpen(open: boolean) {
+    toolbar?.toggleAttribute('data-filter-open', open);
+    filterToggle?.setAttribute('aria-expanded', String(open));
+  }
+  filterToggle?.addEventListener('click', () => setFilterOpen(!toolbar?.hasAttribute('data-filter-open')));
+  toolbar?.querySelector('[data-relation-search]')?.addEventListener('input', () => setFilterOpen(true));
+  const url = new URL(location.href);
+  const readError = root.querySelector('p[role=alert]');
+  if (readError && url.searchParams.get('view') === 'relations' &&
+      url.searchParams.get('domain') !== 'collection' &&
+      ['bgg', 'all'].includes(url.searchParams.get('origin') ?? '')) {
+    url.searchParams.set('origin', 'manual');
+    url.searchParams.delete('after');
+    const manual = document.createElement('a');
+    manual.href = url.href;
+    manual.textContent = t('回到手動關聯以縮小篩選範圍', 'Return to Manual to narrow the filter');
+    readError.appendChild(document.createTextNode(' '));
+    readError.appendChild(manual);
+  }
   const saved = 'bgg-admin-saved:' + location.href;
   try {
     const value = sessionStorage.getItem(saved);

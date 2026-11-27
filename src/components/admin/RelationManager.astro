@@ -15,24 +15,63 @@ interface Props {
 const {domain, choices, rows, source, target, filter, lang} = Astro.props;
 const game = domain === 'game';
 const t = (zh: string, en: string) => lang === 'en' ? en : zh;
+const selectedOrigin = Astro.url.searchParams.get('origin') ?? 'manual';
+const origins = [['all', t('全部關聯', 'All relations')], ['bgg', t('BGG 原始', 'BGG original')], ['manual', t('手動關聯', 'Manual relations')]];
+const bggLabel = t('BGG 原始', 'BGG original');
+const bggTypes: Record<string, string> = {
+  expansions: t('擴充關聯', 'Expansion link'),
+  implementations: t('重新實作關聯', 'Implementation link'),
+  compilations: t('合輯關聯', 'Compilation link'),
+};
 const byId = new Map(choices.map(choice => [Number(choice.id), choice]));
 const endpoint = (id: unknown) => relationEndpointLabel(id, byId.get(Number(id)), game, lang);
+const clearFilter = (name: string) => {
+  const params = new URLSearchParams(Astro.url.searchParams);
+  params.delete(name);
+  params.delete('after');
+  return '?' + params;
+};
+const gameEndpoint = (id: unknown, bggId: unknown, name: unknown) => {
+  const choice = byId.get(Number(id));
+  return {
+    name: String(choice?.primary_name ?? name ?? endpoint(id)),
+    identity: choice?.bgg_id || bggId ? 'BGG:' + String(choice?.bgg_id ?? bggId)
+      : choice?.seq ? 'NotBGG:' + String(choice.seq).padStart(6, '0') : '',
+  };
+};
+const shortTypes: Record<string, string> = {
+  requires_base: t('需要主遊戲', 'Requires base'),
+  expansion_of: t('擴充關聯', 'Expansion'),
+  accessory_for: t('適用配件', 'Accessory'),
+  compilation_of: t('合輯關聯', 'Compilation'),
+  other: t('其他', 'Other'),
+};
+
 ---
-<form method="get" class="relation-toolbar">
+<form method="get" class:list={["relation-toolbar", {"game-relation-toolbar": game}]} data-game-relation-toolbar={game ? "" : undefined}>
   <input name="view" type="hidden" value="relations"/>
   <input name="domain" type="hidden" value={domain}/>
   <input name="lang" type="hidden" value={lang}/>
-  <RelationPicker name="source" label={t('來源或目標', 'Source or target')} choices={choices} game={game} lang={lang} value={filter} filter/>
-  <button class="admin-button">{t('篩選', 'Filter')}</button>
+  <RelationPicker name="source" label={t('來源或目標', 'Source or target')} choices={choices} game={game} lang={lang} value={filter} compact={game} filter/>
+  {game && <button type="button" class="admin-button relation-filter-toggle" aria-expanded="false" aria-controls="relation-game-filter" data-relation-filter-toggle>{t('篩選', 'Filter')}</button>}
+  <button class="admin-button relation-filter-apply" name={game ? "origin" : undefined} value={game ? selectedOrigin : undefined}>{game ? t('套用', 'Apply') : t('篩選', 'Filter')}</button>
+  {game && <div class="relation-origin-switch" role="group" aria-label={t('資料來源','Data source')}>
+    {origins.map(([value, label]) => <button type="submit" name="origin" value={value}
+      aria-pressed={value === selectedOrigin} data-relation-origin-filter>{label}</button>)}
+  </div>}
+  {game && (filter > 0 || selectedOrigin !== 'manual') && <div class="relation-filter-tags">
+    {filter > 0 && <a href={clearFilter('source')} aria-label={t('移除遊戲篩選','Remove game filter') + ': ' + endpoint(filter)}><span>{endpoint(filter)}</span> <span aria-hidden="true">×</span></a>}
+    {selectedOrigin !== 'manual' && <a href={clearFilter('origin')} aria-label={t('移除資料來源篩選','Remove data source filter') + ': ' + origins.find(([value]) => value === selectedOrigin)?.[1]}>{origins.find(([value]) => value === selectedOrigin)?.[1]} <span aria-hidden="true">×</span></a>}
+  </div>}
 </form>
 {rows.length === 0 ? <p data-relation-empty>{t('沒有符合的關聯。', 'No matching relations.')}</p> :
   <table class="relation-list" data-relation-list data-domain={domain} aria-label={t('關聯清單','Relations')}>
     <thead>
       <tr>
-        <th scope="col">{t('來源 → 目標', 'Source → target')}</th>
+        <th scope="col">{game ? t('遊戲關聯', 'Game relation') : t('來源 → 目標', 'Source → target')}</th>
         <th scope="col">{t('類型', 'Type')}</th>
-        {game && <><th scope="col">{t('資料來源', 'Origin')}</th><th scope="col">{t('確認狀態', 'Confirmation')}</th></>}
-        <th scope="col">{t('關聯編號', 'Relation ID')}</th>
+        {game && <><th scope="col">{t('資料來源', 'Data source')}</th><th scope="col">{t('狀態', 'Status')}</th></>}
+        {!game && <th scope="col">{t('關聯編號', 'Relation ID')}</th>}
         <th scope="col">{t('操作', 'Actions')}</th>
       </tr>
     </thead>
@@ -40,20 +79,41 @@ const endpoint = (id: unknown) => relationEndpointLabel(id, byId.get(Number(id))
       {rows.map(row => {
         const sourceId = row.source_game_id ?? row.source_item_id;
         const targetId = row.target_game_id ?? row.target_item_id;
-        const sourceLabel = endpoint(sourceId);
-        const targetLabel = endpoint(targetId);
+        const rawBgg = game && row.relation_source === 'bgg' && row.id == null;
+        const bggEndpoint = (id: unknown, name: unknown) => String(name) + ' (BGG:' + String(id) + ')';
+        const sourceLabel = rawBgg && sourceId == null ? bggEndpoint(row.source_bgg_id, row.source_name) : endpoint(sourceId);
+        const targetLabel = rawBgg && targetId == null ? bggEndpoint(row.target_bgg_id, row.target_name) : endpoint(targetId);
         const type = String(row.relation_type);
-        const origin = relationSourceLabel(String(row.relation_source ?? 'manual'), lang);
-        const status = row.archived_at ? t('已封存', 'Archived')
-          : game ? row.admin_confirmed ? t('已確認', 'Confirmed') : t('待確認', 'Unconfirmed') : '';
+        const sources = Array.isArray(row.sources) ? row.sources.map(String) : [String(row.relation_source ?? 'manual')];
+        const sourceName = (value: string) => value === 'bgg' ? bggLabel : value === 'notbgg' ? 'NotBGG' : relationSourceLabel(value, lang);
+        const manual = sources.includes('manual');
+        const pending = rawBgg && !row.direction_confirmed;
+        const decided = rawBgg && Boolean(row.direction_confirmed) || (manual && sources.includes('bgg'));
+        const direction = (rawBgg ? type === 'expansions' && !pending : relationDirectionHint(type, lang)) ? '→' : '—';
         const editable = !row.archived_at && (!game || row.relation_source === 'manual');
-        return <tr data-relation-row data-id={String(row.id)} data-origin={String(row.relation_source ?? 'manual')}>
-          <td class="relation-endpoints"><span>{sourceLabel}</span><span aria-hidden="true">→</span><span>{targetLabel}</span></td>
-          <td class="relation-type"><span aria-hidden="true">{relationDirectionHint(type, lang) ? '↦' : '◇'}</span> {relationTypeLabel(type, lang)}
-            {!game && status && <small class="relation-collection-status">{status}</small>}
+        const from = gameEndpoint(sourceId, row.source_bgg_id, row.source_name);
+        const to = gameEndpoint(targetId, row.target_bgg_id, row.target_name);
+        return <tr data-relation-row data-id={row.id == null ? undefined : String(row.id)} data-origin={String(row.relation_source ?? 'manual')}>
+          {game ? <td class="relation-endpoints">
+            <span class="relation-from">{from.name}{from.identity && <small>{from.identity}</small>}</span>
+            <span class="relation-to"><span class="relation-direction" aria-hidden="true">{direction}</span><span>{to.name}{to.identity && <small>{to.identity}</small>}</span></span>
+          </td> : <td class="relation-endpoints"><span>{sourceLabel}</span><span aria-hidden="true">→</span><span>{targetLabel}</span></td>}
+          <td class="relation-type">{game ? bggTypes[type] ?? shortTypes[type] ?? relationTypeLabel(type, lang)
+            : <><span aria-hidden="true">{relationDirectionHint(type, lang) ? '↦' : '◇'}</span> {relationTypeLabel(type, lang)}
+              {Boolean(row.archived_at) && <small class="relation-collection-status">{t('已封存', 'Archived')}</small>}</>}
           </td>
-          {game && <><td class="relation-origin">{origin}</td><td class="relation-state">{status}</td></>}
-          <td class="relation-id">{!game && <span class="relation-mobile-origin">{origin} · </span>}#{String(row.id)}</td>
+          {game ? <>
+            <td class="relation-origin"><div class="relation-badges">{sources.map(value => <span class="relation-badge" data-source-badge={value}>{sourceName(value)}</span>)}</div>
+              {row.id != null && <small class="relation-record-id">#{String(row.id)}</small>}
+            </td>
+            <td class="relation-state"><div class="relation-badges">
+              {manual && <span class="relation-badge" data-confirmed={Boolean(row.admin_confirmed)}>{row.admin_confirmed ? t('✓ 已確認','✓ Confirmed') : t('未確認','Unconfirmed')}</span>}
+              {decided && <span class="relation-badge">{t('方向已判定','Direction decided')}</span>}
+              {pending && <span class="relation-badge relation-pending">{t('方向待確認','Direction pending')}</span>}
+              {Boolean(row.archived_at) && <span class="relation-badge">{t('已封存','Archived')}</span>}
+              {!manual && <span class="relation-badge"><span aria-hidden="true">🔒 </span>{t('唯讀','Read-only')}</span>}
+            </div></td>
+          </> : <td class="relation-id"><span class="relation-mobile-origin">{sources.map(sourceName).join(t('＋',' + '))} · </span>{row.id == null ? '—' : '#' + String(row.id)}</td>}
           <td class="relation-actions">
             {editable && <details name="relation-row-actions">
               <summary aria-label={t('關聯操作', 'Relation actions') + ' #' + String(row.id)}>⋯</summary>
@@ -100,6 +160,8 @@ const endpoint = (id: unknown) => relationEndpointLabel(id, byId.get(Number(id))
     max-width: 42rem;
     min-width: 0;
   }
+  .relation-origin-filter { display: grid; gap: .25rem; min-width: 0; }
+  .relation-origin-filter select { max-width: 100%; }
   .relation-list {
     width: 100%;
     border-collapse: separate;
@@ -184,5 +246,85 @@ const endpoint = (id: unknown) => relationEndpointLabel(id, byId.get(Number(id))
     .relation-list[data-domain="collection"] .relation-type { grid-column: 1 / 3; }
     .relation-list[data-domain="collection"] .relation-id { grid-column: 1 / -1; }
     .relation-mobile-origin { display: inline; }
+  }
+
+  :global(.admin-page) .game-relation-toolbar {
+    margin: .5rem 0;
+    padding: .5rem;
+    gap: .4rem;
+    align-items: end;
+    border: 1px solid var(--admin-border);
+    border-radius: 8px;
+    background: var(--admin-surface);
+  }
+  .game-relation-toolbar :global([data-relation-picker]) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    flex-basis: 22rem;
+    gap: .45rem;
+  }
+  .game-relation-toolbar :global([data-relation-picker] label) { display: grid; min-width: 0; margin: 0; gap: .25rem; }
+  .game-relation-toolbar :global([data-relation-picker] :is(input, select)) { box-sizing: border-box; width: 100%; min-width: 0; min-height: 44px; }
+  .game-relation-toolbar :global([data-relation-no-matches]) { grid-column: 1 / -1; }
+  :global(.admin-page) .game-relation-toolbar .relation-filter-toggle { display: none; }
+  :global(.admin-page) .game-relation-toolbar button { min-height: 44px; }
+  .relation-origin-switch { display: flex; min-width: 0; }
+  :global(.admin-page) .game-relation-toolbar .relation-origin-switch button {
+    flex: 1; min-width: 44px; margin: 0; padding: .2rem .4rem;
+    border: 1px solid var(--admin-border); border-radius: 0;
+    background: var(--admin-surface); color: #344054; font-size: .78rem;
+  }
+  :global(.admin-page) .game-relation-toolbar .relation-origin-switch button:first-child { border-radius: 8px 0 0 8px; }
+  :global(.admin-page) .game-relation-toolbar .relation-origin-switch button:last-child { border-radius: 0 8px 8px 0; }
+  :global(.admin-page) .game-relation-toolbar .relation-origin-switch button[aria-pressed="true"] {
+    background: #eee6fb; border-color: #6536a5; color: #492272; font-weight: 700;
+  }
+  .relation-filter-tags { flex-basis: 100%; display: flex; gap: .4rem; flex-wrap: wrap; }
+  .relation-filter-tags a { display: inline-flex; align-items: center; gap: .3rem; padding: .2rem .5rem; background: #f2edf8; border-radius: 8px; font-size: .78rem; overflow-wrap: anywhere; min-width: 44px; }
+  .relation-filter-tags a { max-width: 100%; }
+  .relation-filter-tags a > span:first-child { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .relation-list[data-domain="game"] { margin: .5rem 0; table-layout: auto; }
+  .relation-list[data-domain="game"] th:first-child { width: 44%; }
+  .relation-list[data-domain="game"] th:nth-last-child(2) { width: auto; }
+  .relation-list[data-domain="game"] :is(th,td) { padding: .45rem .6rem; }
+  .relation-list[data-domain="game"] .relation-type { white-space: nowrap; }
+  .relation-from, .relation-to { font-weight: 650; }
+  .relation-list[data-domain="game"] .relation-to { display: flex; align-items: baseline; gap: .35rem; color: inherit; }
+  .relation-list[data-domain="game"] .relation-from { padding-inline-start: 1.25rem; }
+  .relation-direction { min-width: .9rem; color: var(--ink-muted); }
+  .relation-endpoints small, .relation-record-id { display: inline-block; margin-inline-start: .35rem; color: var(--ink-muted); font-weight: 400; font-size: .75rem; }
+  .relation-record-id { display: block; margin: .2rem 0 0; }
+  .relation-badges { display: flex; flex-wrap: wrap; gap: .2rem; }
+  .relation-badge { display: inline-block; border-radius: 5px; padding: .1rem .35rem; background: #eef0f3; color: #344054; font-size: .75rem; line-height: 1.35; }
+  .relation-badge[data-source-badge="bgg"] { background: #e4f1fd; color: #184a75; }
+  .relation-badge:is([data-source-badge="manual"], [data-source-badge="notbgg"]) { background: #efe5fa; color: #552c78; }
+  .relation-badge[data-confirmed="true"] { background: #e3f5e9; color: #20613b; }
+  .relation-badge.relation-pending { background: #fff0cd; color: #764800; }
+  @media (min-width: 768px) {
+    :global(.admin-page) .game-relation-toolbar .relation-origin-switch button { flex: 1 0 auto; white-space: nowrap; }
+  }
+  @media (max-width: 767px) {
+    :global(.admin-page) .game-relation-toolbar { display: grid; grid-template-columns: minmax(0,1fr) auto; padding: 0; border: 0; background: none; }
+    .game-relation-toolbar :global([data-relation-picker]) { display: contents; }
+    .game-relation-toolbar :global([data-relation-picker] > label:first-child) { grid-area: 1 / 1; font-size: 0; gap: 0; }
+    .game-relation-toolbar :global([data-relation-picker] input) { font-size: .9rem; }
+    :global(.admin-page) .game-relation-toolbar .relation-filter-toggle { display: block; grid-area: 1 / 2; }
+    .game-relation-toolbar :global([data-relation-picker] > label:nth-child(2)) { grid-column: 1; }
+    .game-relation-toolbar:not([data-filter-open]) :global([data-relation-picker] > label:nth-child(2)),
+    .game-relation-toolbar:not([data-filter-open]) :global([data-relation-no-matches]),
+    .game-relation-toolbar:not([data-filter-open]) .relation-filter-apply { display: none; }
+    .relation-origin-switch, .relation-filter-tags { grid-column: 1 / -1; }
+    .relation-filter-tags { flex-wrap: nowrap; }
+    .relation-filter-tags a:last-child:not(:first-child) { flex-shrink: 0; }
+    .relation-filter-tags a { min-height: 44px; padding-block: 0; }
+    .relation-list[data-domain="game"] tr {
+      grid-template-areas: 'type state actions' 'endpoints endpoints endpoints' 'origin origin origin';
+      gap: .2rem .35rem; padding: .25rem .55rem .5rem; margin-block: .4rem;
+    }
+    .relation-list[data-domain="game"] td { padding: 0; }
+    .relation-list[data-domain="game"] .relation-type { font-size: .82rem; }
+    .relation-list[data-domain="game"] .relation-origin { display: flex; align-items: center; gap: .35rem; }
+    .relation-list[data-domain="game"] .relation-record-id { margin: 0; }
+    .relation-list[data-domain="game"] .relation-actions button { min-height: 44px; }
   }
 </style>

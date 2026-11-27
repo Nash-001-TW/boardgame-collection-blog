@@ -9,13 +9,14 @@ interface Props {
   game: boolean;
   value?: number;
   filter?: boolean;
+  compact?: boolean;
 }
-const {name, label, choices, lang, game, value = 0, filter = false} = Astro.props;
+const {name, label, choices, lang, game, value = 0, filter = false, compact = false} = Astro.props;
 const t = (zh: string, en: string) => lang === 'en' ? en : zh;
 ---
 <div data-relation-picker>
-  <label>{t('搜尋', 'Search')} · {label}<input type="search" data-relation-search autocomplete="off"/></label>
-  <label>{label}
+  <label>{compact ? t('搜尋遊戲', 'Search games') : t('搜尋', 'Search') + ' · ' + label}<input type="search" data-relation-search autocomplete="off" placeholder={compact ? t('搜尋遊戲', 'Search games') : undefined}/></label>
+  <label id={compact ? "relation-game-filter" : undefined}>{label}
     <select name={name} required={!filter}>
       <option value="">{filter ? t('全部', 'All') : t('請選擇', 'Select…')}</option>
       {filter && value > 0 && !choices.some(choice => Number(choice.id) === value) &&

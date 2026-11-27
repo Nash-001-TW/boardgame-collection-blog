@@ -1,0 +1,47 @@
+[
+  {
+    "filter": "manual",
+    "width": 1440,
+    "firstRowY": 311.46875
+  },
+  {
+    "filter": "manual",
+    "width": 375,
+    "firstRowY": 294.8125
+  },
+  {
+    "filter": "manual",
+    "width": 320,
+    "firstRowY": 294.8125
+  },
+  {
+    "filter": "bgg",
+    "width": 1440,
+    "firstRowY": 311.46875
+  },
+  {
+    "filter": "bgg",
+    "width": 375,
+    "firstRowY": 294.8125
+  },
+  {
+    "filter": "bgg",
+    "width": 320,
+    "firstRowY": 294.8125
+  },
+  {
+    "filter": "all",
+    "width": 1440,
+    "firstRowY": 311.46875
+  },
+  {
+    "filter": "all",
+    "width": 375,
+    "firstRowY": 294.8125
+  },
+  {
+    "filter": "all",
+    "width": 320,
+    "firstRowY": 294.8125
+  }
+]
