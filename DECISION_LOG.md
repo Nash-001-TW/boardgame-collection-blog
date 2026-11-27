@@ -161,3 +161,5 @@
 | 2026-11-26 | PHOTO-R2-BUCKET | 使用者授權 Claude 用 Wrangler 建立正式 R2 bucket `boardgame-component-photos`（預設設定、不開公開存取）。只授權建立 bucket，不包含 0027 正式套用、提交或推送 | 使用者 | Claude Code 對話「授權，建立 bucket」 | 已授權 |
 | 2026-11-26 | PHOTO-0027-A34 | 使用者授權 0027 正式套用 A3（用 `wrangler d1 execute --remote --file` 執行組合檔 1 次）與 A4 唯讀對帳。不包含提交、推送或部署 | 使用者 | Claude Code 對話「只做 A3＋A4」 | 已授權 |
 | 2026-11-26 | PHOTO-DEPLOY | 使用者依 DEPLOY-01 授權提交並推送 `main`，部署 #37 組件照片 P1（含 R06 三行高度縮圖與照片對話框美化）。0027 已在正式環境套用，R2 bucket 已建立 | 使用者 | Claude Code 對話「提交並推送」 | 已授權 |
+| 2026-11-27 | SLEEVE-REQ-LABEL | 使用者回報收藏卡套頁的需求卡片看不出對應哪個卡牌組件，採用 Claude 建議並授權 Claude 實作：標題加上組件名稱，未指派時顯示「未指派組件」；狀態行加上組件編號與名稱；有填「名稱或說明」時顯示說明。只改 `SleeveWorkflowPanel.astro` 的顯示，不動資料庫或 API | 使用者 | Claude Code 對話「照建議改」 | 已授權 |
+| 2026-11-27 | SLEEVE-REQ-LABEL-DEPLOY | 使用者看過截圖後依 DEPLOY-01 授權提交並推送 `main`，部署卡套需求卡片顯示組件名稱（SLEEVE-REQ-LABEL），並一起提交 #37 P1 的部署紀錄文件；不需要 Migration | 使用者 | Claude Code 對話「提交並推送」 | 已授權 |

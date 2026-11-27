@@ -210,3 +210,9 @@ CREATE UNIQUE INDEX ... ON v2_component_photos(definition_id, COALESCE(language_
 - **A3＋A4 全數通過，0027 已在正式環境就位。** 正式程式仍是 `14a30a3e`，不會讀寫新的表，所以不受影響。
 - 遠端操作合計（A1～A4）：Metadata 1、SELECT 5（A1 有 3 次沒讀到資料）、Export 1、正式寫入 1、HTTP 抽查 9。
 - **還沒做**：提交並推送 `main` 部署 P1（包含三行高度縮圖與對話框美化），以及登入後正式驗收。需要另外授權。
+
+### 11.5 部署 P1（2026-11-26，Claude 執行，DECISION_LOG PHOTO-DEPLOY）
+
+- 提交 `9da7a22`，台北 23:38 推送 `85277a8..9da7a22`。Workers Builds 自動部署，新版本 `750e6e37`（100%，台北 23:39:59）。
+- 唯讀抽查 10 條，全部符合：公開頁 4 條回 200；`/admin`、組件頁、照片 API 回 302 轉到 Access；`/media/components/<不存在的鍵>` 和格式錯誤的鍵都回 404，而且帶 `Cache-Control: no-store`，表示是新的讀圖路由在回應；`/dev/ui-kit` 回 404。
+- **還沒做**：使用者登入後的正式驗收，包括實機手機拍照、上傳、替換、移除，以及公開讀圖。

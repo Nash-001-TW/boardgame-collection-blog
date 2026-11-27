@@ -53,10 +53,14 @@ const shortageMessages = {
    const applications=data!.applications.filter(a=>a.requirement_id===r.id);
    const locked=applications.length>0||data!.applications.some(a=>a.requirement_id===null);
    const eligible=data!.eligible.includes(Number(r.component_definition_id));
+   // Show which card component the requirement belongs to, so assigned and unassigned rows are distinguishable at a glance.
+   const component=r.component_definition_id===null?undefined:data!.components.find(c=>Number(c.id)===Number(r.component_definition_id));
+   const componentName=r.component_definition_id===null?t('未指派組件','No component assigned'):String(component?.component_name??t('組件 #','Component #')+String(r.component_definition_id));
    return <article class="workflow-panel" data-requirement={String(r.id)} data-assigned={r.component_definition_id===null?'unassigned':'assigned'}>
-    <h3>#{String(r.id)} · {Number(r.width_tenth_mm)/10} × {Number(r.height_tenth_mm)/10} mm · {String(r.quantity_sheets)} {t('張','sleeves')}</h3>
+    <h3>#{String(r.id)} · <span data-requirement-component>{componentName}</span> · {Number(r.width_tenth_mm)/10} × {Number(r.height_tenth_mm)/10} mm · {String(r.quantity_sheets)} {t('張','sleeves')}</h3>
     {shortageMessages[status] && <p data-sleeve-shortage={status}>{shortageMessages[status]}</p>}
-    <p>{r.component_definition_id===null?t('未指派','Unassigned'):eligible?t('已確認實體卡牌','Confirmed physical card'):t('歷史／待確認引用（不可套用）','Legacy / unverified reference (cannot apply)')}</p>
+    <p>{r.component_definition_id===null?t('未指派','Unassigned'):'#'+String(r.component_definition_id)+' '+String(component?.component_name??'')+' · '+(eligible?t('已確認實體卡牌','Confirmed physical card'):t('歷史／待確認引用（不可套用）','Legacy / unverified reference (cannot apply)'))}</p>
+    {r.notes&&<p data-requirement-notes>{t('說明：','Notes: ')}{String(r.notes)}</p>}
     {locked?<p>{t('已有套用紀錄，需求已鎖定。','Requirement locked by recorded applications.')}</p>:<details><summary>{t('編輯需求','Edit requirement')}</summary><SleeveRequirementForm data={data!} row={r} collectionId={collectionId} lang={lang}/></details>}
     {data!.copies.filter(c=>r.owned_copy_id===null||r.owned_copy_id===c.id).map(c=>{
      const rows=applications.filter(a=>a.owned_copy_id===c.id),used=rows.reduce((sum,a)=>sum+Number(a.quantity_sheets),0);
