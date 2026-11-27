@@ -403,7 +403,9 @@ html:has(.shell-drawer[open]) { overflow: hidden; }
   color: var(--wood);
   overflow: hidden;
 }
-.admin-detail-cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+/* Qualified with .admin-page so the later global `.admin-page img { height: auto }` cannot shrink the cover;
+   the background hides the placeholder icon behind a letterboxed image. */
+.admin-page .admin-detail-cover img, .admin-detail-cover img { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; object-fit: contain; background: var(--wood-soft); }
 .admin-page .admin-detail-tabs {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));

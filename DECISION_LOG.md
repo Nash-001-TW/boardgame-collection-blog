@@ -178,3 +178,5 @@
 | 2026-11-27 | RELINK-UI-DEPLOY | 使用者看過截圖後，依 DEPLOY-01 授權提交並推送 `main`，部署 #39 版面改進；不需要 Migration | 使用者 | Claude Code 對話「提交並推送」 | 已授權 |
 | 2026-11-27 | RELINK-ICON | 使用者要求：頁首的「更換」改成小圖示按鈕，滑鼠移上去要顯示提示；「紀錄 N」在副本、組件、卡套、採購分頁會延遲出現，要修正。由 Claude 實作：圖示按鈕（觸控區 44px，視覺 28px）並在 hover 和鍵盤焦點時顯示提示；紀錄數改由頁首查詢在伺服器端直接輸出，不再於載入後另外請求 | 使用者 | Claude Code 對話 | 已實作 |
 | 2026-11-27 | RELINK-ICON-DEPLOY | 使用者看過截圖後，依 DEPLOY-01 授權提交並推送 `main`，部署 RELINK-ICON；不需要 Migration | 使用者 | Claude Code 對話「提交並推送」 | 已授權 |
+| 2026-11-27 | HEADER-COVER-FIX | 使用者回報收藏頁首的封面只顯示一部分。原因：全域 `.admin-page img{height:auto}` 比 `.admin-detail-cover img` 晚載入，而兩者特異度相同，所以蓋掉了 `height:100%`。由 Claude 修正 `admin-theme.css`：提高選擇器特異度、補上 `max-width:none` 和底色 | 使用者 | Claude Code 對話 | 已實作 |
+| 2026-11-27 | HEADER-COVER-DEPLOY | 使用者依 DEPLOY-01 授權提交並推送 `main`，部署 HEADER-COVER-FIX，並一起提交 RELINK-ICON 的部署紀錄 | 使用者 | Claude Code 對話「提交並推送」 | 已授權 |

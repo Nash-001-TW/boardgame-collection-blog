@@ -407,3 +407,5 @@ node --import tsx --test tests/public-site-data.test.ts tests/public-site-sqlite
 - **2026-11-27（Asia/Taipei）**：#39 版面改進已實作並經 Claude 審查（[規劃 §10.1](docs/collection-game-relink-plan-20261127.md)），沒有需要修正的地方：Node 44／44，Edge 9／9、74／74，Shell 9／9。尚未提交。不需要 Migration。
 - **2026-11-27（Asia/Taipei）**：#39 版面改進已部署：`382ecc8` → Worker `96793ec9`（台北 10:20:33），唯讀抽查 8 條都符合。待使用者登入確認頁首入口；此紀錄尚未提交。
 - **2026-11-27（Asia/Taipei）**：「更換」改成圖示按鈕加提示，「紀錄 N」改由伺服器直接輸出，不再延遲（DECISION_LOG RELINK-ICON，[規劃 §10.3](docs/collection-game-relink-plan-20261127.md)）。修改 `CollectionDetailHeader.astro`、`collection-relink-controller.ts`、`collection-v2-management.ts`（頁首查詢）和瀏覽器測試。Node 44／44，Edge 9／9、74／74、9／9。尚未提交。
+- **2026-11-27（Asia/Taipei）**：RELINK-ICON 已部署：`59a3819` → Worker `4b2bfe4c`（台北 10:32:25），唯讀抽查 8 條都符合。待使用者確認滑鼠提示，以及各分頁的「紀錄 N」；此紀錄尚未提交。
+- **2026-11-27（Asia/Taipei）**：修正收藏頁首封面只顯示一部分的問題（DECISION_LOG HEADER-COVER-FIX）：只改 `src/styles/admin-theme.css` 一條規則。用 400×200 的橫式圖驗證，圖片填滿 72×96 方框，完整顯示，上下用底色補齊。Edge 9／9、74／74、Shell 9／9。尚未提交。
