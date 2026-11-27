@@ -36,6 +36,28 @@ const shortageMessages = {
     sufficient: '',
     none: '',
 };
+const state=data?.requirements.map(r=>{
+ const applications=data!.applications.filter(a=>a.requirement_id===r.id);
+ const quantity=Number(r.quantity_sheets);
+ const copies=data!.copies.filter(c=>r.owned_copy_id===null||r.owned_copy_id===c.id).map(c=>{
+  const rows=applications.filter(a=>a.owned_copy_id===c.id);
+  const used=rows.reduce((sum,a)=>sum+Number(a.quantity_sheets),0);
+  const legacy=data!.applications.some(a=>a.owned_copy_id===c.id&&a.requirement_id===null);
+  const count=data!.counts.find(cc=>cc.owned_copy_id===c.id&&cc.component_definition_id===r.component_definition_id);
+  const progress=legacy?t('進度無法判定（歷史套用未對應）','Progress unavailable (unmapped historical use)')
+   :used>=quantity?t('已完成','Complete'):used===0?t('尚未套用','Not applied'):t('部分套用','Partially applied');
+  return {c,rows,used,legacy,count,progress};
+ });
+ return {r,quantity,applications,copies,complete:copies.length>0&&copies.every(c=>!c.legacy&&c.used>=quantity)};
+})??[];
+const overview=data?.copies.map(c=>{
+ let total=0,used=0,unknown=false;
+ for(const entry of state){
+  const copy=entry.copies.find(copy=>copy.c.id===c.id);
+  if(copy){total+=entry.quantity;used+=copy.used;unknown||=copy.legacy;}
+ }
+ return {id:c.id,total,used,remaining:unknown?'—':Math.max(0,total-used)};
+})??[];
 ---
 <section class="admin-sleeve-workflow" aria-label={t('卡套需求與逐副本套用','Sleeve requirements & copy applications')} data-sleeve-workflow data-lang={lang}>
  <p role="status" tabindex="-1" data-workflow-status aria-live="polite"></p>
@@ -44,49 +66,99 @@ const shortageMessages = {
  {data&&<>
   <h2>{String(data.collection.display_name)} · #{collectionId}</h2>
   <p>{t('建立需求與關聯不扣庫存。套用需要已確認卡牌及已清點的在藏、未封膜副本。已有套用的需求鎖定；變更需求請新增另一筆。','Requirements and assignments do not reduce stock. Applying needs confirmed cards and an inspected, unsealed copy in collection. Used requirements are locked; add another requirement for changes.')}</p>
-  <details class="workflow-panel"><summary>{t('新增卡套需求','Add sleeve requirement')}</summary><SleeveRequirementForm data={data} collectionId={collectionId} lang={lang}/></details>
-  <label>{t('需求篩選','Requirement filter')}<select data-assignment-filter><option value="all">{t('全部','All')}</option><option value="unassigned">{t('未指派','Unassigned')}</option><option value="assigned">{t('已關聯','Assigned')}</option></select></label>
+  <div class="workflow-create">
+   <details class="workflow-panel"><summary>{t('新增卡套需求','Add sleeve requirement')}</summary><SleeveRequirementForm data={data} collectionId={collectionId} lang={lang}/></details>
+   <details class="workflow-panel"><summary>{t('批次建立需求','Create requirements in batch')}</summary><SleeveRequirementForm data={data} collectionId={collectionId} lang={lang} batch/></details>
+  </div>
+  <label>{t('需求篩選','Requirement filter')}<select data-workflow-filter><option value="all">{t('全部','All')}</option><option value="pending">{t('未完成','Incomplete')}</option><option value="complete">{t('已完成','Complete')}</option></select></label>
+  <div data-workflow-results>
+  <ul class="workflow-overview" aria-label={t('副本總覽','Copy overview')}>
+   {overview.map(c=><li>{t('副本','Copy')} #{String(c.id)} · {t('總需求','Required')} {c.total} · {t('已套用','Applied')} {c.used} · {t('尚需套用','Remaining')} {c.remaining} {t('張','sleeves')}</li>)}
+  </ul>
   {shortageUnavailable && <p role="status">{t('無法取得尺寸庫存狀況。', 'Size stock status is unavailable.')}</p>}
   {data.requirements.length===0&&<p>{t('尚無卡套需求。','No sleeve requirements.')}</p>}
-  {data.requirements.map(r=>{
-   const status = shortageStatuses.get(Number(r.size_id)) ?? 'none';
-   const applications=data!.applications.filter(a=>a.requirement_id===r.id);
+  <div class="workflow-groups">
+  {data.sizes.filter(s=>state.some(entry=>entry.r.size_id===s.id)).map(size=>{
+   const entries=state.filter(entry=>entry.r.size_id===size.id);
+   const components=new Set(entries.map(entry=>entry.r.component_definition_id).filter(id=>id!==null));
+   const unassigned=entries.filter(entry=>entry.r.component_definition_id===null).length;
+   // Stock and product status belong to the size, so they are shown once per group instead of on every requirement.
+   const groupStatus=shortageStatuses.get(Number(size.id)) ?? 'none';
+   const groupProducts=data!.products.filter(p=>p.size_id===size.id);
+   return <details class="workflow-panel" data-size-group={String(size.id)}>
+   <summary>{Number(size.width_tenth_mm)/10} × {Number(size.height_tenth_mm)/10} mm · {t(`${components.size} 種組件`,`${components.size} components`)}{unassigned>0&&' · '+t(`${unassigned} 筆未指派`,`${unassigned} unassigned`)} · {t(`共 ${entries.reduce((n,e)=>n+e.quantity,0)} 張`,`${entries.reduce((n,e)=>n+e.quantity,0)} sleeves total`)}{groupProducts.length===0?' · '+t('無產品','No products'):(groupStatus==='shortage'?' · '+t('庫存不足','Short'):'')}</summary>
+   {(groupProducts.length===0||(groupStatus!=='no_product'&&shortageMessages[groupStatus]))&&<p class="group-notes">
+    {groupProducts.length===0&&<><span data-sleeve-shortage="no_product">{shortageMessages.no_product}</span> · <a href={'/admin/sleeves?'+new URLSearchParams({view:'products',size:String(size.id),lang})}>{t('卡套產品管理','Manage sleeve products')}</a></>}
+    {groupStatus!=='no_product'&&shortageMessages[groupStatus]&&<span data-sleeve-shortage={groupStatus}>{shortageMessages[groupStatus]}</span>}
+   </p>}
+   {entries.map(({r,quantity,applications,copies,complete})=>{
+   const products=groupProducts;
    const locked=applications.length>0||data!.applications.some(a=>a.requirement_id===null);
    const eligible=data!.eligible.includes(Number(r.component_definition_id));
    // Show which card component the requirement belongs to, so assigned and unassigned rows are distinguishable at a glance.
    const component=r.component_definition_id===null?undefined:data!.components.find(c=>Number(c.id)===Number(r.component_definition_id));
    const componentName=r.component_definition_id===null?t('未指派組件','No component assigned'):String(component?.component_name??t('組件 #','Component #')+String(r.component_definition_id));
-   return <article class="workflow-panel" data-requirement={String(r.id)} data-assigned={r.component_definition_id===null?'unassigned':'assigned'}>
-    <h3>#{String(r.id)} · <span data-requirement-component>{componentName}</span> · {Number(r.width_tenth_mm)/10} × {Number(r.height_tenth_mm)/10} mm · {String(r.quantity_sheets)} {t('張','sleeves')}</h3>
-    {shortageMessages[status] && <p data-sleeve-shortage={status}>{shortageMessages[status]}</p>}
-    <p>{r.component_definition_id===null?t('未指派','Unassigned'):'#'+String(r.component_definition_id)+' '+String(component?.component_name??'')+' · '+(eligible?t('已確認實體卡牌','Confirmed physical card'):t('歷史／待確認引用（不可套用）','Legacy / unverified reference (cannot apply)'))}</p>
-    {r.notes&&<p data-requirement-notes>{t('說明：','Notes: ')}{String(r.notes)}</p>}
-    {locked?<p>{t('已有套用紀錄，需求已鎖定。','Requirement locked by recorded applications.')}</p>:<details><summary>{t('編輯需求','Edit requirement')}</summary><SleeveRequirementForm data={data!} row={r} collectionId={collectionId} lang={lang}/></details>}
-    {data!.copies.filter(c=>r.owned_copy_id===null||r.owned_copy_id===c.id).map(c=>{
-     const rows=applications.filter(a=>a.owned_copy_id===c.id),used=rows.reduce((sum,a)=>sum+Number(a.quantity_sheets),0);
-     const legacy=data!.applications.some(a=>a.owned_copy_id===c.id&&a.requirement_id===null);
-     const inspected=data!.counts.some(cc=>cc.owned_copy_id===c.id&&cc.component_definition_id===r.component_definition_id);
-     const canApply=!legacy&&eligible&&inspected&&c.inventory_status==='in_collection'&&c.seal_status!=='sealed'&&used<Number(r.quantity_sheets);
+   return <details class="workflow-requirement" data-requirement={String(r.id)} data-completion={complete?'complete':'pending'}>
+    <summary><span class="requirement-title">#{String(r.id)} · <span data-requirement-component>{componentName}</span> · {quantity} {t('張','sleeves')}</span>
+     {copies.length>0&&<span class="copy-progress">{copies.map(({c,used,progress})=>`${t('副本','Copy')} #${c.id} ${used} / ${quantity} ${progress}`).join(' · ')}</span>}
+    </summary>
+    <p class="requirement-info">{r.component_definition_id===null?t('未指派','Unassigned'):'#'+String(r.component_definition_id)+' '+String(component?.component_name??'')+' · '+(eligible?t('已確認實體卡牌','Confirmed physical card'):t('歷史／待確認引用（不可套用）','Legacy / unverified reference (cannot apply)'))}{r.notes&&<> · <span data-requirement-notes>{t('說明：','Notes: ')}{String(r.notes)}</span></>}</p>
+    {locked?<p>{t('已有套用紀錄，需求已鎖定。','Requirement locked by recorded applications.')}</p>:!complete&&<details><summary>{t('編輯需求','Edit requirement')}</summary><SleeveRequirementForm data={data!} row={r} collectionId={collectionId} lang={lang}/></details>}
+    {copies.map(({c,rows,used,legacy,count,progress})=>{
+     const canApply=products.length>0&&!legacy&&eligible&&count?.inspection_status==='checked'&&c.inventory_status==='in_collection'&&c.seal_status!=='sealed'&&used<quantity;
+     const actual=count?.actual_quantity;
      return <section class="copy-application" data-copy={String(c.id)}>
-      <h4>{t('副本','Copy')} #{String(c.id)} {String(c.copy_label??'')}</h4>
-      <p>{legacy?t('存在未對應需求的歷史套用，以下進度僅計算已對應紀錄。','Unmapped historical applications exist; progress below includes mapped records only.'):''}</p>
-      <p>{used} / {String(r.quantity_sheets)} · {legacy?t('進度無法判定（歷史套用未對應）','Progress unavailable (unmapped historical use)'):used===0&&Number(r.quantity_sheets)>0?t('尚未套用','Not applied'):used<Number(r.quantity_sheets)?t('部分套用','Partially applied'):t('已完成','Complete')}</p>
-      <ul>{rows.map(a=><li>{String(a.brand??'')} {String(a.product_name)} · {String(a.quantity_sheets)} · {String(a.applied_at)}</li>)}</ul>
-      {canApply&&<form data-workflow-action="apply" class="fields">
+      {/* One line per copy: label, progress and any count mismatch. */}
+      <p class="copy-line"><strong>{t('副本','Copy')} #{String(c.id)} {String(c.copy_label??'')}</strong> · {used} / {quantity} · {progress}{actual!=null&&Number(actual)!==quantity&&<> · <span data-quantity-mismatch>{t(`數量待核對（需求 ${quantity} 張，清點 ${actual}）`,`Quantity needs review (${quantity} required, ${actual} counted)`)}</span></>}</p>
+      {legacy&&<p>{t('存在未對應需求的歷史套用，以上進度僅計算已對應紀錄。','Unmapped historical applications exist; progress above includes mapped records only.')}</p>}
+      {rows.length>0&&<ul>{rows.map(a=><li>{String(a.brand??'')} {String(a.product_name)} · {String(a.quantity_sheets)} · {String(a.applied_at)}</li>)}</ul>}
+      {canApply&&<details><summary>{t('套用卡套','Apply sleeves')}</summary><form data-workflow-action="apply" class="fields">
        <input type="hidden" name="id" value={String(r.id)}/><input type="hidden" name="revision" value={String(r.assignment_revision)}/><input type="hidden" name="copyId" value={String(c.id)}/>
        <input type="hidden" name="lastApplicationId" value={String(rows.length?rows[rows.length-1].id:0)}/>
-       <label>{t('實際使用產品','Actual product')}<select name="productId" required>{data!.products.filter(p=>p.size_id===r.size_id).map(p=><option value={String(p.id)} data-revision={String(p.admin_revision)} data-last={String(p.last_transaction_id)}>{String(p.brand??'')} {String(p.product_name)} · {t('帳面餘額','Ledger balance')}: {p.balance===null?t('尚未建立','Not established'):String(p.balance)}</option>)}</select></label>
+       <label>{t('實際使用產品','Actual product')}<select name="productId" required>{products.map(p=><option value={String(p.id)} data-revision={String(p.admin_revision)} data-last={String(p.last_transaction_id)}>{String(p.brand??'')} {String(p.product_name)} · {t('帳面餘額','Ledger balance')}: {p.balance===null?t('尚未建立','Not established'):String(p.balance)}</option>)}</select></label>
        <label>{t('本次實際套用張數','Sleeves applied now')}<input name="quantity" required type="number" min="1" max={Number(r.quantity_sheets)-used} step="1"/></label>
        <label>{t('套用日期','Application date')}<input name="date" type="date" required/></label>
-       <label><input name="notPreviouslyRecorded" type="checkbox" required/>{t('確認本次使用尚未透過手動庫存交易記錄；不可用此功能補登已扣帳歷史。','This use has not already been recorded in the stock ledger. Do not re-enter previously deducted history.')}</label>
+       <label><input name="notPreviouslyRecorded" type="checkbox" required aria-describedby={`deduction-${r.id}-${c.id}`}/>{t('確認這次使用的卡套尚未從庫存扣除','Confirm these sleeves have not already been deducted from stock')}</label>
+       <p id={`deduction-${r.id}-${c.id}`}>{t('若已在卡套庫存手動扣過，請勿再套用，以免重複扣帳。','If you already deducted these sleeves manually, do not apply them again to avoid a duplicate deduction.')}</p>
        <button class="admin-button primary">{t('確認套用並扣庫存','Apply and deduct stock')}</button>
-      </form>}
+      </form></details>}
      </section>;
     })}
-   </article>;
+   </details>;
   })}
+  </details>;
+  })}
+  </div>
   {data.applications.some(a=>a.requirement_id===null)&&<section class="workflow-panel"><h3>{t('未對應需求的歷史套用（不重扣庫存）','Historical applications without requirement mapping (no additional deduction)')}</h3><ul>{data.applications.filter(a=>a.requirement_id===null).map(a=><li>#{String(a.id)} · {t('副本','Copy')} #{String(a.owned_copy_id)} · {String(a.product_name)} · {String(a.quantity_sheets)}</li>)}</ul></section>}
+  </div>
  </>}
 </section>
 <script>import '../../lib/sleeve-workflow-controller';</script>
-<style>.workflow-panel{border:1px solid var(--admin-border);background:var(--admin-surface);padding:20px;border-radius:10px;margin:20px 0;min-width:0;overflow-wrap:anywhere}.copy-application{border-top:1px solid var(--admin-border);margin-top:20px;padding-top:10px}.workflow-panel summary{cursor:pointer;padding:10px 0}.workflow-panel li{overflow-wrap:anywhere}</style>
+<style>
+ .admin-sleeve-workflow{gap:8px}
+ .admin-sleeve-workflow > :is(h2,p){margin:0}
+ .admin-sleeve-workflow [hidden]{display:none}
+ .workflow-panel{border:1px solid var(--admin-border);background:var(--admin-surface);padding:0 12px;border-radius:8px;min-width:0}
+ .workflow-create,.workflow-groups{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;align-items:start}
+ .workflow-groups:has(> [open]){grid-template-columns:minmax(0,1fr)}
+ .workflow-overview{display:flex;flex-wrap:wrap;gap:6px 16px;padding:0;list-style:none;margin:0 0 8px}
+ .workflow-requirement,.copy-application{border-top:1px solid var(--admin-border);padding-inline:4px}
+ .workflow-panel summary{cursor:pointer;box-sizing:border-box;min-height:44px;padding:10px 0}
+ .requirement-title,.copy-progress{display:inline-block;vertical-align:bottom;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .requirement-title{max-width:calc(100% - 1.25em)}
+ .copy-progress{display:block;padding-inline-start:1.1em}
+ /* Tight spacing inside an expanded requirement: info line, then one line per copy. */
+ .admin-sleeve-workflow .workflow-panel :is(.group-notes,.requirement-info,.copy-line){margin:4px 0}
+ .admin-sleeve-workflow .workflow-panel .group-notes{margin-bottom:8px;color:var(--warning, inherit)}
+ .admin-sleeve-workflow .copy-application{padding-block:4px}
+ .admin-sleeve-workflow .copy-application ul{margin:2px 0}
+ .admin-sleeve-workflow .workflow-requirement details > summary{min-height:44px;padding:8px 0}
+ .admin-sleeve-workflow :global(form){margin-bottom:12px}
+ .admin-sleeve-workflow :global([data-batch-components]){grid-column:1/-1}
+ .admin-sleeve-workflow :global(.batch-row:not([hidden])){display:grid;grid-template-columns:minmax(0,1fr) minmax(0,8rem);gap:8px;align-items:center}
+ .admin-sleeve-workflow :global(button){min-height:44px;white-space:normal}
+ @media(max-width:600px){
+  .workflow-create,.workflow-groups{grid-template-columns:minmax(0,1fr)}
+  .admin-sleeve-workflow :global(.batch-row:not([hidden])){grid-template-columns:minmax(0,1fr) minmax(0,5rem)}
+ }
+</style>

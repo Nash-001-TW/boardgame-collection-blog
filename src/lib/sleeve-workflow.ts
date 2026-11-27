@@ -9,8 +9,77 @@ const evidenceSize=`((SELECT COUNT(*) FROM v2_component_definitions)+(SELECT COU
 async function digest(value:string){return [...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value)))].map(n=>n.toString(16).padStart(2,'0')).join('');}
 function description(value:unknown){if(typeof value!=='string'||value.trim().length>1000)throw new HttpError(400,'INVALID_SLEEVE_INPUT');return value.trim();}
 
+const componentProof=(id='?',signature='?',revision='?')=>`EXISTS (SELECT 1 FROM v2_physical_component_candidates p WHERE p.id=${id} AND p.collection_item_id=c.id
+ AND p.component_type='card' AND p.quantity_unit='card' AND p.signature=${signature} AND p.physical_revision=${revision} AND ${evidenceSize}<=?)`;
+const requirementScope=`SELECT c.id FROM v2_collection_items c LEFT JOIN v2_collection_management m ON m.collection_item_id=c.id
+ WHERE c.id=? AND m.archived_at IS NULL AND EXISTS(SELECT 1 FROM v2_sleeve_sizes WHERE id=?)
+ AND (? IS NULL OR EXISTS(SELECT 1 FROM v2_owned_copies WHERE id=? AND collection_item_id=c.id))`;
+
+async function writeRequirementsBatch(db:D1Database,secret:unknown,actor:string,key:string,body:Record<string,unknown>){
+ if(Object.keys(body).some(k=>!['action','collectionId','copyId','sizeId','items'].includes(k))
+    ||!Array.isArray(body.items)||!body.items.length||body.items.length>100)throw new HttpError(400,'INVALID_SLEEVE_INPUT');
+ // The 100-item cap bounds the JSON payload and the guarded INSERT; one collection rarely has that many card components.
+ const collection=sleeveInteger(body.collectionId,1),copy=body.copyId===null?null:sleeveInteger(body.copyId,1);
+ const size=sleeveInteger(body.sizeId,1);
+ const items=body.items.map((item:unknown)=>{
+  if(!item||typeof item!=='object'||Array.isArray(item)||Object.keys(item).some(k=>!['componentId','quantity'].includes(k)))
+   throw new HttpError(400,'INVALID_SLEEVE_INPUT');
+  const entry=item as Record<string,unknown>;
+  return {componentId:sleeveInteger(entry.componentId,1),quantity:sleeveInteger(entry.quantity,0,1_000_000)};
+ });
+ const requestKey=await digest(JSON.stringify(['sleeve-workflow',actor,key]));
+ const hash=await digest(JSON.stringify(['requirements-batch',collection,copy,size,items]));
+ const sources=requestKey+':*';
+ const readIds=async()=>{
+  const rows=await db.prepare('SELECT id FROM v2_sleeve_requirements WHERE source_key GLOB ? ORDER BY id').bind(sources).all<{id:number}>();
+  if(!rows.success||rows.results.length!==items.length)throw new HttpError(503,'DATABASE_UNAVAILABLE');
+  return rows.results.map(row=>row.id);
+ };
+ const replay=async()=>{
+  const row=await db.prepare('SELECT request_hash,result_id FROM v2_sleeve_workflow_commands WHERE request_key=?').bind(requestKey).first<{request_hash:string;result_id:number}>();
+  if(!row)return null;
+  if(row.request_hash!==hash)throw new HttpError(409,'IDEMPOTENCY_CONFLICT');
+  return {id:row.result_id,replayed:true};
+ };
+ if(await replay())return {ids:await readIds(),replayed:true};
+
+ const definitions=[...new Set(items.map(item=>item.componentId))];
+ const classified=await classifyStoredComponents(db,definitions,{secret});
+ const revisionRows=await db.prepare('SELECT id,physical_revision FROM v2_component_definitions WHERE id IN (SELECT value FROM json_each(?))')
+  .bind(JSON.stringify(definitions)).all<{id:number;physical_revision:number}>();
+ if(!revisionRows.success)throw new HttpError(503,'DATABASE_UNAVAILABLE');
+ const revisions=new Map(revisionRows.results.map(row=>[row.id,row.physical_revision]));
+ const signatures=new Map<number,string>();
+ for(const definitionId of definitions){
+  const result=classified.find(row=>row.definitionId===definitionId);
+  if(result?.reason==='EVIDENCE_UNAVAILABLE')throw new HttpError(503,'EVIDENCE_UNAVAILABLE');
+  if(!result?.canAssignToSleeves||!result.evidence.physicalSignature)throw new HttpError(409,'COMPONENT_INELIGIBLE');
+  signatures.set(definitionId,result.evidence.physicalSignature);
+ }
+ const input=items.map(item=>({...item,signature:signatures.get(item.componentId),revision:revisions.get(item.componentId)}));
+ // Use a bound JSON array so the number of D1 statements and parameters stays constant.
+ const statements=[db.prepare(`WITH items AS (
+  SELECT key AS position,json_extract(value,'$.componentId') AS component_id,json_extract(value,'$.quantity') AS quantity,
+   json_extract(value,'$.signature') AS signature,json_extract(value,'$.revision') AS revision FROM json_each(?)
+ ) INSERT INTO v2_sleeve_requirements(source_key,collection_item_id,owned_copy_id,component_definition_id,size_id,quantity_sheets,assignment_status,assignment_revision)
+ SELECT ? || items.position,c.id,?,items.component_id,?,items.quantity,'confirmed',1
+ FROM (${requirementScope}) c CROSS JOIN items
+ WHERE ${componentProof('items.component_id','items.signature','items.revision')} ORDER BY items.position RETURNING id`)
+  .bind(JSON.stringify(input),requestKey+':',copy,size,collection,size,copy,copy,maxEvidenceRows)];
+ // A guarded INSERT may omit rows. The command's NOT NULL constraint rolls back the entire write.
+ statements.push(db.prepare(`INSERT INTO v2_sleeve_workflow_commands(request_key,request_hash,actor,result_id)
+  SELECT ?,?,?,CASE WHEN COUNT(*)=? THEN MIN(id) END FROM v2_sleeve_requirements WHERE source_key GLOB ?`)
+  .bind(requestKey,hash,actor,items.length,sources));
+ const result=await commitSleeveCommand(db,statements,replay,/constraint|SLEEVE_WORKFLOW_STATE_CHANGED/i,'SLEEVE_WORKFLOW_STATE_CHANGED');
+ return {ids:await readIds(),replayed:result.replayed};
+}
+
 export async function writeSleeveWorkflow(db:D1Database,secret:unknown,actor:string,key:string|null,body:Record<string,unknown>){
  const action=body.action;
+ if(action==='requirements-batch'){
+  if(!key||!/^[A-Za-z0-9_-]{8,128}$/.test(key))throw new HttpError(400,'INVALID_IDEMPOTENCY_KEY');
+  return writeRequirementsBatch(db,secret,actor,key,body);
+ }
  const keys=action==='requirement'?['action','id','revision','collectionId','copyId','componentId','sizeId','quantity','notes']
  :action==='apply'?['action','id','revision','copyId','productId','productRevision','lastTransactionId','lastApplicationId','quantity','date','confirmed','notPreviouslyRecorded']:[];
  if(!keys.length||Object.keys(body).some(k=>!keys.includes(k)))throw new HttpError(400,'INVALID_SLEEVE_INPUT');
@@ -40,18 +109,14 @@ export async function writeSleeveWorkflow(db:D1Database,secret:unknown,actor:str
   const definition=await db.prepare('SELECT physical_revision FROM v2_component_definitions WHERE id=?').bind(definitionId).first<{physical_revision:number}>();
   definitionRevision=definition?.physical_revision??0;
  }
- const proof=`EXISTS (SELECT 1 FROM v2_physical_component_candidates p WHERE p.id=? AND p.collection_item_id=c.id
- AND p.component_type='card' AND p.quantity_unit='card' AND p.signature=? AND p.physical_revision=? AND ${evidenceSize}<=?)`;
+ const proof=componentProof();
  const proofArgs=[definitionId,signature,definitionRevision,maxEvidenceRows];
  const statements:D1PreparedStatement[]=[];
  if(action==='requirement'){
   const collection=sleeveInteger(body.collectionId,1),copy=body.copyId===null?null:sleeveInteger(body.copyId,1);
   const size=sleeveInteger(body.sizeId,1),quantity=sleeveInteger(body.quantity,0,1_000_000),notes=description(body.notes);
   // Fixed collection identity. Retaining a legacy reference does not authorize moving it.
-  const guard=`SELECT c.id FROM v2_collection_items c LEFT JOIN v2_collection_management m ON m.collection_item_id=c.id
-   WHERE c.id=? AND m.archived_at IS NULL AND EXISTS(SELECT 1 FROM v2_sleeve_sizes WHERE id=?)
-   AND (? IS NULL OR EXISTS(SELECT 1 FROM v2_owned_copies WHERE id=? AND collection_item_id=c.id))
-   AND (? IS NULL OR ${retain?'EXISTS(SELECT 1 FROM v2_component_definitions WHERE id=? AND collection_item_id=c.id)':proof})`;
+  const guard=`${requirementScope} AND (? IS NULL OR ${retain?'EXISTS(SELECT 1 FROM v2_component_definitions WHERE id=? AND collection_item_id=c.id)':proof})`;
   const args=[collection,size,copy,copy,definitionId,...(retain?[definitionId]:proofArgs)];
   if(!id)statements.push(db.prepare(`INSERT INTO v2_sleeve_requirements(source_key,collection_item_id,owned_copy_id,component_definition_id,size_id,quantity_sheets,notes,assignment_status,assignment_revision)
    SELECT ?,c.id,?,?,?,?,?,CASE WHEN ? IS NULL THEN 'unassigned' ELSE 'confirmed' END,1 FROM (${guard}) c RETURNING id`)
@@ -96,14 +161,14 @@ export async function readSleeveWorkflow(db:D1Database,collectionId:number,secre
  const queries=[
   ['requirements',`SELECT r.*,s.width_tenth_mm,s.height_tenth_mm FROM v2_sleeve_requirements r JOIN v2_sleeve_sizes s ON s.id=r.size_id WHERE r.collection_item_id=? ORDER BY r.id`],
   ['copies','SELECT id,copy_label,inventory_status,seal_status FROM v2_owned_copies WHERE collection_item_id=? ORDER BY id'],
-  ['components','SELECT id,component_name FROM v2_component_definitions WHERE collection_item_id=? ORDER BY id'],
+  ['components','SELECT id,component_name,expected_quantity FROM v2_component_definitions WHERE collection_item_id=? ORDER BY id'],
   ['applications',`SELECT a.id,a.requirement_id,a.owned_copy_id,a.quantity_sheets,a.applied_at,p.product_name,p.brand FROM v2_sleeve_applications a JOIN v2_owned_copies c ON c.id=a.owned_copy_id JOIN v2_sleeve_inventory_transactions t ON t.id=a.inventory_transaction_id JOIN v2_sleeve_products p ON p.id=t.product_id WHERE c.collection_item_id=? ORDER BY a.id`],
-  ['counts',`SELECT cc.id,cc.owned_copy_id,cc.component_definition_id FROM v2_copy_components cc JOIN v2_owned_copies c ON c.id=cc.owned_copy_id WHERE c.collection_item_id=? AND cc.inspection_status='checked'`],
+  ['counts',`SELECT cc.id,cc.owned_copy_id,cc.component_definition_id,cc.actual_quantity,cc.inspection_status FROM v2_copy_components cc JOIN v2_owned_copies c ON c.id=cc.owned_copy_id WHERE c.collection_item_id=?`],
  ] as const;
  const data:Record<typeof queries[number][0],Record<string,unknown>[]>={requirements:[],copies:[],components:[],applications:[],counts:[]};
  await Promise.all(queries.map(async([name,sql])=>{const result=await db.prepare(sql).bind(collectionId).all<Record<string,unknown>>();if(!result.success)throw new HttpError(503,'DATABASE_UNAVAILABLE');data[name]=result.results;}));
  const [sizes,products]=await Promise.all([
-  db.prepare('SELECT id,width_tenth_mm,height_tenth_mm FROM v2_sleeve_sizes ORDER BY id').all<Record<string,unknown>>(),
+  db.prepare('SELECT id,width_tenth_mm,height_tenth_mm FROM v2_sleeve_sizes ORDER BY width_tenth_mm,height_tenth_mm,id').all<Record<string,unknown>>(),
   db.prepare(`SELECT p.id,p.size_id,p.product_name,p.brand,p.admin_revision,COALESCE(MAX(t.id),0) last_transaction_id,SUM(t.quantity_sheets) balance FROM v2_sleeve_products p LEFT JOIN v2_sleeve_inventory_transactions t ON t.product_id=p.id WHERE p.is_active=1 GROUP BY p.id ORDER BY p.id`).all<Record<string,unknown>>()]);
  if(!sizes.success||!products.success)throw new HttpError(503,'DATABASE_UNAVAILABLE');
  const classifications=await classifyStoredComponents(db,data.components.map(row=>Number(row.id)),{secret});

@@ -5,6 +5,7 @@ import { accessFixture } from './helpers/notbgg-access-fixture.ts';
 import { handleSleeveAdminRequest } from '../src/lib/sleeve-admin-api.ts';
 import { readPublicGameCollection } from '../src/lib/public-game-collection.ts';
 import { readSleeveWorkflow } from '../src/lib/sleeve-workflow.ts';
+import { writePhysicalComponent } from '../src/lib/physical-component-management.ts';
 import {DatabaseSync} from 'node:sqlite';
 import {readFileSync,readdirSync} from 'node:fs';
 
@@ -28,6 +29,58 @@ test('0020 preserves unmapped historical applications and locks their requiremen
   assert.throws(()=>sqlite.exec('UPDATE v2_sleeve_requirements SET quantity_sheets=40 WHERE id=1'),/SLEEVE_REQUIREMENT_IN_USE/);
   assert.throws(()=>sqlite.exec('DELETE FROM v2_sleeve_requirements WHERE id=1'),/SLEEVE_REQUIREMENT_IN_USE/);
  }finally{sqlite.close();}
+});
+
+test('batch requirement API validates scope and creates independent records atomically',async t=>{
+ const f=await sleeveWorkflowFixture(),auth=await accessFixture();
+ try{
+  const jwt=await auth.token();
+  const bindings={...auth.bindings,DB:f.db,PHYSICAL_COMPONENT_SIGNING_KEY:f.secret,NOTBGG_WRITE_LIMITER:{limit:async()=>({success:true})}};
+  const makeCard=async(collectionId:number,name:string)=>(await writePhysicalComponent(f.db,f.secret,'fixture','batch-fixture-'+name,
+   {action:'create',collectionId,name,type:'card',unit:'card',expected:8,confirmed:true})).id;
+  const second=await makeCard(1,'second'),third=await makeCard(1,'third'),other=await makeCard(2,'foreign');
+  const items=[{componentId:f.cardId,quantity:5},{componentId:second,quantity:8},{componentId:third,quantity:1}];
+  const body={action:'requirements-batch',collectionId:1,copyId:1,sizeId:2,items};
+  const send=(payload:unknown=body,key='requirements-batch-test',token:string|null=jwt,origin='http://localhost')=>
+   handleSleeveAdminRequest(new Request('http://localhost/api/admin/sleeves',{method:'POST',headers:{
+    'Content-Type':'application/json',Origin:origin,'X-NotBGG-Request':'1','Idempotency-Key':key,...(token?{'Cf-Access-Jwt-Assertion':token}:{})
+   },body:JSON.stringify(payload)}),bindings);
+  const total=()=>f.sqlite.prepare('SELECT COUNT(*) n FROM v2_sleeve_requirements').get()?.n;
+  await t.test('rejects unauthenticated and cross-origin commands',async()=>{
+   assert.equal((await send(body,undefined,null)).status,401);
+   assert.equal((await send(body,undefined,jwt,'http://cross-origin.test')).status,403);
+   assert.equal(total(),1);
+  });
+  await t.test('rejects invalid quantity, size and shape',async()=>{
+   for(const quantity of [-1,0.5,1_000_001,'5']){
+    assert.equal((await send({...body,items:[items[0],{...items[1],quantity}]})).status,400);
+   }
+   assert.equal((await send({...body,sizeId:0})).status,400);
+   assert.equal((await send({...body,sizeId:999})).status,409);
+   assert.equal((await send({...body,items:[]})).status,400);
+   assert.equal(total(),1);
+  });
+  await t.test('rejects ineligible components and rolls back when any valid card belongs to another collection',async()=>{
+   assert.equal((await send({...body,items:[items[0],{componentId:f.tokenId,quantity:1}]})).status,409);
+   assert.equal((await send({...body,items:[items[0],{componentId:other,quantity:1}]})).status,409);
+   assert.equal((await send({...body,copyId:3})).status,409);
+   assert.equal(total(),1);
+   assert.equal(f.sqlite.prepare('SELECT COUNT(*) n FROM v2_sleeve_workflow_commands').get()?.n,0);
+  });
+  await t.test('concurrent matching requests replay the original IDs and changed payload conflicts',async()=>{
+   const responses=await Promise.all([send(),send()]);
+   assert.deepEqual(responses.map(response=>response.status).sort(),[200,201]);
+   const created=await responses.find(response=>response.status===201)!.json() as {data:{ids:number[];replayed:boolean}};
+   const replay=await responses.find(response=>response.status===200)!.json();
+   assert.equal(created.data.replayed,false);
+   assert.deepEqual(replay,{success:true,data:{ids:created.data.ids,replayed:true}});
+   assert.equal((await send({...body,items:[...items.slice(0,2),{...items[2],quantity:2}]})).status,409);
+   const rows=f.sqlite.prepare('SELECT id,source_key,component_definition_id,quantity_sheets,assignment_revision FROM v2_sleeve_requirements WHERE id<>1 ORDER BY id').all();
+   assert.deepEqual(rows.map(row=>[row.id,row.component_definition_id,row.quantity_sheets,row.assignment_revision]),items.map((item,i)=>[created.data.ids[i],item.componentId,item.quantity,1]));
+   assert.equal(new Set(rows.map(row=>row.source_key)).size,3);
+   assert.equal(f.sqlite.prepare("SELECT COUNT(*) n FROM v2_sleeve_inventory_transactions WHERE transaction_type='USE'").get()?.n,0);
+  });
+ }finally{f.sqlite.close();auth.restore();}
 });
 
 test('sleeve requirement and copy application workflow, isolated SQLite',async t=>{

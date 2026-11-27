@@ -19,7 +19,7 @@ export async function handleSleeveAdminRequest(request: Request, bindings: NotBg
             || !['same-origin','none',null].includes(request.headers.get('Sec-Fetch-Site'))) throw new HttpError(403,'ORIGIN_REJECTED');
         await requireAdminWriteLimit(bindings,authorization.admin.subject);
         const body=await readJson(request);
-        const data = body.action==='requirement'||body.action==='apply'
+        const data = body.action==='requirement'||body.action==='requirements-batch'||body.action==='apply'
             ?await writeSleeveWorkflow(bindings.DB,bindings.PHYSICAL_COMPONENT_SIGNING_KEY,authorization.admin.subject,request.headers.get('Idempotency-Key'),body)
             :await writeSleeveAdmin(bindings.DB,authorization.admin.subject,request.headers.get('Idempotency-Key'),body);
         return response(data.replayed?200:201,{success:true,data});

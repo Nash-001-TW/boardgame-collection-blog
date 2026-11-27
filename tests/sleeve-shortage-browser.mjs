@@ -59,8 +59,8 @@ export async function checkSleeveShortage({ cdp, navigate, evaluate, until, pass
 
     await navigate('/admin/collection/1/sleeves?fixture=shortage');
     assert.deepEqual(await evaluate(() => [...document.querySelectorAll('[data-sleeve-shortage]')].map(p => p.textContent)), [
-        '此尺寸與其他收藏合計的需求超過庫存', '此尺寸資料不完整，無法判定庫存是否足夠',
-        '尚無此尺寸的卡套產品', '此尺寸與其他收藏合計的需求超過庫存',
+        '此尺寸資料不完整，無法判定庫存是否足夠', '尚無此尺寸的卡套產品',
+        '尚無此尺寸的卡套產品', '此尺寸與其他收藏合計的需求超過庫存', '此尺寸與其他收藏合計的需求超過庫存',
     ]);
     await capture('collection-shortage');
     pass('collection shortage, incomplete and no-product messages');

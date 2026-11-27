@@ -1,14 +1,51 @@
 ---
 import type { readSleeveWorkflow } from '../../lib/sleeve-workflow';
-interface Props {data:Awaited<ReturnType<typeof readSleeveWorkflow>>;row?:Record<string,unknown>;collectionId:number;lang:'en'|'zh-TW'}
-const {data,row,collectionId,lang}=Astro.props,t=(zh:string,en:string)=>lang==='en'?en:zh;
+interface Props {data:Awaited<ReturnType<typeof readSleeveWorkflow>>;row?:Record<string,unknown>;collectionId:number;lang:'en'|'zh-TW';batch?:boolean}
+const {data,row,collectionId,lang,batch=false}=Astro.props,t=(zh:string,en:string)=>lang==='en'?en:zh;
+const used=new Set(data.requirements.map(r=>r.size_id));
+const sizeGroups=[
+ {label:t('本收藏已使用的尺寸','Sizes used in this collection'),sizes:data.sizes.filter(s=>used.has(s.id))},
+ {label:t('其他尺寸','Other sizes'),sizes:data.sizes.filter(s=>!used.has(s.id))},
+];
+const components=data.components.filter(c=>data.eligible.includes(Number(c.id))||c.id===row?.component_definition_id).map(c=>{
+ const existing=data.requirements.filter(r=>r.component_definition_id===c.id)
+  .map(r=>t('已有需求','Existing requirement')+` #${r.id}, ${Number(r.width_tenth_mm)/10} × ${Number(r.height_tenth_mm)/10}`);
+ return {id:Number(c.id),name:String(c.component_name),expected:c.expected_quantity,existing:existing.length?'（'+existing.join(' · ')+'）':''};
+});
 ---
-<form data-workflow-action="requirement" class="fields">
- <input name="id" type="hidden" value={String(row?.id??0)}/><input name="revision" type="hidden" value={String(row?.assignment_revision??0)}/><input name="collectionId" type="hidden" value={collectionId}/>
- <label>{t('尺寸','Size')}<select name="sizeId" required>{data.sizes.map(s=><option value={String(s.id)} selected={s.id===row?.size_id}>{Number(s.width_tenth_mm)/10} × {Number(s.height_tenth_mm)/10} mm</option>)}</select></label>
+<form data-workflow-action={batch?'requirements-batch':'requirement'} class="fields">
+ {!batch&&<><input name="id" type="hidden" value={String(row?.id??0)}/><input name="revision" type="hidden" value={String(row?.assignment_revision??0)}/></>}
+ <input name="collectionId" type="hidden" value={collectionId}/>
+ <label>{t('搜尋尺寸','Search sizes')}<input type="search" inputmode="decimal" data-size-search/></label>
+ <label>{t('尺寸','Size')}<select name="sizeId" required data-size-options>
+  <option value="">{t('請選擇尺寸','Select a size')}</option>
+  {sizeGroups.filter(group=>group.sizes.length).map(group=><optgroup label={group.label}>{group.sizes.map(s=>{
+   const label=`${Number(s.width_tenth_mm)/10} × ${Number(s.height_tenth_mm)/10} mm`;
+   const count=data.products.filter(p=>p.size_id===s.id).length;
+   return <option value={String(s.id)} data-dimensions={label} selected={s.id===row?.size_id}>{label}{count?t(`（${count} 種產品）`,` (${count} products)`):''}</option>;
+  })}</optgroup>)}
+ </select></label>
+ {!batch&&<>
  <label>{t('需求張數','Required sleeves')}<input name="quantity" type="number" min="0" max="1000000" step="1" required value={Number(row?.quantity_sheets??0)}/></label>
  <label>{t('名稱或說明（管理員）','Name or description (admin)')}<textarea name="notes" maxlength="1000">{String(row?.notes??'')}</textarea></label>
+ </>}
  <label>{t('適用副本','Copy scope')}<select name="copyId"><option value="">{t('收藏層級（各副本獨立套用）','Collection level (each copy applied independently)')}</option>{data.copies.map(c=><option value={String(c.id)} selected={c.id===row?.owned_copy_id}>#{String(c.id)} {String(c.copy_label??'')}</option>)}</select></label>
- <label>{t('卡牌組件','Card component')}<select name="componentId"><option value="">{t('未指派','Unassigned')}</option>{data.components.filter(c=>data.eligible.includes(Number(c.id))||c.id===row?.component_definition_id).map(c=><option value={String(c.id)} selected={c.id===row?.component_definition_id}>#{String(c.id)} {String(c.component_name)} {data.eligible.includes(Number(c.id))?'':t('（保留歷史引用）','(retained existing reference)')}</option>)}</select></label>
- <button class="admin-button">{t('儲存需求（不扣庫存）','Save requirement (no stock deduction)')}</button>
+ <label class="workflow-check"><input type="checkbox" data-show-all/>{t('顯示全部','Show all')}</label>
+ {batch?<fieldset data-batch-components hidden>
+  <legend>{t('卡牌組件','Card components')}</legend>
+  {components.map(c=>{
+   const counts=Object.fromEntries(data.counts.filter(cc=>cc.component_definition_id===c.id&&cc.actual_quantity!=null).map(cc=>[String(cc.owned_copy_id),cc.actual_quantity]));
+   return <div class="batch-row" data-batch-component={c.id} data-existing={c.existing?'true':undefined} hidden={!!c.existing}>
+    <label class="workflow-check"><input type="checkbox" data-batch-select/>#{c.id} {c.name} {c.existing}</label>
+    <label>{t('張數','Sleeves')}<input type="number" min="0" max="1000000" step="1" data-batch-quantity data-counts={JSON.stringify(counts)} data-expected={String(c.expected??'')} disabled required/></label>
+   </div>;
+  })}
+ </fieldset>:<label>{t('卡牌組件','Card component')}<select name="componentId" data-component-options><option value="">{t('未指派','Unassigned')}</option>
+  {components.map(c=>{
+   const selected=c.id===row?.component_definition_id,hidden=!!c.existing&&!selected;
+   return <option value={c.id} selected={selected} hidden={hidden} disabled={hidden} data-existing={hidden?'true':undefined}>#{c.id} {c.name} {c.existing} {data.eligible.includes(c.id)?'':t('（保留歷史引用）','(retained existing reference)')}</option>;
+  })}
+ </select></label>}
+ {batch&&<output data-batch-preview aria-live="polite"></output>}
+ <button class="admin-button" disabled={batch}>{batch?t('批次儲存需求','Save requirements in batch'):t('儲存需求（不扣庫存）','Save requirement (no stock deduction)')}</button>
 </form>
