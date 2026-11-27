@@ -2,6 +2,7 @@
 import RelationPicker from './RelationPicker.astro';
 import {gameRelationTypes, collectionRelationTypes} from '../../lib/relation-admin';
 import {relationTypeLabel, relationDirectionHint} from '../../lib/relation-labels';
+import type {CrossLayerSuggestion} from '../../lib/cross-layer-relations';
 
 interface Props {
   domain: 'game' | 'collection';
@@ -9,8 +10,9 @@ interface Props {
   source: number;
   target: number;
   lang: 'en' | 'zh-TW';
+  suggestions?: Record<number,CrossLayerSuggestion[]> | null;
 }
-const {domain, choices, source, target, lang} = Astro.props;
+const {domain, choices, source, target, lang, suggestions} = Astro.props;
 const game = domain === 'game';
 const t = (zh: string, en: string) => lang === 'en' ? en : zh;
 const types = game ? gameRelationTypes : collectionRelationTypes;
@@ -23,6 +25,12 @@ const types = game ? gameRelationTypes : collectionRelationTypes;
     <input name="revision" type="hidden" value="0"/>
     <div class="relation-endpoint-fields">
       <RelationPicker name="sourceId" label={t('來源', 'Source')} choices={choices} lang={lang} game={game} value={source}/>
+      {!game && <section data-relation-suggestions hidden aria-live="polite">
+        <strong>{t('建議收藏組合','Suggested combinations')}</strong>
+        {suggestions === null && <p>{t('建議暫不可用','Suggestions temporarily unavailable')}</p>}
+        <div data-relation-suggestion-items></div>
+        {suggestions && <script is:inline type="application/json" data-relation-suggestion-data set:html={JSON.stringify(suggestions).replace(/</g,'\\u003c')}></script>}
+      </section>}
       <RelationPicker name="targetId" label={t('目標', 'Target')} choices={choices} lang={lang} game={game} value={target}/>
     </div>
     <button class="admin-button" type="button" data-relation-swap>{t('⇄ 交換來源與目標', '⇄ Swap source and target')}</button>
@@ -35,6 +43,7 @@ const types = game ? gameRelationTypes : collectionRelationTypes;
       <strong>{t('方向預覽', 'Direction preview')}</strong>
       <div data-relation-preview></div>
       <div data-relation-hint></div>
+      {!game && <div data-cross-preview></div>}
     </div>
     {game ? <>
       <label class="relation-confirmed"><input name="confirmed" type="checkbox"/>{t('確認此手動關聯（公開頁才會顯示）', 'Confirm this manual relation for public display')}</label>
@@ -61,15 +70,21 @@ const types = game ? gameRelationTypes : collectionRelationTypes;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: .75rem;
   }
-  .admin-page #relation-editor [data-relation-swap] { justify-self: start; }
-  .admin-page #relation-editor label { min-width: 0; margin: 0; }
-  .admin-page #relation-editor :is(select, textarea) { width: 100%; box-sizing: border-box; }
-  .admin-page #relation-editor .relation-confirmed { display: flex; align-items: center; gap: .5rem; }
-  .admin-page #relation-editor .relation-confirmed input { width: auto; flex: none; }
+  [data-relation-suggestions] { grid-column: 1 / -1; }
+  @media (min-width: 551px) { [data-relation-suggestions] { grid-row: 2; } }
+  :global(.admin-page) #relation-editor [data-relation-swap] { justify-self: start; }
+  :global(.admin-page) #relation-editor label { min-width: 0; margin: 0; }
+  :global(.admin-page) #relation-editor :is(select, textarea) { width: 100%; box-sizing: border-box; }
+  :global(.admin-page) #relation-editor .relation-confirmed { display: flex; align-items: center; gap: .5rem; }
+  :global(.admin-page) #relation-editor .relation-confirmed input { width: auto; flex: none; }
   .relation-preview {
     border: 1px solid var(--admin-border);
     border-radius: var(--radius-sm);
     padding: .65rem;
+  }
+  #relation-editor [data-relation-suggestion-items] > :global(div) {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .35rem;
+    margin-block: .3rem;
   }
   @media (max-width: 550px) {
     #relation-editor { padding: 1rem; }

@@ -1,0 +1,62 @@
+[
+  {
+    "view": "collection-all",
+    "width": 1440,
+    "fits": true,
+    "firstRowY": 336.3125
+  },
+  {
+    "view": "collection-all",
+    "width": 375,
+    "fits": true,
+    "firstRowY": 252.421875
+  },
+  {
+    "view": "collection-all",
+    "width": 320,
+    "fits": true,
+    "firstRowY": 252.421875
+  },
+  {
+    "view": "collection-addable",
+    "width": 1440,
+    "fits": true,
+    "firstRowY": 336.3125
+  },
+  {
+    "view": "collection-addable",
+    "width": 375,
+    "fits": true,
+    "firstRowY": 252.421875
+  },
+  {
+    "view": "collection-addable",
+    "width": 320,
+    "fits": true,
+    "firstRowY": 252.421875
+  },
+  {
+    "view": "game-my-collection",
+    "width": 1440,
+    "fits": true,
+    "firstRowY": 311.46875
+  },
+  {
+    "view": "game-my-collection",
+    "width": 375,
+    "fits": true,
+    "firstRowY": 294.8125
+  },
+  {
+    "view": "collection-suggestion",
+    "width": 1440,
+    "fits": true,
+    "firstRowY": 336.3125
+  },
+  {
+    "view": "collection-suggestion",
+    "width": 375,
+    "fits": true,
+    "firstRowY": 252.421875
+  }
+]

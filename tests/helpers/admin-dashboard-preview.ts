@@ -218,7 +218,9 @@ export async function dashboardPreview(bindings: Record<string, unknown>, uiKit?
    const response=await container.renderToResponse(view.component,{request,params:id?{id}:{}});
    const html=await response.text();
    if (route === '/dev/ui-kit') return new Response(html.replace('</head>','<style>' + view.css + '</style></head>'),{status:response.status,headers:response.headers});
-   return new Response(html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/g,'').replace('</head>',`<style>${view.css}</style></head>`),{status:response.status,headers:response.headers});
+   return new Response(html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, script =>
+    /^<script\b[^>]*\btype="application\/json"(?:\s|>)/.test(script) ? script : '')
+    .replace('</head>',`<style>${view.css}</style></head>`),{status:response.status,headers:response.headers});
   });
  };
 }

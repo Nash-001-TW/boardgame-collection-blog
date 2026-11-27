@@ -355,6 +355,65 @@ try{
   await text('main [role=alert]','無法載入資料');
   assert.equal(await evaluate(()=>document.querySelector('[data-relation-empty]')),null);
   console.log('PASS XREL-B origin switching, read-only controls, read error and nine responsive screenshots');
+  const crossShots=process.argv[4];
+  if(crossShots){
+   await mkdir(crossShots,{recursive:true});
+   // Use the same fixture as C01 with the official collection IDs.
+   f.sqlite.exec(`DELETE FROM v2_game_relations WHERE source_game_id=228 OR target_game_id=231;
+    DELETE FROM v2_collection_items WHERE game_id IN(228,231);
+    DELETE FROM bgg_games WHERE bgg_id IN(404893,408254);
+    DELETE FROM v2_games WHERE id IN(228,231);
+    DELETE FROM v2_collection_relations`);
+   seedXrelB(f.sqlite,true);
+   const crossLayouts=[];
+   async function crossShot(name,n,dialog=false){
+    await width(n);
+    const metrics=await evaluate(async dialog=>{
+     window.scrollTo({top:0,behavior:'instant'});
+     await document.fonts.ready;
+     await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+     const editor=document.querySelector('#relation-editor');
+     const row=document.querySelector('[data-relation-row]');
+     return {fits:document.documentElement.scrollWidth<=innerWidth&&(!dialog || editor.scrollWidth<=editor.clientWidth),
+      firstRowY:row?.getBoundingClientRect().top??null};
+    },dialog);
+    assert.ok(metrics.fits,JSON.stringify({name,n,...metrics}));
+    if(n<768&&!dialog)assert.ok(metrics.firstRowY>=0&&metrics.firstRowY<=295,JSON.stringify({name,n,...metrics}));
+    crossLayouts.push({view:name,width:n,...metrics});
+    const image=await send('Page.captureScreenshot',{format:'png'});
+    await writeFile(crossShots+'/'+name+'-'+n+'.png',Buffer.from(image.data,'base64'));
+   }
+   // Keep the acceptance screenshots focused on the three official combinations.
+   const collectionFixture=collectionPath;
+   for(const state of ['all','addable']){
+    await goto(collectionFixture+'&gameState='+state);
+    const actual=await evaluate(()=>[...document.querySelectorAll('[data-cross-state]')].map(el=>el.dataset.crossState));
+    assert.deepEqual(actual,state==='all'?['linked','addable','addable']:['addable','addable'],
+     await evaluate(()=>document.querySelector('main').innerText.slice(0,600)));
+    for(const n of [1440,375,320])await crossShot('collection-'+state,n);
+   }
+   await goto(path+'&origin=all');
+   await text('.relation-cross-layer','查看組合');
+   for(const n of [1440,375])await crossShot('game-my-collection',n);
+   const rel=f.sqlite.prepare('SELECT id FROM v2_collection_relations WHERE source_item_id=263').get().id;
+   f.sqlite.prepare('UPDATE v2_collection_relations SET archived_at=CURRENT_TIMESTAMP WHERE id=?').run(rel);
+   await goto(path+'&origin=all');
+   const before=f.sqlite.prepare('SELECT count(*) n FROM v2_collection_relations').get().n;
+   await click('[data-id="1"] .relation-cross-layer a');
+   await until(()=>evaluate(()=>document.querySelector('#relation-editor')?.open),'prefilled editor');
+   assert.deepEqual(await evaluate(()=>['sourceId','targetId','type'].map(name=>document.querySelector('#relation-editor [name='+name+']').value)),['263','262','expansion_of']);
+   assert.equal(f.sqlite.prepare('SELECT count(*) n FROM v2_collection_relations').get().n,before);
+   await goto(collectionFixture);
+   await openEditor();
+   await fill(create,{sourceId:263});
+   await text('[data-relation-suggestions]','使用此建議');
+   await click('[data-suggestion-target="262"]');
+   await text('[data-cross-preview]','已有');
+   assert.deepEqual(await evaluate(()=>['targetId','type'].map(name=>document.querySelector('#relation-editor [name='+name+']').value)),['262','expansion_of']);
+   for(const n of [1440,375])await crossShot('collection-suggestion',n,true);
+   await writeFile(crossShots+'/first-row-y.json',JSON.stringify(crossLayouts,null,2)+'\n');
+   console.log('PASS XREL-C statuses and filter, reverse view and prefill without save, suggestion selection and state preview, ten responsive screenshots');
+  }
  }
  await send('Network.setExtraHTTPHeaders',{headers:{}});assert.equal(await evaluate(async()=>{const r=await fetch('/api/admin/bgg',{method:'POST',headers:{'Content-Type':'application/json','X-NotBGG-Request':'1'},body:'{}'});return r.status;}),401);
  await send('Network.setExtraHTTPHeaders',{headers:{'Cf-Access-Jwt-Assertion':await auth.token({email:'viewer@example.test'})}});assert.equal(await evaluate(async()=>{const r=await fetch('/api/admin/bgg',{method:'POST',headers:{'Content-Type':'application/json','X-NotBGG-Request':'1'},body:'{}'});return r.status;}),403);

@@ -103,16 +103,18 @@ export function bggGameRelations(caches: Map<number, BggGameData>, typeRows: Typ
  });
 }
 
+export function relationGameIdentity(game: GameIdentityRow, aliases: IdentityIndex) {
+ const notBgg = game.seq ? formatNotBggId(game.seq) : null;
+ const bggId = game.bgg_id ?? (notBgg ? aliases.byNotBgg.get(notBgg)?.bggId : undefined);
+ return bggId ? `bgg:${bggId}` : notBgg ?? `game:${game.id}`;
+}
+
 export function effectiveGameRelations<M extends GameRelationEdge>(
  bgg: ReturnType<typeof bggGameRelations>, manual: M[], site: GameRelationEdge[],
  games: GameIdentityRow[], aliases: IdentityIndex,
  archived: (row: M) => boolean = () => false,
 ) {
- const identities = new Map(games.map(game => {
-  const notBgg = game.seq ? formatNotBggId(game.seq) : null;
-  const bggId = game.bgg_id ?? (notBgg ? aliases.byNotBgg.get(notBgg)?.bggId : undefined);
-  return [game.id, bggId ? `bgg:${bggId}` : notBgg ?? `game:${game.id}`];
- }));
+ const identities = new Map(games.map(game => [game.id, relationGameIdentity(game, aliases)]));
  type Row = {
   sources: RelationSource[];
   bgg?: (typeof bgg)[number];

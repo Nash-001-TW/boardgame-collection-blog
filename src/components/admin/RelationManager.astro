@@ -1,7 +1,8 @@
 ---
 import RelationForm from './RelationForm.astro';
 import RelationPicker from './RelationPicker.astro';
-import {gameDisplayName, relationDirectionHint, relationEndpointLabel, relationSourceLabel, relationTypeLabel} from '../../lib/relation-labels';
+import {crossLayerReasonLabel, crossLayerStateLabel, gameDisplayName, relationDirectionHint, relationEndpointLabel, relationSourceLabel, relationTypeLabel} from '../../lib/relation-labels';
+import type {collectionRelationPage, readCrossLayerRelations, CrossLayerSuggestion} from '../../lib/cross-layer-relations';
 
 interface Props {
   domain: 'game' | 'collection';
@@ -11,9 +12,24 @@ interface Props {
   target: number;
   filter: number;
   lang: 'en' | 'zh-TW';
+  collectionPage?: Awaited<ReturnType<typeof collectionRelationPage>>;
+  gameState: string;
+  reverse: Awaited<ReturnType<Awaited<ReturnType<typeof readCrossLayerRelations>>['reverse']>>[];
+  suggestions?: Record<number,CrossLayerSuggestion[]> | null;
 }
-const {domain, choices, rows, source, target, filter, lang} = Astro.props;
+const {domain, choices, rows, source, target, filter, lang, collectionPage, gameState, reverse, suggestions} = Astro.props;
 const game = domain === 'game';
+const filters = ['all','linked','addable','blocked'] as const;
+const stateLink = (value: string) => {
+  const params = new URLSearchParams(Astro.url.searchParams);
+  params.delete('after');
+  params.set('gameState',value);
+  return '?' + params;
+};
+const collectionLink = (source: number, target?: number, type?: string) => '?' + new URLSearchParams({
+  view:'relations',domain:'collection',lang,source:String(source),
+  ...(target && type ? {relationTarget:String(target),relationType:type} : {}),
+});
 const t = (zh: string, en: string) => lang === 'en' ? en : zh;
 const selectedOrigin = Astro.url.searchParams.get('origin') ?? 'manual';
 const origins = [['all', t('全部關聯', 'All relations')], ['bgg', t('BGG 原始', 'BGG original')], ['manual', t('手動關聯', 'Manual relations')]];
@@ -48,13 +64,20 @@ const shortTypes: Record<string, string> = {
 };
 
 ---
-<form method="get" class:list={["relation-toolbar", {"game-relation-toolbar": game}]} data-game-relation-toolbar={game ? "" : undefined}>
+<form method="get" class="relation-toolbar game-relation-toolbar" data-game-relation-toolbar>
   <input name="view" type="hidden" value="relations"/>
   <input name="domain" type="hidden" value={domain}/>
   <input name="lang" type="hidden" value={lang}/>
-  <RelationPicker name="source" label={t('來源或目標', 'Source or target')} choices={choices} game={game} lang={lang} value={filter} compact={game} filter/>
-  {game && <button type="button" class="admin-button relation-filter-toggle" aria-expanded="false" aria-controls="relation-game-filter" data-relation-filter-toggle>{t('篩選', 'Filter')}</button>}
-  <button class="admin-button relation-filter-apply" name={game ? "origin" : undefined} value={game ? selectedOrigin : undefined}>{game ? t('套用', 'Apply') : t('篩選', 'Filter')}</button>
+  {!game && <input name="gameState" type="hidden" value={gameState}/>}
+  <RelationPicker name="source" label={t('來源或目標', 'Source or target')} choices={choices} game={game} lang={lang} value={filter} compact filter/>
+  <button type="button" class="admin-button relation-filter-toggle" aria-expanded="false" aria-controls="relation-game-filter" data-relation-filter-toggle>{t('篩選', 'Filter')}</button>
+  <button class="admin-button relation-filter-apply" name={game ? "origin" : undefined} value={game ? selectedOrigin : undefined}>{t('套用', 'Apply')}</button>
+  {collectionPage && <div class="collection-state-filter" role="group" aria-label={t('遊戲關聯狀態','Game relation status')}>
+    {filters.map(value => <a href={stateLink(value)} aria-current={gameState === value ? 'page' : undefined} data-game-state-filter={value}
+      aria-label={value === 'all' ? t('全部收藏組合','All combinations') + ' ' + collectionPage.counts.all : undefined}>
+      {value === 'all' ? t('收藏組合','Combinations') : crossLayerStateLabel(value,lang)} <strong>{collectionPage.counts[value]}</strong>
+    </a>)}
+  </div>}
   {game && <div class="relation-origin-switch" role="group" aria-label={t('資料來源','Data source')}>
     {origins.map(([value, label]) => <button type="submit" name="origin" value={value}
       aria-pressed={value === selectedOrigin} data-relation-origin-filter>{label}</button>)}
@@ -71,12 +94,12 @@ const shortTypes: Record<string, string> = {
         <th scope="col">{game ? t('遊戲關聯', 'Game relation') : t('來源 → 目標', 'Source → target')}</th>
         <th scope="col">{t('類型', 'Type')}</th>
         {game && <><th scope="col">{t('資料來源', 'Data source')}</th><th scope="col">{t('狀態', 'Status')}</th></>}
-        {!game && <th scope="col">{t('關聯編號', 'Relation ID')}</th>}
+        <th scope="col">{game ? t('我的收藏','My collection') : t('遊戲關聯','Game relation')}</th>
         <th scope="col">{t('操作', 'Actions')}</th>
       </tr>
     </thead>
     <tbody>
-      {rows.map(row => {
+      {rows.map((row,index) => {
         const sourceId = row.source_game_id ?? row.source_item_id;
         const targetId = row.target_game_id ?? row.target_item_id;
         const rawBgg = game && row.relation_source === 'bgg' && row.id == null;
@@ -93,6 +116,8 @@ const shortTypes: Record<string, string> = {
         const editable = !row.archived_at && (!game || row.relation_source === 'manual');
         const from = gameEndpoint(sourceId, row.source_bgg_id, row.source_name);
         const to = gameEndpoint(targetId, row.target_bgg_id, row.target_name);
+        const assessment = collectionPage?.checks.get(Number(row.id));
+        const owned = reverse[index];
         return <tr data-relation-row data-id={row.id == null ? undefined : String(row.id)} data-origin={String(row.relation_source ?? 'manual')}>
           {game ? <td class="relation-endpoints">
             <span class="relation-from">{from.name}{from.original && <small class="relation-original-name">{from.original}</small>}{from.identity && <small>{from.identity}</small>}</span>
@@ -100,7 +125,8 @@ const shortTypes: Record<string, string> = {
           </td> : <td class="relation-endpoints"><span>{sourceLabel}</span><span aria-hidden="true">→</span><span>{targetLabel}</span></td>}
           <td class="relation-type">{game ? bggTypes[type] ?? shortTypes[type] ?? relationTypeLabel(type, lang)
             : <><span aria-hidden="true">{relationDirectionHint(type, lang) ? '↦' : '◇'}</span> {relationTypeLabel(type, lang)}
-              {Boolean(row.archived_at) && <small class="relation-collection-status">{t('已封存', 'Archived')}</small>}</>}
+              {Boolean(row.archived_at) && <small class="relation-collection-status">{t('已封存', 'Archived')}</small>}
+              <small class="relation-record-id"><span class="relation-mobile-origin">{sources.map(sourceName).join(t('＋',' + '))} · </span>#{String(row.id)}</small></>}
           </td>
           {game ? <>
             <td class="relation-origin"><div class="relation-badges">{sources.map(value => <span class="relation-badge" data-source-badge={value}>{sourceName(value)}</span>)}</div>
@@ -113,8 +139,26 @@ const shortTypes: Record<string, string> = {
               {Boolean(row.archived_at) && <span class="relation-badge">{t('已封存','Archived')}</span>}
               {!manual && <span class="relation-badge"><span aria-hidden="true">🔒 </span>{t('唯讀','Read-only')}</span>}
             </div></td>
-          </> : <td class="relation-id"><span class="relation-mobile-origin">{sources.map(sourceName).join(t('＋',' + '))} · </span>{row.id == null ? '—' : '#' + String(row.id)}</td>}
+          </> : null}
+          <td class="relation-cross-layer" data-cross-state={assessment?.state}>
+            {assessment && <div class="relation-badges">
+              <span class="relation-badge">{crossLayerStateLabel(assessment.state,lang)}</span>
+              {assessment.sources.map(value => <span class="relation-badge" data-source-badge={value}>{value === 'bgg' ? 'BGG' : sourceName(value)}</span>)}
+              {assessment.confirmation && <span class="relation-badge" data-confirmed={assessment.confirmation === 'confirmed'}>{assessment.confirmation === 'confirmed' ? t('已確認','Confirmed') : t('未確認','Unconfirmed')}</span>}
+              {assessment.reason && <small>{crossLayerReasonLabel(assessment.reason,lang)}</small>}
+              {assessment.differentType && <small>{t('另有其他類型','Other relation types exist')}</small>}
+            </div>}
+            {owned && <small class="relation-owned-label">{t('我的收藏','My collection')}</small>}
+            {owned?.missing && <small>{owned.missing === 'source' ? t('缺少來源收藏','Source collection missing') : t('缺少目標收藏','Target collection missing')}</small>}
+            {owned?.reason && <small>{crossLayerReasonLabel(owned.reason,lang)}</small>}
+            {owned?.pairs.map(({from,to,type,existing,reason}) => <div class="relation-owned-pair">
+              {owned.pairs.length > 1 && <small>#{from.id} {from.display_name} → #{to.id} {to.display_name}</small>}
+              {reason ? <small>{crossLayerReasonLabel(reason,lang)}</small> :
+                <a href={existing ? collectionLink(from.id) : collectionLink(from.id,to.id,type)}>{existing ? t('查看組合','View combination') : t('建立收藏組合','Create combination')}</a>}
+            </div>)}
+          </td>
           <td class="relation-actions">
+            {assessment?.sourceGame && <a class="relation-cross-view" href={'?' + new URLSearchParams({view:'relations',domain:'game',source:String(assessment.sourceGame),origin:'all',lang})}>{t('查看','View')}</a>}
             {editable && <details name="relation-row-actions">
               <summary aria-label={t('關聯操作', 'Relation actions') + ' #' + String(row.id)}>⋯</summary>
               <div>
@@ -131,7 +175,7 @@ const shortTypes: Record<string, string> = {
       })}
     </tbody>
   </table>}
-<RelationForm domain={domain} choices={choices} source={source} target={target} lang={lang}/>
+<RelationForm domain={domain} choices={choices} source={source} target={target} lang={lang} suggestions={suggestions}/>
 <dialog class="admin-kit-dialog" id="relation-archive" aria-labelledby="relation-archive-title">
   <h2 id="relation-archive-title">{t('封存關聯', 'Archive relation')}</h2>
   <p data-relation-archive-description></p>
@@ -148,6 +192,32 @@ const shortTypes: Record<string, string> = {
   </form>
 </dialog>
 <style>
+  .collection-state-filter { display: flex; flex-wrap: wrap; gap: .25rem .5rem; flex-basis: 100%; grid-column: 1 / -1; }
+  .collection-state-filter a { padding: .35rem .45rem; color: var(--ink); border-radius: var(--radius-sm); }
+  .collection-state-filter a[aria-current] { background: #efe5fa; color: #552c78; font-weight: 650; }
+  .relation-owned-pair + .relation-owned-pair { margin-top: .4rem; }
+  .relation-owned-pair small { display: block; }
+  .relation-owned-label { display: none; }
+  .relation-list .relation-cross-view { display: inline-flex; align-items: center; min-height: 44px; }
+  .relation-list[data-domain] th:nth-last-child(2) { width: 24%; }
+  .relation-list[data-domain="game"] th:first-child { width: 34%; }
+  @media (max-width: 767px) {
+    .collection-state-filter { gap: .15rem; font-size: .82rem; }
+    .collection-state-filter a { display: inline-flex; align-items: center; gap: .2rem; min-height: 44px; padding-inline: .3rem; }
+    .relation-cross-layer { grid-area: cross; }
+    .relation-list[data-domain="collection"] tr {
+      grid-template-areas: 'type type actions' 'endpoints endpoints endpoints' 'cross cross view';
+      gap: .15rem .35rem; padding: .25rem .55rem .5rem; margin-block: .4rem;
+    }
+    .relation-list[data-domain="collection"] .relation-endpoints > span[aria-hidden] { display: none; }
+    .relation-list[data-domain="collection"] .relation-actions { display: contents; }
+    .relation-list[data-domain="collection"] .relation-actions details { grid-area: actions; }
+    .relation-list[data-domain="collection"] .relation-cross-view { grid-area: view; justify-content: center; min-width: 44px; }
+    .relation-list[data-domain="collection"] .relation-record-id { display: inline; margin-inline-start: .35rem; font-weight: 400; }
+    .relation-list[data-domain="game"] .relation-cross-layer { grid-area: auto; grid-column: 1 / -1; }
+    .relation-owned-label { display: inline-block; margin-inline-end: .45rem; color: var(--ink-muted); }
+    .relation-owned-label + .relation-owned-pair:last-child { display: inline; }
+  }
   .relation-toolbar {
     display: flex;
     align-items: end;

@@ -74,3 +74,21 @@ export function relationDirectionHint(type: string, lang: Lang) {
       return '';
   }
 }
+export function crossLayerStateLabel(state: string, lang: 'en' | 'zh-TW') {
+ const labels: Record<string, [string, string]> = {
+  all: ['全部','All'], linked: ['已有','Linked'], addable: ['可補建','Addable'],
+  blocked: ['不可建立','Blocked'], not_applicable: ['不適用','Not applicable'],
+  unavailable: ['判定不可用','Check unavailable'],
+ };
+ return (labels[state] ?? labels.unavailable)[lang === 'en' ? 1 : 0];
+}
+
+export function crossLayerReasonLabel(reason: string, lang: 'en' | 'zh-TW') {
+ const labels: Record<string, [string, string]> = {
+  missing_game: ['缺少對應遊戲','Missing matching game'], same_game: ['兩端對應同一遊戲','Both ends identify the same game'],
+  direction: ['類型或方向不符','Type or direction mismatch'], cycle: ['會形成循環','Would create a cycle'],
+  cache_unavailable: ['BGG 快取不可用','BGG cache unavailable'], read_failed: ['讀取失敗','Read failed'],
+  scope: ['兩端收藏的紀錄範圍不同','Collections have different record scopes'],
+ };
+ return (labels[reason] ?? labels.read_failed)[lang === 'en' ? 1 : 0];
+}

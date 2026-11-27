@@ -203,3 +203,7 @@
 | 2026-11-27 | PUBLIC-KEY-DECODE-DEPLOY | 使用者依 DEPLOY-01 授權提交並推送 `main`，部署 PUBLIC-KEY-DECODE，並一起提交 #46 部署紀錄 | 使用者 | Claude Code 對話「提交並推送」 | 已授權 |
 | 2026-11-27 | REL-ZH-NAME | 使用者要求遊戲關聯頁「改成中文優先」。Claude 實作：中文介面下，遊戲有正式、未封存的收藏時，以收藏名稱（多筆取最小 id）為主、BGG 英文名為次要；沒有收藏的遊戲照舊英文，英文介面不變。`readRelationAdmin` 的 identities 新增 `collection_name` 欄位（manual 模式回傳多一個選項欄位，列資料不變）；同時影響遊戲選單、篩選標籤、封存確認文字。測試 fixture 收藏名改為中文 | 使用者 | Claude Code 對話「改成中文優先」 | 已實作 |
 | 2026-11-27 | REL-ZH-NAME-DEPLOY | 使用者看過截圖後，依 DEPLOY-01 授權提交並推送 `main`，部署 REL-ZH-NAME，並一起提交 PUBLIC-KEY-DECODE 的部署紀錄 | 使用者 | Claude Code 對話「提交並推送」 | 已授權 |
+| 2026-11-27 | XREL-C-DRAFT | Claude 起草 #46 C 階段工作命令 XREL-C-20261127-01（docs/cross-layer-relation-plan-20261127.md §16）與 Q208～Q215：跨層唯讀輔助（收藏組合狀態、建立時建議、遊戲關聯頁反向入口），計算放在頁面伺服器端、不改 API 回傳；Q214 建議把 `writeRelation` 的方向判斷抽成共用純函式（行為不變） | 使用者 | Claude Code 對話「起草 C 階段」 | 候選 |
+| 2026-11-27 | XREL-C-AUTH | 使用者批准 Q208～Q215 與 #46 C 階段工作命令 XREL-C-20261127-01（規劃 §16），交給 Codex 在本機實作；包含 Q214 把 `writeRelation` 的方向判斷抽成共用純函式（寫入語句與守衛不變）。不改 API 回傳、Schema、公開頁、`wrangler.json`、middleware；不碰正式 D1，不提交、不推送、不部署 | 使用者 | Claude Code 對話「批准，交 Codex」 | 已授權 |
+| 2026-11-27 | XREL-C-REVIEW | Claude 審查 C 階段：Q214 抽出的 `isRelationDirectionAllowed` 與原條件逐字等價；建議排除已存在組合（截圖中的建議是測試先封存 #263→#262 後拍攝）；記錄每筆收藏組合 3 次查詢的擴充性技術債。接受實作，待使用者看截圖 | Claude（技術主管） | Codex 回報＋Claude 重跑 | 已實作 |
+| 2026-11-27 | XREL-C-DEPLOY | 使用者看過截圖後，依 DEPLOY-01 授權提交並推送 `main`，部署 #46 C 階段（XREL-C-20261127-01），並一起提交 REL-ZH-NAME 的部署與驗收紀錄；不需要 Migration | 使用者 | Claude Code 對話「提交並推送」 | 已授權 |

@@ -1,10 +1,12 @@
-export {};
+import {crossLayerReasonLabel, crossLayerStateLabel, relationTypeLabel} from './relation-labels';
+import type {CrossLayerCheck, CrossLayerSuggestion} from './cross-layer-relations';
 
 const root = document.querySelector<HTMLElement>('[data-bgg-admin]');
 if (root) connect(root);
 
 function connect(root: HTMLElement) {
-  const en = root.dataset.lang === 'en';
+  const lang = root.dataset.lang === 'en' ? 'en' : 'zh-TW';
+  const en = lang === 'en';
   const t = (zh: string, english: string) => en ? english : zh;
   const status = root.querySelector<HTMLElement>('[data-bgg-status]')!;
   const toolbar = root.querySelector<HTMLFormElement>('[data-game-relation-toolbar]');
@@ -126,7 +128,57 @@ function connect(root: HTMLElement) {
   const type = editorSelect('type');
   const preview = editor?.querySelector<HTMLElement>('[data-relation-preview]');
   const hint = editor?.querySelector<HTMLElement>('[data-relation-hint]');
+  const crossPreview = editor?.querySelector<HTMLElement>('[data-cross-preview]');
+  const suggestionPanel = editor?.querySelector<HTMLElement>('[data-relation-suggestions]');
+  const suggestionItems = suggestionPanel?.querySelector('[data-relation-suggestion-items]');
+  const suggestionData = suggestionPanel?.querySelector('[data-relation-suggestion-data]');
+  const suggestions: Record<string,CrossLayerSuggestion[]> | null = suggestionData ? JSON.parse(suggestionData.textContent ?? '{}') : null;
+  let previewRequest: AbortController | undefined;
+  let adding = false;
   let suggestType = false;
+
+  function updateSuggestions() {
+    if (!suggestionPanel || !suggestionItems || !source) return;
+    const entries = suggestions?.[source.value] ?? [];
+    suggestionPanel.hidden = !adding || !source.value || (suggestions !== null && !entries.length);
+    suggestionItems.replaceChildren(...entries.map(entry => {
+      const row = document.createElement('div');
+      const label = document.createElement('span');
+      label.textContent = '#' + entry.target + ' ' + entry.name + ' · ' + relationTypeLabel(entry.type, lang) +
+        (entry.confirmation === 'unconfirmed' ? ' · ' + t('未確認','Unconfirmed') : '');
+      const button = document.createElement('button');
+      button.className = 'admin-button';
+      button.type = 'button';
+      button.dataset.suggestionTarget = String(entry.target);
+      button.dataset.suggestionType = entry.type;
+      button.textContent = t('使用此建議','Use suggestion');
+      row.appendChild(label);
+      row.appendChild(button);
+      return row;
+    }));
+  }
+
+  function updateCrossPreview() {
+    if (!crossPreview || !source || !target || !type) return;
+    previewRequest?.abort();
+    crossPreview.textContent = '';
+    if (!adding || !source.value || !target.value || source.value === target.value) return;
+    const request = new AbortController();
+    previewRequest = request;
+    const render = (result: Pick<CrossLayerCheck,'state'|'reason'>) => {
+      if (request.signal.aborted) return;
+      crossPreview.textContent = t('對應遊戲關聯','Matching game relation') + ' · ' + crossLayerStateLabel(result.state,lang) +
+        (result.reason ? ' · ' + crossLayerReasonLabel(result.reason,lang) : '');
+    };
+    const address = new URL(location.pathname,location.origin);
+    address.search = new URLSearchParams({view:'relations',domain:'collection',lang,
+      previewRelation:'1',previewSource:source.value,previewTarget:target.value,previewType:type.value}).toString();
+    crossPreview.textContent = t('正在判定對應遊戲關聯…','Checking matching game relation…');
+    void fetch(address,{signal:request.signal}).then(async response => {
+      if (!response.ok) throw new Error('Relation check unavailable');
+      render(await response.json());
+    }).catch(() => render({state:'unavailable',reason:'read_failed'}));
+  }
 
   function updatePreview() {
     if (!source || !target || !type || !preview || !hint) return;
@@ -134,6 +186,7 @@ function connect(root: HTMLElement) {
     preview.textContent = label(source) + ' → ' + label(target);
     const rule = type.selectedOptions[0]?.dataset.hint;
     hint.textContent = rule ? t('方向限制', 'Direction rule') + ' · ' + rule : '';
+    updateCrossPreview();
   }
 
   function updateSuggestedType() {
@@ -166,7 +219,7 @@ function connect(root: HTMLElement) {
     const search = field.closest('[data-relation-picker]')?.querySelector<HTMLInputElement>('[data-relation-search]');
     if (search) filterPicker(search);
     if (field === type) suggestType = false;
-    if (field === source) updateSuggestedType();
+    if (field === source) { updateSuggestedType(); updateSuggestions(); }
     if (field.form === editor) updatePreview();
   });
 
@@ -194,9 +247,15 @@ function connect(root: HTMLElement) {
       setFields(editor, edit ? JSON.parse(edit) : {id: 0, revision: 0, notes: ''});
       const title = dialog.querySelector<HTMLElement>('h2')!;
       title.textContent = (edit ? title.dataset.edit : title.dataset.add) ?? '';
-      suggestType = !edit && editor.hasAttribute('data-collection-editor');
+      adding = !edit;
+      suggestType = adding && editor.hasAttribute('data-collection-editor');
       updateSuggestedType();
+      if (adding && opener.dataset.relationPrefill) {
+        setFields(editor,{type:opener.dataset.relationPrefill});
+        suggestType = false;
+      }
       editor.querySelectorAll<HTMLInputElement>('[data-relation-search]').forEach(filterPicker);
+      updateSuggestions();
       updatePreview();
     }
     if (dialog.id === 'relation-archive') {
@@ -209,6 +268,8 @@ function connect(root: HTMLElement) {
   root.querySelectorAll('dialog').forEach(dialog => dialog.addEventListener('cancel', event => {
     if (busy) event.preventDefault();
   }));
+  const prefill = root.querySelector<HTMLElement>('[data-relation-prefill]');
+  if (prefill) openDialog(prefill);
   root.addEventListener('submit', event => {
     const form = event.target;
     if (!(form instanceof HTMLFormElement) || !form.dataset.bggAction) return;
@@ -231,7 +292,13 @@ function connect(root: HTMLElement) {
     if (!(element instanceof Element)) return;
     const opener = element.closest<HTMLElement>('[data-relation-open]');
     const single = element.closest<HTMLElement>('[data-sync-id]');
+    const suggestion = element.closest<HTMLElement>('[data-suggestion-target]');
     if (opener) openDialog(opener);
+    else if (suggestion && editor && target) {
+      setFields(editor,{targetId:suggestion.dataset.suggestionTarget,type:suggestion.dataset.suggestionType});
+      suggestType = false;
+      target.dispatchEvent(new Event('change',{bubbles:true}));
+    }
     else if (element.closest('[data-relation-close]')) element.closest('dialog')?.close();
     else if (element.closest('[data-relation-swap]') && source && target && editor) {
       [source.value, target.value] = [target.value, source.value];
@@ -239,6 +306,7 @@ function connect(root: HTMLElement) {
         search.value = '';
         filterPicker(search);
       });
+      updateSuggestions();
       updatePreview();
     } else if (single) void send({action: 'sync', ids: [Number(single.dataset.syncId)]}, 'sync');
     else if (element.closest('[data-sync-selected]')) {

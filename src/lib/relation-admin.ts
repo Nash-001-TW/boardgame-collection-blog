@@ -17,7 +17,7 @@ function effectiveType(row:Record<string,unknown>){
  if((declared==='base'&&observed==='expansion')||(declared==='expansion'&&observed==='base'))return 'unknown';
  return declared!=='unknown'?declared:observed;
 }
-async function endpoints(db:D1Database,domain:unknown,source:number,target:number){
+export async function endpoints(db:D1Database,domain:unknown,source:number,target:number){
  const result=domain==='game'?await db.prepare(`SELECT g.*,n.type notbgg_type,n.seq,n.archived_at,b.cache_json FROM v2_games g LEFT JOIN notbgg_games n ON n.game_id=g.id LEFT JOIN bgg_games b ON b.bgg_id=g.bgg_id WHERE g.id IN(?,?)`).bind(source,target).all<Record<string,unknown>>()
  :await db.prepare(`SELECT c.*,g.bgg_id,g.game_type,b.cache_json,n.archived_at game_archived,m.archived_at FROM v2_collection_items c LEFT JOIN v2_games g ON g.id=c.game_id LEFT JOIN bgg_games b ON b.bgg_id=g.bgg_id LEFT JOIN notbgg_games n ON n.game_id=g.id LEFT JOIN v2_collection_management m ON m.collection_item_id=c.id WHERE c.id IN(?,?)`).bind(source,target).all<Record<string,unknown>>();
  if(!result.success)throw new HttpError(503,'DATABASE_UNAVAILABLE');
@@ -25,6 +25,11 @@ async function endpoints(db:D1Database,domain:unknown,source:number,target:numbe
  if(!a||!b||a.archived_at||b.archived_at||a.game_archived||b.game_archived||domain==='game'&&[a,b].some(r=>!r.bgg_id&&!r.seq)||domain==='collection'&&a.record_scope!==b.record_scope)throw new HttpError(400,'INVALID_RELATION_REFERENCE');
  const type=(r:Record<string,unknown>)=>domain==='collection'&&r.item_type!=='unknown'?String(r.item_type):r.notbgg_type==='boardgameaccessory'?'accessory':effectiveType(r);
  return {a,b,sourceType:type(a),targetType:type(b)};
+}
+export function isRelationDirectionAllowed(type:string,sourceType:string,targetType:string){
+ return !(['requires_base','expansion_of'].includes(type)&&(sourceType!=='expansion'||!['base','standalone'].includes(targetType))
+   ||type==='accessory_for'&&(sourceType!=='accessory'||!['base','standalone','expansion'].includes(targetType))
+   ||['compilation_of','bundle_contains'].includes(type)&&sourceType!=='bundle');
 }
 export async function writeRelation(db:D1Database,actor:string,key:string|null,body:Record<string,unknown>){
  if(Object.keys(body).some(k=>!['domain','action','id','revision','sourceId','targetId','type','confirmed','notes'].includes(k)))throw new HttpError(400,'INVALID_RELATION');
@@ -43,9 +48,7 @@ export async function writeRelation(db:D1Database,actor:string,key:string|null,b
    const alias=await db.prepare(`SELECT 1 FROM notbgg_bgg_links WHERE status='linked' AND ((seq=? AND candidate_bgg_id=?) OR (seq=? AND candidate_bgg_id=?))`).bind(pair.a.seq??-1,pair.b.bgg_id??-1,pair.b.seq??-1,pair.a.bgg_id??-1).first();
    if(alias)throw new HttpError(400,'INVALID_RELATION_REFERENCE');
   }
-  if(['requires_base','expansion_of'].includes(type)&&(pair.sourceType!=='expansion'||!['base','standalone'].includes(pair.targetType))
-   ||type==='accessory_for'&&(pair.sourceType!=='accessory'||!['base','standalone','expansion'].includes(pair.targetType))
-   ||['compilation_of','bundle_contains'].includes(type)&&pair.sourceType!=='bundle')throw new HttpError(400,'RELATION_DIRECTION_UNVERIFIED');
+  if(!isRelationDirectionAllowed(type,pair.sourceType,pair.targetType))throw new HttpError(400,'RELATION_DIRECTION_UNVERIFIED');
   // Pin endpoint identity/type/scope snapshots inside the mutation as well as validating server-side.
   const guard=body.domain==='game'?`EXISTS(SELECT 1 FROM v2_games s JOIN v2_games t ON t.id=? LEFT JOIN notbgg_games sn ON sn.game_id=s.id LEFT JOIN notbgg_games tn ON tn.game_id=t.id WHERE s.id=? AND s.game_type=? AND t.game_type=? AND sn.archived_at IS NULL AND tn.archived_at IS NULL
    AND s.bgg_id IS ? AND t.bgg_id IS ? AND (SELECT cache_json FROM bgg_games WHERE bgg_id=s.bgg_id) IS ? AND (SELECT cache_json FROM bgg_games WHERE bgg_id=t.bgg_id) IS ?)`
