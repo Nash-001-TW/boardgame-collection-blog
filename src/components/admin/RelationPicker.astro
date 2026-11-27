@@ -1,0 +1,48 @@
+---
+import {relationChoiceLabel, relationChoiceTypeLabel} from '../../lib/relation-labels';
+
+interface Props {
+  name: string;
+  label: string;
+  choices: Record<string, unknown>[];
+  lang: 'en' | 'zh-TW';
+  game: boolean;
+  value?: number;
+  filter?: boolean;
+}
+const {name, label, choices, lang, game, value = 0, filter = false} = Astro.props;
+const t = (zh: string, en: string) => lang === 'en' ? en : zh;
+---
+<div data-relation-picker>
+  <label>{t('搜尋', 'Search')} · {label}<input type="search" data-relation-search autocomplete="off"/></label>
+  <label>{label}
+    <select name={name} required={!filter}>
+      <option value="">{filter ? t('全部', 'All') : t('請選擇', 'Select…')}</option>
+      {filter && value > 0 && !choices.some(choice => Number(choice.id) === value) &&
+        <option value={String(value)} selected>#{value} {t('（已封存或找不到）', '(archived or not found)')}</option>}
+      {choices.map(choice => <option value={String(choice.id)} data-item-type={String(choice.item_type ?? choice.game_type ?? 'unknown')} selected={Number(choice.id) === value}>
+        {relationChoiceLabel(choice, game, lang)} · {relationChoiceTypeLabel(choice, lang)}
+      </option>)}
+    </select>
+  </label>
+  <small data-relation-no-matches hidden>{t('找不到符合的選項。', 'No matching options.')}</small>
+</div>
+<style>
+  .admin-page [data-relation-picker] {
+    display: grid;
+    gap: .4rem;
+    min-width: 0;
+  }
+  .admin-page [data-relation-picker] label {
+    display: grid;
+    gap: .25rem;
+    min-width: 0;
+    margin: 0;
+  }
+  .admin-page [data-relation-picker] :is(input,select) {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+  }
+</style>

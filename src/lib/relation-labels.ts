@@ -36,3 +36,33 @@ export function relationChoiceLabel(choice: Record<string, unknown>, game: boole
   const endpoint = relationEndpointLabel(choice.id, choice, game, lang);
   return !game && choice.record_scope === 'test' ? endpoint + (lang === 'en' ? ' · Test' : ' · 測試') : endpoint;
 }
+
+export function relationChoiceTypeLabel(choice: Record<string, unknown>, lang: Lang) {
+  const labels: Record<string, [string, string]> = {
+    base: ['本體', 'Base'],
+    standalone: ['獨立遊戲', 'Standalone'],
+    expansion: ['擴充', 'Expansion'],
+    accessory: ['配件', 'Accessory'],
+    bundle: ['套組／合輯', 'Bundle / compilation'],
+    unknown: ['類型未確認', 'Unverified type'],
+  };
+  const type = String(choice.item_type ?? choice.game_type ?? 'unknown');
+  return (Object.hasOwn(labels, type) ? labels[type] : labels.unknown)[lang === 'en' ? 1 : 0];
+}
+
+export function relationDirectionHint(type: string, lang: Lang) {
+  const en = lang === 'en';
+  switch (type) {
+    case 'requires_base':
+    case 'expansion_of':
+      return en ? 'Expansion → base or standalone game.' : '擴充 → 本體或獨立遊戲。';
+    case 'accessory_for':
+      return en ? 'Accessory → base, standalone game, or expansion.' : '配件 → 本體、獨立遊戲或擴充。';
+    case 'compilation_of':
+      return en ? 'Source must be a compilation.' : '來源必須是合輯。';
+    case 'bundle_contains':
+      return en ? 'Source must be a bundle.' : '來源必須是套組。';
+    default:
+      return '';
+  }
+}

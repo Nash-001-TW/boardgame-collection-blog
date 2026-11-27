@@ -48,9 +48,11 @@ test('compiled relation page renders scoped filters, known names and retained ta
   const base = await page('&source=401');
   assert.match(base, /Expansion copy（#402） → Base copy（#401）/);
   assert.match(base, /#404（已封存或找不到） → Base copy（#401）/);
-  assert.match(base, /擴充 → 主遊戲 · 手動 · 已確認/);
-  assert.match(base.match(/<select[^>]* name="source"[^>]*>.*?<\/select>/s)?.[0] ?? '', /<select[^>]* name="source"[^>]*>.*?<option[^>]* value="401"[^>]* selected[^>]*>Base copy（#401）/s);
-  const create = (html: string) => html.match(/<form[^>]*data-new-collection-relation[^>]*>.*?<\/form>/s)?.[0] ?? '';
+  assert.match(base, /擴充 → 主遊戲/);
+  assert.match(base, /class="[^\x22]*relation-mobile-origin[^\x22]*"[^>]*>手動/);
+  assert.doesNotMatch(base, /確認狀態|已確認/);
+  assert.match(base.match(/<select[^>]* name="source"[^>]*>.*?<\/select>/s)?.[0] ?? '', /<select[^>]* name="source"[^>]*>.*?<option[^>]* value="401"[^>]* selected[^>]*>\s*Base copy（#401）/s);
+  const create = (html: string) => html.match(/<form[^>]*data-collection-editor[^>]*>.*?<\/form>/s)?.[0] ?? '';
   assert.match(create(base), /<select[^>]* name="sourceId"[^>]*>\s*<option[^>]* value=""[^>]*>/);
   assert.match(create(base), /<select[^>]* name="targetId"[^>]*>.*?<option[^>]* value="401" data-item-type="base" selected[^>]*>/s);
   const expansion = await page('&source=402');

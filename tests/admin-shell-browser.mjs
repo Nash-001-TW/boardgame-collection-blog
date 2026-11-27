@@ -189,6 +189,7 @@ try {
                 const group = current[0]?.closest('.shell-group');
                 return {
                     current: current.map(a => a.getAttribute('href')),
+                    currentLabel: current[0]?.textContent.trim(),
                     expanded: group?.querySelector('button')?.getAttribute('aria-expanded') ?? null,
                     main: document.querySelectorAll('main').length,
                     skipTarget: document.querySelectorAll('#editor-content').length,
@@ -200,6 +201,7 @@ try {
             });
             assert.equal(result.status, 200, path);
             assert.deepEqual(result.current, [expected], path);
+            if (name === 'bgg') assert.equal(result.currentLabel, 'BGG 同步與快取');
             assert.equal(result.expanded, name === 'overview' ? null : 'true', path);
             assert.equal(result.main, 1, path);
             assert.equal(result.skipTarget, 1, path);

@@ -1,18 +1,78 @@
 ---
-import {gameRelationTypes,collectionRelationTypes} from '../../lib/relation-admin';
-import {relationTypeLabel, relationChoiceLabel} from '../../lib/relation-labels';
-import type {readRelationAdmin} from '../../lib/relation-admin';
-interface Props{data:Awaited<ReturnType<typeof readRelationAdmin>>;row?:Record<string,unknown>;source?:number;target?:number;lang:'en'|'zh-TW'}
-const{data,row,source=0,target=0,lang}=Astro.props,t=(zh:string,en:string)=>lang==='en'?en:zh,game=data.domain==='game';
-const choices=game?data.identities:data.collections;
-const types=game?gameRelationTypes:collectionRelationTypes;
+import RelationPicker from './RelationPicker.astro';
+import {gameRelationTypes, collectionRelationTypes} from '../../lib/relation-admin';
+import {relationTypeLabel, relationDirectionHint} from '../../lib/relation-labels';
 
+interface Props {
+  domain: 'game' | 'collection';
+  choices: Record<string, unknown>[];
+  source: number;
+  target: number;
+  lang: 'en' | 'zh-TW';
+}
+const {domain, choices, source, target, lang} = Astro.props;
+const game = domain === 'game';
+const t = (zh: string, en: string) => lang === 'en' ? en : zh;
+const types = game ? gameRelationTypes : collectionRelationTypes;
 ---
-<form data-bgg-action="relation" data-new-collection-relation={!row&&!game ? true : undefined} class="fields">
- <input name="domain" type="hidden" value={data.domain}/><input name="id" type="hidden" value={String(row?.id??0)}/><input name="revision" type="hidden" value={String(row?.admin_revision??0)}/>
- {(['sourceId','targetId']as const).map((name,index)=><label>{index?t('目標','Target'):t('來源','Source')}<select name={name} required>{!row&&!game&&<option value="">{t("請選擇","Select…")}</option>}{choices.map(c=><option value={String(c.id)} data-item-type={!row&&!game ? String(c.item_type) : undefined} selected={c.id===(row?.[game?(index?'target_game_id':'source_game_id'):(index?'target_item_id':'source_item_id')]??(index?target:source))}>{relationChoiceLabel(c,game,lang)}</option>)}</select></label>)}
- <label>{t('關聯類型','Relation type')}<select name="type">{types.map(type=><option value={type} selected={type===(row?.relation_type??'other')}>{relationTypeLabel(type,lang)}</option>)}</select></label>
- {game&&<label><input name="confirmed" type="checkbox" checked={row?.admin_confirmed===1}/>{t('確認此手動關聯（公開頁才會顯示）','Confirm this manual relation for public display')}</label>}
- <label>{t('私人關聯備註','Private relation notes')}<textarea name="notes" maxlength="3000">{String(row?.notes??'')}</textarea></label>
- <button class="admin-button">{t('儲存關聯','Save relation')}</button>
-</form>
+<dialog class="admin-kit-dialog" id="relation-editor" aria-labelledby="relation-editor-title">
+  <h2 id="relation-editor-title" data-add={t('新增關聯', 'Add relation')} data-edit={t('編輯關聯', 'Edit relation')}>{t('新增關聯', 'Add relation')}</h2>
+  <form data-bgg-action="relation" data-collection-editor={!game || undefined} class="relation-editor-form">
+    <input name="domain" type="hidden" value={domain}/>
+    <input name="id" type="hidden" value="0"/>
+    <input name="revision" type="hidden" value="0"/>
+    <div class="relation-endpoint-fields">
+      <RelationPicker name="sourceId" label={t('來源', 'Source')} choices={choices} lang={lang} game={game} value={source}/>
+      <RelationPicker name="targetId" label={t('目標', 'Target')} choices={choices} lang={lang} game={game} value={target}/>
+    </div>
+    <button class="admin-button" type="button" data-relation-swap>{t('⇄ 交換來源與目標', '⇄ Swap source and target')}</button>
+    <label>{t('關聯類型', 'Relation type')}
+      <select name="type">
+        {types.map(type => <option value={type} data-hint={relationDirectionHint(type, lang)} selected={type === 'other'}>{relationTypeLabel(type, lang)}</option>)}
+      </select>
+    </label>
+    <div class="relation-preview" aria-live="polite">
+      <strong>{t('方向預覽', 'Direction preview')}</strong>
+      <div data-relation-preview></div>
+      <div data-relation-hint></div>
+    </div>
+    {game ? <>
+      <label class="relation-confirmed"><input name="confirmed" type="checkbox"/>{t('確認此手動關聯（公開頁才會顯示）', 'Confirm this manual relation for public display')}</label>
+      <label>{t('私人關聯備註', 'Private relation notes')}<textarea name="notes" maxlength="3000"></textarea></label>
+    </> : <input name="notes" type="hidden" value=""/>}
+    <p data-relation-error role="alert" tabindex="-1" hidden></p>
+    <div class="relation-dialog-actions">
+      <button type="button" class="admin-button" data-relation-close>{t('取消', 'Cancel')}</button>
+      <button class="admin-button primary">{t('儲存關聯', 'Save relation')}</button>
+    </div>
+  </form>
+</dialog>
+<style>
+  #relation-editor {
+    width: min(42rem, calc(100% - 1.5rem));
+    max-width: none;
+    max-height: calc(100dvh - 1.5rem);
+    overflow: auto;
+    overflow-wrap: anywhere;
+  }
+  .relation-editor-form { display: grid; gap: .75rem; }
+  .relation-endpoint-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .75rem;
+  }
+  .admin-page #relation-editor [data-relation-swap] { justify-self: start; }
+  .admin-page #relation-editor label { min-width: 0; margin: 0; }
+  .admin-page #relation-editor :is(select, textarea) { width: 100%; box-sizing: border-box; }
+  .admin-page #relation-editor .relation-confirmed { display: flex; align-items: center; gap: .5rem; }
+  .admin-page #relation-editor .relation-confirmed input { width: auto; flex: none; }
+  .relation-preview {
+    border: 1px solid var(--admin-border);
+    border-radius: var(--radius-sm);
+    padding: .65rem;
+  }
+  @media (max-width: 550px) {
+    #relation-editor { padding: 1rem; }
+    .relation-endpoint-fields { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>

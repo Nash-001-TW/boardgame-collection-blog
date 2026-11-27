@@ -1,0 +1,22 @@
+---
+import type {relationPageContext} from '../../lib/relation-page-context';
+
+interface Props { context: ReturnType<typeof relationPageContext> }
+const {lang, domain} = Astro.props.context;
+const t = (zh: string, en: string) => lang === 'en' ? en : zh;
+const game = domain === 'game';
+---
+<dialog class="admin-kit-dialog" id="relation-rules" aria-labelledby="relation-rules-title">
+  <h2 id="relation-rules-title">{t('規則說明', 'Relation rules')}</h2>
+  {domain === null ? <p>{t('每次最多 3 筆、並行 1 筆、請求間隔至少 2 秒，每筆最多 2 次嘗試。失敗可重試，並保留上次成功快取。靜態 JSON 無同步時間時不推估。同步不修改個人收藏資料。', 'Sync up to 3 IDs at a time, one at a time, at least 2 seconds apart, with up to 2 attempts per ID. Failed updates can be retried and preserve the last successful cache. Missing timestamps for static JSON remain unknown. Sync leaves personal collection data unchanged.')}</p> : <ul>
+    <li>{t('遊戲關聯與收藏組合互相獨立。建立關聯不會新增副本、採購或組件。', 'Game relations and collection combinations are independent. Adding a relation does not create copies, purchases, or components.')}</li>
+    <li>{t('擴充與必要主遊戲的來源必須是擴充、目標必須是本體或獨立遊戲。配件關聯的來源必須是配件、目標必須是本體、獨立遊戲或擴充。', 'Expansion and required-base relations point from an expansion to a base or standalone game. Accessory relations point from an accessory to a base, standalone game, or expansion.')}</li>
+    <li>{game ? t('合輯關聯的來源必須是合輯。', 'Compilation relations start at a compilation.') : t('組合包關聯的來源必須是套組。', 'Bundle relations start at a bundle.')}</li>
+    <li>{t('依賴類禁止循環。獨立遊戲相關、同系列、可整合遊玩允許循環。', 'Dependency relations cannot form cycles. Standalone-related, same-series, and integration relations may form cycles.')}</li>
+    {game ? <>
+      <li>{t('BGG 原始關聯無法編輯或封存。重新實作與合輯保留 BGG 原始關聯。手動關聯沒有 Promo 或重新實作專屬類型。', 'Raw BGG relations cannot be edited or archived. Reimplementations and compilations retain their original BGG evidence. Manual relations have no dedicated promo or reimplementation type.')}</li>
+      <li>{t('手動關聯須經確認才會顯示於公開頁。', 'Manual relations appear on public pages after confirmation.')}</li>
+    </> : <li>{t('兩筆收藏必須在同一個資料範圍。', 'Both collection records must have the same record scope.')}</li>}
+  </ul>}
+  <form method="dialog"><button class="admin-button">{t('關閉', 'Close')}</button></form>
+</dialog>

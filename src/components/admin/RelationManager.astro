@@ -1,0 +1,188 @@
+---
+import RelationForm from './RelationForm.astro';
+import RelationPicker from './RelationPicker.astro';
+import {relationDirectionHint, relationEndpointLabel, relationSourceLabel, relationTypeLabel} from '../../lib/relation-labels';
+
+interface Props {
+  domain: 'game' | 'collection';
+  choices: Record<string, unknown>[];
+  rows: Record<string, unknown>[];
+  source: number;
+  target: number;
+  filter: number;
+  lang: 'en' | 'zh-TW';
+}
+const {domain, choices, rows, source, target, filter, lang} = Astro.props;
+const game = domain === 'game';
+const t = (zh: string, en: string) => lang === 'en' ? en : zh;
+const byId = new Map(choices.map(choice => [Number(choice.id), choice]));
+const endpoint = (id: unknown) => relationEndpointLabel(id, byId.get(Number(id)), game, lang);
+---
+<form method="get" class="relation-toolbar">
+  <input name="view" type="hidden" value="relations"/>
+  <input name="domain" type="hidden" value={domain}/>
+  <input name="lang" type="hidden" value={lang}/>
+  <RelationPicker name="source" label={t('來源或目標', 'Source or target')} choices={choices} game={game} lang={lang} value={filter} filter/>
+  <button class="admin-button">{t('篩選', 'Filter')}</button>
+</form>
+{rows.length === 0 ? <p data-relation-empty>{t('沒有符合的關聯。', 'No matching relations.')}</p> :
+  <table class="relation-list" data-relation-list data-domain={domain} aria-label={t('關聯清單','Relations')}>
+    <thead>
+      <tr>
+        <th scope="col">{t('來源 → 目標', 'Source → target')}</th>
+        <th scope="col">{t('類型', 'Type')}</th>
+        {game && <><th scope="col">{t('資料來源', 'Origin')}</th><th scope="col">{t('確認狀態', 'Confirmation')}</th></>}
+        <th scope="col">{t('關聯編號', 'Relation ID')}</th>
+        <th scope="col">{t('操作', 'Actions')}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {rows.map(row => {
+        const sourceId = row.source_game_id ?? row.source_item_id;
+        const targetId = row.target_game_id ?? row.target_item_id;
+        const sourceLabel = endpoint(sourceId);
+        const targetLabel = endpoint(targetId);
+        const type = String(row.relation_type);
+        const origin = relationSourceLabel(String(row.relation_source ?? 'manual'), lang);
+        const status = row.archived_at ? t('已封存', 'Archived')
+          : game ? row.admin_confirmed ? t('已確認', 'Confirmed') : t('待確認', 'Unconfirmed') : '';
+        const editable = !row.archived_at && (!game || row.relation_source === 'manual');
+        return <tr data-relation-row data-id={String(row.id)} data-origin={String(row.relation_source ?? 'manual')}>
+          <td class="relation-endpoints"><span>{sourceLabel}</span><span aria-hidden="true">→</span><span>{targetLabel}</span></td>
+          <td class="relation-type"><span aria-hidden="true">{relationDirectionHint(type, lang) ? '↦' : '◇'}</span> {relationTypeLabel(type, lang)}
+            {!game && status && <small class="relation-collection-status">{status}</small>}
+          </td>
+          {game && <><td class="relation-origin">{origin}</td><td class="relation-state">{status}</td></>}
+          <td class="relation-id">{!game && <span class="relation-mobile-origin">{origin} · </span>}#{String(row.id)}</td>
+          <td class="relation-actions">
+            {editable && <details name="relation-row-actions">
+              <summary aria-label={t('關聯操作', 'Relation actions') + ' #' + String(row.id)}>⋯</summary>
+              <div>
+                <button type="button" class="admin-button" data-relation-open="relation-editor" data-relation-edit={JSON.stringify({
+                  id: row.id, revision: row.admin_revision, sourceId, targetId, type, confirmed: Boolean(row.admin_confirmed), notes: row.notes ?? '',
+                })}>{t('編輯關聯', 'Edit relation')}</button>
+                <button type="button" class="admin-button danger" data-relation-open="relation-archive" data-relation-archive={JSON.stringify({
+                  id: row.id, revision: row.admin_revision,
+                })} data-relation-description={sourceLabel + ' → ' + targetLabel}>{t('封存關聯', 'Archive relation')}</button>
+              </div>
+            </details>}
+          </td>
+        </tr>;
+      })}
+    </tbody>
+  </table>}
+<RelationForm domain={domain} choices={choices} source={source} target={target} lang={lang}/>
+<dialog class="admin-kit-dialog" id="relation-archive" aria-labelledby="relation-archive-title">
+  <h2 id="relation-archive-title">{t('封存關聯', 'Archive relation')}</h2>
+  <p data-relation-archive-description></p>
+  <p>{t('封存後歷史保留。', 'The relation history is retained after archiving.')}</p>
+  <form data-bgg-action="archive">
+    <input name="domain" type="hidden" value={domain}/>
+    <input name="id" type="hidden"/>
+    <input name="revision" type="hidden"/>
+    <p data-relation-error role="alert" tabindex="-1" hidden></p>
+    <div class="relation-dialog-actions">
+      <button class="admin-button" type="button" data-relation-close autofocus>{t('取消', 'Cancel')}</button>
+      <button class="admin-button danger">{t('確認封存', 'Confirm archive')}</button>
+    </div>
+  </form>
+</dialog>
+<style>
+  .relation-toolbar {
+    display: flex;
+    align-items: end;
+    flex-wrap: wrap;
+    gap: .75rem;
+    margin: 1rem 0;
+  }
+  .relation-toolbar :global([data-relation-picker]) {
+    flex: 1 1 24rem;
+    max-width: 42rem;
+    min-width: 0;
+  }
+  .relation-list {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    table-layout: fixed;
+    margin: 1rem 0;
+    background: var(--admin-surface);
+  }
+  .relation-list th, .relation-list td {
+    padding: .7rem;
+    border-bottom: 1px solid var(--admin-border);
+    text-align: start;
+    overflow-wrap: anywhere;
+    vertical-align: middle;
+  }
+  .relation-list th:first-child { width: 44%; }
+  .relation-list th:last-child { width: 4.75rem; }
+  .relation-list th:nth-last-child(2) { width: 6.25rem; }
+  .relation-endpoints > span { display: block; }
+  .relation-endpoints > span:nth-child(2), .relation-origin, .relation-id {
+    color: var(--ink-muted);
+  }
+  .relation-collection-status { display: block; }
+  .relation-mobile-origin { display: none; }
+  .relation-actions details { position: relative; }
+  .relation-actions summary {
+    display: grid;
+    place-items: center;
+    min-width: 44px;
+    min-height: 44px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    list-style: none;
+    font-size: 1.25rem;
+  }
+  .relation-actions summary:hover { background: var(--admin-border); }
+  .relation-actions summary::-webkit-details-marker { display: none; }
+  .relation-actions details > div {
+    position: absolute;
+    z-index: 2;
+    inset-inline-end: 0;
+    display: grid;
+    gap: .25rem;
+    width: max-content;
+    max-width: calc(100vw - 4rem);
+    padding: .4rem;
+    background: var(--admin-surface);
+    border: 1px solid var(--admin-border);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 4px 16px rgb(0 0 0 / .12);
+  }
+  #relation-archive { overflow-wrap: anywhere; }
+  @media (max-width: 767px) {
+    .relation-list, .relation-list tbody { display: block; background: transparent; }
+    .relation-list thead {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+    }
+    .relation-list tr {
+      display: grid;
+      grid-template-columns: minmax(0, auto) minmax(0, 1fr) 44px;
+      grid-template-areas: 'type state actions' 'endpoints endpoints endpoints' 'origin id id';
+      justify-content: start;
+      align-items: center;
+      gap: .45rem .65rem;
+      padding: .65rem .8rem;
+      margin-block: .65rem;
+      background: var(--admin-surface);
+      border: 1px solid var(--admin-border);
+      border-radius: var(--radius-sm);
+    }
+    .relation-list td { padding: 0; border: 0; min-width: 0; }
+    .relation-type { grid-area: type; font-weight: 650; }
+    .relation-state { grid-area: state; }
+    .relation-origin { grid-area: origin; justify-self: start; }
+    .relation-endpoints { grid-area: endpoints; }
+    .relation-id { grid-area: id; }
+    .relation-actions { grid-area: actions; align-self: start; min-height: 44px; }
+    .relation-list[data-domain="collection"] .relation-type { grid-column: 1 / 3; }
+    .relation-list[data-domain="collection"] .relation-id { grid-column: 1 / -1; }
+    .relation-mobile-origin { display: inline; }
+  }
+</style>

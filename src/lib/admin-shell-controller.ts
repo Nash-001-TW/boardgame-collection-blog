@@ -17,7 +17,7 @@ export const adminNavigation = [
     { id: 'purchases', path: '/admin/purchases', zh: '採購管理', en: 'Purchase management', icon: 'cart' },
   ] },
   { id: 'game-data', zh: '遊戲資料', en: 'Game data', icon: 'database', items: [
-    { id: 'bgg', path: '/admin/bgg', zh: 'BGG 管理', en: 'BGG management', icon: 'database' },
+    { id: 'bgg', path: '/admin/bgg', zh: 'BGG 同步與快取', en: 'BGG sync & cache', icon: 'database' },
     { id: 'notbgg', path: '/admin/notbgg', zh: 'NotBGG 清單', en: 'NotBGG list', icon: 'book' },
     { id: 'relations', path: '/admin/bgg', query: { view: 'relations' }, zh: '遊戲關聯', en: 'Game relations', icon: 'puzzle' },
   ] },
