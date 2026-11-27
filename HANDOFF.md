@@ -411,3 +411,4 @@ node --import tsx --test tests/public-site-data.test.ts tests/public-site-sqlite
 - **2026-11-27（Asia/Taipei）**：修正收藏頁首封面只顯示一部分的問題（DECISION_LOG HEADER-COVER-FIX）：只改 `src/styles/admin-theme.css` 一條規則。用 400×200 的橫式圖驗證，圖片填滿 72×96 方框，完整顯示，上下用底色補齊。Edge 9／9、74／74、Shell 9／9。尚未提交。
 - **2026-11-27（Asia/Taipei）**：HEADER-COVER-FIX 已部署：`24ba7c0` → Worker `8ed684a2`（台北 10:43:58），唯讀抽查 6 條都符合。此紀錄尚未提交。
 - **2026-11-27（Asia/Taipei）**：整理文件：更新 CURRENT_TASK 的日期與正式環境現況；#30、#34、#35、#36 原本誤寫為「候選」，改為已完成或已部署；新增 #37（照片）、#38（卡套頁改版）、#39（更換對應遊戲）的結案狀態，以及 #40～#44（Access 過期提示、Access 時效、R2 孤兒清理、過時測試、使用者手動清理）；#20 完成：`docs/current-progress.md` 改為入口頁，2026-11-18 的內容保留為歷史快照。只在本機提交，未推送。
+- **2026-11-27（Asia/Taipei）**：修正收藏清單縮圖只顯示一半（DECISION_LOG LIST-COVER-FIX）：只改 `src/styles/admin-theme.css` 的兩條規則。以 400×200 與 200×400 圖片在 1440／768／375 寬度驗證，縮圖都填滿 56×74 方框並以 contain 完整顯示。R02 瀏覽器 12／12、收藏詳細頁 74／74、Shell 9／9；截圖在 docs/COVER-FIX-screenshots/。尚未提交。

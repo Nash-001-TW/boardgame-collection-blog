@@ -181,3 +181,5 @@
 | 2026-11-27 | HEADER-COVER-FIX | 使用者回報收藏頁首的封面只顯示一部分。原因：全域 `.admin-page img{height:auto}` 比 `.admin-detail-cover img` 晚載入，而兩者特異度相同，所以蓋掉了 `height:100%`。由 Claude 修正 `admin-theme.css`：提高選擇器特異度、補上 `max-width:none` 和底色 | 使用者 | Claude Code 對話 | 已實作 |
 | 2026-11-27 | HEADER-COVER-DEPLOY | 使用者依 DEPLOY-01 授權提交並推送 `main`，部署 HEADER-COVER-FIX，並一起提交 RELINK-ICON 的部署紀錄 | 使用者 | Claude Code 對話「提交並推送」 | 已授權 |
 | 2026-11-27 | DOCS-TIDY-20261127 | 使用者授權整理文件並在本機提交（**不推送**）：更新 CURRENT_TASK 待辦表（修正過時狀態、新增 #37～#44），把 `docs/current-progress.md` 改為入口頁（#20），並提交還沒提交的部署紀錄 | 使用者 | Claude Code 對話「更新並提交, 文件該改的改, 該修的修」 | 已授權 |
+| 2026-11-27 | LIST-COVER-FIX | 使用者回報收藏管理清單的小圖示也只顯示一半。Claude 盤點後台所有圖片規則：`.admin-r02-cover img`（收藏清單）沒有設定寬高，`.admin-kit-cover img`（UI Kit 表格封面）的高度也會被全域 `.admin-page img{height:auto}` 蓋掉，兩者和頁首封面是同一個原因。修正 `admin-theme.css`：提高特異度，補上 `width/height:100%`（kit 為 56×74）和 `max-width:none`。其他圖片（統計卡浮水印、空狀態、照片相關）原本就是刻意 `height:auto` 或已處理過 | 使用者 | Claude Code 對話 | 已實作 |
+| 2026-11-27 | LIST-COVER-DEPLOY | 使用者依 DEPLOY-01 授權提交並推送 `main`，部署 LIST-COVER-FIX | 使用者 | Claude Code 對話「提交並推送」 | 已授權 |
