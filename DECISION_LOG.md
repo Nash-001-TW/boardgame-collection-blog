@@ -171,3 +171,5 @@
 | 2026-11-27 | RELINK-Q143～Q149 | #39 收藏更換對應遊戲 Q143～Q149 全部採建議（docs/collection-game-relink-plan-20261127.md §6），包含新增 Migration 0028 的更換紀錄表。實作、0028 正式套用、部署都另行授權 | 使用者 | Claude Code 對話「全部採建議」 | 已採納 |
 | 2026-11-27 | RELINK-AUTH | 使用者批准 #39 交給 Codex 實作（工作命令 RELINK-20261127-01，規劃 §7）。只在本機進行：撰寫 Migration 0028、新增更換對應遊戲 API、修改收藏基本資料 UI 並補測試；不含正式 D1、`wrangler.json`、`middleware.ts`、部署、提交、推送 | 使用者 | Claude Code 對話「批准，交 Codex」 | 已授權 |
 | 2026-11-27 | RELINK-COMMIT-A1 | 使用者看過截圖，授權在本機提交 #39（**不推送**），並執行 0028 的 A1 唯讀預檢；不包含 A2～A4 與推送 | 使用者 | Claude Code 對話「提交並做 A1」 | 已授權 |
+| 2026-11-27 | RELINK-0028-A34 | 使用者授權 0028 正式套用 A3（`wrangler d1 execute --remote --file` 執行組合檔 1 次）與 A4 唯讀對帳；不包含推送或部署 | 使用者 | Claude Code 對話「只做 A3＋A4」 | 已授權 |
+| 2026-11-27 | RELINK-DEPLOY | 使用者依 DEPLOY-01 授權提交紀錄並推送 `main`，部署 #39 收藏更換對應遊戲（0028 已在正式環境套用） | 使用者 | Claude Code 對話「提交並推送」 | 已授權 |

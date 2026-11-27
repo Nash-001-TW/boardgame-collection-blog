@@ -397,3 +397,6 @@ node --import tsx --test tests/public-site-data.test.ts tests/public-site-sqlite
   - **Edge 尚未驗證**：設 `D1_A3_EDGE_LOCAL_TEST_MODE=1`，以 `node --import tsx tests/admin-collection-detail-browser.mjs <全新空資料夾> --relink` 驗證 #39，再用另一個全新空資料夾、不加旗標跑回歸。兩次皆因 Edge Crashpad 存取遭拒而以 2147483651 結束，0 項斷言，無 PNG。Claude 待重跑 1280／375 中文畫面與既有回歸。
   - **公開資料查核**：prebuild 初始化的 BGG 收藏快取提供目錄登錄，公開收藏歸屬、遊戲詳細頁的收藏資料、公開卡套和系列花費查詢均讀 D1。更換對應無需刷新靜態快取。舊遊戲若仍具公開目錄資格，其遊戲頁仍可能存在。正式 0028 須先走規劃 §5 的獨立授權程序，再部署程式；正式 D1、部署與提交皆未執行。
 - **2026-11-27（Asia/Taipei）**：#39 更換對應遊戲已實作並經 Claude 審查（[規劃 §8](docs/collection-game-relink-plan-20261127.md)），沒有需要修正的地方。Node 44／44，Edge 4／4、74／74；截圖在 docs/RELINK-screenshots/。尚未提交。必須先把 0028 套用到正式環境，再推送。
+- **2026-11-27（Asia/Taipei）**：#39 本機提交 `907ec0e`（未推送）。0028 A1 唯讀預檢**通過**（[規劃 §9.1](docs/collection-game-relink-plan-20261127.md)）：ledger 27、最後一筆是 0027、更換紀錄物件 0、外鍵目標與欄位都存在、外鍵 0；schema 291。寫入 0。下一步 A2 需要授權。此紀錄尚未提交。
+- **2026-11-27（Asia/Taipei）**：0028 A2 **通過**（[規劃 §9.2](docs/collection-game-relink-plan-20261127.md)）。備份在 D:/CodexHome/private-0028-backup-6c79b02f1d58/（SHA-256 `d9975d62…8c49`）；本機預演 +4 個物件，既有資料不變，10 項寫入測試全部符合預期。組合檔 SHA-256 `b49b3a8d…e2c8`。下一步 A3 需要授權。
+- **2026-11-27（Asia/Taipei）**：0028 已在正式環境套用（A3 台北 09:47，寫入 1 次）。A4 通過：ledger 28、schema 295、既有資料不變、外鍵 0；網站抽查 8 條都符合（[規劃 §9.3～§9.4](docs/collection-game-relink-plan-20261127.md)）。下一步是推送部署 #39，需要授權。

@@ -60,3 +60,48 @@ Q143～Q149 全部採 A：可選遊戲範圍和新增收藏相同；類型依新
 - 靜態快取（Codex 調查）：建置時產生的 BGG 快取只提供目錄資料；公開收藏歸屬、卡套和系列花費都直接查 D1，所以換遊戲後不需要重新建置。
 - Claude 自行驗證：Node 44／44（8 個收藏相關測試檔）；Edge 更換流程 4／4（`--relink`）、收藏詳細頁回歸 74／74。astro check 引用 Codex 的結果（6 → 6，使用 `--noSync`），Claude 沒有重跑。截圖在 `docs/RELINK-screenshots/`。
 - **部署順序**：程式會查詢新表，所以必須先把 0028 套用到正式環境（A1～A4），再推送；順序反了，基本資料頁讀更換紀錄時會失敗。
+
+## 9. 0028 正式套用
+
+### 9.1 A1 唯讀預檢（2026-11-27，Claude 執行，DECISION_LOG RELINK-COMMIT-A1）
+
+- 本機提交 `907ec0e`（未推送，本機比 `origin/main` 多 1 個提交）。0028 SHA-256 `ae8d0c2b09c42a002d21bd0d0be37812839a666783e98cc615e87b08367487da`。
+- 遠端操作：Metadata 1 次、唯讀 SELECT 1 次；寫入 0。
+
+| 項目 | 預期 | 實際 | 結果 |
+| --- | --- | --- | --- |
+| 流量版本 | `origin/main` 的部署 | `3933178d`（100%） | 符合 |
+| `d1_migrations` | 27 筆，最後一筆是 0027，沒有 0028 | 27 筆，最後 `0027_component_photos.sql`，0028 為 0 筆 | 符合 |
+| 更換紀錄物件 | 0 | 0 | 符合 |
+| 外鍵目標 | `v2_collection_events` 有 (collection_item_id, revision) 唯一鍵 | `sqlite_autoindex_v2_collection_events_1`，欄位齊全 | 符合 |
+| `v2_games` 欄位 | id、bgg_id、primary_name、game_type | 都存在 | 符合 |
+| 資料 | — | 收藏 260、收藏事件 7、遊戲 229、照片 21；#262 revision 4、game_id 227；事件表觸發器 3 個；schema 物件 291（資料表 57） | 0028 只新增物件 |
+| 外鍵檢查 | 0 | 0 | 符合 |
+
+0028 會新增 1 張 WITHOUT ROWID 表（主鍵不另外建索引）、1 個自動索引（`request_key` UNIQUE）和 2 個觸發器，預期 291 → 295，實際數字在 A2 預演確認。
+
+**A1 全數通過。** A2～A4 期間請不要在後台新增或修改資料。
+
+### 9.2 A2 備份與本機預演（2026-11-27，Claude 執行，使用者授權「確認沒有，開始 A2」）
+
+- **官方 Export 1 次**（唯讀）：`D:/CodexHome/private-0028-backup-6c79b02f1d58/boardgame-collection-db-before-0028.sql`，資料夾已停用繼承，只有目前網域使用者有 FullControl，不加入 Git。檔案 2,225,274 bytes，SHA-256 `d9975d6209f8ea0c039ed6e3ed10771fbadf26698cc55a9d06feb9021aa48c49`。下載連結沒有記錄，內容也沒有輸出。
+- **組合檔**：0028 原檔（SHA-256 `ae8d0c2b…87da`，和 HEAD 相同）＋ `INSERT INTO d1_migrations(name) VALUES ('0028_collection_game_changes.sql');`，組合檔 SHA-256 `b49b3a8d5d3b462c5fadfdbd66bfe6460080184204b48141683d98ccbc77e2c8`，放在 scratchpad。
+- **本機預演**（`node:sqlite`）：
+  - **還原後**和 A1 一致：ledger 27、最後一筆 0027、更換紀錄物件 0、事件表觸發器 3、收藏 260、事件 7、遊戲 229、#262 revision 4、game 227、照片 21；schema 290、資料表 56（正式環境是 291／57，差的 1 個是 `_cf_KV`）。外鍵 0。
+  - **在交易中套用：成功。** ledger 28；新增 1 張表、1 個索引、2 個觸發器，schema 290 → 294（+4），所以正式環境預期 291 → 295；既有資料不變。外鍵 0，`integrity_check` 回 `ok`。
+  - **寫入測試**（在 savepoint 中執行，結束後 rollback，更換紀錄為 0）：10 項全部符合預期。完整的更換批次（事件、紀錄、管理 revision、收藏）可以寫入；同一個 revision 再寫、新舊相同、沒有對應的事件、`to_game_id` 為 NULL、不存在的遊戲、重複的 request_key、UPDATE 紀錄、DELETE 紀錄、跳號的事件 revision，全部被拒。
+- 遠端操作：Export 1 次，寫入 0。**A2 全數通過。**
+
+### 9.3 A3 正式套用（2026-11-27，Claude 執行，DECISION_LOG RELINK-0028-A34）
+
+- 執行前複核：0028 SHA-256 `ae8d0c2b…87da`、組合檔 `b49b3a8d…e2c8`，都和 A2 相同。
+- 台北 2026-11-27 09:47:42～09:47:51 執行 `wrangler d1 execute boardgame-collection-db --remote --json --yes --file <組合檔>`，**正式寫入只有這 1 次**，沒有使用 `migrations apply`。
+- 結果：結束碼 0、`success: true`、`changed_db: true`、執行 4 個查詢、寫入 8 列、`last_row_id` 28、`num_tables` 55 → 56；D1 大小 2.01 MB。
+
+### 9.4 A4 套用後唯讀對帳（2026-11-27）
+
+- 唯讀 SELECT 1 次：ledger 28，最後一筆是 `0028_collection_game_changes.sql`；更換紀錄物件有 1 張表、1 個索引、2 個觸發器；schema 291 → 295（+4），資料表 57 → 58；事件表觸發器仍是 3 個；收藏 260、事件 7、遊戲 229、照片 21、#262 revision 4 與 game 227，都和 A1 相同；更換紀錄 0；外鍵 0。
+- 正式網站唯讀抽查 8 條，全部符合：公開頁 3 條回 200；`/admin`、`/admin/collection/262`、`/api/admin/collection/262` 回 302 轉到 Access；公開照片回 200；`/dev/ui-kit` 回 404。
+- **A3＋A4 全數通過，0028 已在正式環境就位。** 正式程式仍是 `3933178d`，不會讀寫新的表。
+- 遠端操作合計（A1～A4）：Metadata 1、SELECT 2、Export 1、正式寫入 1、HTTP 抽查 8。
+- **還沒做**：推送 `main`（本機提交 `907ec0e` 和這些紀錄）來部署 #39，以及上線後由使用者把 #262 換成普通版。需要另外授權。
