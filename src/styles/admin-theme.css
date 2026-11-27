@@ -370,10 +370,41 @@ html:has(.shell-drawer[open]) { overflow: hidden; }
   .admin-r02 table th { text-align: start; }
   .admin-r02 table td { min-width: 0; }
   .admin-r02 table td > :last-child { min-width: 0; }
-  .admin-r02 tr[data-collection-id] { grid-template-columns: auto minmax(0, 1fr); }
-  .admin-r02 tr[data-collection-id] td:nth-child(-n+2) { justify-content: flex-start; }
-  .admin-r02 tr[data-collection-id] td:nth-child(-n+2) .admin-kit-cell-label { display: none; }
-  .admin-r02 tr[data-collection-id] td:nth-child(n+3) { grid-column: 1 / -1; }
+  /* R02-MOBILE-REV-01 (revised): four-line card.
+     Line 1 name + actions, line 2 type/id/source, line 3 status + players + copies (with icons), line 4 last updated.
+     The 72x96 cover sits in the left gutter, matching the detail header. */
+  .admin-r02 tr[data-collection-id] { display: flex; flex-wrap: wrap; align-items: center; column-gap: var(--space-3); row-gap: var(--space-1);
+    position: relative; box-sizing: border-box; min-height: calc(96px + 2 * var(--space-3));
+    padding: var(--space-3) var(--space-2) var(--space-3) calc(72px + 2 * var(--space-3)); }
+  .admin-r02 tr[data-collection-id] td { display: block; padding: 0; border: 0; min-width: 0; }
+  .admin-r02 tr[data-collection-id] .admin-kit-cell-label { display: none; }
+  .admin-r02 tr[data-collection-id] td:nth-child(1) { position: absolute; inset-block-start: var(--space-3); inset-inline-start: var(--space-3); }
+  .admin-r02 tr[data-collection-id] .admin-r02-cover { width: 72px; height: 96px; }
+  /* Expose the title and meta line of the name cell as separate flex items. */
+  .admin-r02 tr[data-collection-id] td:nth-child(2), .admin-r02 tr[data-collection-id] td:nth-child(2) > div { display: contents; }
+  .admin-r02 tr[data-collection-id] td:nth-child(2) strong { order: 1; flex: 1 1 0; min-width: 0; font: var(--text-subtitle); }
+  .admin-r02 tr[data-collection-id] td:nth-child(7) { order: 2; margin-block: -10px; }
+  .admin-r02 tr[data-collection-id] td:nth-child(2) small { order: 3; flex: 1 0 100%; }
+  .admin-r02 tr[data-collection-id] td:nth-child(3) { order: 4; }
+  .admin-r02 tr[data-collection-id] td:nth-child(3) .admin-kit-row { gap: var(--space-1); }
+  .admin-r02 tr[data-collection-id] :is(td:nth-child(4), td:nth-child(5)) { display: inline-flex; align-items: center; gap: 4px; color: var(--ink-body); font: var(--text-small); }
+  .admin-r02 tr[data-collection-id] td:nth-child(4) { order: 5; }
+  .admin-r02 tr[data-collection-id] td:nth-child(5) { order: 6; }
+  .admin-r02 tr[data-collection-id] :is(td:nth-child(4), td:nth-child(5))::before { content: ''; inline-size: 16px; block-size: 16px; flex: none;
+    background: var(--ink-muted); -webkit-mask: var(--r02-icon) center / contain no-repeat; mask: var(--r02-icon) center / contain no-repeat; }
+  .admin-r02 tr[data-collection-id] td:nth-child(4) { --r02-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='9' cy='8' r='3'/%3E%3Cpath d='M2.5 19v-1a4 4 0 0 1 4-4h5a4 4 0 0 1 4 4v1m0-14a3 3 0 0 1 0 6m2 3a4 4 0 0 1 4 4v1'/%3E%3C/svg%3E"); }
+  .admin-r02 tr[data-collection-id] td:nth-child(5) { --r02-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m3.5 7.5 8.5-4 8.5 4v9L12 21l-8.5-4.5v-9Zm0 0 8.5 4 8.5-4M12 11.5V21M8 5.4l8.5 4.1'/%3E%3C/svg%3E"); }
+  .admin-r02 tr[data-collection-id] td:nth-child(4):not([data-empty])::after { content: ' 人'; }
+  .admin-r02:lang(en) tr[data-collection-id] td:nth-child(4):not([data-empty])::after { content: ' players'; }
+  .admin-r02 tr[data-collection-id] td:nth-child(5)::after { content: ' 副本'; }
+  .admin-r02:lang(en) tr[data-collection-id] td:nth-child(5)::after { content: ' copies'; }
+  .admin-r02 tr[data-collection-id] td:nth-child(6) { order: 7; flex: 1 0 100%; color: var(--ink-muted); font: var(--text-small); }
+  .admin-r02 tr[data-collection-id] td:nth-child(6)::before { content: '更新：'; }
+  .admin-r02:lang(en) tr[data-collection-id] td:nth-child(6)::before { content: 'Updated: '; }
+  /* Light, borderless actions trigger in the top-right corner; the 44px target is kept. */
+  .admin-app .admin-r02 tr[data-collection-id] .admin-r02-actions summary { border-color: transparent; background: transparent;
+    color: var(--brand-purple-strong); font-weight: 700; letter-spacing: .1em; }
+  .admin-app .admin-r02 tr[data-collection-id] .admin-r02-actions summary:hover { background: var(--brand-purple-soft); }
   .admin-r02 table td:last-child { border-bottom: 0; }
   .admin-r02-toolbar label { flex: 1 1 8rem; }
   .admin-r02-toolbar [data-r02-chips]:empty { display: none; }

@@ -196,20 +196,44 @@ try {
             minHeight:Math.min(...[...document.querySelectorAll('.admin-r02 a, .admin-r02 button, .admin-r02 summary, .admin-r02 input, .admin-r02 select')]
                 .filter(element => element.getClientRects().length).map(element => element.getBoundingClientRect().height)),
         }));
-        assert.deepEqual([layout.display, layout.status], [width === 375 ? 'grid' : 'table-row', '收藏管理']);
+        assert.deepEqual([layout.display, layout.status], [width === 375 ? 'flex' : 'table-row', '收藏管理']);
         assert.ok(layout.minHeight >= 44);
         if (width === 375) {
-            assert.ok(await evaluate(() => {
-                const [cover, name, status] = document.querySelector('tr[data-collection-id]').cells;
-                const coverBox = cover.getBoundingClientRect();
-                const nameBox = name.getBoundingClientRect();
-                const statusBox = status.getBoundingClientRect();
-                return coverBox.top === nameBox.top && coverBox.right === nameBox.left
-                    && statusBox.top >= coverBox.bottom && statusBox.width === coverBox.width + nameBox.width
-                    && getComputedStyle(cover.querySelector('.admin-kit-cell-label')).display === 'none'
-                    && getComputedStyle(name.querySelector('.admin-kit-cell-label')).display === 'none'
-                    && name.querySelector('small').textContent.includes('#');
-            }));
+            // R02-MOBILE-REV-01 (revised): four-line card with a 72x96 cover in the left gutter.
+            const card = await evaluate(() => {
+                const row = document.querySelector('tr[data-collection-id]');
+                const [cover, name, status, players, copies, date, actions] = row.cells;
+                const box = element => element.getBoundingClientRect();
+                const title = name.querySelector('strong'), meta = name.querySelector('small');
+                const same = (a, b) => Math.abs(box(a).top + box(a).height / 2 - (box(b).top + box(b).height / 2)) < 12;
+                const result = {
+                    cover: [Math.round(box(cover.querySelector('.admin-r02-cover')).width), Math.round(box(cover.querySelector('.admin-r02-cover')).height)],
+                    coverLeft: box(cover).right <= box(title).left,
+                    line1: same(title, actions) && box(actions).right >= box(row).right - 16,
+                    line2: box(meta).top >= box(title).bottom - 1,
+                    line3: box(status).top >= box(meta).bottom - 1 && same(status, players) && same(players, copies),
+                    line4: box(date).top >= box(status).bottom - 1,
+                    labelsHidden: [...row.querySelectorAll('.admin-kit-cell-label')].every(label => getComputedStyle(label).display === 'none'),
+                    icons: [players, copies].every(cell => getComputedStyle(cell, '::before').maskImage.startsWith('url(')),
+                    playersSuffix: getComputedStyle(players, '::after').content,
+                    copiesSuffix: getComputedStyle(copies, '::after').content,
+                    datePrefix: getComputedStyle(date, '::before').content,
+                    actionsTarget: Math.round(box(actions.querySelector('summary')).height),
+                    height: Math.round(box(row).height),
+                };
+                // A long name wraps inside line 1 and never moves the status line above the meta line.
+                const original = title.textContent;
+                title.textContent = '克蘇魯：死亡湮滅 - 未知恐懼(第三季) 擴充內容測試名稱';
+                result.longKeepsOrder = box(meta).top >= box(title).bottom - 1 && box(status).top >= box(meta).bottom - 1 && same(status, copies);
+                result.noScroll = document.documentElement.scrollWidth === 375;
+                title.textContent = original;
+                return result;
+            });
+            assert.deepEqual(card, {...card, cover: [72, 96], coverLeft: true, line1: true, line2: true, line3: true, line4: true,
+                labelsHidden: true, icons: true, playersSuffix: '" 人"', copiesSuffix: '" 副本"', datePrefix: '"更新："',
+                longKeepsOrder: true, noScroll: true});
+            assert.ok(card.actionsTarget >= 44, 'actions target ' + card.actionsTarget);
+            assert.ok(card.height <= 160, 'compact card height ' + card.height);
         }
         await evaluate(async () => {
             const cover = document.querySelector('tr[data-collection-id] img');

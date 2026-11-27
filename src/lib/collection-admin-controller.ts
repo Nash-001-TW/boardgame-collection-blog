@@ -145,7 +145,10 @@ function initializeCollectionList(root: HTMLElement) {
     }
     addCell(row, 2).appendChild(badges);
     const min = item.min_players, max = item.max_players;
-    addCell(row, 3).append(min && max ? (min === max ? number.format(min) : number.format(min) + '–' + number.format(max)) : '—');
+    const players = addCell(row, 3);
+    players.append(min && max ? (min === max ? number.format(min) : number.format(min) + '–' + number.format(max)) : '—');
+    // The compact phone card adds a unit suffix only when a player range exists.
+    if (!(min && max)) players.dataset.empty = '1';
     addCell(row, 4).append(number.format(item.copies));
     const timestamp = Date.parse(item.updated_at.trim().replace(' ', 'T').replace(/(T[\d:.]+)$/, '$1Z'));
     const time = document.createElement('time');
