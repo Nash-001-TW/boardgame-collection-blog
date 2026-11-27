@@ -176,3 +176,5 @@
 | 2026-11-27 | RELINK-UI-Q150～Q155 | #39 更換對應遊戲版面改進全部採建議（docs/collection-game-relink-plan-20261127.md §10）：入口移到頁首來源連結旁，操作改成彈出視窗，紀錄用「紀錄 N」按鈕開啟彈出視窗，成功後關閉並顯示短暫提示，移除原本的大型區塊；Q155 把依功能性質決定呈現方式的原則記入 UI 設計規範 §14（**候選**）。只改 UI，實作另行授權 | 使用者 | Claude Code 對話「全部採建議」 | 已採納 |
 | 2026-11-27 | RELINK-UI-AUTH | 使用者批准 #39 版面改進交給 Codex 實作（工作命令 RELINK-UI-20261127-01，規劃 §10）。只在本機修改 UI：頁首、彈出視窗、controller、`CollectionAdmin.astro` 和測試；不改 API、Schema、`wrangler.json`、`middleware.ts`，不碰正式環境，不提交、不推送 | 使用者 | Claude Code 對話「批准，交 Codex」 | 已授權 |
 | 2026-11-27 | RELINK-UI-DEPLOY | 使用者看過截圖後，依 DEPLOY-01 授權提交並推送 `main`，部署 #39 版面改進；不需要 Migration | 使用者 | Claude Code 對話「提交並推送」 | 已授權 |
+| 2026-11-27 | RELINK-ICON | 使用者要求：頁首的「更換」改成小圖示按鈕，滑鼠移上去要顯示提示；「紀錄 N」在副本、組件、卡套、採購分頁會延遲出現，要修正。由 Claude 實作：圖示按鈕（觸控區 44px，視覺 28px）並在 hover 和鍵盤焦點時顯示提示；紀錄數改由頁首查詢在伺服器端直接輸出，不再於載入後另外請求 | 使用者 | Claude Code 對話 | 已實作 |
+| 2026-11-27 | RELINK-ICON-DEPLOY | 使用者看過截圖後，依 DEPLOY-01 授權提交並推送 `main`，部署 RELINK-ICON；不需要 Migration | 使用者 | Claude Code 對話「提交並推送」 | 已授權 |

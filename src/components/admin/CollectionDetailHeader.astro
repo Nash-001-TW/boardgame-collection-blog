@@ -48,10 +48,13 @@ const sourceHref = source ? prefix + (source[1] === 'BGG' ? '/games/bgg-' : '/ga
         <div class="admin-kit-row">
           <a data-detail-source href={sourceHref ?? undefined} hidden={!sourceHref}>{header.source_id}</a>
           {canRelink && <>
-            <button type="button" class="admin-kit-button" data-relink-open aria-haspopup="dialog" aria-controls="collection-relink-dialog"
-              aria-label={t('更換對應遊戲','Change linked game')}>{t('更換','Change')}</button>
+            {/* Icon-only entry; the tooltip and accessible name both say what it does. */}
+            <button type="button" class="relink-icon" data-relink-open aria-haspopup="dialog" aria-controls="collection-relink-dialog"
+              aria-label={t('更換對應遊戲','Change linked game')} data-tooltip={t('更換對應遊戲','Change linked game')}><AdminIcon name="sync" size={16} /></button>
             <button type="button" class="admin-kit-button" data-relink-history-open aria-haspopup="dialog"
-              aria-controls="collection-relink-history" hidden></button>
+              aria-controls="collection-relink-history" data-count={String(header.relink_count ?? 0)}
+              data-revision={header.relink_revision == null ? undefined : String(header.relink_revision)}
+              hidden={!header.relink_count}>{t('紀錄 ','History ') + new Intl.NumberFormat(lang).format(header.relink_count ?? 0)}</button>
           </>}
           <span data-detail-source-missing hidden={!!sourceHref}>{t('缺少來源身份','Missing source identity')}</span>
           <span data-detail-type>{collectionItemTypeLabel(header.item_type, lang === 'en')}</span>
@@ -118,9 +121,33 @@ const sourceHref = source ? prefix + (source[1] === 'BGG' ? '/games/bgg-' : '/ga
   }
 </script>
 <style is:global>
-  .admin-page .admin-detail-header button:is([data-relink-open], [data-relink-history-open]) {
+  .admin-page .admin-detail-header button[data-relink-history-open] {
     min-height: 44px;
     padding-inline: .65rem;
+  }
+  /* Small icon button with a 44px touch target; the visible chip is 28px. */
+  .admin-page .admin-detail-header button.relink-icon {
+    position: relative; display: inline-grid; place-items: center;
+    inline-size: 44px; block-size: 44px; min-height: 44px; padding: 0; margin-inline: -6px;
+    border: 0; background: transparent; color: var(--ink-muted); cursor: pointer;
+  }
+  .admin-page .admin-detail-header button.relink-icon::before {
+    content: ''; position: absolute; inset: 8px; border-radius: 50%;
+    border: 1px solid var(--border-strong); background: var(--bg-surface);
+  }
+  .admin-page .admin-detail-header button.relink-icon svg { position: relative; }
+  .admin-page .admin-detail-header button.relink-icon:hover { color: var(--brand-purple-strong); }
+  .admin-page .admin-detail-header button.relink-icon:hover::before { background: var(--brand-purple-soft); }
+  /* Tooltip on hover and keyboard focus. */
+  .admin-page .admin-detail-header button.relink-icon[data-tooltip]::after {
+    content: attr(data-tooltip); position: absolute; inset-block-end: calc(100% + 2px); inset-inline-start: 50%;
+    transform: translateX(-50%); padding: .25rem .5rem; border-radius: var(--radius-sm);
+    background: var(--ink); color: var(--bg-surface); font: var(--text-small); white-space: nowrap;
+    pointer-events: none; opacity: 0; transition: opacity .12s ease; z-index: 5;
+  }
+  .admin-page .admin-detail-header button.relink-icon:is(:hover, :focus-visible)::after { opacity: 1; }
+  @media (prefers-reduced-motion: reduce) {
+    .admin-page .admin-detail-header button.relink-icon[data-tooltip]::after { transition: none; }
   }
   .admin-detail-header .collection-relink {
     inline-size: 32rem;

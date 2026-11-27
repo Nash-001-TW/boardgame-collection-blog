@@ -45,8 +45,9 @@ export function initializeCollectionRelink(root: HTMLElement, editor?: BasicEdit
  let submitting = false;
  let relinkBody = '';
  let relinkKey = '';
- let historyCount = 0;
- let historyRevision = -1;
+ // The server renders the current count, so the button is correct on first paint on every tab.
+ let historyCount = Number(historyOpen.dataset.count ?? 0) || 0;
+ let historyRevision = historyOpen.dataset.revision ? Number(historyOpen.dataset.revision) : -1;
  let historyRequest = 0;
  let archived = false;
  let successTimer: number | undefined;
@@ -156,7 +157,7 @@ export function initializeCollectionRelink(root: HTMLElement, editor?: BasicEdit
   historyDialog.showModal();
   void renderRelinkHistory();
  });
- void renderRelinkHistory();
+ updateHistoryButton();
  relinkSearch.addEventListener('submit', event => {
   event.preventDefault();
   const q = String(new FormData(relinkSearch).get('q') ?? '').trim();

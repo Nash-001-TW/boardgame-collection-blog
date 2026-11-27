@@ -300,7 +300,14 @@ try {
             document.querySelector('[data-relink-history-open]').hidden,
             !!document.querySelector('details[data-relink]'),
         ]), ['更換對應遊戲', true, false]);
+        // Keyboard focus shows the same tooltip as hover; headless CDP mouse moves do not set :hover here.
+        await evaluate(() => document.querySelector('[data-detail-source]').focus());
+        await cdp('Input.dispatchKeyEvent', {type: 'keyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9});
+        await cdp('Input.dispatchKeyEvent', {type: 'keyUp', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9});
+        await until(() => evaluate(sel => document.activeElement === document.querySelector(sel) && document.activeElement.matches(':focus-visible')
+            && getComputedStyle(document.activeElement, '::after').opacity === '1', relinkEntry), 'relink tooltip on keyboard focus');
         await screenshot('entry', '[data-detail-header]');
+        await evaluate(() => document.activeElement.blur());
         pass('頁首來源旁顯示入口，無紀錄時隱藏紀錄按鈕');
 
         await click(relinkEntry);
@@ -395,7 +402,18 @@ try {
 
         for (const tab of ['copies', 'components', 'sleeves', 'purchases']) {
             await navigate(details + '/' + tab + '?scope=production&lang=en');
-            assert.equal(await evaluate(sel => document.querySelector(sel).getAttribute('aria-label'), relinkEntry), 'Change linked game');
+            // The history count is server-rendered, so it is present on first paint without a client request.
+            const historyNow = await evaluate(() => {
+                const button = document.querySelector('[data-relink-history-open]');
+                return [button.hidden, button.textContent, performance.getEntriesByType('resource').some(entry => entry.name.includes('relink-history'))];
+            });
+            assert.equal(historyNow[0], false, tab);
+            assert.match(historyNow[1], /^History [12]$/, tab);
+            assert.equal(historyNow[2], false, tab);
+            assert.deepEqual(await evaluate(sel => {
+                const button = document.querySelector(sel);
+                return [button.getAttribute('aria-label'), button.dataset.tooltip, !!button.querySelector('svg'), button.textContent.trim()];
+            }, relinkEntry), ['Change linked game', 'Change linked game', true, '']);
             await click(relinkEntry);
             assert.equal(await open(modal), true, tab);
             if (tab === 'copies') {

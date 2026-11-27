@@ -130,3 +130,13 @@ Q143～Q149 全部採 A：可選遊戲範圍和新增收藏相同；類型依新
 - Codex 實作：五個分頁共用的頁首加上「更換」與「紀錄 N」入口（新增 `src/lib/collection-relink-controller.ts` 作為共用 controller，基本資料分頁另外接回 revision 和名稱欄位）；改用 `admin-kit-dialog` 彈出視窗；移除 `CollectionAdmin.astro` 下方的大型區塊。API 沒有變更。
 - Claude 自行驗證：Node 44／44；Edge `--relink` 9／9（入口、焦點歸還、找不到遊戲、預覽與類型確認、送出中不能關閉、失敗保留輸入、冪等重試與成功提示自動消失、紀錄視窗、四個分頁都能使用、已封存沒有入口）；收藏詳細頁回歸 74／74；Shell 9／9。截圖更新到 `docs/RELINK-screenshots/`（入口、預覽、紀錄，各有 1280／375）。astro check 引用 Codex 的回報（6，沒有新增）。
 - 已知限制：在副本、組件等分頁更換後，頁首會立刻更新；但該分頁由伺服器產生的其他資料，要等下次載入才會反映新的遊戲。
+
+### 10.2 部署（2026-11-27，DECISION_LOG RELINK-UI-DEPLOY）
+
+- 推送 `ec0e711..382ecc8`；Workers Builds 部署 `96793ec9`（100%，台北 10:20:33），唯讀抽查 8 條都符合。待使用者登入確認。
+
+### 10.3 圖示按鈕與紀錄數延遲（2026-11-27，Claude 實作，DECISION_LOG RELINK-ICON）
+
+- 「更換」改成只有圖示的小按鈕（`sync` 圖示，視覺 28px、觸控區 44px），`aria-label` 和提示文字都是「更換對應遊戲」；滑鼠移上去或用鍵盤聚焦時，上方會出現提示。
+- 延遲的原因：「紀錄 N」原本在頁面載入後，才由前端呼叫 `relink-history` 計算筆數。修正後，`readCollectionHeader` 會一起查出 `relink_count`、`relink_revision`，由伺服器直接輸出在按鈕上；只有打開紀錄視窗時才會讀取明細。
+- 測試：`tests/admin-collection-detail-browser.mjs --relink` 新增斷言：四個子分頁載入時「紀錄 N」已經顯示，而且沒有發出 `relink-history` 請求；圖示按鈕沒有文字、有提示；鍵盤聚焦時提示會顯示（headless Edge 的模擬滑鼠移動不會觸發 `:hover`，所以用鍵盤焦點驗證同一個提示）。Node 44／44、Edge 9／9、收藏詳細頁 74／74、Shell 9／9。截圖已更新。

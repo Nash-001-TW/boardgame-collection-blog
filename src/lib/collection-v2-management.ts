@@ -160,6 +160,9 @@ export interface CollectionHeader {
  archived_at: string | null;
  copies: number;
  image: string | null;
+ /** Rendered on the server so the header's "History N" button appears without a client round trip. */
+ relink_count: number;
+ relink_revision: number | null;
 }
 
 /** A missing row and an unavailable header have different HTTP and UI outcomes. */
@@ -180,6 +183,8 @@ export async function readCollectionHeader(db: D1Database, id: number, scope: Co
     c.item_type,c.acquisition_status,c.wishlist,m.archived_at,c.owned,
     (SELECT COUNT(*) FROM v2_owned_copies copy WHERE copy.collection_item_id=c.id
        AND copy.inventory_status IN ('in_collection','loaned')) AS copies,
+    (SELECT COUNT(*) FROM v2_collection_game_changes gc WHERE gc.collection_item_id=c.id) AS relink_count,
+    (SELECT MAX(gc.revision) FROM v2_collection_game_changes gc WHERE gc.collection_item_id=c.id) AS relink_revision,
     CASE WHEN n.seq IS NOT NULL THEN ${publicNotBggPresentationSql.image}
          ELSE ${publicBggPresentationSql.image} END AS image
    FROM (SELECT *, ${adminOwnedSql} AS owned FROM v2_collection_items WHERE id=? AND record_scope=?) c
