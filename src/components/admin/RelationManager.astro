@@ -1,7 +1,7 @@
 ---
 import RelationForm from './RelationForm.astro';
 import RelationPicker from './RelationPicker.astro';
-import {relationDirectionHint, relationEndpointLabel, relationSourceLabel, relationTypeLabel} from '../../lib/relation-labels';
+import {gameDisplayName, relationDirectionHint, relationEndpointLabel, relationSourceLabel, relationTypeLabel} from '../../lib/relation-labels';
 
 interface Props {
   domain: 'game' | 'collection';
@@ -34,7 +34,7 @@ const clearFilter = (name: string) => {
 const gameEndpoint = (id: unknown, bggId: unknown, name: unknown) => {
   const choice = byId.get(Number(id));
   return {
-    name: String(choice?.primary_name ?? name ?? endpoint(id)),
+    ...(choice ? gameDisplayName(choice, lang) : {name: String(name ?? endpoint(id)), original: ''}),
     identity: choice?.bgg_id || bggId ? 'BGG:' + String(choice?.bgg_id ?? bggId)
       : choice?.seq ? 'NotBGG:' + String(choice.seq).padStart(6, '0') : '',
   };
@@ -95,8 +95,8 @@ const shortTypes: Record<string, string> = {
         const to = gameEndpoint(targetId, row.target_bgg_id, row.target_name);
         return <tr data-relation-row data-id={row.id == null ? undefined : String(row.id)} data-origin={String(row.relation_source ?? 'manual')}>
           {game ? <td class="relation-endpoints">
-            <span class="relation-from">{from.name}{from.identity && <small>{from.identity}</small>}</span>
-            <span class="relation-to"><span class="relation-direction" aria-hidden="true">{direction}</span><span>{to.name}{to.identity && <small>{to.identity}</small>}</span></span>
+            <span class="relation-from">{from.name}{from.original && <small class="relation-original-name">{from.original}</small>}{from.identity && <small>{from.identity}</small>}</span>
+            <span class="relation-to"><span class="relation-direction" aria-hidden="true">{direction}</span><span>{to.name}{to.original && <small class="relation-original-name">{to.original}</small>}{to.identity && <small>{to.identity}</small>}</span></span>
           </td> : <td class="relation-endpoints"><span>{sourceLabel}</span><span aria-hidden="true">→</span><span>{targetLabel}</span></td>}
           <td class="relation-type">{game ? bggTypes[type] ?? shortTypes[type] ?? relationTypeLabel(type, lang)
             : <><span aria-hidden="true">{relationDirectionHint(type, lang) ? '↦' : '◇'}</span> {relationTypeLabel(type, lang)}

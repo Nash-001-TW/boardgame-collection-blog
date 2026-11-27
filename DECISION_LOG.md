@@ -201,3 +201,5 @@
 | 2026-11-27 | XREL-B-DEPLOY | 使用者看過 B-UI 截圖後，依 DEPLOY-01 授權提交並推送 `main`，一起部署 #46 B 階段（XREL-B-20261127-01）與 B-UI（XREL-BUI-20261127-01）；含公開 DTO 新增 `sources`、`image`，不需要 Migration | 使用者 | Claude Code 對話「提交並推送」 | 已授權 |
 | 2026-11-27 | PUBLIC-KEY-DECODE | 使用者回報公開遊戲頁「相關遊戲」與「收藏與需求」都查詢失敗。Claude 用內建瀏覽器重現：前端以 `encodeURIComponent('BGG:404893')` 呼叫，正式 Workers 收到的路由參數仍是 `BGG%3A404893`，`deserializeGameRef` 回 400 INVALID_GAME_ID（部署 #46 前的 Worker `ec4c0693` 已有同樣行為，不是 #46 造成）。修正：兩個公開路由 `api/public/{collection,relations}/[key].ts` 解碼一次，失敗時原樣交給既有驗證。待授權部署 | 使用者 | Claude Code 對話（截圖回報） | 已實作 |
 | 2026-11-27 | PUBLIC-KEY-DECODE-DEPLOY | 使用者依 DEPLOY-01 授權提交並推送 `main`，部署 PUBLIC-KEY-DECODE，並一起提交 #46 部署紀錄 | 使用者 | Claude Code 對話「提交並推送」 | 已授權 |
+| 2026-11-27 | REL-ZH-NAME | 使用者要求遊戲關聯頁「改成中文優先」。Claude 實作：中文介面下，遊戲有正式、未封存的收藏時，以收藏名稱（多筆取最小 id）為主、BGG 英文名為次要；沒有收藏的遊戲照舊英文，英文介面不變。`readRelationAdmin` 的 identities 新增 `collection_name` 欄位（manual 模式回傳多一個選項欄位，列資料不變）；同時影響遊戲選單、篩選標籤、封存確認文字。測試 fixture 收藏名改為中文 | 使用者 | Claude Code 對話「改成中文優先」 | 已實作 |
+| 2026-11-27 | REL-ZH-NAME-DEPLOY | 使用者看過截圖後，依 DEPLOY-01 授權提交並推送 `main`，部署 REL-ZH-NAME，並一起提交 PUBLIC-KEY-DECODE 的部署紀錄 | 使用者 | Claude Code 對話「提交並推送」 | 已授權 |

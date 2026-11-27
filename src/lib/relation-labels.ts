@@ -23,12 +23,20 @@ export function relationSourceLabel(source: string, lang: Lang) {
   return source === 'bgg' ? 'BGG' : source;
 }
 
+// Game relations are stored per game (BGG English names). In Chinese, prefer the owner's own collection name
+// (production, not archived; lowest collection id) and keep the BGG name as secondary text.
+export function gameDisplayName(choice: Record<string, unknown> | undefined, lang: Lang, fallback?: unknown) {
+  const primary = String(choice?.primary_name ?? fallback ?? '');
+  const local = lang === 'en' ? '' : String(choice?.collection_name ?? '').trim();
+  return local && local !== primary ? {name: local, original: primary} : {name: primary, original: ''};
+}
+
 export function relationEndpointLabel(id: unknown, choice: Record<string, unknown> | undefined, game: boolean, lang: Lang) {
   if (!choice) return '#' + String(id) + (lang === 'en' ? ' (archived or not found)' : '（已封存或找不到）');
   const identity = game
     ? choice.bgg_id ? 'BGG:' + String(choice.bgg_id) : 'NotBGG:' + String(choice.seq).padStart(6, '0')
     : '#' + String(id);
-  const name = String(game ? choice.primary_name : choice.display_name);
+  const name = String(game ? gameDisplayName(choice, lang).name : choice.display_name);
   return lang === 'en' ? name + ' (' + identity + ')' : name + '（' + identity + '）';
 }
 

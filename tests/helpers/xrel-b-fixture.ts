@@ -11,7 +11,7 @@ export function seedXrelB(sqlite: DatabaseSync) {
   INSERT INTO v2_games(id,bgg_id,primary_name,game_type) VALUES
    (228,408254,'${expansionName}','expansion'),(231,404893,'${baseName}','base');
   INSERT INTO v2_collection_items(game_id,display_name,acquisition_status) VALUES
-   (228,'${expansionName}','owned'),(231,'${baseName}','owned');
+   (228,'小小史詩克蘇魯：混亂教團擴充','owned'),(231,'小小史詩克蘇魯','owned');
  `);
  const cache = sqlite.prepare(`INSERT INTO bgg_games(bgg_id,name,cache_json,last_success_at,sync_status)
   VALUES(?,?,?,CURRENT_TIMESTAMP,'success')`);
