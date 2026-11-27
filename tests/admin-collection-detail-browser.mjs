@@ -38,7 +38,10 @@ const { dashboardPreview, collectionDetailFixture, accessFixture, handleCollecti
 const fixtures = Object.fromEntries(['normal', 'header', 'copies'].map(state => [state, collectionDetailFixture(state === 'normal' ? undefined : state)]));
 let server, browser, ws;
 let physicalFixture;
+const testRelink = process.argv.includes('--relink');
 let scenario = 'normal';
+let failRelink;
+const relinkKeys = [];
 let checks = 0;
 
 async function until(check, label) {
@@ -79,6 +82,9 @@ try {
     const client = await build({
         stdin: {resolveDir:process.cwd(), contents:
             'import { initializeCollectionAdmin } from "./src/lib/collection-admin-controller.ts";' +
+            'import { initializeCollectionRelink } from "./src/lib/collection-relink-controller.ts";' +
+            'for (const header of document.querySelectorAll("[data-relink-id]")) {' +
+            'if (!header.closest("[data-collection-admin]")) initializeCollectionRelink(header);}' +
             'import "./src/lib/collection-copies-controller.ts";' +
             'document.querySelectorAll("[data-collection-admin]").forEach(initializeCollectionAdmin);'},
         bundle:true, write:false, format:'iife', platform:'browser',
@@ -134,10 +140,21 @@ try {
             if (/^\/admin\/collection\/\d+\/components$/.test(url.pathname)) {
                 const response = await renderPage(request);
                 res.writeHead(response.status, {'Content-Type':'text/html; charset=utf-8'});
-                res.end((await response.text()).replace('</body>', '<script src="/s5b-client.js"></script></body>'));
+                res.end((await response.text()).replace('</body>', '<script src="/s5b-client.js"></script>' +
+                    (testRelink ? '<script src="/s5a-client.js"></script>' : '') + '</body>'));
                 return;
             }
             if (url.pathname.startsWith('/api/admin/collection/')) {
+                if (testRelink && req.method === 'PATCH' && JSON.parse(body.toString()).action === 'relink') {
+                    relinkKeys.push(headers.get('Idempotency-Key'));
+                    if (failRelink) {
+                        const pendingFailure = failRelink;
+                        failRelink = undefined;
+                        await pendingFailure;
+                        res.writeHead(503, {'Content-Type':'application/json'}).end(JSON.stringify({error:{code:'STORAGE'}}));
+                        return;
+                    }
+                }
                 const handler = url.pathname.endsWith('/copies') ? handleCollectionCopiesRequest : handleCollectionAdminRequest;
                 const response = await handler(request, bindings);
                 const result = await response.text();
@@ -235,75 +252,176 @@ try {
     const query = '?scope=production&lang=zh-TW';
     const settle = () => until(() => evaluate(() => document.querySelector('[data-collection-form] [name=displayName]')?.value), 'R05 data');
     const resize = width => cdp('Emulation.setDeviceMetricsOverride', {width, height: 1050, deviceScaleFactor: 1, mobile: false});
-    if (process.argv.includes('--relink')) {
+    if (testRelink) {
         fixtures.normal.sqlite.exec(`
             UPDATE v2_collection_items SET item_type='base' WHERE id=1;
             INSERT INTO bgg_games(bgg_id,name,last_success_at,cache_json) VALUES
               (900003,'測試擴充','2026-11-27','{"bggId":900003,"name":"測試擴充","gameType":"boardgameexpansion"}');
         `);
-        await resize(1280);
-        await navigate(details + query);
-        await settle();
-        assert.equal(await evaluate(() => document.querySelector('[data-relink]').open), false);
-        const search = async value => evaluate(q => {
-            const panel = document.querySelector('[data-relink]');
-            panel.open = true;
+        const relinkEntry = '[data-relink-open]';
+        const historyEntry = '[data-relink-history-open]';
+        const modal = '[data-relink]';
+        const historyModal = '[data-relink-history-dialog]';
+        const click = selector => evaluate(sel => document.querySelector(sel).click(), selector);
+        const open = selector => evaluate(sel => document.querySelector(sel).matches(':modal'), selector);
+        const focused = selector => evaluate(sel => document.activeElement === document.querySelector(sel), selector);
+        const escape = async () => {
+            await cdp('Input.dispatchKeyEvent', {type:'keyDown', key:'Escape', code:'Escape', windowsVirtualKeyCode:27});
+            await cdp('Input.dispatchKeyEvent', {type:'keyUp', key:'Escape', code:'Escape', windowsVirtualKeyCode:27});
+        };
+        const screenshot = async (name, selector) => {
+            for (const width of [1280, 375]) {
+                await resize(width);
+                assert.equal(await evaluate(() => document.documentElement.scrollWidth), width);
+                assert.equal(await evaluate(sel => [...document.querySelectorAll(sel)].every(element =>
+                    element.scrollWidth <= element.clientWidth &&
+                    [...element.querySelectorAll('button')].filter(button => button.getClientRects().length)
+                        .every(button => button.getBoundingClientRect().height >= 44)), selector), true);
+                await capture('relink-' + name + '-zh-' + width);
+            }
+        };
+        const search = value => evaluate(q => {
             const form = document.querySelector('[data-relink-search]');
             form.elements.q.value = q;
             form.requestSubmit();
         }, value);
+        const choose = async ref => {
+            await search(ref);
+            await until(() => evaluate(() => !!document.querySelector('[data-relink-results] button:enabled')), 'relink search');
+            await click('[data-relink-results] button');
+            await until(() => evaluate(() => !document.querySelector('[data-relink-confirm]').hidden), 'relink preview');
+        };
+
+        await resize(1280);
+        await navigate(details + query);
+        await settle();
+        assert.deepEqual(await evaluate(() => [
+            document.querySelector('[data-detail-source]').nextElementSibling.getAttribute('aria-label'),
+            document.querySelector('[data-relink-history-open]').hidden,
+            !!document.querySelector('details[data-relink]'),
+        ]), ['更換對應遊戲', true, false]);
+        await screenshot('entry', '[data-detail-header]');
+        pass('頁首來源旁顯示入口，無紀錄時隱藏紀錄按鈕');
+
+        await click(relinkEntry);
+        assert.equal(await open(modal), true);
+        assert.equal(await focused('[data-relink-search] input'), true);
+        await escape();
+        await until(async () => !await open(modal) && await focused(relinkEntry), 'relink modal Escape and focus');
+        await click(relinkEntry);
+        await click(modal + ' [data-relink-close]');
+        await until(async () => !await open(modal) && await focused(relinkEntry), 'relink modal close and focus');
+        await click(relinkEntry);
+        pass('兩種關閉方式均將焦點還給頁首入口');
+
         await search('BGG:999999999');
         await until(() => evaluate(() => !document.querySelector('[data-relink-empty]').hidden), 'empty relink search');
         assert.equal(await evaluate(() => document.querySelector('[data-relink-empty] a').pathname), '/admin/bgg');
         pass('找不到遊戲時提供 BGG 同步入口');
-        await search('BGG:900003');
-        await until(() => evaluate(() => !!document.querySelector('[data-relink-results] button:enabled')), 'relink search');
-        await evaluate(() => document.querySelector('[data-relink-results] button').click());
-        await until(() => evaluate(() => !document.querySelector('[data-relink-confirm]').hidden), 'relink preview');
+
+        await choose('BGG:900003');
         assert.deepEqual(await evaluate(() => {
             const panel = document.querySelector('[data-relink]');
             const form = panel.querySelector('[data-relink-confirm]');
             return [form.elements.rename.checked, form.querySelector('button').disabled,
                 panel.querySelector('[data-relink-games]').textContent.includes('Synthetic BGG → 測試擴充'),
                 panel.querySelector('[data-relink-preserved]').textContent.includes('副本 3'),
-                panel.querySelector('[data-relink-affected]').textContent.includes('公開卡套頁')];
-        }), [false, true, true, true, true]);
-        pass('顯示唯讀影響預覽，類型變更須勾選，名稱預設保留');
-        for (const width of [1280, 375]) {
-            await resize(width);
-            await evaluate(() => document.querySelector('[data-relink]').scrollIntoView());
-            assert.equal(await evaluate(() => document.documentElement.scrollWidth), width);
-            assert.equal(await evaluate(() => [...document.querySelectorAll('[data-relink] summary,[data-relink] button')]
-                .every(button => button.getBoundingClientRect().height >= 44)), true);
-            await capture('relink-preview-zh-' + width);
+                panel.querySelector('[data-relink-affected]').textContent.includes('公開卡套頁'),
+                !panel.querySelector('[data-relink-type-confirm]').hidden];
+        }), [false, true, true, true, true, true]);
+        await screenshot('preview', modal);
+        await resize(1280);
+        assert.equal(await evaluate(() => {
+            const search = document.querySelector('[data-relink-search]');
+            return search.elements.q.getBoundingClientRect().bottom === search.querySelector('button').getBoundingClientRect().bottom;
+        }), true);
+        await resize(375);
+        pass('顯示 API 預覽，類型變更須勾選，名稱預設保留');
+
+        let releaseFailure;
+        failRelink = new Promise(resolve => { releaseFailure = resolve; });
+        try {
+            await evaluate(() => {
+                window.relinkDocumentMarker = true;
+                document.querySelector('[data-copy-summary]').closest('details').open = true;
+                const form = document.querySelector('[data-relink-confirm]');
+                form.elements.rename.click();
+                form.elements.confirmType.click();
+                form.requestSubmit();
+            });
+            assert.equal(await evaluate(() => document.querySelector('[data-relink] [data-relink-close]').disabled), true);
+            await escape();
+            assert.equal(await open(modal), true);
+        } finally {
+            releaseFailure();
         }
-        await evaluate(() => {
-            window.relinkDocumentMarker = true;
-            const form = document.querySelector('[data-relink-confirm]');
-            form.elements.rename.click();
-            form.elements.confirmType.click();
-            form.requestSubmit();
-        });
-        await until(() => evaluate(() => document.querySelector('[data-relink-history]').textContent.includes('Synthetic BGG → 測試擴充')), 'relink committed history');
+        await until(() => evaluate(() => document.querySelector('[data-relink-status]').textContent.includes('503')), 'relink error');
+        assert.deepEqual(await evaluate(() => [
+            document.querySelector('[data-relink-search] input').value,
+            document.querySelector('[data-relink-confirm]').hidden,
+            document.querySelector('[data-relink-confirm] [name=rename]').checked,
+            document.querySelector('[data-relink-confirm] [name=confirmType]').checked,
+        ]), ['BGG:900003', false, true, true]);
+        pass('送出時無法關閉，失敗留在視窗且保留搜尋、預覽與勾選');
+
+        await click('[data-relink-confirm] button');
+        await until(async () => !await open(modal) && await focused(relinkEntry), 'successful relink closes dialog');
+        assert.ok(relinkKeys[0]);
+        assert.deepEqual(relinkKeys, [relinkKeys[0], relinkKeys[0]]);
         assert.deepEqual(await evaluate(() => [
             window.relinkDocumentMarker,
             document.querySelector('[data-detail-header] h1').textContent,
             document.querySelector('[data-collection-form] [name=displayName]').value,
             document.querySelector('[data-detail-type]').textContent,
             document.querySelector('[data-detail-source]').getAttribute('href'),
-        ]), [true, '測試擴充', '測試擴充', '擴充', '/games/bgg-900003']);
-        pass('確認後就地更新名稱、類型、BGG 連結與紀錄');
-        for (const width of [1280, 375]) {
-            await resize(width);
-            await evaluate(() => document.querySelector('[data-relink]').scrollIntoView());
-            assert.equal(await evaluate(() => document.documentElement.scrollWidth), width);
-            await capture('relink-history-zh-' + width);
+            document.querySelector('[data-relink-history-open]').textContent,
+            document.querySelector('[data-copy-summary]').closest('details').open,
+            document.querySelector('[data-relink-success][role=status]').textContent.includes('Synthetic BGG → 測試擴充'),
+            document.querySelector('[data-relink-search] input').value,
+            document.querySelector('[data-relink-results]').children.length,
+            document.querySelector('[data-relink-confirm]').hidden,
+            document.querySelector('[data-relink-games]').textContent,
+        ]), [true, '測試擴充', '測試擴充', '擴充', '/games/bgg-900003', '紀錄 1', true, true, '', 0, true, '']);
+        await until(() => evaluate(() => document.querySelector('[data-relink-success]').textContent === ''), 'temporary success message clears');
+        pass('重試沿用冪等鍵，成功就地更新並清空視窗，提示自動消失');
+
+        await click(historyEntry);
+        assert.equal(await open(historyModal), true);
+        await until(() => evaluate(() => document.querySelector('[data-relink-history]').textContent.includes('Synthetic BGG → 測試擴充')), 'relink history');
+        await screenshot('history', historyModal);
+        await escape();
+        await until(async () => !await open(historyModal) && await focused(historyEntry), 'history Escape and focus');
+        pass('紀錄按鈕開啟獨立視窗，Esc 關閉後焦點回到紀錄按鈕');
+
+        for (const tab of ['copies', 'components', 'sleeves', 'purchases']) {
+            await navigate(details + '/' + tab + '?scope=production&lang=en');
+            assert.equal(await evaluate(sel => document.querySelector(sel).getAttribute('aria-label'), relinkEntry), 'Change linked game');
+            await click(relinkEntry);
+            assert.equal(await open(modal), true, tab);
+            if (tab === 'copies') {
+                await choose('NotBGG:000001');
+                assert.equal(await evaluate(() => !document.querySelector('[data-relink-duplicate]').hidden), true);
+                await click('[data-relink-confirm] [name=confirmType]');
+                await click('[data-relink-confirm] button');
+                await until(async () => !await open(modal), 'relink from copies tab');
+                await until(() => evaluate(() => document.querySelector('[data-relink-history-open]').textContent === 'History 2'), 'second history count');
+                assert.deepEqual(await evaluate(() => [
+                    document.querySelector('[data-detail-header] h1').textContent,
+                    document.querySelector('[data-detail-source]').getAttribute('href'),
+                ]), ['測試擴充', '/en/games/notbgg/000001']);
+                await click(historyEntry);
+                await until(() => evaluate(() => document.querySelector('[data-relink-history]').children.length === 2), 'second history entry');
+                assert.deepEqual(await evaluate(() => [...document.querySelectorAll('[data-relink-history] li')]
+                    .map(row => row.textContent.split(' · ')[0])), ['測試擴充 → Synthetic NotBGG', 'Synthetic BGG → 測試擴充']);
+            }
         }
+        pass('四個子分頁都能操作英文入口，副本分頁可成功更換且紀錄由新到舊');
+
+        fixtures.normal.sqlite.exec("UPDATE v2_collection_management SET archived_at='2026-11-27' WHERE collection_item_id=1");
         await navigate(details + query);
         await settle();
-        await evaluate(() => { document.querySelector('[data-relink]').open = true; });
-        await until(() => evaluate(() => document.querySelector('[data-relink-history]').textContent.includes('Synthetic BGG → 測試擴充')), 'persisted history');
-        pass('重新造訪後仍顯示更換紀錄');
+        assert.equal(await evaluate(() => document.querySelectorAll('[data-relink-open], [data-relink-history-open], dialog[data-relink]').length), 0);
+        pass('已封存收藏即使曾經更換也沒有頁首入口');
         console.log('Checks passed: ' + checks);
     } else {
     for (const [key, path] of [['details', details], ['copies', copies]]) {

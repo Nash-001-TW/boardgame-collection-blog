@@ -26,11 +26,13 @@ if (header) {
   if (header.wishlist === 1) flags.add('wishlist');
   if (header.archived_at) flags.add('archived');
 }
+const id = Astro.params.id;
+const canRelink = Boolean(id && header && !header.archived_at);
 const prefix = lang === 'en' ? '/en' : '';
 const source = header?.source_id?.match(/^(BGG|NotBGG):([0-9]+)$/);
 const sourceHref = source ? prefix + (source[1] === 'BGG' ? '/games/bgg-' : '/games/notbgg/') + source[2] : null;
 ---
-<header class="admin-detail-header" data-detail-header>
+<header class="admin-detail-header" data-detail-header data-relink-id={canRelink ? id : undefined} data-relink-scope={scope} data-relink-lang={lang}>
   <a class="admin-kit-button" href={'/admin/collection?' + new URLSearchParams({scope, lang})}>
     <AdminIcon name="arrow-left" size={16} />{t('全部收藏','All collection records')}
   </a>
@@ -45,6 +47,12 @@ const sourceHref = source ? prefix + (source[1] === 'BGG' ? '/games/bgg-' : '/ga
         <p data-detail-game hidden={header.game_name === header.display_name}>{header.game_name}</p>
         <div class="admin-kit-row">
           <a data-detail-source href={sourceHref ?? undefined} hidden={!sourceHref}>{header.source_id}</a>
+          {canRelink && <>
+            <button type="button" class="admin-kit-button" data-relink-open aria-haspopup="dialog" aria-controls="collection-relink-dialog"
+              aria-label={t('更換對應遊戲','Change linked game')}>{t('更換','Change')}</button>
+            <button type="button" class="admin-kit-button" data-relink-history-open aria-haspopup="dialog"
+              aria-controls="collection-relink-history" hidden></button>
+          </>}
           <span data-detail-source-missing hidden={!!sourceHref}>{t('缺少來源身份','Missing source identity')}</span>
           <span data-detail-type>{collectionItemTypeLabel(header.item_type, lang === 'en')}</span>
           <span>{t('持有副本','Owned copies')} · {new Intl.NumberFormat(lang).format(header.copies)}</span>
@@ -62,10 +70,74 @@ const sourceHref = source ? prefix + (source[1] === 'BGG' ? '/games/bgg-' : '/ga
       <p role="alert">{error ?? t('無法取得收藏頁首。','Collection header unavailable.')}</p>
     </div>
   )}
+  {canRelink && <>
+    <p data-relink-success role="status"></p>
+    <dialog class="admin-kit-dialog collection-relink" data-relink id="collection-relink-dialog" aria-labelledby="collection-relink-title">
+      <div class="admin-kit-row relink-dialog-heading">
+        <h2 id="collection-relink-title">{t('更換對應遊戲','Change linked game')}</h2>
+        <button type="button" class="admin-kit-button" data-relink-close>{t('關閉','Close')}</button>
+      </div>
+      <p data-relink-status role="status" tabindex="-1"></p>
+      <form data-relink-search class="relink-search">
+        <label>{t('名稱、BGG:ID 或 NotBGG:ID','Name, BGG:ID or NotBGG:ID')}<input name="q" type="search" maxlength="200" required autofocus /></label>
+        <button class="admin-kit-button" type="submit">{t('搜尋','Search')}</button>
+      </form>
+      <div class="relink-results" data-relink-results></div>
+      <p data-relink-empty hidden>{t('找不到遊戲。','No games found.')} <a href={'/admin/bgg?lang='+lang}>{t('先到 BGG 同步','Sync from BGG first')}</a></p>
+      <form data-relink-confirm hidden>
+        <p data-relink-games></p>
+        <p data-relink-types></p>
+        <p data-relink-duplicate hidden>{t('已有其他收藏對應這款遊戲，仍可更換。','Other records link to this game. You can still proceed.')}</p>
+        <p data-relink-affected></p>
+        <p data-relink-preserved></p>
+        <label><input type="checkbox" name="rename" />{t('同時改成新遊戲的名稱','Also use the new game name')}</label>
+        <label data-relink-type-confirm hidden><input type="checkbox" name="confirmType" />{t('確認變更收藏類型','Confirm the collection type change')}</label>
+        <button class="admin-kit-button" type="submit" disabled>{t('確認更換','Confirm change')}</button>
+      </form>
+    </dialog>
+    <dialog class="admin-kit-dialog collection-relink" data-relink-history-dialog id="collection-relink-history" aria-labelledby="collection-relink-history-title">
+      <div class="admin-kit-row relink-dialog-heading">
+        <h2 id="collection-relink-history-title">{t('更換紀錄','Change history')}</h2>
+        <button type="button" class="admin-kit-button" data-relink-close autofocus>{t('關閉','Close')}</button>
+      </div>
+      <p data-relink-history-status role="status"></p>
+      <ol data-relink-history></ol>
+    </dialog>
+  </>}
 </header>
 <script>
+  import { initializeCollectionRelink } from '../../lib/collection-relink-controller';
+
+  // The basic editor supplies its current revision and updates its local form after a relink.
+  for (const header of document.querySelectorAll<HTMLElement>('[data-relink-id]')) {
+    if (!header.closest('[data-collection-admin]')) initializeCollectionRelink(header);
+  }
   for (const image of document.querySelectorAll<HTMLImageElement>('.admin-detail-cover img')) {
     image.addEventListener('error', () => { image.hidden = true; }, {once:true});
     if (image.complete && !image.naturalWidth) image.hidden = true;
   }
 </script>
+<style is:global>
+  .admin-page .admin-detail-header button:is([data-relink-open], [data-relink-history-open]) {
+    min-height: 44px;
+    padding-inline: .65rem;
+  }
+  .admin-detail-header .collection-relink {
+    inline-size: 32rem;
+    max-block-size: calc(100% - 2rem);
+    overflow: auto;
+    overflow-wrap: anywhere;
+  }
+  .admin-detail-header .collection-relink .relink-dialog-heading { justify-content: space-between; }
+  .admin-detail-header .collection-relink .relink-dialog-heading h2 { margin: 0; }
+  .admin-detail-header .collection-relink .relink-search { display: flex; flex-wrap: wrap; align-items: end; gap: .5rem; }
+  .admin-page .collection-relink .relink-search label { flex: 1 1 13rem; margin: 0; }
+  .admin-page .collection-relink .relink-search input { inline-size: 100%; min-inline-size: 0; box-sizing: border-box; }
+  .admin-detail-header .collection-relink .relink-results { display: flex; flex-wrap: wrap; gap: .5rem; margin-block: .75rem; }
+  .admin-page .collection-relink button { min-height: 44px; overflow-wrap: anywhere; }
+  .admin-detail-header [data-relink-success]:not(:empty) {
+    padding: .5rem .75rem;
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-sm);
+  }
+</style>

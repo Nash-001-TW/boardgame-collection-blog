@@ -6,7 +6,7 @@
 
 排序原則：先處理會擋住後續工作的缺陷與授權；需要使用者決策、可立即推進的提前；成本低但風險高的提前。級別名稱用「第 N 級」，避免與 R06-P0-A～C 等工作 ID 混淆。狀態用語依 AGENTS.md 6.2。來源：本檔、[PROJECT_STATUS.md](PROJECT_STATUS.md)、[專案整體檢查報告](docs/Project-Review-20261123.md)（F1～F9）、[V2 UI／UX 設計規範](docs/UI/V2-UI-Design-System.md)。
 
-> **正式環境現況（2026-11-26）**：Worker 版本 `495cb25f`（提交 `6fec936`，2026-11-27 台北 09:03；推送 `main` 即自動部署，見 #8、DECISION_LOG DEPLOY-01）；D1 已套用 0001～0028（0024 於 2026-11-26 台北 08:18、0026 於 09:40、0027 於 23:37，0028 於 2026-11-27 09:47 套用）；Workers Logs 已在設定中開啟。紀錄見 [Release-04](docs/V2-Release-04-preflight.md)。
+> **正式環境現況（2026-11-26）**：Worker 版本 `ffcbfc27`（提交 `ec0e711`，2026-11-27 台北 09:50；推送 `main` 即自動部署，見 #8、DECISION_LOG DEPLOY-01）；D1 已套用 0001～0028（0024 於 2026-11-26 台北 08:18、0026 於 09:40、0027 於 23:37，0028 於 2026-11-27 09:47 套用）；Workers Logs 已在設定中開啟。紀錄見 [Release-04](docs/V2-Release-04-preflight.md)。
 >
 > 已解決：F4（成果未提交）已由 `dd133d3` 提交並推送。F1／F2 已修正並部署。
 
