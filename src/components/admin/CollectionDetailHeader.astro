@@ -42,10 +42,11 @@ const sourceHref = source ? prefix + (source[1] === 'BGG' ? '/games/bgg-' : '/ga
       </div>
       <div>
         <h1>{header.display_name}</h1>
-        {header.game_name !== header.display_name && <p>{header.game_name}</p>}
+        <p data-detail-game hidden={header.game_name === header.display_name}>{header.game_name}</p>
         <div class="admin-kit-row">
-          {sourceHref ? <a href={sourceHref}>{header.source_id}</a> : <span>{t('缺少來源身份','Missing source identity')}</span>}
-          <span>{collectionItemTypeLabel(header.item_type, lang === 'en')}</span>
+          <a data-detail-source href={sourceHref ?? undefined} hidden={!sourceHref}>{header.source_id}</a>
+          <span data-detail-source-missing hidden={!!sourceHref}>{t('缺少來源身份','Missing source identity')}</span>
+          <span data-detail-type>{collectionItemTypeLabel(header.item_type, lang === 'en')}</span>
           <span>{t('持有副本','Owned copies')} · {new Intl.NumberFormat(lang).format(header.copies)}</span>
         </div>
         <div class="admin-kit-row">

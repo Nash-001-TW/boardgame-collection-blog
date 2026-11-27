@@ -405,6 +405,146 @@ export class CollectionV2Writer {
   const bggResults = [...synced,...bgg.filter(game => !syncedIds.has(game.ref.bggId))].slice(0,20);
   return [...bggResults,...rows.results.map(n=>({ref:parseGameRef({source:'notbgg',notBggId:`NotBGG:${String(n.seq).padStart(6,'0')}`}),name:n.name,type:n.type}))];
  }
+ private async relinkTarget(ref: GameRef) {
+  if (ref.source === 'bgg') {
+   const game = getGames().find(g => g.bggId === ref.bggId && g.bgg) ?? await readSyncedBggGame(this.db, ref.bggId);
+   if (!game) throw new CollectionWriteError('INVALID_REFERENCE');
+   const row = await this.db.prepare('SELECT id FROM v2_games WHERE bgg_id=?').bind(ref.bggId).first<{id:number}>();
+   return {gameId: row?.id ?? null, name: game.name, itemType: getCatalogGameType(game.bgg!.gameType), ref};
+  }
+  const game = await this.db.prepare('SELECT game_id,name,type FROM notbgg_games WHERE seq=? AND archived_at IS NULL')
+   .bind(Number(ref.notBggId.slice(7))).first<{game_id:number; name:string; type:string}>();
+  if (!game) throw new CollectionWriteError('INVALID_REFERENCE');
+  return {gameId: game.game_id, name: game.name,
+   itemType: game.type === 'boardgame' ? 'base' : game.type === 'boardgameexpansion' ? 'expansion' : 'accessory', ref};
+ }
+
+ private async relinkSource(id: number, scope: CollectionScope) {
+  const current = await this.get(id, scope);
+  if (!current) throw new CollectionWriteError('NOT_FOUND');
+  if (current.archived_at) throw new CollectionWriteError('ARCHIVED');
+  return current;
+ }
+
+ async previewRelink(id: number, scope: CollectionScope, ref: GameRef) {
+  const current = await this.relinkSource(id, scope);
+  const target = await this.relinkTarget(ref);
+  const source = await this.db.prepare(`SELECT COALESCE(n.name,g.primary_name) name,
+    CASE WHEN n.seq IS NOT NULL THEN printf('NotBGG:%06d',n.seq)
+         WHEN g.bgg_id IS NOT NULL THEN 'BGG:' || g.bgg_id END AS source_id
+    FROM v2_games g LEFT JOIN notbgg_games n ON n.game_id=g.id WHERE g.id=?`)
+   .bind(current.game_id).first<{name:string; source_id:string|null}>();
+  const counts = await this.db.prepare(`WITH selected(id,scope,target) AS (VALUES (?,?,?)),
+    copies AS (SELECT id FROM v2_owned_copies WHERE collection_item_id=(SELECT id FROM selected)),
+    definitions AS (SELECT id FROM v2_component_definitions WHERE collection_item_id=(SELECT id FROM selected))
+   SELECT
+    EXISTS(SELECT 1 FROM v2_collection_items WHERE game_id=selected.target AND id<>selected.id AND record_scope=selected.scope) AS duplicate,
+    (SELECT COUNT(*) FROM copies) AS copies,
+    (SELECT COUNT(*) FROM definitions) AS components,
+    (SELECT COUNT(*) FROM v2_component_photos WHERE definition_id IN (SELECT id FROM definitions)) AS photos,
+    (SELECT COUNT(*) FROM v2_copy_components WHERE owned_copy_id IN (SELECT id FROM copies) AND actual_quantity IS NOT NULL) AS counts,
+    (SELECT COUNT(*) FROM v2_sleeve_requirements WHERE collection_item_id=selected.id) AS sleeves,
+    (SELECT COUNT(*) FROM (
+      SELECT purchase_order_id FROM v2_purchase_order_lines WHERE collection_item_id=selected.id
+      UNION SELECT purchase_order_id FROM v2_purchase_allocations
+       WHERE collection_item_id=selected.id OR owned_copy_id IN (SELECT id FROM copies)
+      UNION SELECT l.purchase_order_id FROM v2_acquisitions a JOIN v2_purchase_order_lines l ON l.id=a.purchase_order_line_id
+       WHERE a.owned_copy_id IN (SELECT id FROM copies)
+    )) AS purchases,
+    (SELECT COUNT(*) FROM v2_collection_relations WHERE source_item_id=selected.id OR target_item_id=selected.id) AS relations
+   FROM selected`).bind(id, scope, target.gameId).first<Record<'duplicate'|'copies'|'components'|'photos'|'counts'|'sleeves'|'purchases'|'relations',number>>();
+  if (!counts) throw new CollectionWriteError('STORAGE');
+  const {duplicate, ...preserved} = counts;
+  return {revision: current.revision,
+   current: {gameId: current.game_id, name: source?.name ?? null, sourceId: source?.source_id ?? null, itemType: String(current.item_type)},
+   target, sameGame: target.gameId !== null && target.gameId === current.game_id,
+   typeChanged: target.itemType !== current.item_type, hasOtherCollections: Boolean(duplicate),
+   affected: ['publicGamePage', 'seriesSpending', 'publicSleeves'] as const, preserved};
+ }
+
+ async relinkHistory(id: number, scope: CollectionScope) {
+  if (!await this.get(id, scope)) throw new CollectionWriteError('NOT_FOUND');
+  const history = await this.db.prepare(`SELECT c.revision,c.from_game_id,c.to_game_id,c.from_item_type,c.to_item_type,
+    c.actor,c.occurred_at,COALESCE(fn.name,f.primary_name) from_name,COALESCE(tn.name,t.primary_name) to_name
+   FROM v2_collection_game_changes c
+   LEFT JOIN v2_games f ON f.id=c.from_game_id LEFT JOIN notbgg_games fn ON fn.game_id=f.id
+   JOIN v2_games t ON t.id=c.to_game_id LEFT JOIN notbgg_games tn ON tn.game_id=t.id
+   WHERE c.collection_item_id=? ORDER BY c.revision DESC`).bind(id).all<{
+    revision:number; from_game_id:number|null; to_game_id:number; from_item_type:string; to_item_type:string;
+    actor:string; occurred_at:string; from_name:string|null; to_name:string;
+   }>();
+  return history.results;
+ }
+
+ async relink(id: number, ref: GameRef, ctx: {
+  actor:string; scope:CollectionScope; idempotencyKey:string; revision:unknown;
+  renameToGame:unknown; confirmTypeChange:unknown;
+ }) {
+  const {actor, scope, idempotencyKey, revision, renameToGame, confirmTypeChange} = ctx;
+  positive(id);
+  scopeCheck(scope);
+  if (!actor.trim() || !/^[A-Za-z0-9_-]{8,128}$/.test(idempotencyKey)
+    || typeof revision !== 'number' || !Number.isSafeInteger(revision) || revision < 0 || revision >= Number.MAX_SAFE_INTEGER
+    || typeof renameToGame !== 'boolean' || typeof confirmTypeChange !== 'boolean') throw new CollectionWriteError('VALIDATION');
+  const key = JSON.stringify([actor, scope, idempotencyKey]);
+  const fingerprint = await hash([id, gameCatalogKey(ref), revision, renameToGame, confirmTypeChange]);
+  const replay = async () => {
+   const receipt = await this.db.prepare('SELECT revision,request_hash FROM v2_collection_game_changes WHERE request_key=?')
+    .bind(key).first<{revision:number; request_hash:string}>();
+   if (!receipt) return null;
+   if (receipt.request_hash !== fingerprint) throw new CollectionWriteError('IDEMPOTENCY_CONFLICT');
+   return receipt.revision;
+  };
+  const result = async (committedRevision: number, replayed: boolean) => ({
+   collectionId: id, revision: committedRevision, replayed,
+   header: await readCollectionHeader(this.db, id, scope) ?? null,
+  });
+  const prior = await replay();
+  if (prior !== null) return result(prior, true);
+  const current = await this.relinkSource(id, scope);
+  if (current.revision !== revision) {
+   const committed = await replay();
+   if (committed !== null) return result(committed, true);
+   throw new CollectionWriteError('CONFLICT');
+  }
+  const target = await this.relinkTarget(ref);
+  if (target.gameId !== null && target.gameId === current.game_id) throw new CollectionWriteError('SAME_GAME');
+  if (target.itemType !== current.item_type && !confirmTypeChange) throw new CollectionWriteError('TYPE_CHANGE_CONFIRMATION_REQUIRED');
+
+  const next = revision + 1;
+  const statements = [this.db.prepare("INSERT INTO v2_collection_events(collection_item_id,revision,operation,actor) VALUES (?,?,'update',?)")
+   .bind(id, next, actor)];
+  if (ref.source === 'bgg') statements.push(this.db.prepare(`INSERT INTO v2_games(bgg_id,primary_name,game_type,catalog_source)
+   VALUES (?,?,?,'bgg') ON CONFLICT(bgg_id) DO NOTHING`).bind(ref.bggId, target.name, target.itemType));
+  const targetSql = ref.source === 'bgg' ? 'SELECT id FROM v2_games WHERE bgg_id=?'
+   : 'SELECT game_id FROM notbgg_games WHERE seq=? AND archived_at IS NULL AND name=? AND type=?';
+  const notBggType = target.itemType === 'base' ? 'boardgame' : target.itemType === 'expansion' ? 'boardgameexpansion' : 'boardgameaccessory';
+  const targetArgs = ref.source === 'bgg' ? [ref.bggId] : [Number(ref.notBggId.slice(7)), target.name, notBggType];
+  // The audit row is also the receipt. Its NOT NULL target rejects a NotBGG archive or
+  // target edit racing the preview read, rolling back the event and all writes in the batch.
+  statements.push(
+   this.db.prepare(`INSERT INTO v2_collection_game_changes
+     (collection_item_id,revision,from_game_id,to_game_id,from_item_type,to_item_type,actor,request_key,request_hash)
+    VALUES (?,?,?,(${targetSql}),?,?,?,?,?)`)
+    .bind(id, next, current.game_id, ...targetArgs, current.item_type, target.itemType, actor, key, fingerprint),
+   this.db.prepare(`INSERT INTO v2_collection_management(collection_item_id,revision) VALUES (?,?)
+    ON CONFLICT(collection_item_id) DO UPDATE SET revision=excluded.revision`).bind(id, next),
+   this.db.prepare(`UPDATE v2_collection_items SET
+     game_id=(SELECT to_game_id FROM v2_collection_game_changes WHERE collection_item_id=? AND revision=?),
+     item_type=?,display_name=COALESCE(?,display_name),updated_at=?
+    WHERE id=? AND record_scope=?`).bind(id, next, target.itemType, renameToGame ? target.name : null, new Date().toISOString(), id, scope),
+  );
+  try {
+   await this.db.batch(statements);
+  } catch (error) {
+   const committed = await replay();
+   if (committed !== null) return result(committed, true);
+   const conflict = /COLLECTION_REVISION_CONFLICT|v2_collection_game_changes\.to_game_id/.test(String(error));
+   throw new CollectionWriteError(conflict ? 'CONFLICT' : 'STORAGE');
+  }
+  return result(next, false);
+ }
+
  async create(refInput:GameRef,input:unknown,context:{actor:string;idempotencyKey:string;scope:CollectionScope;createCopy:boolean}){
   const ref=parseGameRef(refInput),data=validateCollectionInput(input),scope=scopeCheck(context.scope);
   if(!context.actor||!/^[\w:-]{8,256}$/.test(context.idempotencyKey)||typeof context.createCopy!=='boolean')throw new CollectionWriteError('VALIDATION');

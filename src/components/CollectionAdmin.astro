@@ -56,6 +56,29 @@ const detailError = detailStatus===400?t('資料範圍無效。','Invalid record
 <p>{t('卡套尺寸與需求沿用既有 V2 卡套資料；此處備註不取代結構化需求。既有非本表單建立的副本與採購保留原狀。','Existing V2 sleeve sizes and requirements remain authoritative. Notes do not replace structured requirements. Other copies and purchase graphs remain unchanged.')}</p>
 <button data-save class={edit?'admin-kit-button':undefined} data-variant={edit?'primary':undefined}>{t('儲存收藏','Save collection record')}</button><button data-archive class={edit?'admin-kit-button':undefined} data-variant={edit?'danger':undefined} type="button" hidden>{t('封存收藏','Archive collection record')}</button>
 </form><details><summary>{t('副本、採購與卡套資料（管理員）','Copies, purchases and sleeves (admin)')}</summary><pre data-copy-summary></pre></details>
+{edit && <details class="admin-kit-panel admin-detail-panel collection-relink" data-relink>
+  <summary>{t('更換對應遊戲','Change linked game')}</summary>
+  <p data-relink-status role="status"></p>
+  <form data-relink-search hidden>
+    <label>{t('名稱、BGG:ID 或 NotBGG:ID','Name, BGG:ID or NotBGG:ID')}<input name="q" type="search" maxlength="200" required /></label>
+    <button type="submit">{t('搜尋','Search')}</button>
+  </form>
+  <div class="relink-results" data-relink-results></div>
+  <p data-relink-empty hidden>{t('找不到遊戲。','No games found.')} <a href={'/admin/bgg?lang='+lang}>{t('先到 BGG 同步','Sync from BGG first')}</a></p>
+  <form data-relink-confirm hidden>
+    <p data-relink-games></p>
+    <p data-relink-types></p>
+    <p data-relink-duplicate hidden>{t('已有其他收藏對應這款遊戲，仍可更換。','Other records link to this game. You can still proceed.')}</p>
+    <p data-relink-affected></p>
+    <p data-relink-preserved></p>
+    <label><input type="checkbox" name="rename" />{t('同時改成新遊戲的名稱','Also use the new game name')}</label>
+    <label data-relink-type-confirm hidden><input type="checkbox" name="confirmType" />{t('確認變更收藏類型','Confirm the collection type change')}</label>
+    <button type="submit" disabled>{t('確認更換','Confirm change')}</button>
+  </form>
+  <h3>{t('更換紀錄','Change history')}</h3>
+  <p data-relink-history-status></p>
+  <ul data-relink-history></ul>
+</details>}
 </>}
 </>}
 </>}
@@ -64,4 +87,10 @@ const detailError = detailStatus===400?t('資料範圍無效。','Invalid record
   [data-game-results] { display: flex; flex-wrap: wrap; gap: .5rem; }
   [data-game-results] :global(button) { max-inline-size: 100%; white-space: normal; overflow-wrap: anywhere; }
   [data-game-results] :global([data-game-synced]) { margin-inline-start: .5em; font-weight: 600; }
+  .admin-page .collection-relink { min-width: 0; overflow-wrap: anywhere; }
+  .collection-relink summary { min-height: 44px; padding-block: .55rem; cursor: pointer; }
+  .collection-relink input[type="search"] { width: 100%; min-width: 0; }
+  .relink-results { display: flex; flex-wrap: wrap; gap: .5rem; margin-block: .75rem; }
+  .admin-page .collection-relink :global(button) { min-height: 44px; overflow-wrap: anywhere; }
+  .admin-page .collection-relink [hidden] { display: none; }
 </style>

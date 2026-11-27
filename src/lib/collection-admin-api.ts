@@ -3,7 +3,7 @@ import { readJson,HttpError,response,requireAdminWriteLimit,type NotBggAdminBind
 import { CollectionV2Repository } from './collection-v2-repository';
 import { CollectionWriteError,type CollectionScope } from './collection-v2-management';
 import { SiteGameRelations } from './site-game-relations';
-import { isNotBggId,parseGameRef } from './game-identity';
+import { deserializeGameRef,isNotBggId,parseGameRef } from './game-identity';
 const keys=(body:Record<string,unknown>,allowed:string[])=>{if(Object.keys(body).some(k=>!allowed.includes(k)))throw new HttpError(400,'UNKNOWN_FIELD');};
 /** Independent Access verification on every API invocation, using D3's bounded JSON reader and CSRF convention. */
 export async function handleCollectionAdminRequest(request:Request,bindings:NotBggAdminBindings):Promise<Response>{
@@ -27,6 +27,12 @@ export async function handleCollectionAdminRequest(request:Request,bindings:NotB
   const id=match[1]&&match[1]!=='search'?Number(match[1]):null;
   if(request.method==='GET'){
    if(match[1]==='search')return ok(await repo.search(url.searchParams.get('q')??''));
+   if(id&&!match[2]&&url.searchParams.get('action')==='relink-preview'){
+    const ref=url.searchParams.get('ref');
+    if(!ref)throw new HttpError(400,'INVALID_REFERENCE');
+    return ok(await repo.previewRelink(id,s,deserializeGameRef(ref)));
+   }
+   if(id&&!match[2]&&url.searchParams.get('action')==='relink-history')return ok(await repo.relinkHistory(id,s));
    if(id){const d=await repo.detail(id,s);if(!d)throw new HttpError(404,'NOT_FOUND');return ok(d);}
    const after=Number(url.searchParams.get('after')??0),limit=Number(url.searchParams.get('limit')??20);
    const view=url.searchParams.get('view');
@@ -49,6 +55,13 @@ export async function handleCollectionAdminRequest(request:Request,bindings:NotB
    keys(body,['ref','data','createCopy']);const key=request.headers.get('Idempotency-Key');if(!key||!/^[A-Za-z0-9_-]{8,128}$/.test(key))throw new HttpError(400,'INVALID_IDEMPOTENCY_KEY');
    const result=await repo.create(parseGameRef(body.ref),body.data,{actor,idempotencyKey:key,scope:s,createCopy:body.createCopy as boolean});return ok(result,result.replayed?200:201);
   }
+  if(id&&!match[2]&&request.method==='PATCH'&&body.action==='relink'){
+   keys(body,['action','ref','revision','renameToGame','confirmTypeChange']);
+   const key=request.headers.get('Idempotency-Key');
+   if(!key||!/^[A-Za-z0-9_-]{8,128}$/.test(key))throw new HttpError(400,'INVALID_IDEMPOTENCY_KEY');
+   return ok(await repo.relink(id,parseGameRef(body.ref),{actor,scope:s,idempotencyKey:key,
+    revision:body.revision,renameToGame:body.renameToGame,confirmTypeChange:body.confirmTypeChange}));
+  }
   if(id&&!match[2]&&request.method==='PATCH'&&(Object.hasOwn(body,'revision')||Object.hasOwn(body,'changes'))){
    keys(body,['revision','changes']);
    return ok(await repo.patchFields(id,body.changes,{actor,scope:s,revision:body.revision}));
@@ -57,7 +70,7 @@ export async function handleCollectionAdminRequest(request:Request,bindings:NotB
    return ok(await repo.update(id,body.data,{actor,scope:s,expectedRevision:body.expectedRevision as number,createCopy:body.createCopy as boolean|undefined},!!match[2]));}
   throw new HttpError(405,'METHOD_NOT_ALLOWED');
  }catch(error){if(error instanceof HttpError)return response(error.status,{success:false,error:{code:error.code}});
-  if(error instanceof CollectionWriteError){const status=error.code==='NOT_FOUND'?404:['CONFLICT','ARCHIVED','IDEMPOTENCY_CONFLICT','DUPLICATE_RELATION'].includes(error.code)?409:error.code==='STORAGE'?500:400;return response(status,{success:false,error:{code:error.code==='STORAGE'?'SERVICE_UNAVAILABLE':error.code}});}
+  if(error instanceof CollectionWriteError){const status=error.code==='NOT_FOUND'?404:['CONFLICT','ARCHIVED','IDEMPOTENCY_CONFLICT','DUPLICATE_RELATION','SAME_GAME','TYPE_CHANGE_CONFIRMATION_REQUIRED'].includes(error.code)?409:error.code==='STORAGE'?500:400;return response(status,{success:false,error:{code:error.code==='STORAGE'?'SERVICE_UNAVAILABLE':error.code}});}
   // Identity/JSON validation failures get a controlled 400; SQL/internal exceptions stay generic.
   if(error instanceof Error&&/Invalid (?:game reference|NotBGG|serialized)/.test(error.message))return response(400,{success:false,error:{code:'INVALID_REFERENCE'}});
   return response(500,{success:false,error:{code:'SERVICE_UNAVAILABLE'}});

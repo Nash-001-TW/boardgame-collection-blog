@@ -167,3 +167,7 @@
 | 2026-11-27 | SLEEVE-UX-AUTH | 使用者批准 #38 收藏卡套頁改版交給 Codex 實作（工作命令 SLEEVE-UX-20261127-01，規劃 §7）。只在本機：修改卡套頁 UI、controller、`sleeve-workflow.ts` 讀取資料，以及新增批次建立需求 API 與測試；不含 Migration、`wrangler.json`、`middleware.ts`、正式環境、提交、推送 | 使用者 | Claude Code 對話「批准，交 Codex」 | 已授權 |
 | 2026-11-27 | SLEEVE-UX-DEPLOY | 使用者看過截圖後，依 DEPLOY-01 授權提交並推送 `main`，部署 #38 卡套頁改版（含 `requirements-batch` API）；不需要 Migration | 使用者 | Claude Code 對話「提交並推送」 | 已授權 |
 | 2026-11-27 | DOCS-PUSH-20261127 | 使用者授權提交並推送 #37 驗收紀錄與 #38 部署紀錄（只有文件）；推送 `main` 會觸發自動部署，但程式沒有變更 | 使用者 | Claude Code 對話「提交並推送」 | 已授權 |
+| 2026-11-27 | RELINK-39-DIR | 使用者發現收藏 #262 實際是普通版（對應的卻是 BGG 408253 Deluxe），選擇做「更換對應遊戲」功能，而不是直接修改正式資料。Claude 起草規劃與 Q143～Q149 | 使用者 | Claude Code 對話「做更換遊戲功能」 | 候選 |
+| 2026-11-27 | RELINK-Q143～Q149 | #39 收藏更換對應遊戲 Q143～Q149 全部採建議（docs/collection-game-relink-plan-20261127.md §6），包含新增 Migration 0028 的更換紀錄表。實作、0028 正式套用、部署都另行授權 | 使用者 | Claude Code 對話「全部採建議」 | 已採納 |
+| 2026-11-27 | RELINK-AUTH | 使用者批准 #39 交給 Codex 實作（工作命令 RELINK-20261127-01，規劃 §7）。只在本機進行：撰寫 Migration 0028、新增更換對應遊戲 API、修改收藏基本資料 UI 並補測試；不含正式 D1、`wrangler.json`、`middleware.ts`、部署、提交、推送 | 使用者 | Claude Code 對話「批准，交 Codex」 | 已授權 |
+| 2026-11-27 | RELINK-COMMIT-A1 | 使用者看過截圖，授權在本機提交 #39（**不推送**），並執行 0028 的 A1 唯讀預檢；不包含 A2～A4 與推送 | 使用者 | Claude Code 對話「提交並做 A1」 | 已授權 |

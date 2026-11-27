@@ -235,6 +235,77 @@ try {
     const query = '?scope=production&lang=zh-TW';
     const settle = () => until(() => evaluate(() => document.querySelector('[data-collection-form] [name=displayName]')?.value), 'R05 data');
     const resize = width => cdp('Emulation.setDeviceMetricsOverride', {width, height: 1050, deviceScaleFactor: 1, mobile: false});
+    if (process.argv.includes('--relink')) {
+        fixtures.normal.sqlite.exec(`
+            UPDATE v2_collection_items SET item_type='base' WHERE id=1;
+            INSERT INTO bgg_games(bgg_id,name,last_success_at,cache_json) VALUES
+              (900003,'測試擴充','2026-11-27','{"bggId":900003,"name":"測試擴充","gameType":"boardgameexpansion"}');
+        `);
+        await resize(1280);
+        await navigate(details + query);
+        await settle();
+        assert.equal(await evaluate(() => document.querySelector('[data-relink]').open), false);
+        const search = async value => evaluate(q => {
+            const panel = document.querySelector('[data-relink]');
+            panel.open = true;
+            const form = document.querySelector('[data-relink-search]');
+            form.elements.q.value = q;
+            form.requestSubmit();
+        }, value);
+        await search('BGG:999999999');
+        await until(() => evaluate(() => !document.querySelector('[data-relink-empty]').hidden), 'empty relink search');
+        assert.equal(await evaluate(() => document.querySelector('[data-relink-empty] a').pathname), '/admin/bgg');
+        pass('找不到遊戲時提供 BGG 同步入口');
+        await search('BGG:900003');
+        await until(() => evaluate(() => !!document.querySelector('[data-relink-results] button:enabled')), 'relink search');
+        await evaluate(() => document.querySelector('[data-relink-results] button').click());
+        await until(() => evaluate(() => !document.querySelector('[data-relink-confirm]').hidden), 'relink preview');
+        assert.deepEqual(await evaluate(() => {
+            const panel = document.querySelector('[data-relink]');
+            const form = panel.querySelector('[data-relink-confirm]');
+            return [form.elements.rename.checked, form.querySelector('button').disabled,
+                panel.querySelector('[data-relink-games]').textContent.includes('Synthetic BGG → 測試擴充'),
+                panel.querySelector('[data-relink-preserved]').textContent.includes('副本 3'),
+                panel.querySelector('[data-relink-affected]').textContent.includes('公開卡套頁')];
+        }), [false, true, true, true, true]);
+        pass('顯示唯讀影響預覽，類型變更須勾選，名稱預設保留');
+        for (const width of [1280, 375]) {
+            await resize(width);
+            await evaluate(() => document.querySelector('[data-relink]').scrollIntoView());
+            assert.equal(await evaluate(() => document.documentElement.scrollWidth), width);
+            assert.equal(await evaluate(() => [...document.querySelectorAll('[data-relink] summary,[data-relink] button')]
+                .every(button => button.getBoundingClientRect().height >= 44)), true);
+            await capture('relink-preview-zh-' + width);
+        }
+        await evaluate(() => {
+            window.relinkDocumentMarker = true;
+            const form = document.querySelector('[data-relink-confirm]');
+            form.elements.rename.click();
+            form.elements.confirmType.click();
+            form.requestSubmit();
+        });
+        await until(() => evaluate(() => document.querySelector('[data-relink-history]').textContent.includes('Synthetic BGG → 測試擴充')), 'relink committed history');
+        assert.deepEqual(await evaluate(() => [
+            window.relinkDocumentMarker,
+            document.querySelector('[data-detail-header] h1').textContent,
+            document.querySelector('[data-collection-form] [name=displayName]').value,
+            document.querySelector('[data-detail-type]').textContent,
+            document.querySelector('[data-detail-source]').getAttribute('href'),
+        ]), [true, '測試擴充', '測試擴充', '擴充', '/games/bgg-900003']);
+        pass('確認後就地更新名稱、類型、BGG 連結與紀錄');
+        for (const width of [1280, 375]) {
+            await resize(width);
+            await evaluate(() => document.querySelector('[data-relink]').scrollIntoView());
+            assert.equal(await evaluate(() => document.documentElement.scrollWidth), width);
+            await capture('relink-history-zh-' + width);
+        }
+        await navigate(details + query);
+        await settle();
+        await evaluate(() => { document.querySelector('[data-relink]').open = true; });
+        await until(() => evaluate(() => document.querySelector('[data-relink-history]').textContent.includes('Synthetic BGG → 測試擴充')), 'persisted history');
+        pass('重新造訪後仍顯示更換紀錄');
+        console.log('Checks passed: ' + checks);
+    } else {
     for (const [key, path] of [['details', details], ['copies', copies]]) {
         for (const width of [1440, 768, 375]) {
             await resize(width);
@@ -1018,6 +1089,7 @@ try {
     await captureR06('management-expanded-en-1280', '[data-component-management]');
     pass('R06 scenario 8: responsive bilingual captures and no eligible copy');
     console.log('Checks passed: ' + checks);
+    }
 } finally {
     ws?.close();
     browser?.kill();

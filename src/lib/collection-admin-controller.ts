@@ -1,5 +1,5 @@
 import { deserializeGameRef,gameCatalogKey,type GameRef } from './game-identity';
-import type { NumberedCollectionList } from './collection-v2-management';
+import type { CollectionV2Writer, NumberedCollectionList } from './collection-v2-management';
 import { collectionItemTypeLabel } from './collection-item-types';
 
 function initializeCollectionList(root: HTMLElement) {
@@ -294,7 +294,7 @@ export function initializeCollectionAdmin(root:HTMLElement){
  const field=(key:string)=>form?.elements.namedItem(key) as HTMLInputElement|HTMLTextAreaElement|HTMLSelectElement|null;
  const message=(text:string)=>{status.textContent=text;status.dataset.tone='info';};
  const path=(suffix='')=>`/api/admin/collection${suffix}?scope=${scope}`;
- async function api(url:string,method='GET',body?:unknown){const response=await fetch(url,{method,headers:{'Content-Type':'application/json','X-NotBGG-Request':'1',...(method==='POST'&&url===path()?{'Idempotency-Key':key}:{})},body:body===undefined?undefined:JSON.stringify(body)});let json;try{json=await response.json() as {data:unknown;error?:{code:string}};}catch{throw new Error(t('服務暫時無法使用','Service unavailable'));}if(!response.ok){if(response.status===409)reload.hidden=false;throw new Error(`${response.status} · ${json.error?.code??'SERVICE_UNAVAILABLE'}`);}return json.data as any;}
+ async function api(url:string,method='GET',body?:unknown,relinkKey?:string){const commandKey=relinkKey??(method==='POST'&&url===path()?key:null);const response=await fetch(url,{method,headers:{'Content-Type':'application/json','X-NotBGG-Request':'1',...(commandKey?{'Idempotency-Key':commandKey}:{})},body:body===undefined?undefined:JSON.stringify(body)});let json;try{json=await response.json() as {data:unknown;error?:{code:string}};}catch{throw new Error(t('服務暫時無法使用','Service unavailable'));}if(!response.ok){if(response.status===409)reload.hidden=false;throw new Error(`${response.status} · ${json.error?.code??'SERVICE_UNAVAILABLE'}`);}return json.data as any;}
  function node(tag:string,text:string){const el=document.createElement(tag);el.textContent=text;return el;}
  const editHref=(n:number)=>`/admin/collection/${n}?scope=${scope}&lang=${en?'en':'zh-TW'}`;
  async function load(){
@@ -326,8 +326,9 @@ export function initializeCollectionAdmin(root:HTMLElement){
   find<HTMLElement>('[data-game-picker]')!.hidden=true;find<HTMLElement>('[data-copy-summary]')!.textContent=JSON.stringify({copies:detail.copies,purchases:detail.purchases,sleeves:detail.sleeves},null,2);
   const archive=find<HTMLButtonElement>('[data-archive]')!;archive.hidden=!!r.archived_at;find<HTMLButtonElement>('[data-save]')!.disabled=!!r.archived_at;
   dirty=false;
+  resetRelink();
  }
- async function run(action:()=>Promise<void>){if(busy)return;busy=true;root.querySelectorAll<HTMLButtonElement>('[data-save]').forEach(b=>b.disabled=true);message(t('處理中…','Working…'));try{await action();}catch(e){message(e instanceof Error?e.message:t('操作失敗','Operation failed'));status.dataset.tone='error';status.focus();}finally{busy=false;root.querySelectorAll<HTMLButtonElement>('[data-save]').forEach(b=>b.disabled=collectionArchived);}}
+ async function run(action:()=>Promise<void>){if(busy||relinkBusy)return;busy=true;root.querySelectorAll<HTMLButtonElement>('[data-save]').forEach(b=>b.disabled=true);message(t('處理中…','Working…'));try{await action();}catch(e){message(e instanceof Error?e.message:t('操作失敗','Operation failed'));status.dataset.tone='error';status.focus();}finally{busy=false;root.querySelectorAll<HTMLButtonElement>('[data-save]').forEach(b=>b.disabled=collectionArchived);}}
  form?.addEventListener('input',()=>dirty=true);
  form?.addEventListener('submit',event=>{event.preventDefault();void run(async()=>{
   const data:Record<string,unknown>={};for(const name of ['displayName','acquisitionStatus','currency'])data[name]=field(name)!.value;
@@ -367,6 +368,175 @@ export function initializeCollectionAdmin(root:HTMLElement){
  }
  find<HTMLFormElement>('[data-relation-form]')?.addEventListener('submit',event=>{event.preventDefault();void run(async()=>{const f=event.target as HTMLFormElement;await api(`/api/admin/notbgg/${encodeURIComponent(id)}/relations`,'POST',{target:deserializeGameRef((f.elements.namedItem('target') as HTMLInputElement).value.trim()),relationType:(f.elements.namedItem('relationType') as unknown as HTMLSelectElement).value,notes:(f.elements.namedItem('notes') as HTMLTextAreaElement).value||null});await load();message(t('關聯已新增','Relation added'));});});
  reload.onclick=()=>{if(!dirty||confirm(t('放棄未儲存變更並重新載入？','Discard unsaved changes and reload?')))void run(load);};
+ const relink = find<HTMLDetailsElement>('[data-relink]');
+ const relinkSearch = find<HTMLFormElement>('[data-relink-search]');
+ const relinkConfirm = find<HTMLFormElement>('[data-relink-confirm]');
+ const relinkResults = find<HTMLElement>('[data-relink-results]');
+ const relinkStatus = find<HTMLElement>('[data-relink-status]');
+ const relinkEmpty = find<HTMLElement>('[data-relink-empty]');
+ const typeConfirm = relinkConfirm?.elements.namedItem('confirmType') as HTMLInputElement | undefined;
+ const rename = relinkConfirm?.elements.namedItem('rename') as HTMLInputElement | undefined;
+ const confirmButton = relinkConfirm?.querySelector('button');
+ type Preview = Awaited<ReturnType<CollectionV2Writer['previewRelink']>>;
+ let preview: Preview | null = null;
+ let relinkBusy = false;
+ let relinkBody = '';
+ let relinkKey = '';
+ let historyRequest = 0;
+ const relinkUrl = (action: string) => path('/'+id) + '&action=' + action;
+ const typeLabel = (type: string) => collectionItemTypeLabel(type, en);
+ const stale = () => t('收藏已變更，請重新載入最新資料後再試。','The collection changed. Reload the latest data and try again.');
+ function syncRelinkControls() {
+  relink?.querySelectorAll<HTMLInputElement|HTMLButtonElement>('input,button').forEach(control => {control.disabled = relinkBusy;});
+  if (confirmButton) confirmButton.disabled = relinkBusy || !preview || preview.sameGame || (preview.typeChanged && !typeConfirm?.checked);
+ }
+ function clearPreview() {
+  preview = null;
+  if (relinkConfirm) {relinkConfirm.reset(); relinkConfirm.hidden = true;}
+  syncRelinkControls();
+ }
+ function resetRelink() {
+  if (!relink || !relinkSearch) return;
+  clearPreview();
+  relinkSearch.hidden = collectionArchived;
+  relinkResults!.replaceChildren();
+  relinkEmpty!.hidden = true;
+  relinkStatus!.textContent = collectionArchived ? t('已封存的收藏無法更換。','Archived collections cannot be relinked.') : '';
+  if (relink.open) void renderRelinkHistory();
+ }
+ async function renderRelinkHistory() {
+  const request = ++historyRequest;
+  const history = find<HTMLElement>('[data-relink-history]')!;
+  const feedback = find<HTMLElement>('[data-relink-history-status]')!;
+  feedback.textContent = t('載入紀錄中…','Loading history…');
+  try {
+   const rows: Awaited<ReturnType<CollectionV2Writer['relinkHistory']>> = await api(relinkUrl('relink-history'));
+   if (request !== historyRequest) return;
+   const date = new Intl.DateTimeFormat(en ? 'en' : 'zh-TW', {dateStyle:'medium', timeStyle:'short', timeZone:'Asia/Taipei'});
+   history.replaceChildren(...rows.map(row => {
+    const label = row.from_name ?? t('缺少對應遊戲','Missing linked game');
+    const timestamp = new Date(row.occurred_at.replace(' ', 'T')+'Z');
+    return node('li', label + ' → ' + row.to_name + ' · ' + date.format(timestamp));
+   }));
+   feedback.textContent = rows.length ? '' : t('目前沒有更換紀錄。','No changes recorded.');
+  } catch {
+   if (request === historyRequest) feedback.textContent = t('無法載入更換紀錄。','Unable to load change history.');
+  }
+ }
+ async function runRelink(action: () => Promise<void>) {
+  if (relinkBusy || busy) return;
+  relinkBusy = true;
+  syncRelinkControls();
+  relinkStatus!.textContent = t('處理中…','Working…');
+  try {
+   await action();
+  } catch (error) {
+   const message = error instanceof Error ? error.message : '';
+   relinkStatus!.textContent = message.includes('409 · CONFLICT') ? stale() :
+    t('無法完成更換操作。','Unable to complete the linked game operation.') + (message ? ' ' + message : '');
+  } finally {
+   relinkBusy = false;
+   syncRelinkControls();
+  }
+ }
+ relink?.addEventListener('toggle', () => {if (relink.open) void renderRelinkHistory();});
+ relinkSearch?.addEventListener('submit', event => {
+  event.preventDefault();
+  const q = String(new FormData(relinkSearch).get('q') ?? '').trim();
+  void runRelink(async () => {
+   clearPreview();
+   relinkResults!.replaceChildren();
+   relinkEmpty!.hidden = true;
+   const rows: Awaited<ReturnType<CollectionV2Writer['search']>> = await api(path('/search') + '&q=' + encodeURIComponent(q));
+   for (const row of rows) {
+    const ref = gameCatalogKey(row.ref);
+    const button = node('button', row.name + ' · ' + ref) as HTMLButtonElement;
+    button.type = 'button';
+    button.onclick = () => void runRelink(async () => {
+     clearPreview();
+     const data: Preview = await api(relinkUrl('relink-preview') + '&ref=' + encodeURIComponent(ref));
+     if (data.revision !== revision) {
+      reload.hidden = false;
+      relinkStatus!.textContent = stale();
+      return;
+     }
+     preview = data;
+     find<HTMLElement>('[data-relink-games]')!.textContent =
+      (data.current.name ?? t('缺少對應遊戲','Missing linked game')) + ' → ' + data.target.name;
+     find<HTMLElement>('[data-relink-types]')!.textContent =
+      t('收藏類型','Collection type') + ' · ' + typeLabel(data.current.itemType) + ' → ' + typeLabel(data.target.itemType);
+     find<HTMLElement>('[data-relink-duplicate]')!.hidden = !data.hasOtherCollections;
+     const impacts = {publicGamePage:t('公開遊戲頁','Public game page'), seriesSpending:t('系列花費歸屬','Series spending'), publicSleeves:t('公開卡套頁','Public sleeve page')};
+     const labels = {copies:t('副本','Copies'), components:t('組件','Components'), photos:t('照片','Photos'),
+      counts:t('清點','Counts'), sleeves:t('卡套需求','Sleeve requirements'), purchases:t('採購','Purchases'), relations:t('收藏關聯','Collection relationships')};
+     find<HTMLElement>('[data-relink-affected]')!.textContent = t('會變更','Affected') + ' · ' + data.affected.map(key => impacts[key]).join(' · ');
+     find<HTMLElement>('[data-relink-preserved]')!.textContent = t('保留資料','Preserved') + ' · ' +
+      (Object.keys(labels) as (keyof typeof labels)[]).map(key => labels[key] + ' ' + data.preserved[key]).join(' · ');
+     find<HTMLElement>('[data-relink-type-confirm]')!.hidden = !data.typeChanged;
+     relinkConfirm!.hidden = false;
+     relinkStatus!.textContent = data.sameGame ? t('這款遊戲已是目前的對應。','This game is already linked.') : '';
+    });
+    relinkResults!.appendChild(button);
+   }
+   relinkEmpty!.hidden = rows.length > 0;
+   relinkStatus!.textContent = '';
+  });
+ });
+ typeConfirm?.addEventListener('change', syncRelinkControls);
+ relinkConfirm?.addEventListener('submit', event => {
+  event.preventDefault();
+  const data = preview;
+  if (!data || confirmButton?.disabled) return;
+  void runRelink(async () => {
+   const body = {action:'relink', ref:data.target.ref, revision:data.revision,
+    renameToGame:rename!.checked, confirmTypeChange:typeConfirm!.checked};
+   const serialized = JSON.stringify(body);
+   if (relinkBody !== serialized) {relinkKey = crypto.randomUUID(); relinkBody = serialized;}
+   form!.inert = true;
+   let result: Awaited<ReturnType<CollectionV2Writer['relink']>>;
+   try {
+    result = await api(path('/'+id),'PATCH',body,relinkKey);
+   } finally {
+    form!.inert = false;
+   }
+   clearPreview();
+   relinkResults!.replaceChildren();
+   revision = result.revision;
+   const header = result.header;
+   const displayName = header?.display_name ?? (body.renameToGame ? data.target.name : field('displayName')!.value);
+   if (body.renameToGame || !dirty) field('displayName')!.value = displayName;
+   find<HTMLElement>('[data-system]')!.textContent = 'Collection #' + id + ' · ' + gameCatalogKey(data.target.ref) + ' · Revision ' + revision;
+   const heading = find<HTMLElement>('[data-detail-header] h1');
+   if (heading) heading.textContent = displayName;
+   const game = find<HTMLElement>('[data-detail-game]');
+   if (game) {game.textContent = header?.game_name ?? data.target.name; game.hidden = game.textContent === displayName;}
+   const source = find<HTMLAnchorElement>('[data-detail-source]');
+   const type = find<HTMLElement>('[data-detail-type]');
+   if (source) {
+    const sourceId = header?.source_id ?? gameCatalogKey(data.target.ref);
+    const ref = deserializeGameRef(sourceId);
+    source.textContent = sourceId;
+    source.href = (en ? '/en' : '') + (ref.source === 'bgg' ? '/games/bgg-' + ref.bggId : '/games/notbgg/' + ref.notBggId.slice(7));
+    source.hidden = false;
+    find<HTMLElement>('[data-detail-source-missing]')!.hidden = true;
+   }
+   if (type) type.textContent = typeLabel(header?.item_type ?? data.target.itemType);
+   const cover = find<HTMLElement>('.admin-detail-cover');
+   if (cover) {
+    cover.querySelector('img')?.remove();
+    if (header?.image) {
+     const image = document.createElement('img');
+     image.alt = '';
+     image.referrerPolicy = 'no-referrer';
+     image.addEventListener('error', () => {image.hidden = true;}, {once:true});
+     image.src = header.image;
+     cover.appendChild(image);
+    }
+   }
+   relinkStatus!.textContent = t('已更換對應遊戲。','Linked game changed.');
+   await renderRelinkHistory();
+  });
+ });
  scopeSelect.onchange=()=>{if(dirty&&!confirm(t('放棄未儲存變更？','Discard unsaved changes?'))){scopeSelect.value=scope;return;}const url=new URL(location.href);url.searchParams.set('scope',scopeSelect.value);dirty=false;location.assign(url);};
  window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
  void run(async()=>{await load();if(mode==='new'){const game=new URL(location.href).searchParams.get('game');if(game){find<HTMLInputElement>('[data-picker-form] [name=q]')!.value=game;await search();}}message(takeFlash());});
