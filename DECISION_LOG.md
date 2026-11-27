@@ -166,3 +166,4 @@
 | 2026-11-27 | SLEEVE-UX-Q137～Q142 | #38 收藏卡套頁改版 Q137～Q142 全部採建議（docs/sleeve-workflow-compact-plan-20261127.md §2）：只做畫面精簡化與建立需求改善；依尺寸分組、預設收合、狀態篩選；預設隱藏已建過需求的組件，但不禁止再建立；批次建立需求（新的批次 API，全部寫入或全部不寫入）；數量差異只提示。Q141 為已採納的扣帳確認規則的**文字修訂**，經使用者批准，規則、欄位與 API 守衛不變。實作另行授權 | 使用者 | Claude Code 對話「全部採建議」 | 已採納 |
 | 2026-11-27 | SLEEVE-UX-AUTH | 使用者批准 #38 收藏卡套頁改版交給 Codex 實作（工作命令 SLEEVE-UX-20261127-01，規劃 §7）。只在本機：修改卡套頁 UI、controller、`sleeve-workflow.ts` 讀取資料，以及新增批次建立需求 API 與測試；不含 Migration、`wrangler.json`、`middleware.ts`、正式環境、提交、推送 | 使用者 | Claude Code 對話「批准，交 Codex」 | 已授權 |
 | 2026-11-27 | SLEEVE-UX-DEPLOY | 使用者看過截圖後，依 DEPLOY-01 授權提交並推送 `main`，部署 #38 卡套頁改版（含 `requirements-batch` API）；不需要 Migration | 使用者 | Claude Code 對話「提交並推送」 | 已授權 |
+| 2026-11-27 | DOCS-PUSH-20261127 | 使用者授權提交並推送 #37 驗收紀錄與 #38 部署紀錄（只有文件）；推送 `main` 會觸發自動部署，但程式沒有變更 | 使用者 | Claude Code 對話「提交並推送」 | 已授權 |

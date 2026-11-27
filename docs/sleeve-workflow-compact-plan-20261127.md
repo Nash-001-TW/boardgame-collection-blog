@@ -80,3 +80,7 @@
   3. 配合第 2 點，更新 `tests/sleeve-workflow-browser.mjs` 的斷言：沒有產品時，產品連結改成在分組的提示中檢查。
 - Claude 自行驗證：Node 42／42（sleeve-workflow、sleeve-shortage、sleeve-admin、admin-collection-detail）；Edge 卡套流程 5／5、庫存短缺 8／8、收藏詳細頁 74／74。astro check 引用 Codex 的回報（前後都是 6 個錯誤），Claude 沒有重跑。截圖在 `docs/SLEEVE-UX-screenshots/`。
 - 尚未完成：使用者確認截圖、部署、正式環境驗收。
+
+## 9. 部署（2026-11-27，DECISION_LOG SLEEVE-UX-DEPLOY）
+
+- 提交 `6fec936`，推送 `cae2634..6fec936`；Workers Builds 部署 `495cb25f`（100%，台北 09:03:54）。唯讀抽查 8 條都符合。待使用者登入驗收。

@@ -216,3 +216,10 @@ CREATE UNIQUE INDEX ... ON v2_component_photos(definition_id, COALESCE(language_
 - 提交 `9da7a22`，台北 23:38 推送 `85277a8..9da7a22`。Workers Builds 自動部署，新版本 `750e6e37`（100%，台北 23:39:59）。
 - 唯讀抽查 10 條，全部符合：公開頁 4 條回 200；`/admin`、組件頁、照片 API 回 302 轉到 Access；`/media/components/<不存在的鍵>` 和格式錯誤的鍵都回 404，而且帶 `Cache-Control: no-store`，表示是新的讀圖路由在回應；`/dev/ui-kit` 回 404。
 - **還沒做**：使用者登入後的正式驗收，包括實機手機拍照、上傳、替換、移除，以及公開讀圖。
+
+### 11.6 使用者手機驗收與 Claude 唯讀核對（2026-11-27）
+
+- 使用者回報手機驗收已完成。
+- Claude 唯讀核對正式 D1：照片 21 張，全部屬於收藏 #262 的 21 個組件（#179～#199），都是 `image/webp`、公開、revision 1，最長邊 ≤1477px，大圖 9.9～290.6 KB；冪等收據 21 筆；待清理 0 筆。上傳時間是台北 2026-11-27 00:57～01:49。
+- 公開讀圖抽查 1 張縮圖：回 200，`image/webp`、`public, max-age=300, must-revalidate`，附 ETag 與 `nosniff`；帶 `If-None-Match` 重送回 304。Admin 讀圖路徑在未登入時回 302 轉到 Access。
+- **正式資料中沒有替換或移除的紀錄**（revision 都是 1，待清理 0），這兩個流程在正式環境還沒有實際使用證據，只有本機 Edge 測試的證據。
